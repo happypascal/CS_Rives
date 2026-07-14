@@ -7,7 +7,7 @@ import { ORG } from '../lib/config'
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
 const NAV = [
-  { to: '/', label: 'Tableau de bord', end: true },
+  { to: '/tableau-de-bord', label: 'Tableau de bord' },
   { to: '/ag', label: 'Assemblées Générales' },
   { to: '/projets', label: 'Projets' },
   { to: '/budgets', label: 'Budgets' },

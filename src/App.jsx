@@ -33,7 +33,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/registre" replace />} />
+            <Route path="/tableau-de-bord" element={<Dashboard />} />
             <Route path="/registre" element={<RegistreCS />} />
             <Route path="/registre/nouvelle" element={<DecisionForm />} />
             <Route path="/registre/:id" element={<DecisionDetail />} />
