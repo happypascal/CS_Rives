@@ -83,13 +83,13 @@ function decisionBlock(doc, decision, opts = {}) {
   doc.text(bodyLines, 20, y)
   y += bodyLines.length * 5 + 4
 
-  // Budget alloué (attribut de la décision).
-  if (decision.budget_alloue != null && decision.budget_alloue !== '') {
-    const montant = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(decision.budget_alloue))
-    y = sectionTitle(doc, 'BUDGET ALLOUÉ', y)
+  // Engagement budgétaire (sur un budget voté en AG).
+  if (decision.montant_engage != null && decision.montant_engage !== '') {
+    const montant = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(decision.montant_engage))
+    y = sectionTitle(doc, 'ENGAGEMENT BUDGÉTAIRE', y)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
-    doc.text(`${montant}${decision.budget_intitule ? ' — ' + decision.budget_intitule : ''}`, 20, y)
+    doc.text(`Montant engagé : ${montant}`, 20, y)
     y += 6
   }
 

@@ -128,7 +128,7 @@ export default function RegistreCS() {
         actions={
           <>
             <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF registre'}</Button>
-            {isAdmin && <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
+            <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>
           </>
         }
       />
@@ -160,7 +160,7 @@ export default function RegistreCS() {
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState title="Aucune décision" hint="Aucune décision ne correspond aux filtres." action={isAdmin && <Link to="/registre/nouvelle"><Button>Créer une décision</Button></Link>} />
+        <EmptyState title="Aucune décision" hint="Aucune décision ne correspond aux filtres." action={<Link to="/registre/nouvelle"><Button>Créer une décision</Button></Link>} />
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

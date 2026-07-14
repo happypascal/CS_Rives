@@ -48,10 +48,12 @@ function seed() {
   const rApprobStatuts = uid()
   const rElection = uid()
   const rBudgetVoirie = uid()
+  const rProvision = uid()
   const resolutions_ag = [
     { id: rApprobStatuts, ag_id: agAGO, numero: 1, titre: 'Approbation des statuts de l’ASL', description: "L'assemblée approuve les statuts de l'ASL du Lotissement de Rives.", majorite_requise: 'double_qualifiee', statut: 'adoptee', budget_alloue: 4200, budget_intitule: 'Honoraires Me Garnier — statuts ASL', observations: 'Double majorité qualifiée atteinte (détail au PV).', created_at: '2025-06-19T18:30:00Z' },
     { id: rElection, ag_id: agAGO, numero: 2, titre: 'Élection des membres du Conseil Syndical', description: 'Élection de Pascal Favre (président), Claire Martin, Henri Dubois, Sophie Leroy.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: null, budget_intitule: '', observations: '', created_at: '2025-06-19T19:00:00Z' },
     { id: rBudgetVoirie, ag_id: agAGO, numero: 3, titre: 'Budget travaux de voirie 2025', description: 'Réfection de la voirie principale, répartie à la superficie.', majorite_requise: 'absolue', statut: 'adoptee', budget_alloue: 85000, budget_intitule: 'Réfection voirie principale', observations: '', created_at: '2025-06-19T19:30:00Z' },
+    { id: rProvision, ag_id: agAGO, numero: 4, titre: 'Provision entretien & espaces verts 2025', description: 'Enveloppe annuelle pour l’entretien courant et les espaces verts communs.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: 12000, budget_intitule: 'Provision entretien espaces verts', observations: 'Le CS engage les dépenses dans la limite de cette enveloppe.', created_at: '2025-06-19T19:45:00Z' },
   ]
 
   const d1 = uid()
@@ -64,8 +66,7 @@ function seed() {
       titre: 'Choix du prestataire d’entretien des espaces verts',
       description: '<p>Le Conseil Syndical retient la société <strong>VertPro SARL</strong> pour l’entretien des espaces verts communs.</p><ul><li>Contrat d’un an renouvelable</li><li>Passage bimensuel</li></ul>',
       statut: 'adoptee', enregistree: true, quorum_atteint: true,
-      budget_alloue: 5800, budget_intitule: 'Entretien espaces verts (annuel)',
-      ag_id: null, resolution_id: null,
+      montant_engage: 5800, ag_id: agAGO, resolution_id: rProvision,
       documents: [{ id: uid(), name: 'Offre_VertPro.txt', type: 'text/plain', size: 34, dataUrl: textDataUrl('Offre VertPro SARL — 5 800 € TTC/an'), uploaded_at: '2026-02-03T10:05:00Z' }],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-02-03T10:00:00Z', updated_at: '2026-02-10T11:00:00Z',
     },
@@ -75,8 +76,7 @@ function seed() {
       titre: 'Installation d’un portail automatique à l’entrée du lotissement',
       description: '<p>Décision d’installer un <strong>portail automatique</strong> à l’entrée principale. Devis PortAlp : 12 400 € TTC.</p>',
       statut: 'rejetee', enregistree: true, quorum_atteint: true,
-      budget_alloue: 12400, budget_intitule: 'Portail automatique',
-      ag_id: null, resolution_id: null, documents: [],
+      montant_engage: null, ag_id: null, resolution_id: null, documents: [],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-05-05T10:00:00Z', updated_at: '2026-05-14T12:00:00Z',
     },
     {
@@ -85,8 +85,7 @@ function seed() {
       titre: 'Réparation de l’éclairage public — allée des Tilleuls',
       description: '<p>Remplacement de 4 lampadaires défectueux allée des Tilleuls. Devis en cours d’analyse.</p>',
       statut: 'en_cours', enregistree: false, quorum_atteint: null,
-      budget_alloue: null, budget_intitule: '',
-      ag_id: null, resolution_id: null, documents: [],
+      montant_engage: null, ag_id: null, resolution_id: null, documents: [],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-07-08T09:00:00Z', updated_at: '2026-07-08T09:00:00Z',
     },
   ]
@@ -216,6 +215,34 @@ export const mockAuth = {
 const clone = (v) => JSON.parse(JSON.stringify(v))
 const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 
+// Budgets AG avec suivi d'engagement. Un budget = une résolution AG dotée d'un
+// budget_alloue. engagé = décisions ADOPTÉES qui l'engagent ; engagé_en_cours =
+// décisions non encore enregistrées ; restant = alloué − engagé.
+export function computeAGBudgets(data) {
+  const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
+  const budgets = data.resolutions_ag.filter((r) => r.budget_alloue != null && r.budget_alloue !== '')
+  return budgets.map((r) => {
+    const ag = agById[r.ag_id]
+    const liees = data.decisions.filter((d) => d.resolution_id === r.id && d.montant_engage != null)
+    const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const alloue = Number(r.budget_alloue)
+    return {
+      resolution_id: r.id,
+      ag_id: r.ag_id,
+      ag_numero: ag?.numero || 'AG',
+      ag_date: ag?.date_ag || null,
+      resolution_numero: r.numero,
+      intitule: r.budget_intitule || r.titre,
+      alloue,
+      engage,
+      engage_en_cours: engageEnCours,
+      restant: alloue - engage,
+      engagements: liees.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
+    }
+  })
+}
+
 export const mockRepo = {
   // ---- Membres ----
   async listMembres() {
@@ -315,24 +342,12 @@ export const mockRepo = {
     return { ok: true }
   },
 
-  // ---- Budgets alloués (vue consolidée : dérivée des décisions + résolutions) ----
-  async listBudgets() {
+  // ---- Budgets AG (alloué / engagé / restant) ----
+  // Un budget = une résolution AG dotée d'un budget_alloue. Les décisions CS
+  // ENGAGENT un montant sur ce budget (montant_engage + resolution_id).
+  async listAGBudgets() {
     await delay()
-    const data = load()
-    const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
-    const rows = []
-    for (const r of data.resolutions_ag) {
-      if (r.budget_alloue != null && r.budget_alloue !== '') {
-        const ag = agById[r.ag_id]
-        rows.push({ id: r.id, source: 'AG', reference: `${ag?.numero || 'AG'} · Rés. ${r.numero}`, date: ag?.date_ag || null, intitule: r.budget_intitule || r.titre, montant_alloue: Number(r.budget_alloue) })
-      }
-    }
-    for (const d of data.decisions) {
-      if (d.budget_alloue != null && d.budget_alloue !== '') {
-        rows.push({ id: d.id, source: 'CS', reference: d.numero, date: d.date_enregistrement || d.date_publication, intitule: d.budget_intitule || d.titre, montant_alloue: Number(d.budget_alloue), statut: d.statut })
-      }
-    }
-    return rows
+    return computeAGBudgets(load())
   },
 
   // ---- Décisions CS ----
@@ -359,7 +374,7 @@ export const mockRepo = {
     const data = load()
     const d = {
       id: uid(), statut: 'en_cours', enregistree: false, quorum_atteint: null, composition_snapshot: null,
-      budget_alloue: null, budget_intitule: '', ag_id: null, resolution_id: null, documents: [], date_enregistrement: null,
+      montant_engage: null, ag_id: null, resolution_id: null, documents: [], date_enregistrement: null,
       created_by: getSessionUserId(), created_at: nowISO(), updated_at: nowISO(), ...input,
     }
     data.decisions.push(d)

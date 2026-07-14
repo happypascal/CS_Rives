@@ -68,10 +68,9 @@ create table if not exists decisions (
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
   composition_snapshot jsonb,
-  budget_alloue        numeric(12,2),                    -- budget = attribut de la décision
-  budget_intitule      text,
+  montant_engage       numeric(12,2),                    -- engagement sur le budget AG (resolution_id)
   ag_id                uuid references assemblees_generales(id) on delete set null,  -- rattachement AG
-  resolution_id        uuid references resolutions_ag(id) on delete set null,
+  resolution_id        uuid references resolutions_ag(id) on delete set null,        -- budget AG engagé
   documents            jsonb not null default '[]',      -- pièces jointes [{id,name,type,size,dataUrl}]
   created_by           uuid references auth.users(id),
   created_at           timestamptz not null default now(),

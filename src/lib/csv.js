@@ -1,6 +1,6 @@
 import { formatDate } from './format'
 
-// Export CSV des budgets alloués (montant voté), format Foncia :
+// Export CSV des budgets AG avec suivi d'engagement, format Foncia :
 // séparateur ';', décimales ',', BOM UTF-8 pour Excel.
 function escapeCell(v) {
   const s = String(v ?? '')
@@ -12,9 +12,18 @@ function frNumber(n) {
 }
 
 export function budgetsToCSV(rows) {
-  const headers = ['Source', 'Référence', 'Date', 'Intitulé', 'Montant alloué (€)']
-  const body = rows.map((b) => [b.source, b.reference, b.date ? formatDate(b.date) : '', b.intitule, frNumber(b.montant_alloue)])
-  const total = ['', '', '', 'TOTAL', frNumber(rows.reduce((s, b) => s + (Number(b.montant_alloue) || 0), 0))]
+  const headers = ['AG', 'Résolution', 'Date AG', 'Intitulé', 'Alloué (€)', 'Engagé (€)', 'Restant (€)']
+  const body = rows.map((b) => [
+    b.ag_numero,
+    `N° ${b.resolution_numero}`,
+    b.ag_date ? formatDate(b.ag_date) : '',
+    b.intitule,
+    frNumber(b.alloue),
+    frNumber(b.engage),
+    frNumber(b.restant),
+  ])
+  const sum = (k) => rows.reduce((s, b) => s + (Number(b[k]) || 0), 0)
+  const total = ['', '', '', 'TOTAL', frNumber(sum('alloue')), frNumber(sum('engage')), frNumber(sum('restant'))]
   const lines = [headers, ...body, total].map((r) => r.map(escapeCell).join(';'))
   return '﻿' + lines.join('\r\n')
 }

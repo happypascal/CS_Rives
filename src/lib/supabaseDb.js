@@ -2,6 +2,7 @@
 // Only exercised when VITE_SUPABASE_URL/ANON_KEY are configured.
 // Table shapes follow supabase/schema.sql.
 import { supabase } from './supabase'
+import { computeAGBudgets } from './mockDb'
 
 function must(result) {
   if (result.error) throw new Error(result.error.message)
@@ -88,21 +89,12 @@ export const supabaseRepo = {
     return { ok: true }
   },
 
-  // ---- Budgets consolidés (dérivés) ----
-  async listBudgets() {
-    const ags = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
-    const byId = Object.fromEntries(ags.map((a) => [a.id, a]))
-    const resolutions = must(await supabase.from('resolutions_ag').select('*').not('budget_alloue', 'is', null))
-    const decisions = must(await supabase.from('decisions').select('*').not('budget_alloue', 'is', null))
-    const rows = []
-    for (const r of resolutions) {
-      const ag = byId[r.ag_id]
-      rows.push({ id: r.id, source: 'AG', reference: `${ag?.numero || 'AG'} · Rés. ${r.numero}`, date: ag?.date_ag || null, intitule: r.budget_intitule || r.titre, montant_alloue: Number(r.budget_alloue) })
-    }
-    for (const d of decisions) {
-      rows.push({ id: d.id, source: 'CS', reference: d.numero, date: d.date_enregistrement || d.date_publication, intitule: d.budget_intitule || d.titre, montant_alloue: Number(d.budget_alloue), statut: d.statut })
-    }
-    return rows
+  // ---- Budgets AG (alloué / engagé / restant) ----
+  async listAGBudgets() {
+    const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
+    const resolutions_ag = must(await supabase.from('resolutions_ag').select('*'))
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,montant_engage'))
+    return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions })
   },
 
   // ---- Décisions ----

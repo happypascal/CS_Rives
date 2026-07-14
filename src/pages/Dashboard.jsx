@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [batches, setBatches] = useState([])
 
   useEffect(() => {
-    Promise.all([repo.listDecisions(), repo.listAG(), repo.listBudgets(), repo.listSignatureBatches()]).then(
+    Promise.all([repo.listDecisions(), repo.listAG(), repo.listAGBudgets(), repo.listSignatureBatches()]).then(
       ([d, a, b, s]) => {
         setDecisions(d)
         setAgs(a)
@@ -34,13 +34,15 @@ export default function Dashboard() {
   const nextAG = ags.filter((a) => a.statut === 'en_cours').sort((x, y) => (x.date_ag < y.date_ag ? -1 : 1))[0]
   const anyBatchDecisionIds = new Set(batches.flatMap((b) => b.decision_ids))
   const toSign = decisions.filter((d) => d.enregistree && d.statut === 'adoptee' && !anyBatchDecisionIds.has(d.id))
-  const totalBudget = budgets.reduce((s, b) => s + Number(b.montant_alloue || 0), 0)
+  const totalAlloue = budgets.reduce((s, b) => s + Number(b.alloue || 0), 0)
+  const totalEngage = budgets.reduce((s, b) => s + Number(b.engage || 0), 0)
+  const totalRestant = budgets.reduce((s, b) => s + Number(b.restant || 0), 0)
 
   const stats = [
     { label: 'Décisions', value: decisions.length, sub: `${enCours.length} en cours` },
     { label: 'Assemblées Générales', value: ags.length, sub: nextAG ? 'prochaine planifiée' : 'aucune à venir' },
-    { label: 'Budgets alloués', value: eur(totalBudget), sub: `${budgets.length} ligne(s)` },
-    { label: 'À signer', value: toSign.length, sub: 'décisions adoptées' },
+    { label: 'Budget engagé', value: eur(totalEngage), sub: `sur ${eur(totalAlloue)} alloués` },
+    { label: 'Budget restant', value: eur(totalRestant), sub: `${budgets.length} budget(s) AG` },
   ]
 
   return (
@@ -66,7 +68,7 @@ export default function Dashboard() {
                 <Link to={`/registre/${d.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-navy-50/50">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-navy-800"><span className="text-slate-400">{d.numero}</span> · {d.titre}</p>
-                    <p className="text-xs text-slate-500">{formatDate(d.date_publication)}{d.enregistree ? '' : ' · brouillon'}</p>
+                    <p className="text-xs text-slate-500">{formatDate(d.date_publication)}{d.enregistree ? '' : ' · à enregistrer'}</p>
                   </div>
                   <StatutBadge statut={d.statut} />
                 </Link>
