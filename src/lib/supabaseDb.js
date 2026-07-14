@@ -73,6 +73,8 @@ export const supabaseRepo = {
     return must(await supabase.from('assemblees_generales').update(patch).eq('id', id).select())[0]
   },
   async deleteAG(id) {
+    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('ag_id', id)
+    if (count > 0) throw new Error('AG non supprimable : au moins une décision y est rattachée.')
     must(await supabase.from('assemblees_generales').delete().eq('id', id))
     return { ok: true }
   },
@@ -82,9 +84,13 @@ export const supabaseRepo = {
     return must(await supabase.from('resolutions_ag').insert(input).select())[0]
   },
   async updateResolution(id, patch) {
+    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    if (count > 0) throw new Error('Résolution verrouillée : une décision y est rattachée.')
     return must(await supabase.from('resolutions_ag').update(patch).eq('id', id).select())[0]
   },
   async deleteResolution(id) {
+    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    if (count > 0) throw new Error('Résolution non supprimable : une décision y est rattachée.')
     must(await supabase.from('resolutions_ag').delete().eq('id', id))
     return { ok: true }
   },

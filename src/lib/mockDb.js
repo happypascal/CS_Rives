@@ -6,7 +6,7 @@
 //   - résolutions AG : résultat seul (majorité + statut) + budget alloué.
 //   - signature : par LOT de décisions sélectionnées.
 
-const STORAGE_KEY = 'cs_rives_mockdb_v3'
+const STORAGE_KEY = 'cs_rives_mockdb_v4'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -60,6 +60,7 @@ function seed() {
   const d2 = uid()
   const d3 = uid()
   const d4 = uid()
+  const d5 = uid()
   const decisions = [
     {
       id: d1, numero: '2026-001',
@@ -98,6 +99,15 @@ function seed() {
       montant_engage: null, ag_id: null, resolution_id: null, documents: [],
       composition_snapshot: null, created_by: mVice, created_at: '2026-06-20T09:00:00Z', updated_at: '2026-06-20T09:00:00Z',
     },
+    {
+      id: d5, numero: '2026-005',
+      date_publication: '2026-06-01', date_limite_reponse: '2026-06-10', date_enregistrement: '2026-06-12',
+      titre: 'Réfection du portail piéton (serrure et charnières)',
+      description: '<p>Réparation du portail piéton de l’entrée : remplacement de la serrure et des charnières.</p>',
+      statut: 'adoptee', enregistree: true, quorum_atteint: true,
+      montant_engage: null, ag_id: null, resolution_id: null, documents: [],
+      composition_snapshot: null, created_by: mPresident, created_at: '2026-06-01T09:00:00Z', updated_at: '2026-06-12T10:00:00Z',
+    },
   ]
 
   const activeSnapshot = membres_cs
@@ -105,6 +115,7 @@ function seed() {
     .map((m) => ({ id: m.id, nom: m.nom, prenom: m.prenom, role: m.role, ag_election: m.ag_election, date_election: m.date_election }))
   decisions[0].composition_snapshot = activeSnapshot
   decisions[1].composition_snapshot = activeSnapshot
+  decisions[4].composition_snapshot = activeSnapshot // d5 (adoptée, enregistrée)
 
   const votes = [
     // d1 — adoptée
@@ -123,6 +134,11 @@ function seed() {
     // d4 — en cours, date limite dépassée ; Pascal (président) n'a pas voté -> "à voter" + en retard
     { id: uid(), decision_id: d4, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-06-21T09:00:00Z' },
     { id: uid(), decision_id: d4, membre_id: m3, vote: 'contre', commentaire: 'Attendre un 3e devis.', date_vote: '2026-06-22T09:05:00Z' },
+    // d5 — adoptée, enregistrée, NON signée -> sélectionnable pour la signature groupée
+    { id: uid(), decision_id: d5, membre_id: mPresident, vote: 'pour', commentaire: '', date_vote: '2026-06-02T09:00:00Z' },
+    { id: uid(), decision_id: d5, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-06-02T09:05:00Z' },
+    { id: uid(), decision_id: d5, membre_id: m3, vote: 'abstention', commentaire: '', date_vote: '2026-06-03T09:05:00Z' },
+    { id: uid(), decision_id: d5, membre_id: m4, vote: 'pour', commentaire: '', date_vote: '2026-06-03T10:05:00Z' },
   ]
 
   const q1 = uid()
@@ -131,10 +147,9 @@ function seed() {
     { id: uid(), decision_id: d1, auteur_id: mPresident, type: 'reponse', parent_id: q1, texte: 'Oui, deux passages spécifiques en octobre et novembre.', created_at: '2026-02-04T16:00:00Z' },
   ]
 
-  // Signature par lot : un lot signé couvrant d1.
-  const signature_batches = [
-    { id: uid(), titre: 'Décisions février 2026', decision_ids: [d1], yousign_request_id: 'mock-batch-0001', statut: 'signe', pdf_url: 'mock://signed/lot-fev-2026.pdf', signataires: ['pfavre25@gmail.com', 'claire.martin@example.fr', 'henri.dubois@example.fr'], created_at: '2026-02-11T09:00:00Z', signed_at: '2026-02-13T15:00:00Z' },
-  ]
+  // Aucun lot de signature au départ : 2026-001 et 2026-005 (adoptées, enregistrées)
+  // sont sélectionnables pour tester la signature groupée.
+  const signature_batches = []
 
   const decision_status_history = [
     { id: uid(), decision_id: d1, ancien_statut: 'en_cours', nouveau_statut: 'adoptee', changed_by: mPresident, changed_at: '2026-02-10T11:00:00Z' },
@@ -320,6 +335,10 @@ export const mockRepo = {
   async deleteAG(id) {
     await delay()
     const data = load()
+    // Verrou : une AG dont une résolution/rattachement porte une décision ne peut être supprimée.
+    if (data.decisions.some((d) => d.ag_id === id)) {
+      throw new Error('AG non supprimable : au moins une décision y est rattachée.')
+    }
     data.assemblees_generales = data.assemblees_generales.filter((a) => a.id !== id)
     data.resolutions_ag = data.resolutions_ag.filter((r) => r.ag_id !== id)
     audit(data, 'assemblees_generales', id, 'delete', 'Suppression AG')
@@ -342,6 +361,9 @@ export const mockRepo = {
     const data = load()
     const r = data.resolutions_ag.find((x) => x.id === id)
     if (!r) throw new Error('Résolution introuvable')
+    if (data.decisions.some((d) => d.resolution_id === id)) {
+      throw new Error('Résolution verrouillée : une décision y est rattachée.')
+    }
     Object.assign(r, patch)
     audit(data, 'resolutions_ag', id, 'update', `Modification résolution ${r.titre}`)
     save(data)
@@ -350,6 +372,9 @@ export const mockRepo = {
   async deleteResolution(id) {
     await delay()
     const data = load()
+    if (data.decisions.some((d) => d.resolution_id === id)) {
+      throw new Error('Résolution non supprimable : une décision y est rattachée.')
+    }
     data.resolutions_ag = data.resolutions_ag.filter((x) => x.id !== id)
     save(data)
     return { ok: true }

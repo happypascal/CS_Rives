@@ -47,18 +47,35 @@ export default function Layout() {
             ☰
           </button>
         </div>
-        <nav className={`${menuOpen ? 'block' : 'hidden'} space-y-1 px-3 pb-4 md:block`}>
+        <nav className={`${menuOpen ? 'block' : 'hidden'} px-3 pb-4 md:block`}>
           {NAV_PRIMARY.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                [
+                  'block rounded-md px-3 py-3 text-lg font-bold tracking-tight transition-colors',
+                  isActive ? 'bg-navy-600 text-white' : 'text-white hover:bg-navy-700/60',
+                ].join(' ')
+              }
+            >
               {item.label}
             </NavLink>
           ))}
-          <div className="my-2 border-t border-navy-700/70" />
-          {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
-              {item.label}
-            </NavLink>
-          ))}
+          <div className="my-3 flex items-center gap-2 px-1">
+            <span className="h-px flex-1 bg-navy-600" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-navy-400">Gestion</span>
+            <span className="h-px flex-1 bg-navy-600" />
+          </div>
+          <div className="space-y-1">
+            {NAV.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
         </nav>
         <div className="mt-auto hidden border-t border-navy-700 px-4 py-4 md:block">
           {BACKEND === 'mock' && (

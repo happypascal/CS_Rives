@@ -13,12 +13,14 @@ export default function AGDetail() {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const [ag, setAg] = useState(null)
+  const [decisions, setDecisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [resModal, setResModal] = useState(null)
 
   const reload = useCallback(async () => {
-    const data = await repo.getAG(id)
+    const [data, ds] = await Promise.all([repo.getAG(id), repo.listDecisions()])
     setAg(data)
+    setDecisions(ds)
     setLoading(false)
   }, [id])
 
@@ -37,11 +39,17 @@ export default function AGDetail() {
   }
 
   const budgetTotal = ag.resolutions.reduce((s, r) => s + (Number(r.budget_alloue) || 0), 0)
+  const linkedCount = (resolutionId) => decisions.filter((d) => d.resolution_id === resolutionId).length
+  const agLocked = decisions.some((d) => d.ag_id === id)
 
   const deleteAG = async () => {
     if (!confirm(`Supprimer l’AG ${ag.numero} et toutes ses résolutions ?`)) return
-    await repo.deleteAG(id)
-    navigate('/ag')
+    try {
+      await repo.deleteAG(id)
+      navigate('/ag')
+    } catch (e) {
+      alert(e.message)
+    }
   }
 
   return (
@@ -49,7 +57,7 @@ export default function AGDetail() {
       <PageHeader
         title={<span><span className="text-slate-400">{ag.numero}</span> · {ag.type === 'AGO' ? 'Ordinaire' : 'Extraordinaire'}</span>}
         subtitle={`${formatDate(ag.date_ag)}${ag.lieu ? ' · ' + ag.lieu : ''}`}
-        actions={isAdmin && (<><Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link><Button variant="danger" onClick={deleteAG}>Supprimer</Button></>)}
+        actions={isAdmin && (<><Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link><Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button></>)}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -91,7 +99,9 @@ export default function AGDetail() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <ResolutionStatutBadge statut={r.statut} />
-                  {isAdmin && <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>}
+                  {isAdmin && (linkedCount(r.id) > 0
+                    ? <span className="text-xs text-slate-400" title="Verrouillée : décision rattachée">🔒 {linkedCount(r.id)} décision(s)</span>
+                    : <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>)}
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
@@ -132,16 +142,25 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
       budget_intitule: form.budget_intitule || null,
       observations: form.observations,
     }
-    if (editing) await repo.updateResolution(resolution.id, payload)
-    else await repo.createResolution(payload)
-    await onSaved()
-    setSaving(false)
+    try {
+      if (editing) await repo.updateResolution(resolution.id, payload)
+      else await repo.createResolution(payload)
+      await onSaved()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const del = async () => {
     if (!confirm('Supprimer cette résolution ?')) return
-    await repo.deleteResolution(resolution.id)
-    await onSaved()
+    try {
+      await repo.deleteResolution(resolution.id)
+      await onSaved()
+    } catch (e) {
+      alert(e.message)
+    }
   }
 
   return (
