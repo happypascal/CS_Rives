@@ -128,7 +128,6 @@ export default function DecisionForm() {
     e.preventDefault()
     setError('')
     if (!titre.trim()) return setError('Le titre est obligatoire.')
-    if (!description.trim() || description === '<br>') return setError('La description est obligatoire.')
     const engage = montantEngage === '' ? null : Number(montantEngage)
     if (engage != null && !target) return setError('Pour engager un montant, choisissez un projet ou une résolution.')
     if (engage != null && restantDispo != null && engage > restantDispo) {
@@ -149,7 +148,7 @@ export default function DecisionForm() {
         date_publication: datePublication,
         date_limite_reponse: dateLimite || null,
         titre,
-        description,
+        description: description && description !== '<br>' ? description : '',
         projet_id,
         resolution_id,
         ag_id,
@@ -183,7 +182,7 @@ export default function DecisionForm() {
 
           <Input label="Titre" value={titre} onChange={(e) => setTitre(e.target.value)} required placeholder="Objet de la décision" />
           <div>
-            <span className="mb-1 block text-sm font-medium text-slate-700">Description</span>
+            <span className="mb-1 block text-sm font-medium text-slate-700">Description <span className="font-normal text-slate-400">(optionnel)</span></span>
             <RichTextEditor value={description} onChange={setDescription} placeholder="Corps de la décision…" />
           </div>
 
