@@ -156,6 +156,9 @@ export const supabaseRepo = {
       ).select(),
     )[0]
   },
+  async listMyVotes(membre_id) {
+    return must(await supabase.from('votes').select('decision_id,vote').eq('membre_id', membre_id))
+  },
   async deleteVote(decision_id, membre_id) {
     must(await supabase.from('votes').delete().eq('decision_id', decision_id).eq('membre_id', membre_id))
     return { ok: true }

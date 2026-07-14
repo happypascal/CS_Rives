@@ -4,10 +4,11 @@ import { useAuth } from '../lib/AuthContext'
 import { BACKEND } from '../lib/config'
 import { ORG } from '../lib/config'
 
+// Cœur de l'app, mis en avant et séparé du reste.
+const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
 const NAV = [
   { to: '/', label: 'Tableau de bord', end: true },
   { to: '/ag', label: 'Assemblées Générales' },
-  { to: '/registre', label: 'Registre CS' },
   { to: '/budgets', label: 'Budgets' },
   { to: '/membres', label: 'Membres du CS' },
   { to: '/parametres', label: 'Paramètres' },
@@ -47,6 +48,12 @@ export default function Layout() {
           </button>
         </div>
         <nav className={`${menuOpen ? 'block' : 'hidden'} space-y-1 px-3 pb-4 md:block`}>
+          {NAV_PRIMARY.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
+              {item.label}
+            </NavLink>
+          ))}
+          <div className="my-2 border-t border-navy-700/70" />
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
               {item.label}
@@ -70,7 +77,7 @@ export default function Layout() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 border-b border-navy-100 bg-white px-6 py-3 md:hidden">
-          <span className="text-sm font-semibold text-navy-800">Registre CS — Rives</span>
+          <span className="text-sm font-semibold text-navy-800">Décisions CS — Rives</span>
           <button onClick={handleSignOut} className="text-xs text-navy-600 underline">
             Déconnexion
           </button>

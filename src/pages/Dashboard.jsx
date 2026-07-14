@@ -47,7 +47,11 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader title={`Bonjour ${user?.prenom || ''}`} subtitle="Vue d’ensemble du registre du Conseil Syndical." />
+      <PageHeader
+        title={`Bonjour ${user?.prenom || ''}`}
+        subtitle="Vue d’ensemble du registre du Conseil Syndical."
+        actions={<Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (

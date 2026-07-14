@@ -4,20 +4,22 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal } from '../components/ui'
 import { StatutBadge, SignatureBadge } from '../components/badges'
-import { formatDate, formatDateTime } from '../lib/format'
+import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { downloadRegistrePDF } from '../lib/pdf'
 import { signatureProvider, isMockSignature } from '../lib/signatureProvider'
 
 export default function RegistreCS() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [decisions, setDecisions] = useState([])
   const [members, setMembers] = useState([])
   const [batches, setBatches] = useState([])
+  const [myVotes, setMyVotes] = useState([])
   const [year, setYear] = useState('all')
   const [statut, setStatut] = useState('all')
   const [q, setQ] = useState('')
+  const [onlyToVote, setOnlyToVote] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [sigModal, setSigModal] = useState(false)
@@ -25,15 +27,36 @@ export default function RegistreCS() {
   const [busy, setBusy] = useState(false)
 
   const reload = async () => {
-    const [d, m, b] = await Promise.all([repo.listDecisions(), repo.listMembres(), repo.listSignatureBatches()])
+    const [d, m, b, mv] = await Promise.all([
+      repo.listDecisions(),
+      repo.listMembres(),
+      repo.listSignatureBatches(),
+      user?.membre_id ? repo.listMyVotes(user.membre_id) : Promise.resolve([]),
+    ])
     setDecisions(d)
     setMembers(m)
     setBatches(b)
+    setMyVotes(mv)
     setLoading(false)
   }
   useEffect(() => {
     reload()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Suis-je membre actif à une date ISO donnée ?
+  const me = members.find((m) => m.id === user?.membre_id)
+  const iAmActiveAt = (dateISO) => {
+    if (!me) return false
+    const elected = !me.date_election || me.date_election <= dateISO
+    const ended = me.date_fin && me.date_fin < dateISO
+    return elected && !ended
+  }
+  const myVotedSet = useMemo(() => new Set(myVotes.map((v) => v.decision_id)), [myVotes])
+  // Décision qui attend MON vote : ouverte, je suis actif, je n'ai pas voté.
+  const needsMyVote = (d) => !d.enregistree && iAmActiveAt(d.date_publication) && !myVotedSet.has(d.id)
+  // En retard pour moi : mon vote est attendu et la date limite est dépassée.
+  const overdueForMe = (d) => needsMyVote(d) && d.date_limite_reponse && d.date_limite_reponse < todayISO()
 
   const batchByDecision = useMemo(() => {
     const map = {}
@@ -43,15 +66,18 @@ export default function RegistreCS() {
 
   const years = useMemo(() => [...new Set(decisions.map((d) => d.date_publication?.slice(0, 4)))].filter(Boolean).sort().reverse(), [decisions])
 
+  const toVoteCount = useMemo(() => decisions.filter(needsMyVote).length, [decisions, myVotedSet, me]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const filtered = useMemo(
     () =>
       decisions.filter((d) => {
+        if (onlyToVote && !needsMyVote(d)) return false
         if (year !== 'all' && d.date_publication?.slice(0, 4) !== year) return false
         if (statut !== 'all' && d.statut !== statut) return false
         if (q && !`${d.numero} ${d.titre}`.toLowerCase().includes(q.toLowerCase())) return false
         return true
       }),
-    [decisions, year, statut, q],
+    [decisions, year, statut, q, onlyToVote, myVotedSet, me], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // Sélectionnable pour signature : décision enregistrée, adoptée, pas déjà signée.
@@ -123,11 +149,14 @@ export default function RegistreCS() {
   return (
     <div>
       <PageHeader
-        title="Registre du Conseil Syndical"
-        subtitle="Décisions courantes du CS (hors résolutions d’AG)."
+        title="Décisions du Conseil Syndical"
+        subtitle="Cœur du registre : décisions courantes du CS (hors résolutions d’AG)."
         actions={
           <>
-            <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF registre'}</Button>
+            <Button variant={onlyToVote ? 'primary' : 'secondary'} onClick={() => setOnlyToVote((v) => !v)}>
+              À voter{toVoteCount > 0 ? ` (${toVoteCount})` : ''}
+            </Button>
+            <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF'}</Button>
             <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>
           </>
         }
@@ -170,14 +199,18 @@ export default function RegistreCS() {
                   {isAdmin && <th className="px-4 py-2.5" />}
                   <th className="px-4 py-2.5 font-medium">N°</th>
                   <th className="px-4 py-2.5 font-medium">Publication</th>
+                  <th className="px-4 py-2.5 font-medium">Limite réponse</th>
                   <th className="px-4 py-2.5 font-medium">Titre</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
                   <th className="px-4 py-2.5 font-medium">Signature</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-50">
-                {filtered.map((d) => (
-                  <tr key={d.id} className="hover:bg-navy-50/40">
+                {filtered.map((d) => {
+                  const overdue = overdueForMe(d)
+                  const toVote = needsMyVote(d)
+                  return (
+                  <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : 'hover:bg-navy-50/40'}>
                     {isAdmin && (
                       <td className="px-4 py-3">
                         <input type="checkbox" disabled={!selectable(d)} checked={selected.has(d.id)} onChange={() => toggle(d.id)} title={selectable(d) ? '' : 'Sélectionnable seulement si adoptée, enregistrée et non signée'} />
@@ -185,11 +218,19 @@ export default function RegistreCS() {
                     )}
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{d.numero}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(d.date_publication)}</td>
-                    <td className="px-4 py-3"><Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{d.titre}</Link></td>
+                    <td className={`whitespace-nowrap px-4 py-3 ${overdue ? 'font-semibold text-red-700' : 'text-slate-600'}`}>
+                      {d.date_limite_reponse ? formatDate(d.date_limite_reponse) : '—'}
+                      {overdue && <span className="ml-1 text-xs">⚠ dépassée</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{d.titre}</Link>
+                      {toVote && !overdue && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à voter</span>}
+                    </td>
                     <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>
                     <td className="px-4 py-3">{batchByDecision[d.id] ? <SignatureBadge statut={batchByDecision[d.id].statut} /> : <span className="text-xs text-slate-400">—</span>}</td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

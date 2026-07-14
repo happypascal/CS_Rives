@@ -59,6 +59,7 @@ function seed() {
   const d1 = uid()
   const d2 = uid()
   const d3 = uid()
+  const d4 = uid()
   const decisions = [
     {
       id: d1, numero: '2026-001',
@@ -88,6 +89,15 @@ function seed() {
       montant_engage: null, ag_id: null, resolution_id: null, documents: [],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-07-08T09:00:00Z', updated_at: '2026-07-08T09:00:00Z',
     },
+    {
+      id: d4, numero: '2026-004',
+      date_publication: '2026-06-20', date_limite_reponse: '2026-06-30', date_enregistrement: null,
+      titre: 'Remplacement de la borne de recharge véhicules électriques',
+      description: '<p>Proposition de remplacer la borne de recharge défectueuse du parking visiteurs. Deux devis reçus (voir pièces jointes à venir).</p>',
+      statut: 'en_cours', enregistree: false, quorum_atteint: null,
+      montant_engage: null, ag_id: null, resolution_id: null, documents: [],
+      composition_snapshot: null, created_by: mVice, created_at: '2026-06-20T09:00:00Z', updated_at: '2026-06-20T09:00:00Z',
+    },
   ]
 
   const activeSnapshot = membres_cs
@@ -110,6 +120,9 @@ function seed() {
     // d3 — en cours (partiel)
     { id: uid(), decision_id: d3, membre_id: mPresident, vote: 'pour', commentaire: '', date_vote: '2026-07-09T09:00:00Z' },
     { id: uid(), decision_id: d3, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-07-09T09:05:00Z' },
+    // d4 — en cours, date limite dépassée ; Pascal (président) n'a pas voté -> "à voter" + en retard
+    { id: uid(), decision_id: d4, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-06-21T09:00:00Z' },
+    { id: uid(), decision_id: d4, membre_id: m3, vote: 'contre', commentaire: 'Attendre un 3e devis.', date_vote: '2026-06-22T09:05:00Z' },
   ]
 
   const q1 = uid()
@@ -463,6 +476,10 @@ export const mockRepo = {
     }
     save(data)
     return clone(v)
+  },
+  async listMyVotes(membre_id) {
+    await delay(20)
+    return clone(load().votes.filter((v) => v.membre_id === membre_id))
   },
   async deleteVote(decision_id, membre_id) {
     await delay()
