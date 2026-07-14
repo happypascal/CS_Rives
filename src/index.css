@@ -33,6 +33,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Garde-fou anti-débordement horizontal sur mobile : le corps de page ne
+   défile jamais latéralement (les tableaux larges défilent dans leur propre
+   conteneur .overflow-x-auto). */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+#root {
+  overflow-x: clip;
+}
+
 /* Minimal rich-text rendering for decision descriptions (bold/italic/lists). */
 .rich-text strong {
   font-weight: 600;
