@@ -10,10 +10,7 @@ function must(result) {
 
 export const supabaseAuth = {
   async signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) throw new Error(error.message)
     return await resolveUser(data.user)
   },
@@ -21,7 +18,6 @@ export const supabaseAuth = {
     await supabase.auth.signOut()
   },
   getSession() {
-    // Supabase session is async; the AuthContext handles it via onAuthStateChange.
     return null
   },
   async resetPassword(email) {
@@ -31,14 +27,9 @@ export const supabaseAuth = {
   },
 }
 
-// Enrich the auth user with role + membre profile (joined via email).
 export async function resolveUser(authUser) {
   if (!authUser) return null
-  const { data: membre } = await supabase
-    .from('membres_cs')
-    .select('*')
-    .eq('email', authUser.email)
-    .maybeSingle()
+  const { data: membre } = await supabase.from('membres_cs').select('*').eq('email', authUser.email).maybeSingle()
   return {
     id: authUser.id,
     email: authUser.email,
@@ -55,18 +46,13 @@ export const supabaseRepo = {
     return must(await supabase.from('membres_cs').select('*').order('nom'))
   },
   async createMembre(input) {
-    const rows = must(await supabase.from('membres_cs').insert(input).select())
-    return rows[0]
+    return must(await supabase.from('membres_cs').insert(input).select())[0]
   },
   async updateMembre(id, patch) {
-    const rows = must(await supabase.from('membres_cs').update(patch).eq('id', id).select())
-    return rows[0]
+    return must(await supabase.from('membres_cs').update(patch).eq('id', id).select())[0]
   },
   async deactivateMembre(id, date_fin) {
-    return this.updateMembre(id, {
-      actif: false,
-      date_fin: date_fin || new Date().toISOString().slice(0, 10),
-    })
+    return this.updateMembre(id, { actif: false, date_fin: date_fin || new Date().toISOString().slice(0, 10) })
   },
 
   // ---- AG ----
@@ -76,19 +62,14 @@ export const supabaseRepo = {
   async getAG(id) {
     const ag = must(await supabase.from('assemblees_generales').select('*').eq('id', id).maybeSingle())
     if (!ag) return null
-    const resolutions = must(
-      await supabase.from('resolutions_ag').select('*').eq('ag_id', id).order('numero'),
-    )
-    const budgets = must(await supabase.from('budgets_ag').select('*').eq('ag_id', id))
-    return { ...ag, resolutions, budgets }
+    const resolutions = must(await supabase.from('resolutions_ag').select('*').eq('ag_id', id).order('numero'))
+    return { ...ag, resolutions }
   },
   async createAG(input) {
-    const rows = must(await supabase.from('assemblees_generales').insert(input).select())
-    return rows[0]
+    return must(await supabase.from('assemblees_generales').insert(input).select())[0]
   },
   async updateAG(id, patch) {
-    const rows = must(await supabase.from('assemblees_generales').update(patch).eq('id', id).select())
-    return rows[0]
+    return must(await supabase.from('assemblees_generales').update(patch).eq('id', id).select())[0]
   },
   async deleteAG(id) {
     must(await supabase.from('assemblees_generales').delete().eq('id', id))
@@ -97,137 +78,115 @@ export const supabaseRepo = {
 
   // ---- Résolutions ----
   async createResolution(input) {
-    const rows = must(await supabase.from('resolutions_ag').insert(input).select())
-    return rows[0]
+    return must(await supabase.from('resolutions_ag').insert(input).select())[0]
   },
   async updateResolution(id, patch) {
-    const rows = must(await supabase.from('resolutions_ag').update(patch).eq('id', id).select())
-    return rows[0]
+    return must(await supabase.from('resolutions_ag').update(patch).eq('id', id).select())[0]
   },
   async deleteResolution(id) {
     must(await supabase.from('resolutions_ag').delete().eq('id', id))
     return { ok: true }
   },
 
-  // ---- Budgets ----
+  // ---- Budgets consolidés (dérivés) ----
   async listBudgets() {
-    const budgets = must(await supabase.from('budgets_ag').select('*'))
     const ags = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const byId = Object.fromEntries(ags.map((a) => [a.id, a]))
-    return budgets.map((b) => ({
-      ...b,
-      ag_numero: byId[b.ag_id]?.numero ?? '—',
-      ag_date: byId[b.ag_id]?.date_ag ?? null,
-    }))
-  },
-  async createBudget(input) {
-    const rows = must(await supabase.from('budgets_ag').insert(input).select())
-    return rows[0]
-  },
-  async updateBudget(id, patch) {
-    const rows = must(await supabase.from('budgets_ag').update(patch).eq('id', id).select())
-    return rows[0]
-  },
-  async deleteBudget(id) {
-    must(await supabase.from('budgets_ag').delete().eq('id', id))
-    return { ok: true }
+    const resolutions = must(await supabase.from('resolutions_ag').select('*').not('budget_alloue', 'is', null))
+    const decisions = must(await supabase.from('decisions').select('*').not('budget_alloue', 'is', null))
+    const rows = []
+    for (const r of resolutions) {
+      const ag = byId[r.ag_id]
+      rows.push({ id: r.id, source: 'AG', reference: `${ag?.numero || 'AG'} · Rés. ${r.numero}`, date: ag?.date_ag || null, intitule: r.budget_intitule || r.titre, montant_alloue: Number(r.budget_alloue) })
+    }
+    for (const d of decisions) {
+      rows.push({ id: d.id, source: 'CS', reference: d.numero, date: d.date_enregistrement || d.date_publication, intitule: d.budget_intitule || d.titre, montant_alloue: Number(d.budget_alloue), statut: d.statut })
+    }
+    return rows
   },
 
   // ---- Décisions ----
   async listDecisions() {
-    return must(await supabase.from('decisions').select('*').order('date_decision', { ascending: false }))
+    return must(await supabase.from('decisions').select('*').order('date_publication', { ascending: false }))
   },
   async getDecision(id) {
     const d = must(await supabase.from('decisions').select('*').eq('id', id).maybeSingle())
     if (!d) return null
     const votes = must(await supabase.from('votes').select('*').eq('decision_id', id))
-    const qa = must(
-      await supabase.from('questions_reponses').select('*').eq('decision_id', id).order('created_at'),
-    )
-    const signature = must(
-      await supabase.from('registre_signatures').select('*').eq('decision_id', id).maybeSingle(),
-    )
-    const status_history = must(
-      await supabase.from('decision_status_history').select('*').eq('decision_id', id).order('changed_at'),
-    )
-    return { ...d, votes, qa, signature, status_history }
+    const qa = must(await supabase.from('questions_reponses').select('*').eq('decision_id', id).order('created_at'))
+    const status_history = must(await supabase.from('decision_status_history').select('*').eq('decision_id', id).order('changed_at'))
+    const { data: batches } = await supabase.from('signature_batches').select('*').contains('decision_ids', [id])
+    return { ...d, votes, qa, status_history, signature_batch: batches?.[0] || null }
   },
   async createDecision(input) {
-    const rows = must(await supabase.from('decisions').insert(input).select())
-    return rows[0]
+    return must(await supabase.from('decisions').insert(input).select())[0]
   },
   async updateDecision(id, patch) {
-    const rows = must(await supabase.from('decisions').update(patch).eq('id', id).select())
-    return rows[0]
+    return must(await supabase.from('decisions').update(patch).eq('id', id).select())[0]
   },
   async deleteDecision(id) {
     must(await supabase.from('decisions').delete().eq('id', id))
     return { ok: true }
   },
-  async closeDecision(id, { statut, quorum_atteint, composition_snapshot }) {
+  async recordDecision(id, { statut, quorum_atteint, composition_snapshot, date_enregistrement }) {
     const current = must(await supabase.from('decisions').select('statut').eq('id', id).maybeSingle())
-    const rows = must(
-      await supabase
-        .from('decisions')
-        .update({ statut, quorum_atteint, composition_snapshot, cloture: true })
-        .eq('id', id)
-        .select(),
-    )
-    await supabase.from('decision_status_history').insert({
-      decision_id: id,
-      ancien_statut: current?.statut ?? null,
-      nouveau_statut: statut,
-    })
-    return rows[0]
+    const row = must(
+      await supabase.from('decisions').update({
+        statut, quorum_atteint, composition_snapshot, enregistree: true,
+        date_enregistrement: date_enregistrement || new Date().toISOString().slice(0, 10),
+      }).eq('id', id).select(),
+    )[0]
+    await supabase.from('decision_status_history').insert({ decision_id: id, ancien_statut: current?.statut ?? null, nouveau_statut: statut })
+    return row
   },
-  async reopenDecision(id) {
-    const rows = must(
-      await supabase
-        .from('decisions')
-        .update({ cloture: false, statut: 'en_cours', quorum_atteint: null })
-        .eq('id', id)
-        .select(),
-    )
-    return rows[0]
+
+  // ---- Documents ----
+  async addDocument(decisionId, doc) {
+    const d = must(await supabase.from('decisions').select('documents').eq('id', decisionId).maybeSingle())
+    const record = { id: crypto.randomUUID(), uploaded_at: new Date().toISOString(), ...doc }
+    const documents = [...(d?.documents || []), record]
+    must(await supabase.from('decisions').update({ documents }).eq('id', decisionId))
+    return record
+  },
+  async removeDocument(decisionId, docId) {
+    const d = must(await supabase.from('decisions').select('documents').eq('id', decisionId).maybeSingle())
+    const documents = (d?.documents || []).filter((x) => x.id !== docId)
+    must(await supabase.from('decisions').update({ documents }).eq('id', decisionId))
+    return { ok: true }
   },
 
   // ---- Votes ----
   async upsertVote(decision_id, membre_id, vote, commentaire) {
-    const rows = must(
-      await supabase
-        .from('votes')
-        .upsert(
-          { decision_id, membre_id, vote, commentaire: commentaire || '', date_vote: new Date().toISOString() },
-          { onConflict: 'decision_id,membre_id' },
-        )
-        .select(),
-    )
-    return rows[0]
+    return must(
+      await supabase.from('votes').upsert(
+        { decision_id, membre_id, vote, commentaire: commentaire ?? '', date_vote: new Date().toISOString() },
+        { onConflict: 'decision_id,membre_id' },
+      ).select(),
+    )[0]
+  },
+  async deleteVote(decision_id, membre_id) {
+    must(await supabase.from('votes').delete().eq('decision_id', decision_id).eq('membre_id', membre_id))
+    return { ok: true }
   },
 
   // ---- Q&A ----
   async addQA(input) {
-    const rows = must(await supabase.from('questions_reponses').insert(input).select())
-    return rows[0]
+    return must(await supabase.from('questions_reponses').insert(input).select())[0]
   },
 
-  // ---- Signatures ----
-  async getSignature(decision_id) {
-    return must(
-      await supabase.from('registre_signatures').select('*').eq('decision_id', decision_id).maybeSingle(),
-    )
+  // ---- Signature par lot ----
+  async listSignatureBatches() {
+    return must(await supabase.from('signature_batches').select('*').order('created_at', { ascending: false }))
   },
-  async saveSignatureRequest(rec) {
-    const rows = must(
-      await supabase.from('registre_signatures').upsert(rec, { onConflict: 'decision_id' }).select(),
-    )
-    return rows[0]
+  async createSignatureBatch(input) {
+    return must(await supabase.from('signature_batches').insert({ ...input, statut: input.statut || 'en_attente' }).select())[0]
+  },
+  async markBatchSigned(batchId, pdf_url) {
+    return must(await supabase.from('signature_batches').update({ statut: 'signe', pdf_url: pdf_url || null, signed_at: new Date().toISOString() }).eq('id', batchId).select())[0]
   },
 
   // ---- Audit ----
   async listAudit(limit = 100) {
-    return must(
-      await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit),
-    )
+    return must(await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit))
   },
 }

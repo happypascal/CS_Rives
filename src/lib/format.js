@@ -1,4 +1,4 @@
-import { format, parseISO, isValid } from 'date-fns'
+import { format, parseISO, isValid, addBusinessDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 // Display a date-only ISO string (YYYY-MM-DD) as JJ/MM/AAAA.
@@ -27,4 +27,11 @@ export function formatDateTime(value) {
 
 export function todayISO() {
   return format(new Date(), 'yyyy-MM-dd')
+}
+
+// Ajoute N jours ouvrables (lun-ven) à une date ISO et renvoie une date ISO.
+export function addBusinessDaysISO(dateISO, n) {
+  const base = dateISO ? parseISO(dateISO) : new Date()
+  if (!isValid(base)) return dateISO
+  return format(addBusinessDays(base, n), 'yyyy-MM-dd')
 }

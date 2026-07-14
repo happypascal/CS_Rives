@@ -6,19 +6,7 @@ import { Card, Button, Input, Select, Textarea, Spinner } from '../components/ui
 import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 
-const EMPTY = {
-  numero: '',
-  type: 'AGO',
-  date_ag: todayISO(),
-  lieu: '',
-  president_seance: '',
-  ordre_du_jour: '',
-  nombre_presents: 0,
-  nombre_representes: 0,
-  nombre_total: 50,
-  superficie_representee: 0,
-  statut: 'en_cours',
-}
+const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', ordre_du_jour: '', statut: 'en_cours', pv_url: '' }
 
 export default function AGForm() {
   const { id } = useParams()
@@ -49,10 +37,7 @@ export default function AGForm() {
   }
   if (loading) return <Spinner />
 
-  const set = (k) => (e) => {
-    const val = e.target.type === 'number' ? Number(e.target.value) : e.target.value
-    setForm((f) => ({ ...f, [k]: val }))
-  }
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const submit = async (e) => {
     e.preventDefault()
@@ -61,15 +46,11 @@ export default function AGForm() {
     if (!form.president_seance.trim()) return setError('Le président de séance est obligatoire.')
     setSaving(true)
     try {
-      const quorum = form.nombre_total > 0
-        ? (Number(form.nombre_presents) + Number(form.nombre_representes)) * 2 > form.nombre_total
-        : null
-      const payload = { ...form, quorum_atteint: quorum }
       if (editing) {
-        await repo.updateAG(id, payload)
+        await repo.updateAG(id, form)
         navigate(`/ag/${id}`)
       } else {
-        const created = await repo.createAG(payload)
+        const created = await repo.createAG(form)
         navigate(`/ag/${created.id}`)
       }
     } catch (err) {
@@ -96,17 +77,14 @@ export default function AGForm() {
             <Input label="Président de séance" value={form.president_seance} onChange={set('president_seance')} required />
           </div>
           <Textarea label="Ordre du jour" value={form.ordre_du_jour} onChange={set('ordre_du_jour')} rows={4} placeholder="1. …&#10;2. …" />
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Input label="Présents" type="number" min="0" value={form.nombre_presents} onChange={set('nombre_presents')} />
-            <Input label="Représentés" type="number" min="0" value={form.nombre_representes} onChange={set('nombre_representes')} />
-            <Input label="Total colotis" type="number" min="0" value={form.nombre_total} onChange={set('nombre_total')} />
-            <Input label="Superficie repr. (m²)" type="number" min="0" step="0.01" value={form.superficie_representee} onChange={set('superficie_representee')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="Statut" value={form.statut} onChange={set('statut')}>
+              <option value="en_cours">En cours</option>
+              <option value="cloturee">Clôturée</option>
+              <option value="annulee">Annulée</option>
+            </Select>
+            <Input label="Lien PV signé (optionnel)" value={form.pv_url || ''} onChange={set('pv_url')} placeholder="https://…" />
           </div>
-          <Select label="Statut" value={form.statut} onChange={set('statut')}>
-            <option value="en_cours">En cours</option>
-            <option value="cloturee">Clôturée</option>
-            <option value="annulee">Annulée</option>
-          </Select>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>

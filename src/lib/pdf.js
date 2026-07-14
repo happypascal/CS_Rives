@@ -57,8 +57,16 @@ function decisionBlock(doc, decision, opts = {}) {
   doc.text(`Décision n° ${decision.numero}`, 20, y)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
-  doc.text(`Date : ${formatDate(decision.date_decision)}`, 190, y, { align: 'right' })
-  y += 8
+  const dLabel = decision.date_enregistrement
+    ? `Enregistrée le ${formatDate(decision.date_enregistrement)}`
+    : `Publiée le ${formatDate(decision.date_publication)}`
+  doc.text(dLabel, 190, y, { align: 'right' })
+  y += 5
+  doc.setFontSize(8)
+  doc.setTextColor(120, 120, 120)
+  doc.text(`Publication : ${formatDate(decision.date_publication)}  ·  Limite réponse : ${formatDate(decision.date_limite_reponse)}`, 20, y)
+  doc.setTextColor(30, 37, 48)
+  y += 6
 
   y = sectionTitle(doc, 'OBJET', y)
   doc.setTextColor(30, 37, 48)
@@ -74,6 +82,16 @@ function decisionBlock(doc, decision, opts = {}) {
   doc.setFontSize(10)
   doc.text(bodyLines, 20, y)
   y += bodyLines.length * 5 + 4
+
+  // Budget alloué (attribut de la décision).
+  if (decision.budget_alloue != null && decision.budget_alloue !== '') {
+    const montant = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(decision.budget_alloue))
+    y = sectionTitle(doc, 'BUDGET ALLOUÉ', y)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`${montant}${decision.budget_intitule ? ' — ' + decision.budget_intitule : ''}`, 20, y)
+    y += 6
+  }
 
   // Composition snapshot (fall back to current members).
   const composition = decision.composition_snapshot?.length
@@ -207,7 +225,7 @@ export function downloadRegistrePDF(decisions, opts = {}) {
     head: [['N°', 'Date', 'Titre', 'Statut']],
     body: decisions.map((d) => [
       d.numero,
-      formatDate(d.date_decision),
+      formatDate(d.date_enregistrement || d.date_publication),
       d.titre,
       { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
     ]),
