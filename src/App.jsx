@@ -12,6 +12,9 @@ import DecisionDetail from './pages/DecisionDetail'
 import AGList from './pages/AGList'
 import AGForm from './pages/AGForm'
 import AGDetail from './pages/AGDetail'
+import ProjetList from './pages/ProjetList'
+import ProjetForm from './pages/ProjetForm'
+import ProjetDetail from './pages/ProjetDetail'
 import BudgetsConsolidated from './pages/BudgetsConsolidated'
 import Membres from './pages/Membres'
 import Parametres from './pages/Parametres'
@@ -39,6 +42,10 @@ export default function App() {
             <Route path="/ag/nouvelle" element={<AGForm />} />
             <Route path="/ag/:id" element={<AGDetail />} />
             <Route path="/ag/:id/modifier" element={<AGForm />} />
+            <Route path="/projets" element={<ProjetList />} />
+            <Route path="/projets/nouveau" element={<ProjetForm />} />
+            <Route path="/projets/:id" element={<ProjetDetail />} />
+            <Route path="/projets/:id/modifier" element={<ProjetForm />} />
             <Route path="/budgets" element={<BudgetsConsolidated />} />
             <Route path="/membres" element={<Membres />} />
             <Route path="/parametres" element={<Parametres />} />

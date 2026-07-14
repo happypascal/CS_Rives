@@ -55,6 +55,24 @@ create table if not exists resolutions_ag (
   unique (ag_id, numero)
 );
 
+-- ------------------------------------------------------------ projets
+-- Toujours issu d'une résolution AG ; hérite de son budget (modifiable).
+create table if not exists projets (
+  id             uuid primary key default gen_random_uuid(),
+  nom            text not null,
+  description    text,
+  chef_projet_id uuid references membres_cs(id),
+  ag_id          uuid references assemblees_generales(id) on delete set null,
+  resolution_id  uuid not null references resolutions_ag(id) on delete restrict,
+  budget_alloue  numeric(12,2),
+  statut         text not null default 'ouvert' check (statut in ('ouvert','en_cours','termine','suspendu')),
+  documents      jsonb not null default '[]',
+  date_ouverture date,
+  date_cloture   date,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
 -- ------------------------------------------------------------ decisions (CS)
 create table if not exists decisions (
   id                   uuid primary key default gen_random_uuid(),
@@ -68,9 +86,10 @@ create table if not exists decisions (
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
   composition_snapshot jsonb,
-  montant_engage       numeric(12,2),                    -- engagement sur le budget AG (resolution_id)
+  montant_engage       numeric(12,2),                    -- engagement (sur projet OU résolution)
+  projet_id            uuid references projets(id) on delete set null,               -- engagement via projet
   ag_id                uuid references assemblees_generales(id) on delete set null,  -- rattachement AG
-  resolution_id        uuid references resolutions_ag(id) on delete set null,        -- budget AG engagé
+  resolution_id        uuid references resolutions_ag(id) on delete set null,        -- engagement direct résolution
   documents            jsonb not null default '[]',      -- pièces jointes [{id,name,type,size,dataUrl}]
   created_by           uuid references membres_cs(id),   -- owner = membre créateur (id membres_cs)
   created_at           timestamptz not null default now(),
@@ -156,6 +175,7 @@ $$;
 alter table membres_cs              enable row level security;
 alter table assemblees_generales    enable row level security;
 alter table resolutions_ag          enable row level security;
+alter table projets                 enable row level security;
 alter table decisions               enable row level security;
 alter table votes                   enable row level security;
 alter table questions_reponses      enable row level security;
@@ -168,7 +188,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'membres_cs','assemblees_generales','resolutions_ag','decisions','votes',
+    'membres_cs','assemblees_generales','resolutions_ag','projets','decisions','votes',
     'questions_reponses','signature_batches','decision_status_history','audit_log'
   ]
   loop
@@ -182,7 +202,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'membres_cs','assemblees_generales','resolutions_ag','decisions',
+    'membres_cs','assemblees_generales','resolutions_ag','projets','decisions',
     'signature_batches','decision_status_history','audit_log'
   ]
   loop

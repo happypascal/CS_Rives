@@ -112,6 +112,9 @@ export default function AGDetail() {
                 {r.budget_alloue != null && r.budget_alloue !== '' && (
                   <span className="font-medium text-navy-700">Budget : {eur(r.budget_alloue)}{r.budget_intitule ? ` · ${r.budget_intitule}` : ''}</span>
                 )}
+                {canManage && r.budget_alloue != null && r.budget_alloue !== '' && (
+                  <Link to={`/projets/nouveau?resolution=${r.id}&ag=${ag.id}`} className="text-navy-600 underline">Ouvrir un projet</Link>
+                )}
               </div>
               {r.observations && <p className="mt-2 text-xs italic text-slate-400">{r.observations}</p>}
             </div>

@@ -28,6 +28,7 @@ export default function DecisionDetail() {
   const [members, setMembers] = useState([])
   const [ag, setAg] = useState(null)
   const [agBudgets, setAgBudgets] = useState([])
+  const [projets, setProjets] = useState([])
   const [busy, setBusy] = useState(false)
   const [confirmRecord, setConfirmRecord] = useState(false)
   const [qText, setQText] = useState('')
@@ -35,10 +36,11 @@ export default function DecisionDetail() {
   const [replyText, setReplyText] = useState('')
 
   const reload = useCallback(async () => {
-    const [d, m, budgets] = await Promise.all([repo.getDecision(id), repo.listMembres(), repo.listAGBudgets()])
+    const [d, m, budgets, projs] = await Promise.all([repo.getDecision(id), repo.listMembres(), repo.listAGBudgets(), repo.listProjets()])
     setDecision(d)
     setMembers(m)
     setAgBudgets(budgets)
+    setProjets(projs)
     if (d?.ag_id) {
       const a = await repo.getAG(d.ag_id)
       setAg(a)
@@ -66,6 +68,7 @@ export default function DecisionDetail() {
   const isOwner = decision.created_by && decision.created_by === user?.membre_id
   const resolution = ag?.resolutions?.find((r) => r.id === decision.resolution_id) || null
   const budget = agBudgets.find((b) => b.resolution_id === decision.resolution_id) || null
+  const projet = decision.projet_id ? projets.find((p) => p.id === decision.projet_id) : null
   const composition = decision.composition_snapshot?.length
     ? decision.composition_snapshot
     : activeMembersAt(members, decision.date_publication)
@@ -338,10 +341,16 @@ export default function DecisionDetail() {
             </div>
           </Card>
 
-          {(decision.montant_engage != null || decision.ag_id) && (
+          {(decision.montant_engage != null || decision.ag_id || projet) && (
             <Card>
               <CardHeader title="Budget & rattachement" />
               <dl className="divide-y divide-navy-50 text-sm">
+                {projet && (
+                  <div className="flex items-center justify-between px-5 py-3">
+                    <dt className="text-slate-500">Projet</dt>
+                    <dd><Link to={`/projets/${projet.id}`} className="font-medium text-navy-700 hover:underline">{projet.nom}</Link></dd>
+                  </div>
+                )}
                 {ag && (
                   <div className="flex items-center justify-between px-5 py-3">
                     <dt className="text-slate-500">AG rattachée</dt>
@@ -361,13 +370,15 @@ export default function DecisionDetail() {
                   </div>
                 )}
               </dl>
-              {budget && (
+              {(projet || budget) && (
                 <div className="border-t border-navy-100 px-5 py-3">
-                  <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Budget « {budget.intitule} »</p>
+                  <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+                    {projet ? `Projet « ${projet.nom} »` : `Budget « ${budget.intitule} »`}
+                  </p>
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div><p className="text-slate-500">Alloué</p><p className="font-semibold text-navy-800">{eur(budget.alloue)}</p></div>
-                    <div><p className="text-slate-500">Engagé</p><p className="font-semibold text-amber-700">{eur(budget.engage)}</p></div>
-                    <div><p className="text-slate-500">Restant</p><p className="font-semibold text-emerald-700">{eur(budget.restant)}</p></div>
+                    <div><p className="text-slate-500">Alloué</p><p className="font-semibold text-navy-800">{eur((projet || budget).alloue)}</p></div>
+                    <div><p className="text-slate-500">Engagé</p><p className="font-semibold text-amber-700">{eur((projet || budget).engage)}</p></div>
+                    <div><p className="text-slate-500">Restant</p><p className="font-semibold text-emerald-700">{eur((projet || budget).restant)}</p></div>
                   </div>
                 </div>
               )}

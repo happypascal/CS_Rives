@@ -9,6 +9,7 @@ const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
 const NAV = [
   { to: '/', label: 'Tableau de bord', end: true },
   { to: '/ag', label: 'Assemblées Générales' },
+  { to: '/projets', label: 'Projets' },
   { to: '/budgets', label: 'Budgets' },
   { to: '/membres', label: 'Membres du CS' },
   { to: '/parametres', label: 'Paramètres' },

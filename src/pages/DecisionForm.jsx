@@ -20,26 +20,25 @@ export default function DecisionForm() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [blocked, setBlocked] = useState('') // 'locked' | 'notowner'
+  const [blocked, setBlocked] = useState('')
   const [numero, setNumero] = useState('')
   const [datePublication, setDatePublication] = useState(todayISO())
   const [dateLimite, setDateLimite] = useState(addBusinessDaysISO(todayISO(), 7))
   const [limiteEdited, setLimiteEdited] = useState(false)
   const [titre, setTitre] = useState('')
   const [description, setDescription] = useState('')
-  const [agId, setAgId] = useState('')
-  const [resolutionId, setResolutionId] = useState('')
+  // Cible d'engagement : '' | 'projet:<id>' | 'resolution:<id>'
+  const [target, setTarget] = useState('')
   const [montantEngage, setMontantEngage] = useState('')
   const [documents, setDocuments] = useState([])
-  const [ags, setAgs] = useState([])
-  const [resolutions, setResolutions] = useState([])
+  const [projets, setProjets] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
     async function init() {
-      const [all, agList, budgets] = await Promise.all([repo.listDecisions(), repo.listAG(), repo.listAGBudgets()])
-      setAgs(agList)
+      const [all, projs, budgets] = await Promise.all([repo.listDecisions(), repo.listProjets(), repo.listAGBudgets()])
+      setProjets(projs)
       setAgBudgets(budgets)
       if (editing) {
         const d = await repo.getDecision(id)
@@ -52,10 +51,10 @@ export default function DecisionForm() {
           setLimiteEdited(true)
           setTitre(d.titre)
           setDescription(d.description)
-          setAgId(d.ag_id || '')
-          setResolutionId(d.resolution_id || '')
           setMontantEngage(d.montant_engage ?? '')
           setDocuments(d.documents || [])
+          if (d.projet_id) setTarget(`projet:${d.projet_id}`)
+          else if (d.resolution_id) setTarget(`resolution:${d.resolution_id}`)
         }
       } else {
         setNumero(nextNumero(new Date().getFullYear(), all))
@@ -66,28 +65,20 @@ export default function DecisionForm() {
   }, [id, editing, user])
 
   useEffect(() => {
-    if (!agId) {
-      setResolutions([])
-      return
-    }
-    repo.getAG(agId).then((ag) => setResolutions(ag?.resolutions || []))
-  }, [agId])
-
-  useEffect(() => {
     if (!limiteEdited && datePublication) setDateLimite(addBusinessDaysISO(datePublication, 7))
   }, [datePublication, limiteEdited])
 
-  // Budget AG correspondant à la résolution sélectionnée (le cas échéant).
-  const selectedBudget = useMemo(
-    () => agBudgets.find((b) => b.resolution_id === resolutionId) || null,
-    [agBudgets, resolutionId],
-  )
-  // Restant disponible (en excluant l'engagement de CETTE décision si on l'édite).
+  const [kind, targetId] = target ? target.split(':') : ['', '']
+  const selProjet = useMemo(() => (kind === 'projet' ? projets.find((p) => p.id === targetId) : null), [kind, targetId, projets])
+  const selRes = useMemo(() => (kind === 'resolution' ? agBudgets.find((b) => b.resolution_id === targetId) : null), [kind, targetId, agBudgets])
+
+  // Restant disponible sur la cible (en réintégrant l'engagement de CETTE décision si on l'édite).
   const restantDispo = useMemo(() => {
-    if (!selectedBudget) return null
-    const own = editing ? (selectedBudget.engagements.find((e) => e.id === id && e.enregistree && e.statut === 'adoptee')?.montant || 0) : 0
-    return selectedBudget.restant + own
-  }, [selectedBudget, editing, id])
+    const src = selProjet || selRes
+    if (!src) return null
+    const own = editing ? (src.engagements?.find((e) => e.id === id && e.enregistree && e.statut === 'adoptee')?.montant || 0) : 0
+    return src.restant + own
+  }, [selProjet, selRes, editing, id])
 
   if (isMobile) {
     return (
@@ -120,10 +111,7 @@ export default function DecisionForm() {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    if (file.size > MAX_DOC_BYTES) {
-      setError(`Fichier trop volumineux (max ${Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo en mode démo).`)
-      return
-    }
+    if (file.size > MAX_DOC_BYTES) return setError(`Fichier trop volumineux (max ${MAX_DOC_BYTES / 1024 / 1024} Mo en mode démo).`)
     const dataUrl = await new Promise((resolve) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result)
@@ -138,11 +126,18 @@ export default function DecisionForm() {
     if (!titre.trim()) return setError('Le titre est obligatoire.')
     if (!description.trim() || description === '<br>') return setError('La description est obligatoire.')
     const engage = montantEngage === '' ? null : Number(montantEngage)
-    if (engage != null && (!resolutionId || !selectedBudget)) {
-      return setError('Pour engager un montant, sélectionnez un budget AG (résolution dotée d’un budget).')
-    }
+    if (engage != null && !target) return setError('Pour engager un montant, choisissez un projet ou une résolution.')
     if (engage != null && restantDispo != null && engage > restantDispo) {
-      return setError(`Montant engagé (${eur(engage)}) supérieur au budget restant (${eur(restantDispo)}).`)
+      return setError(`Montant engagé (${eur(engage)}) supérieur au disponible (${eur(restantDispo)}).`)
+    }
+    // Résout la cible en projet_id / resolution_id / ag_id.
+    let projet_id = null, resolution_id = null, ag_id = null
+    if (kind === 'projet' && selProjet) {
+      projet_id = selProjet.id
+      ag_id = selProjet.ag_id || null
+    } else if (kind === 'resolution' && selRes) {
+      resolution_id = selRes.resolution_id
+      ag_id = selRes.ag_id || null
     }
     setSaving(true)
     try {
@@ -151,8 +146,9 @@ export default function DecisionForm() {
         date_limite_reponse: dateLimite || null,
         titre,
         description,
-        ag_id: agId || null,
-        resolution_id: resolutionId || null,
+        projet_id,
+        resolution_id,
+        ag_id,
         montant_engage: engage,
         documents,
       }
@@ -160,7 +156,6 @@ export default function DecisionForm() {
         await repo.updateDecision(id, payload)
         navigate(`/registre/${id}`)
       } else {
-        // created_by = membre courant (owner), cohérent mock + Supabase.
         const created = await repo.createDecision({ numero, created_by: user?.membre_id ?? null, ...payload })
         navigate(`/registre/${created.id}`)
       }
@@ -188,38 +183,35 @@ export default function DecisionForm() {
             <RichTextEditor value={description} onChange={setDescription} placeholder="Corps de la décision…" />
           </div>
 
-          {/* Rattachement + engagement budgétaire */}
+          {/* Engagement budgétaire : projet ou résolution directe */}
           <div className="rounded-md border border-navy-100 bg-navy-50/40 p-4">
-            <p className="mb-3 text-sm font-medium text-navy-800">Rattachement AG & engagement budgétaire (optionnel)</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Assemblée Générale" value={agId} onChange={(e) => { setAgId(e.target.value); setResolutionId(''); setMontantEngage('') }}>
-                <option value="">— Aucune —</option>
-                {ags.map((ag) => <option key={ag.id} value={ag.id}>{ag.numero} · {ag.type}</option>)}
-              </Select>
-              <Select label="Résolution / budget AG" value={resolutionId} onChange={(e) => setResolutionId(e.target.value)} disabled={!agId}>
-                <option value="">— Aucune —</option>
-                {resolutions.map((r) => {
-                  const hasBudget = agBudgets.some((b) => b.resolution_id === r.id)
-                  return <option key={r.id} value={r.id}>N° {r.numero} — {r.titre}{hasBudget ? ' 💰' : ''}</option>
-                })}
-              </Select>
-            </div>
+            <p className="mb-3 text-sm font-medium text-navy-800">Rattachement & engagement budgétaire (optionnel)</p>
+            <Select label="Rattacher à…" value={target} onChange={(e) => { setTarget(e.target.value); if (!e.target.value) setMontantEngage('') }}>
+              <option value="">— Aucun —</option>
+              {projets.length > 0 && (
+                <optgroup label="Projets">
+                  {projets.map((p) => <option key={p.id} value={`projet:${p.id}`}>{p.nom} (restant {eur(p.restant)})</option>)}
+                </optgroup>
+              )}
+              {agBudgets.length > 0 && (
+                <optgroup label="Résolutions AG (engagement direct)">
+                  {agBudgets.map((b) => <option key={b.resolution_id} value={`resolution:${b.resolution_id}`}>{b.ag_numero} · {b.intitule} (restant {eur(b.restant)})</option>)}
+                </optgroup>
+              )}
+            </Select>
 
-            {selectedBudget && (
+            {(selProjet || selRes) && (
               <div className="mt-4">
                 <div className="mb-2 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Alloué</p><p className="font-semibold text-navy-800">{eur(selectedBudget.alloue)}</p></div>
-                  <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Déjà engagé</p><p className="font-semibold text-amber-700">{eur(selectedBudget.engage)}</p></div>
+                  <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Alloué</p><p className="font-semibold text-navy-800">{eur((selProjet || selRes).alloue)}</p></div>
+                  <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Déjà engagé</p><p className="font-semibold text-amber-700">{eur((selProjet || selRes).engage)}</p></div>
                   <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Restant</p><p className="font-semibold text-emerald-700">{eur(restantDispo)}</p></div>
                 </div>
-                <Input label="Montant engagé par cette décision (€)" type="number" min="0" step="0.01" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 5800" />
+                <Input label="Montant engagé par cette décision (€)" type="number" min="0" step="0.01" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000" />
                 {montantEngage !== '' && restantDispo != null && Number(montantEngage) > restantDispo && (
-                  <p className="mt-1 text-xs text-red-600">Dépasse le budget restant ({eur(restantDispo)}).</p>
+                  <p className="mt-1 text-xs text-red-600">Dépasse le disponible ({eur(restantDispo)}).</p>
                 )}
               </div>
-            )}
-            {resolutionId && !selectedBudget && (
-              <p className="mt-2 text-xs text-slate-500">Cette résolution n’a pas de budget : rattachement simple, sans engagement.</p>
             )}
           </div>
 

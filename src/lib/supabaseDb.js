@@ -2,7 +2,7 @@
 // Only exercised when VITE_SUPABASE_URL/ANON_KEY are configured.
 // Table shapes follow supabase/schema.sql.
 import { supabase } from './supabase'
-import { computeAGBudgets } from './mockDb'
+import { computeAGBudgets, computeProjectBudgets } from './mockDb'
 
 function must(result) {
   if (result.error) throw new Error(result.error.message)
@@ -85,13 +85,16 @@ export const supabaseRepo = {
     return must(await supabase.from('resolutions_ag').insert(input).select())[0]
   },
   async updateResolution(id, patch) {
-    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
-    if (count > 0) throw new Error('Résolution verrouillée : une décision y est rattachée.')
+    const { count: dc } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    const { count: pc } = await supabase.from('projets').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    if (dc > 0 || pc > 0) throw new Error('Résolution verrouillée : une décision ou un projet y est rattaché.')
     return must(await supabase.from('resolutions_ag').update(patch).eq('id', id).select())[0]
   },
   async deleteResolution(id) {
-    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
-    if (count > 0) throw new Error('Résolution non supprimable : une décision y est rattachée.')
+    const { count: dc } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    const { count: pc } = await supabase.from('projets').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    if (dc > 0) throw new Error('Résolution non supprimable : une décision y est rattachée.')
+    if (pc > 0) throw new Error('Résolution non supprimable : un projet en découle.')
     must(await supabase.from('resolutions_ag').delete().eq('id', id))
     return { ok: true }
   },
@@ -100,8 +103,51 @@ export const supabaseRepo = {
   async listAGBudgets() {
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('*'))
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,montant_engage'))
-    return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions })
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage'))
+    const projets = must(await supabase.from('projets').select('id,resolution_id,budget_alloue,nom'))
+    return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions, projets })
+  },
+
+  // ---- Projets ----
+  async _projectData() {
+    const projets = must(await supabase.from('projets').select('*'))
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage'))
+    const membres_cs = must(await supabase.from('membres_cs').select('id,nom,prenom'))
+    const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero'))
+    const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,numero,titre'))
+    return { projets, decisions, membres_cs, assemblees_generales, resolutions_ag }
+  },
+  async listProjets() {
+    return computeProjectBudgets(await this._projectData())
+  },
+  async getProjet(id) {
+    const computed = (await this.listProjets()).find((x) => x.id === id)
+    if (!computed) return null
+    const decisions = must(await supabase.from('decisions').select('*').eq('projet_id', id))
+    return { ...computed, decisions }
+  },
+  async createProjet(input) {
+    return must(await supabase.from('projets').insert(input).select())[0]
+  },
+  async updateProjet(id, patch) {
+    return must(await supabase.from('projets').update(patch).eq('id', id).select())[0]
+  },
+  async deleteProjet(id) {
+    must(await supabase.from('projets').delete().eq('id', id))
+    return { ok: true }
+  },
+  async addProjetDocument(projetId, doc) {
+    const p = must(await supabase.from('projets').select('documents').eq('id', projetId).maybeSingle())
+    const record = { id: crypto.randomUUID(), uploaded_at: new Date().toISOString(), ...doc }
+    const documents = [...(p?.documents || []), record]
+    must(await supabase.from('projets').update({ documents }).eq('id', projetId))
+    return record
+  },
+  async removeProjetDocument(projetId, docId) {
+    const p = must(await supabase.from('projets').select('documents').eq('id', projetId).maybeSingle())
+    const documents = (p?.documents || []).filter((x) => x.id !== docId)
+    must(await supabase.from('projets').update({ documents }).eq('id', projetId))
+    return { ok: true }
   },
 
   // ---- Décisions ----

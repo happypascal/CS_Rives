@@ -56,11 +56,32 @@ function seed() {
     { id: rProvision, ag_id: agAGO, numero: 4, titre: 'Provision entretien & espaces verts 2025', description: 'Enveloppe annuelle pour l’entretien courant et les espaces verts communs.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: 12000, budget_intitule: 'Provision entretien espaces verts', observations: 'Le CS engage les dépenses dans la limite de cette enveloppe.', created_at: '2025-06-19T19:45:00Z' },
   ]
 
+  const p1 = uid()
   const d1 = uid()
   const d2 = uid()
   const d3 = uid()
   const d4 = uid()
   const d5 = uid()
+  const d6 = uid()
+
+  // Projet issu de la résolution "Budget travaux de voirie 2025".
+  const projets = [
+    {
+      id: p1,
+      nom: 'Réfection de la voirie principale',
+      description: 'Exécution des travaux de voirie votés en AGO 2025.',
+      chef_projet_id: m3,
+      ag_id: agAGO,
+      resolution_id: rBudgetVoirie,
+      budget_alloue: 85000,
+      statut: 'en_cours',
+      documents: [{ id: uid(), name: 'Cahier_des_charges_voirie.txt', type: 'text/plain', size: 40, dataUrl: textDataUrl('Cahier des charges — réfection voirie principale'), uploaded_at: '2025-07-02T09:00:00Z' }],
+      date_ouverture: '2025-07-01',
+      date_cloture: null,
+      created_at: '2025-07-01T09:00:00Z',
+      updated_at: '2025-09-05T10:00:00Z',
+    },
+  ]
   const decisions = [
     {
       id: d1, numero: '2026-001',
@@ -105,8 +126,17 @@ function seed() {
       titre: 'Réfection du portail piéton (serrure et charnières)',
       description: '<p>Réparation du portail piéton de l’entrée : remplacement de la serrure et des charnières.</p>',
       statut: 'adoptee', enregistree: true, quorum_atteint: true,
-      montant_engage: null, ag_id: null, resolution_id: null, documents: [],
+      montant_engage: null, projet_id: null, ag_id: null, resolution_id: null, documents: [],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-06-01T09:00:00Z', updated_at: '2026-06-12T10:00:00Z',
+    },
+    {
+      id: d6, numero: '2026-006',
+      date_publication: '2026-03-02', date_limite_reponse: '2026-03-11', date_enregistrement: '2026-03-15',
+      titre: 'Attribution du marché de réfection voirie — entreprise RoutesPlus',
+      description: '<p>Attribution du marché de réfection de la voirie principale à <strong>RoutesPlus SAS</strong> pour 62 000 € TTC, dans le cadre du projet voirie.</p>',
+      statut: 'adoptee', enregistree: true, quorum_atteint: true,
+      montant_engage: 62000, projet_id: p1, ag_id: null, resolution_id: null, documents: [],
+      composition_snapshot: null, created_by: m3, created_at: '2026-03-02T09:00:00Z', updated_at: '2026-03-15T10:00:00Z',
     },
   ]
 
@@ -116,6 +146,7 @@ function seed() {
   decisions[0].composition_snapshot = activeSnapshot
   decisions[1].composition_snapshot = activeSnapshot
   decisions[4].composition_snapshot = activeSnapshot // d5 (adoptée, enregistrée)
+  decisions[5].composition_snapshot = activeSnapshot // d6 (adoptée, enregistrée)
 
   const votes = [
     // d1 — adoptée
@@ -139,6 +170,11 @@ function seed() {
     { id: uid(), decision_id: d5, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-06-02T09:05:00Z' },
     { id: uid(), decision_id: d5, membre_id: m3, vote: 'abstention', commentaire: '', date_vote: '2026-06-03T09:05:00Z' },
     { id: uid(), decision_id: d5, membre_id: m4, vote: 'pour', commentaire: '', date_vote: '2026-06-03T10:05:00Z' },
+    // d6 — adoptée, rattachée au projet voirie (engage 62 000 €)
+    { id: uid(), decision_id: d6, membre_id: mPresident, vote: 'pour', commentaire: '', date_vote: '2026-03-03T09:00:00Z' },
+    { id: uid(), decision_id: d6, membre_id: mVice, vote: 'pour', commentaire: '', date_vote: '2026-03-03T09:05:00Z' },
+    { id: uid(), decision_id: d6, membre_id: m3, vote: 'pour', commentaire: '', date_vote: '2026-03-03T09:06:00Z' },
+    { id: uid(), decision_id: d6, membre_id: m4, vote: 'pour', commentaire: '', date_vote: '2026-03-04T10:05:00Z' },
   ]
 
   const q1 = uid()
@@ -161,7 +197,7 @@ function seed() {
     { id: uid(), entite: 'decisions', entite_id: d1, action: 'record', acteur: mPresident, details: 'Enregistrement — adoptée', created_at: '2026-02-10T11:00:00Z' },
   ]
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, decisions, votes, questions_reponses, signature_batches, decision_status_history, audit_log }
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -243,18 +279,23 @@ export const mockAuth = {
 const clone = (v) => JSON.parse(JSON.stringify(v))
 const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 
-// Budgets AG avec suivi d'engagement. Un budget = une résolution AG dotée d'un
-// budget_alloue. engagé = décisions ADOPTÉES qui l'engagent ; engagé_en_cours =
-// décisions non encore enregistrées ; restant = alloué − engagé.
+// Budgets AG (enveloppe votée par résolution). Le "restant" tient compte à la
+// fois des engagements DIRECTS (décisions sans projet) et des budgets alloués
+// aux projets issus de cette résolution.
 export function computeAGBudgets(data) {
   const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
   const budgets = data.resolutions_ag.filter((r) => r.budget_alloue != null && r.budget_alloue !== '')
   return budgets.map((r) => {
     const ag = agById[r.ag_id]
-    const liees = data.decisions.filter((d) => d.resolution_id === r.id && d.montant_engage != null)
-    const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
-    const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
     const alloue = Number(r.budget_alloue)
+    // Engagements directs (décisions rattachées à la résolution, sans projet).
+    const direct = data.decisions.filter((d) => d.resolution_id === r.id && !d.projet_id && d.montant_engage != null)
+    const engageDirect = direct.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const directEnCours = direct.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    // Budgets alloués aux projets de cette résolution.
+    const projetsOnR = (data.projets || []).filter((p) => p.resolution_id === r.id)
+    const projetsAlloue = projetsOnR.reduce((s, p) => s + (Number(p.budget_alloue) || 0), 0)
+    const engage = engageDirect + projetsAlloue
     return {
       resolution_id: r.id,
       ag_id: r.ag_id,
@@ -264,8 +305,40 @@ export function computeAGBudgets(data) {
       intitule: r.budget_intitule || r.titre,
       alloue,
       engage,
+      engage_direct: engageDirect,
+      projets_alloue: projetsAlloue,
+      engage_en_cours: directEnCours,
+      restant: alloue - engage,
+      engagements: direct.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
+      projets: projetsOnR.map((p) => ({ id: p.id, nom: p.nom, budget_alloue: Number(p.budget_alloue) || 0 })),
+    }
+  })
+}
+
+// Budgets par PROJET : alloué (budget du projet) / engagé (décisions adoptées
+// rattachées) / restant. + méta chef, résolution, AG.
+export function computeProjectBudgets(data) {
+  const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
+  const resById = Object.fromEntries(data.resolutions_ag.map((r) => [r.id, r]))
+  const memById = Object.fromEntries(data.membres_cs.map((m) => [m.id, m]))
+  return (data.projets || []).map((p) => {
+    const liees = data.decisions.filter((d) => d.projet_id === p.id && d.montant_engage != null)
+    const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const alloue = Number(p.budget_alloue) || 0
+    const chef = memById[p.chef_projet_id]
+    const ag = agById[p.ag_id]
+    const res = resById[p.resolution_id]
+    return {
+      ...p,
+      alloue,
+      engage,
       engage_en_cours: engageEnCours,
       restant: alloue - engage,
+      chef_nom: chef ? `${chef.prenom} ${chef.nom}` : null,
+      ag_numero: ag?.numero || null,
+      resolution_titre: res?.titre || null,
+      resolution_numero: res?.numero ?? null,
       engagements: liees.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
     }
   })
@@ -361,8 +434,8 @@ export const mockRepo = {
     const data = load()
     const r = data.resolutions_ag.find((x) => x.id === id)
     if (!r) throw new Error('Résolution introuvable')
-    if (data.decisions.some((d) => d.resolution_id === id)) {
-      throw new Error('Résolution verrouillée : une décision y est rattachée.')
+    if (data.decisions.some((d) => d.resolution_id === id) || (data.projets || []).some((p) => p.resolution_id === id)) {
+      throw new Error('Résolution verrouillée : une décision ou un projet y est rattaché.')
     }
     Object.assign(r, patch)
     audit(data, 'resolutions_ag', id, 'update', `Modification résolution ${r.titre}`)
@@ -375,6 +448,9 @@ export const mockRepo = {
     if (data.decisions.some((d) => d.resolution_id === id)) {
       throw new Error('Résolution non supprimable : une décision y est rattachée.')
     }
+    if ((data.projets || []).some((p) => p.resolution_id === id)) {
+      throw new Error('Résolution non supprimable : un projet en découle.')
+    }
     data.resolutions_ag = data.resolutions_ag.filter((x) => x.id !== id)
     save(data)
     return { ok: true }
@@ -386,6 +462,71 @@ export const mockRepo = {
   async listAGBudgets() {
     await delay()
     return computeAGBudgets(load())
+  },
+
+  // ---- Projets ----
+  async listProjets() {
+    await delay()
+    return computeProjectBudgets(load()).sort(byDateDesc('created_at'))
+  },
+  async getProjet(id) {
+    await delay()
+    const data = load()
+    const p = data.projets.find((x) => x.id === id)
+    if (!p) return null
+    const computed = computeProjectBudgets(data).find((x) => x.id === id)
+    const decisions = data.decisions.filter((d) => d.projet_id === id)
+    return { ...clone(computed), decisions: clone(decisions) }
+  },
+  async createProjet(input) {
+    await delay()
+    const data = load()
+    const p = { id: uid(), statut: 'ouvert', documents: [], date_cloture: null, created_at: nowISO(), updated_at: nowISO(), ...input }
+    data.projets.push(p)
+    audit(data, 'projets', p.id, 'create', `Ouverture projet ${p.nom}`)
+    save(data)
+    return clone(p)
+  },
+  async updateProjet(id, patch) {
+    await delay()
+    const data = load()
+    const p = data.projets.find((x) => x.id === id)
+    if (!p) throw new Error('Projet introuvable')
+    Object.assign(p, patch, { updated_at: nowISO() })
+    audit(data, 'projets', id, 'update', `Modification projet ${p.nom}`)
+    save(data)
+    return clone(p)
+  },
+  async deleteProjet(id) {
+    await delay()
+    const data = load()
+    // Les décisions rattachées sont détachées (projet_id -> null).
+    data.decisions.forEach((d) => { if (d.projet_id === id) d.projet_id = null })
+    data.projets = data.projets.filter((x) => x.id !== id)
+    audit(data, 'projets', id, 'delete', 'Suppression projet')
+    save(data)
+    return { ok: true }
+  },
+  async addProjetDocument(projetId, doc) {
+    await delay()
+    const data = load()
+    const p = data.projets.find((x) => x.id === projetId)
+    if (!p) throw new Error('Projet introuvable')
+    const record = { id: uid(), uploaded_at: nowISO(), ...doc }
+    p.documents = [...(p.documents || []), record]
+    p.updated_at = nowISO()
+    audit(data, 'projets', projetId, 'attach', `Pièce jointe : ${doc.name}`)
+    save(data)
+    return clone(record)
+  },
+  async removeProjetDocument(projetId, docId) {
+    await delay()
+    const data = load()
+    const p = data.projets.find((x) => x.id === projetId)
+    if (!p) throw new Error('Projet introuvable')
+    p.documents = (p.documents || []).filter((x) => x.id !== docId)
+    save(data)
+    return { ok: true }
   },
 
   // ---- Décisions CS ----
@@ -412,7 +553,7 @@ export const mockRepo = {
     const data = load()
     const d = {
       id: uid(), statut: 'en_cours', enregistree: false, quorum_atteint: null, composition_snapshot: null,
-      montant_engage: null, ag_id: null, resolution_id: null, documents: [], date_enregistrement: null,
+      montant_engage: null, projet_id: null, ag_id: null, resolution_id: null, documents: [], date_enregistrement: null,
       created_by: getSessionUserId(), created_at: nowISO(), updated_at: nowISO(), ...input,
     }
     data.decisions.push(d)
