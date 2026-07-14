@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/* Design tokens — sober, professional, legal-document tone.
+   Navy #1F3864 matches the existing Word registry document. */
+@theme {
+  --color-navy-50: #eef1f7;
+  --color-navy-100: #d3dbe9;
+  --color-navy-200: #a7b6d2;
+  --color-navy-300: #7b92bc;
+  --color-navy-400: #4f6da5;
+  --color-navy-500: #35528a;
+  --color-navy-600: #1f3864;
+  --color-navy-700: #1a2f54;
+  --color-navy-800: #142544;
+  --color-navy-900: #0e1a30;
+
+  --font-sans: 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-navy-50);
+  color: #1e2530;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Minimal rich-text rendering for decision descriptions (bold/italic/lists). */
+.rich-text strong {
+  font-weight: 600;
+}
+.rich-text em {
+  font-style: italic;
+}
+.rich-text ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+  margin: 0.5rem 0;
+}
+.rich-text ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+  margin: 0.5rem 0;
+}
+.rich-text p {
+  margin: 0.5rem 0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
