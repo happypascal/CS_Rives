@@ -153,6 +153,18 @@ export function EmptyState({ title, hint, action }) {
   )
 }
 
+// Message affiché quand une action est réservée à un ordinateur (mobile = vote/consultation).
+export function DesktopOnly({ what = 'Cette action', onBack }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-navy-200 bg-white/70 px-6 py-14 text-center">
+      <span className="text-3xl">🖥️</span>
+      <p className="mt-3 text-base font-medium text-slate-700">{what} se fait depuis un ordinateur.</p>
+      <p className="mt-1 max-w-sm text-sm text-slate-500">Sur mobile, vous pouvez consulter les décisions et voter. La création et la gestion se font sur PC.</p>
+      {onBack && <div className="mt-4"><Button variant="secondary" onClick={onBack}>Retour</Button></div>}
+    </div>
+  )
+}
+
 export function Spinner({ label = 'Chargement…' }) {
   return (
     <div className="flex items-center justify-center gap-3 py-16 text-slate-500">

@@ -6,11 +6,14 @@ import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal } f
 import { StatutBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 import { downloadRegistrePDF } from '../lib/pdf'
 import { signatureProvider, isMockSignature } from '../lib/signatureProvider'
 
 export default function RegistreCS() {
   const { isAdmin, user } = useAuth()
+  const isMobile = useIsMobile()
+  const canManage = isAdmin && !isMobile
   const [loading, setLoading] = useState(true)
   const [decisions, setDecisions] = useState([])
   const [members, setMembers] = useState([])
@@ -156,8 +159,8 @@ export default function RegistreCS() {
             <Button variant={onlyToVote ? 'primary' : 'secondary'} onClick={() => setOnlyToVote((v) => !v)}>
               À voter{toVoteCount > 0 ? ` (${toVoteCount})` : ''}
             </Button>
-            <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF'}</Button>
-            <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>
+            {!isMobile && <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF'}</Button>}
+            {!isMobile && <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
           </>
         }
       />
@@ -178,7 +181,7 @@ export default function RegistreCS() {
         </div>
       </Card>
 
-      {isAdmin && selectedCount > 0 && (
+      {canManage && selectedCount > 0 && (
         <div className="mb-4 flex items-center justify-between rounded-md border border-navy-200 bg-navy-50 px-4 py-2.5 text-sm">
           <span className="text-navy-800">{selectedCount} décision(s) sélectionnée(s)</span>
           <div className="flex gap-2">
@@ -196,7 +199,7 @@ export default function RegistreCS() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
-                  {isAdmin && <th className="px-4 py-2.5" />}
+                  {canManage && <th className="px-4 py-2.5" />}
                   <th className="px-4 py-2.5 font-medium">N°</th>
                   <th className="px-4 py-2.5 font-medium">Publication</th>
                   <th className="px-4 py-2.5 font-medium">Limite réponse</th>
@@ -211,7 +214,7 @@ export default function RegistreCS() {
                   const toVote = needsMyVote(d)
                   return (
                   <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : 'hover:bg-navy-50/40'}>
-                    {isAdmin && (
+                    {canManage && (
                       <td className="px-4 py-3">
                         <input type="checkbox" disabled={!selectable(d)} checked={selected.has(d.id)} onChange={() => toggle(d.id)} title={selectable(d) ? '' : 'Sélectionnable seulement si adoptée, enregistrée et non signée'} />
                       </td>
@@ -250,7 +253,7 @@ export default function RegistreCS() {
                 </div>
                 <div className="flex items-center gap-2">
                   <SignatureBadge statut={b.statut} />
-                  {isAdmin && isMockSignature && b.statut !== 'signe' && (
+                  {canManage && isMockSignature && b.statut !== 'signe' && (
                     <Button size="sm" variant="secondary" onClick={() => simulateSigned(b.id)}>Simuler signé (démo)</Button>
                   )}
                 </div>

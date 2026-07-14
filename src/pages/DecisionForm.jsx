@@ -2,11 +2,12 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Spinner, eur } from '../components/ui'
+import { Card, Button, Input, Select, Spinner, eur, DesktopOnly } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
 import { nextNumero } from '../lib/decisionLogic'
 import { todayISO, addBusinessDaysISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 const MAX_DOC_BYTES = 2 * 1024 * 1024 // 2 Mo / fichier (démo localStorage)
 
@@ -15,6 +16,7 @@ export default function DecisionForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -87,6 +89,14 @@ export default function DecisionForm() {
     return selectedBudget.restant + own
   }, [selectedBudget, editing, id])
 
+  if (isMobile) {
+    return (
+      <div>
+        <PageHeader title={editing ? 'Modifier la décision' : 'Nouvelle décision'} />
+        <DesktopOnly what="La création et la modification des décisions" onBack={() => navigate(-1)} />
+      </div>
+    )
+  }
   if (loading) return <Spinner />
   if (blocked === 'locked') {
     return (

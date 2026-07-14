@@ -4,11 +4,14 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Modal, Spinner, Badge } from '../components/ui'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 const EMPTY = { nom: '', prenom: '', email: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', actif: true }
 
 export default function Membres() {
   const { isAdmin } = useAuth()
+  const isMobile = useIsMobile()
+  const canManage = isAdmin && !isMobile
   const [loading, setLoading] = useState(true)
   const [membres, setMembres] = useState([])
   const [modal, setModal] = useState(null)
@@ -33,7 +36,7 @@ export default function Membres() {
       <PageHeader
         title="Membres du Conseil Syndical"
         subtitle="Composition et historique des mandats."
-        actions={isAdmin && <Button onClick={() => setModal(EMPTY)}>+ Ajouter un membre</Button>}
+        actions={canManage && <Button onClick={() => setModal(EMPTY)}>+ Ajouter un membre</Button>}
       />
 
       <Card className="mb-4 p-3">
@@ -54,7 +57,7 @@ export default function Membres() {
                 <th className="px-4 py-2.5 font-medium">Élu en</th>
                 <th className="px-4 py-2.5 font-medium">AG d’élection</th>
                 <th className="px-4 py-2.5 font-medium">Statut</th>
-                {isAdmin && <th className="px-4 py-2.5" />}
+                {canManage && <th className="px-4 py-2.5" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-50">
@@ -70,7 +73,7 @@ export default function Membres() {
                   <td className="px-4 py-3">
                     <Badge tone={m.actif ? 'green' : 'gray'}>{m.actif ? 'Actif' : `Ancien${m.date_fin ? ' (' + formatDate(m.date_fin) + ')' : ''}`}</Badge>
                   </td>
-                  {isAdmin && (
+                  {canManage && (
                     <td className="px-4 py-3 text-right">
                       <button onClick={() => setModal(m)} className="text-xs text-navy-600 underline">Modifier</button>
                     </td>

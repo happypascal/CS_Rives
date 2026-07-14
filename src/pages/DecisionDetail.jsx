@@ -7,6 +7,7 @@ import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { tally, tallySummary, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
 
 // Membres actifs à une date ISO (date_election <= date <= date_fin|∞).
@@ -21,6 +22,7 @@ function activeMembersAt(members, dateISO) {
 export default function DecisionDetail() {
   const { id } = useParams()
   const { user, isAdmin } = useAuth()
+  const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [decision, setDecision] = useState(null)
   const [members, setMembers] = useState([])
@@ -81,6 +83,7 @@ export default function DecisionDetail() {
   // L'utilisateur courant vote uniquement pour lui-même, tant que non enregistrée.
   const myId = user?.membre_id
   const iAmInComposition = compIds.includes(myId)
+  const myVote = voteByMember[myId]
 
   const setMyVote = async (vote) => {
     setBusy(true)
@@ -137,7 +140,7 @@ export default function DecisionDetail() {
             <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa })}>
               Export PDF
             </Button>
-            {isOwner && !locked && (
+            {isOwner && !locked && !isMobile && (
               <Link to={`/registre/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
             )}
           </>
@@ -148,6 +151,43 @@ export default function DecisionDetail() {
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           Décision enregistrée le {formatDate(decision.date_enregistrement)} — verrouillée (non modifiable).
         </div>
+      )}
+
+      {/* Mon vote — bloc proéminent (voter facilement, y compris au mobile). */}
+      {iAmInComposition && !locked && (
+        <Card className="mb-6 border-navy-200">
+          <div className="px-5 py-4">
+            <p className="text-sm font-semibold text-navy-800">Votre vote</p>
+            <p className="mb-3 text-xs text-slate-500">Modifiable jusqu’à l’enregistrement par le président.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {VOTE_VALUES.map((val) => {
+                const active = myVote?.vote === val
+                const activeColor = { pour: 'bg-emerald-600', contre: 'bg-red-600', abstention: 'bg-amber-500' }[val]
+                return (
+                  <button
+                    key={val}
+                    onClick={() => setMyVote(val)}
+                    disabled={busy}
+                    className={[
+                      'rounded-md py-3 text-sm font-semibold transition-colors',
+                      active ? `${activeColor} text-white shadow` : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                    ].join(' ')}
+                  >
+                    {VOTE_LABELS[val]}
+                  </button>
+                )
+              })}
+            </div>
+            <input
+              defaultValue={myVote?.commentaire || ''}
+              onBlur={(e) => myVote && e.target.value !== (myVote.commentaire || '') && setMyComment(e.target.value)}
+              placeholder={myVote ? 'Commentaire (optionnel)…' : 'Votez d’abord pour ajouter un commentaire'}
+              disabled={!myVote}
+              className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy-400 focus:outline-none disabled:bg-slate-50"
+            />
+            {myVote && <p className="mt-2 text-xs text-emerald-700">Vote enregistré : {VOTE_LABELS[myVote.vote]}.</p>}
+          </div>
+        </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -168,7 +208,7 @@ export default function DecisionDetail() {
               title="Vote du Conseil Syndical"
               subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision.'}
               actions={
-                isAdmin && !locked && (
+                isAdmin && !locked && !isMobile && (
                   <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !t.quorumAtteint} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
                     Enregistrer la décision
                   </Button>

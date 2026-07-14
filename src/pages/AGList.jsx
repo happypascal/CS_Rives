@@ -6,9 +6,12 @@ import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import { AGStatutBadge } from '../components/badges'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 export default function AGList() {
   const { isAdmin } = useAuth()
+  const isMobile = useIsMobile()
+  const canManage = isAdmin && !isMobile
   const [loading, setLoading] = useState(true)
   const [ags, setAgs] = useState([])
 
@@ -26,10 +29,10 @@ export default function AGList() {
       <PageHeader
         title="Assemblées Générales"
         subtitle="AGO / AGE — résolutions et budgets votés par les colotis."
-        actions={isAdmin && <Link to="/ag/nouvelle"><Button>+ Nouvelle AG</Button></Link>}
+        actions={canManage && <Link to="/ag/nouvelle"><Button>+ Nouvelle AG</Button></Link>}
       />
       {ags.length === 0 ? (
-        <EmptyState title="Aucune AG" hint="Créez la première assemblée générale." action={isAdmin && <Link to="/ag/nouvelle"><Button>Créer une AG</Button></Link>} />
+        <EmptyState title="Aucune AG" hint="Créez la première assemblée générale." action={canManage && <Link to="/ag/nouvelle"><Button>Créer une AG</Button></Link>} />
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

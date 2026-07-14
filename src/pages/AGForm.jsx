@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Textarea, Spinner } from '../components/ui'
+import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly } from '../components/ui'
 import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', ordre_du_jour: '', statut: 'en_cours', pv_url: '' }
 
@@ -13,6 +14,7 @@ export default function AGForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
+  const isMobile = useIsMobile()
   const [form, setForm] = useState(EMPTY)
   const [loading, setLoading] = useState(editing)
   const [saving, setSaving] = useState(false)
@@ -27,6 +29,14 @@ export default function AGForm() {
     }
   }, [id, editing])
 
+  if (isMobile) {
+    return (
+      <div>
+        <PageHeader title={editing ? 'Modifier l’AG' : 'Nouvelle Assemblée Générale'} />
+        <DesktopOnly what="La création et la modification des AG" onBack={() => navigate(-1)} />
+      </div>
+    )
+  }
   if (!isAdmin) {
     return (
       <div>

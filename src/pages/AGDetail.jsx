@@ -6,12 +6,15 @@ import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badg
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS } from '../lib/agLogic'
 
 export default function AGDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
+  const isMobile = useIsMobile()
+  const canManage = isAdmin && !isMobile
   const [ag, setAg] = useState(null)
   const [decisions, setDecisions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,7 +60,7 @@ export default function AGDetail() {
       <PageHeader
         title={<span><span className="text-slate-400">{ag.numero}</span> · {ag.type === 'AGO' ? 'Ordinaire' : 'Extraordinaire'}</span>}
         subtitle={`${formatDate(ag.date_ag)}${ag.lieu ? ' · ' + ag.lieu : ''}`}
-        actions={isAdmin && (<><Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link><Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button></>)}
+        actions={canManage && (<><Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link><Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button></>)}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -86,7 +89,7 @@ export default function AGDetail() {
         <CardHeader
           title="Résolutions"
           subtitle="Résultat du vote (au prorata des superficies — détail au PV) et budget alloué."
-          actions={isAdmin && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'adoptee', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
+          actions={canManage && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'adoptee', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
         />
         <div className="divide-y divide-navy-50">
           {ag.resolutions.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">Aucune résolution.</p>}
@@ -99,7 +102,7 @@ export default function AGDetail() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <ResolutionStatutBadge statut={r.statut} />
-                  {isAdmin && (linkedCount(r.id) > 0
+                  {canManage && (linkedCount(r.id) > 0
                     ? <span className="text-xs text-slate-400" title="Verrouillée : décision rattachée">🔒 {linkedCount(r.id)} décision(s)</span>
                     : <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>)}
                 </div>

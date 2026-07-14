@@ -6,9 +6,11 @@ import { Card, CardHeader, Spinner, Button, eur } from '../components/ui'
 import { StatutBadge, AGStatutBadge } from '../components/badges'
 import { formatDate, formatDateLong } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [decisions, setDecisions] = useState([])
   const [ags, setAgs] = useState([])
@@ -50,7 +52,7 @@ export default function Dashboard() {
       <PageHeader
         title={`Bonjour ${user?.prenom || ''}`}
         subtitle="Vue d’ensemble du registre du Conseil Syndical."
-        actions={<Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
+        actions={!isMobile && <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
