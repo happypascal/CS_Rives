@@ -15,7 +15,8 @@ const uid = () =>
 
 const nowISO = () => new Date().toISOString()
 const delay = (ms = 50) => new Promise((r) => setTimeout(r, ms))
-const b64 = (s) => (globalThis.btoa ? globalThis.btoa(s) : '')
+// Data URL UTF-8 (évite btoa qui échoue sur les caractères non-Latin1 : —, €, …).
+const textDataUrl = (s) => 'data:text/plain;charset=utf-8,' + encodeURIComponent(s)
 
 // ---------------------------------------------------------------- seed
 function seed() {
@@ -65,7 +66,7 @@ function seed() {
       statut: 'adoptee', enregistree: true, quorum_atteint: true,
       budget_alloue: 5800, budget_intitule: 'Entretien espaces verts (annuel)',
       ag_id: null, resolution_id: null,
-      documents: [{ id: uid(), name: 'Offre_VertPro.txt', type: 'text/plain', size: 32, dataUrl: 'data:text/plain;base64,' + b64('Offre VertPro SARL — 5 800 € TTC/an'), uploaded_at: '2026-02-03T10:05:00Z' }],
+      documents: [{ id: uid(), name: 'Offre_VertPro.txt', type: 'text/plain', size: 34, dataUrl: textDataUrl('Offre VertPro SARL — 5 800 € TTC/an'), uploaded_at: '2026-02-03T10:05:00Z' }],
       composition_snapshot: null, created_by: mPresident, created_at: '2026-02-03T10:00:00Z', updated_at: '2026-02-10T11:00:00Z',
     },
     {
