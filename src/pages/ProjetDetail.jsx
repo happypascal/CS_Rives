@@ -18,9 +18,14 @@ export default function ProjetDetail() {
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(async () => {
-    const p = await repo.getProjet(id)
-    setProjet(p)
-    setLoading(false)
+    try {
+      const p = await repo.getProjet(id)
+      setProjet(p)
+    } catch {
+      setProjet(null)
+    } finally {
+      setLoading(false)
+    }
   }, [id])
 
   useEffect(() => {

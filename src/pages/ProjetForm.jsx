@@ -33,7 +33,11 @@ export default function ProjetForm() {
 
   useEffect(() => {
     async function init() {
-      const [agList, mem, budgets] = await Promise.all([repo.listAG(), repo.listMembres(), repo.listAGBudgets()])
+      const [agList, mem, budgets] = await Promise.all([
+        repo.listAG().catch(() => []),
+        repo.listMembres().catch(() => []),
+        repo.listAGBudgets().catch(() => []),
+      ])
       setAgs(agList)
       setMembres(mem)
       setAgBudgets(budgets)

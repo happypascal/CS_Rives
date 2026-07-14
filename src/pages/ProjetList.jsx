@@ -15,10 +15,11 @@ export default function ProjetList() {
   const [projets, setProjets] = useState([])
 
   useEffect(() => {
-    repo.listProjets().then((p) => {
-      setProjets(p)
-      setLoading(false)
-    })
+    repo
+      .listProjets()
+      .then((p) => setProjets(p))
+      .catch(() => setProjets([]))
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Spinner />

@@ -36,18 +36,26 @@ export default function DecisionDetail() {
   const [replyText, setReplyText] = useState('')
 
   const reload = useCallback(async () => {
-    const [d, m, budgets, projs] = await Promise.all([repo.getDecision(id), repo.listMembres(), repo.listAGBudgets(), repo.listProjets()])
-    setDecision(d)
-    setMembers(m)
-    setAgBudgets(budgets)
-    setProjets(projs)
-    if (d?.ag_id) {
-      const a = await repo.getAG(d.ag_id)
-      setAg(a)
-    } else {
-      setAg(null)
+    try {
+      const [d, m, budgets, projs] = await Promise.all([
+        repo.getDecision(id),
+        repo.listMembres().catch(() => []),
+        repo.listAGBudgets().catch(() => []),
+        repo.listProjets().catch(() => []),
+      ])
+      setDecision(d)
+      setMembers(m)
+      setAgBudgets(budgets)
+      setProjets(projs)
+      if (d?.ag_id) {
+        const a = await repo.getAG(d.ag_id).catch(() => null)
+        setAg(a)
+      } else {
+        setAg(null)
+      }
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [id])
 
   useEffect(() => {

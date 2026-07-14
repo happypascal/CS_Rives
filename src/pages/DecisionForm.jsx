@@ -37,7 +37,11 @@ export default function DecisionForm() {
 
   useEffect(() => {
     async function init() {
-      const [all, projs, budgets] = await Promise.all([repo.listDecisions(), repo.listProjets(), repo.listAGBudgets()])
+      const [all, projs, budgets] = await Promise.all([
+        repo.listDecisions().catch(() => []),
+        repo.listProjets().catch(() => []),
+        repo.listAGBudgets().catch(() => []),
+      ])
       setProjets(projs)
       setAgBudgets(budgets)
       if (editing) {

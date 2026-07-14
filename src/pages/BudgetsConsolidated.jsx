@@ -12,11 +12,12 @@ export default function BudgetsConsolidated() {
   const [projets, setProjets] = useState([])
 
   useEffect(() => {
-    Promise.all([repo.listAGBudgets(), repo.listProjets()]).then(([e, p]) => {
-      setEnvelopes(e.sort((a, b) => (a.ag_date < b.ag_date ? 1 : -1)))
-      setProjets(p)
-      setLoading(false)
-    })
+    Promise.all([repo.listAGBudgets().catch(() => []), repo.listProjets().catch(() => [])])
+      .then(([e, p]) => {
+        setEnvelopes(e.sort((a, b) => (a.ag_date < b.ag_date ? 1 : -1)))
+        setProjets(p)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Spinner />

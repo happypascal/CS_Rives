@@ -18,15 +18,19 @@ export default function Dashboard() {
   const [batches, setBatches] = useState([])
 
   useEffect(() => {
-    Promise.all([repo.listDecisions(), repo.listAG(), repo.listAGBudgets(), repo.listSignatureBatches()]).then(
-      ([d, a, b, s]) => {
+    Promise.all([
+      repo.listDecisions().catch(() => []),
+      repo.listAG().catch(() => []),
+      repo.listAGBudgets().catch(() => []),
+      repo.listSignatureBatches().catch(() => []),
+    ])
+      .then(([d, a, b, s]) => {
         setDecisions(d)
         setAgs(a)
         setBudgets(b)
         setBatches(s)
-        setLoading(false)
-      },
-    )
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Spinner />
