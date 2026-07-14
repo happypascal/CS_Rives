@@ -160,7 +160,8 @@ export default function DecisionForm() {
         await repo.updateDecision(id, payload)
         navigate(`/registre/${id}`)
       } else {
-        const created = await repo.createDecision({ numero, ...payload })
+        // created_by = membre courant (owner), cohérent mock + Supabase.
+        const created = await repo.createDecision({ numero, created_by: user?.membre_id ?? null, ...payload })
         navigate(`/registre/${created.id}`)
       }
     } catch (err) {

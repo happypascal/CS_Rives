@@ -72,7 +72,7 @@ create table if not exists decisions (
   ag_id                uuid references assemblees_generales(id) on delete set null,  -- rattachement AG
   resolution_id        uuid references resolutions_ag(id) on delete set null,        -- budget AG engagé
   documents            jsonb not null default '[]',      -- pièces jointes [{id,name,type,size,dataUrl}]
-  created_by           uuid references auth.users(id),
+  created_by           uuid references membres_cs(id),   -- owner = membre créateur (id membres_cs)
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
@@ -119,7 +119,7 @@ create table if not exists decision_status_history (
   decision_id    uuid not null references decisions(id) on delete cascade,
   ancien_statut  text,
   nouveau_statut text not null,
-  changed_by     uuid references auth.users(id),
+  changed_by     uuid references membres_cs(id),
   changed_at     timestamptz not null default now()
 );
 
@@ -129,7 +129,7 @@ create table if not exists audit_log (
   entite     text not null,
   entite_id  uuid,
   action     text not null,
-  acteur     uuid references auth.users(id),
+  acteur     uuid references membres_cs(id),
   details    text,
   created_at timestamptz not null default now()
 );
