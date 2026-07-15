@@ -577,6 +577,7 @@ export const mockRepo = {
     const data = load()
     const d = data.decisions.find((x) => x.id === id)
     if (d?.enregistree) throw new Error('Décision enregistrée : non supprimable.')
+    if (data.votes.some((v) => v.decision_id === id)) throw new Error('Décision avec des votes : non supprimable.')
     data.decisions = data.decisions.filter((x) => x.id !== id)
     data.votes = data.votes.filter((v) => v.decision_id !== id)
     data.questions_reponses = data.questions_reponses.filter((q) => q.decision_id !== id)

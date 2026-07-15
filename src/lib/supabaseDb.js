@@ -170,6 +170,8 @@ export const supabaseRepo = {
     return must(await supabase.from('decisions').update(patch).eq('id', id).select())[0]
   },
   async deleteDecision(id) {
+    const { count } = await supabase.from('votes').select('id', { count: 'exact', head: true }).eq('decision_id', id)
+    if (count > 0) throw new Error('Décision avec des votes : non supprimable.')
     must(await supabase.from('decisions').delete().eq('id', id))
     return { ok: true }
   },

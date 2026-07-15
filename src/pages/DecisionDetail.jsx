@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, eur } from '../components/ui'
@@ -21,6 +21,7 @@ function activeMembersAt(members, dateISO) {
 
 export default function DecisionDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { user, isAdmin } = useAuth()
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
@@ -31,6 +32,7 @@ export default function DecisionDetail() {
   const [projets, setProjets] = useState([])
   const [busy, setBusy] = useState(false)
   const [confirmRecord, setConfirmRecord] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [replyText, setReplyText] = useState('')
@@ -110,6 +112,19 @@ export default function DecisionDetail() {
     await reload()
   }
 
+  // Suppression : président uniquement, décision non enregistrée et SANS aucun vote.
+  const canDelete = isAdmin && !isMobile && !locked && decision.votes.length === 0
+  const doDelete = async () => {
+    setBusy(true)
+    try {
+      await repo.deleteDecision(id)
+      navigate('/registre')
+    } catch (e) {
+      alert(e.message)
+      setBusy(false)
+    }
+  }
+
   const doRecord = async () => {
     setBusy(true)
     const snapshot = composition.map((m) => ({ id: m.id, nom: m.nom, prenom: m.prenom, role: m.role, ag_election: m.ag_election, date_election: m.date_election }))
@@ -153,6 +168,9 @@ export default function DecisionDetail() {
             </Button>
             {isOwner && !locked && !isMobile && (
               <Link to={`/registre/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
+            )}
+            {canDelete && (
+              <Button variant="danger" onClick={() => setConfirmDelete(true)}>Supprimer</Button>
             )}
           </>
         }
@@ -451,6 +469,23 @@ export default function DecisionDetail() {
           )}
         </div>
       </div>
+
+      <Modal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Supprimer la décision"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Annuler</Button>
+            <Button variant="danger" onClick={doDelete} disabled={busy}>Supprimer définitivement</Button>
+          </>
+        }
+      >
+        <div className="space-y-2 text-sm text-slate-600">
+          <p>Supprimer définitivement la décision <strong>{decision.numero}</strong> « {decision.titre} » ?</p>
+          <p className="text-xs text-slate-400">Cette action est irréversible. Seules les décisions sans aucun vote peuvent être supprimées.</p>
+        </div>
+      </Modal>
 
       <Modal
         open={confirmRecord}
