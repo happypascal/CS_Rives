@@ -165,7 +165,8 @@ export default function DecisionDetail() {
         subtitle={`Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`}
         actions={
           <>
-            {isAdmin && !locked && (
+            {/* L'owner porte sa décision : lui seul prévient et relance le CS. */}
+            {isOwner && !locked && (
               <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
                 {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
               </Button>

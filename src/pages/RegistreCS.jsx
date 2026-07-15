@@ -228,7 +228,7 @@ export default function RegistreCS() {
                     <td className="px-4 py-3">
                       <Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{d.titre}</Link>
                       {toVote && !overdue && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à voter</span>}
-                      {isAdmin && !d.enregistree && !d.date_notification && (
+                      {d.created_by === user?.membre_id && !d.enregistree && !d.date_notification && (
                         <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>
                       )}
                     </td>

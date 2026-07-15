@@ -212,6 +212,22 @@ begin
   end loop;
 end $$;
 
+-- Décisions : chaque membre porte les siennes. Tout membre actif crée (en
+-- s'attribuant created_by) ; l'owner modifie / notifie tant que la décision
+-- n'est pas enregistrée. Le `with check (… enregistree = false)` réserve l'acte
+-- au président : l'owner ne peut ni poser le verrou, ni changer d'owner.
+drop policy if exists "decisions_owner_insert" on decisions;
+create policy "decisions_owner_insert" on decisions for insert to authenticated
+  with check (
+    created_by = current_membre_id()
+    and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
+  );
+
+drop policy if exists "decisions_owner_update" on decisions;
+create policy "decisions_owner_update" on decisions for update to authenticated
+  using (created_by = current_membre_id() and enregistree = false)
+  with check (created_by = current_membre_id() and enregistree = false);
+
 -- Votes : admin tout ; membre gère uniquement SON vote, et seulement tant que
 -- la décision n'est pas enregistrée.
 drop policy if exists "votes_admin" on votes;
