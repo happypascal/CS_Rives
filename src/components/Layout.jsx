@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { BACKEND } from '../lib/config'
 import { ORG } from '../lib/config'
+import ForcePasswordChange from '../pages/ForcePasswordChange'
 
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
@@ -30,6 +31,11 @@ export default function Layout() {
       'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
       isActive ? 'bg-navy-600 text-white' : 'text-navy-100 hover:bg-navy-700/60 hover:text-white',
     ].join(' ')
+
+  // 1er accès (prod) : un membre non-admin doit définir son mot de passe avant d'entrer.
+  if (BACKEND === 'supabase' && user && !isAdmin && user.password_changed !== true) {
+    return <ForcePasswordChange />
+  }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

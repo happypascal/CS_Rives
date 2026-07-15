@@ -95,7 +95,7 @@ function ChangePassword() {
     if (BACKEND !== 'supabase') return setErr('Indisponible en mode démo.')
     setBusy(true)
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwd })
+      const { error } = await supabase.auth.updateUser({ password: pwd, data: { password_changed: true } })
       if (error) throw new Error(error.message)
       setMsg('Mot de passe mis à jour.')
       setPwd('')

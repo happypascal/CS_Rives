@@ -39,6 +39,8 @@ export async function resolveUser(authUser) {
     membre_id: membre?.id ?? null,
     nom: membre?.nom,
     prenom: membre?.prenom,
+    // Drapeau "a défini son mot de passe" (posé après le 1er changement).
+    password_changed: authUser.user_metadata?.password_changed === true,
   }
 }
 
