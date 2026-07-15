@@ -93,7 +93,13 @@ export default function DecisionDetail() {
   }
 
   const voteByMember = Object.fromEntries(decision.votes.map((v) => [v.membre_id, v]))
-  const t = tally(decision.votes.filter((v) => compIds.includes(v.membre_id)), composition.length)
+  // Art. 15 : la voix du président départage un partage — il faut donc son vote.
+  const presidentId = composition.find((m) => m.role === 'president')?.id
+  const t = tally(
+    decision.votes.filter((v) => compIds.includes(v.membre_id)),
+    composition.length,
+    voteByMember[presidentId]?.vote ?? null,
+  )
 
   // L'utilisateur courant vote uniquement pour lui-même, tant que non enregistrée.
   const myId = user?.membre_id
@@ -514,6 +520,12 @@ export default function DecisionDetail() {
           <ul className="list-disc pl-5">
             <li>{tallySummary(t.counts)}</li>
             <li>Quorum : {t.quorumAtteint ? 'atteint' : 'NON atteint'} ({t.votants}/{t.activeCount})</li>
+            <li>Majorité requise : {Math.floor(t.votants / 2) + 1} voix sur {t.votants} présents (art. 15 — abstentions comprises)</li>
+            {t.partage && (
+              <li>
+                Partage des voix → <strong>voix prépondérante du président</strong> ({t.presidentVote ? VOTE_LABELS[t.presidentVote] : 'n’a pas voté → rejet'}).
+              </li>
+            )}
             <li>Statut final : <strong>{t.statut === 'adoptee' ? 'Adoptée' : 'Rejetée'}</strong></li>
           </ul>
         </div>

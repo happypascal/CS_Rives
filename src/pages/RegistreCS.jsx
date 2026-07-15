@@ -111,15 +111,15 @@ export default function RegistreCS() {
     try {
       const ids = [...selected]
       const chosen = decisions.filter((d) => ids.includes(d.id))
-      // Signataires = membres ayant voté "pour" ou "abstention" sur les décisions choisies.
+      // Art. 15 des statuts : le registre est signé par « tous les membres
+      // présents à la délibération » — donc tout membre ayant voté, y compris
+      // Contre. (Avant : pour/abstention seulement, ce qui violait l'art. 15.)
       const details = await Promise.all(chosen.map((d) => repo.getDecision(d.id)))
       const emails = new Set()
       for (const d of details) {
         for (const v of d.votes) {
-          if (v.vote === 'pour' || v.vote === 'abstention') {
-            const m = members.find((x) => x.id === v.membre_id)
-            if (m?.email) emails.add(m.email)
-          }
+          const m = members.find((x) => x.id === v.membre_id)
+          if (m?.email) emails.add(m.email)
         }
       }
       const signers = [...emails].map((email) => ({ email }))

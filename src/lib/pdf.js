@@ -114,8 +114,9 @@ function decisionBlock(doc, decision, opts = {}) {
   })
   y = doc.lastAutoTable.finalY + 6
 
-  // Vote result
-  const t = tally(votes, composition.length)
+  // Vote result — art. 15 : la voix du président départage un partage.
+  const presidentId = composition.find((m) => m.role === 'president')?.id
+  const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null)
   y = sectionTitle(doc, 'RÉSULTAT DU VOTE', y)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
@@ -130,7 +131,16 @@ function decisionBlock(doc, decision, opts = {}) {
       : '→ Décision REJETÉE'
   doc.setTextColor(...(t.adoptee && t.quorumAtteint ? [21, 128, 61] : [185, 28, 28]))
   doc.text(verdict, 20, y)
-  y += 8
+  y += 6
+  // Le registre doit porter la raison du départage, pas seulement son résultat.
+  if (t.quorumAtteint && t.partage) {
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(90, 90, 90)
+    doc.text('Partage des voix — voix prépondérante du président (art. 15 des statuts).', 20, y)
+    y += 4
+  }
+  y += 2
 
   // Vote detail
   if (votes.length) {
@@ -180,7 +190,11 @@ function decisionBlock(doc, decision, opts = {}) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(30, 37, 48)
-  const signers = composition
+  // Art. 15 : le registre est signé par « tous les membres présents à la
+  // délibération » — donc les votants, quel que soit leur vote. Un absent n'a
+  // pas à signer : pas de ligne pour lui.
+  const votedIds = new Set(votes.map((v) => v.membre_id))
+  const signers = composition.filter((m) => votedIds.has(m.id))
   let col = 0
   let rowY = y + 4
   for (const m of signers) {
