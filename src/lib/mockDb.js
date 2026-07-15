@@ -148,6 +148,13 @@ function seed() {
   decisions[4].composition_snapshot = activeSnapshot // d5 (adoptée, enregistrée)
   decisions[5].composition_snapshot = activeSnapshot // d6 (adoptée, enregistrée)
 
+  // Partage au CS : d4 volontairement laissée non notifiée (badge « à notifier »).
+  decisions[0].date_notification = '2026-07-02T08:30:00Z'
+  decisions[1].date_notification = '2026-05-05T11:00:00Z'
+  decisions[2].date_notification = '2026-07-08T09:15:00Z'
+  decisions[4].date_notification = '2026-06-01T09:30:00Z'
+  decisions[5].date_notification = '2026-03-02T09:20:00Z'
+
   const votes = [
     // d1 — adoptée
     { id: uid(), decision_id: d1, membre_id: mPresident, vote: 'pour', commentaire: '', date_vote: '2026-02-04T10:30:00Z' },
@@ -585,6 +592,18 @@ export const mockRepo = {
     return { ok: true }
   },
   // Enregistrement par le président (contrôle quorum côté appelant).
+  // Horodate le partage au CS. Volontairement hors updateDecision : ce n'est
+  // pas une modification de contenu, et une relance doit rester possible.
+  async markDecisionNotified(id) {
+    await delay()
+    const data = load()
+    const d = data.decisions.find((x) => x.id === id)
+    if (!d) throw new Error('Décision introuvable')
+    d.date_notification = nowISO()
+    audit(data, 'decisions', id, 'notify', `Partage au CS — ${d.numero}`)
+    save(data)
+    return clone(d)
+  },
   async recordDecision(id, { statut, quorum_atteint, composition_snapshot, date_enregistrement }) {
     await delay()
     const data = load()

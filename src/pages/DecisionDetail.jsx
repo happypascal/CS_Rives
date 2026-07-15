@@ -166,7 +166,9 @@ export default function DecisionDetail() {
         actions={
           <>
             {isAdmin && !locked && (
-              <Button onClick={() => setShare(true)}>Prévenir le CS</Button>
+              <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
+                {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
+              </Button>
             )}
             <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa })}>
               Export PDF
@@ -229,9 +231,10 @@ export default function DecisionDetail() {
           <Card>
             <CardHeader title="Décision" actions={<StatutBadge statut={decision.statut} />} />
             <div className="rich-text px-5 py-4 text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: decision.description }} />
-            <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-3">
+            <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
               <Info label="Publication" value={formatDate(decision.date_publication)} />
               <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />
+              <Info label="Notifié au CS" value={decision.date_notification ? formatDate(decision.date_notification) : '—'} />
               <Info label="Enregistrement" value={decision.date_enregistrement ? formatDate(decision.date_enregistrement) : '—'} />
             </div>
           </Card>
@@ -475,7 +478,12 @@ export default function DecisionDetail() {
         </div>
       </div>
 
-      <ShareModal open={share} onClose={() => setShare(false)} decision={decision} />
+      <ShareModal
+        open={share}
+        onClose={() => setShare(false)}
+        decision={decision}
+        onShared={async () => { await repo.markDecisionNotified(id); await reload() }}
+      />
 
       <Modal
         open={confirmDelete}
@@ -516,31 +524,42 @@ export default function DecisionDetail() {
 // Partage manuel dans le groupe WhatsApp du CS : le texte est affiché tel qu'il
 // sera envoyé, avec une copie presse-papier en repli (WhatsApp Web non connecté,
 // envoi par un autre canal…).
-function ShareModal({ open, onClose, decision }) {
+function ShareModal({ open, onClose, decision, onShared }) {
   const [copied, setCopied] = useState(false)
   const text = decisionShareText(decision)
+  const dejaNotifiee = Boolean(decision.date_notification)
 
   const copy = async () => {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    await onShared()
+  }
+
+  const openWhatsApp = async () => {
+    window.open(whatsappShareUrl(text), '_blank', 'noopener')
+    onClose()
+    await onShared()
   }
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Prévenir le Conseil Syndical"
+      title={dejaNotifiee ? 'Notifier à nouveau le CS' : 'Prévenir le Conseil Syndical'}
       footer={
         <>
           <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier le message'}</Button>
-          <Button onClick={() => { window.open(whatsappShareUrl(text), '_blank', 'noopener'); onClose() }}>
-            Ouvrir WhatsApp
-          </Button>
+          <Button onClick={openWhatsApp}>Ouvrir WhatsApp</Button>
         </>
       }
     >
       <div className="space-y-3 text-sm text-slate-600">
+        {dejaNotifiee && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Déjà notifiée le {formatDateTime(decision.date_notification)}. Continuer enverra une <strong>relance</strong>.
+          </p>
+        )}
         <p>WhatsApp s’ouvre avec ce message pré-rempli : choisissez le groupe du CS, puis envoyez.</p>
         <pre className="whitespace-pre-wrap rounded-md border border-navy-100 bg-navy-50/60 px-3 py-2 font-sans text-xs text-slate-700">{text}</pre>
         <p className="text-xs text-slate-400">Le lien exige une connexion à l’app : seuls les membres du CS peuvent ouvrir la décision.</p>

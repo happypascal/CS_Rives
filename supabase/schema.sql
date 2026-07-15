@@ -82,6 +82,7 @@ create table if not exists decisions (
   date_publication     date not null,                    -- postée le
   date_limite_reponse  date,                              -- défaut = +7 jours ouvrables
   date_enregistrement  date,                              -- actée par le président
+  date_notification    timestamptz,                       -- dernier partage au CS (null = jamais notifiée)
   statut               text not null default 'en_cours' check (statut in ('en_cours','adoptee','rejetee')),
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,

@@ -177,6 +177,15 @@ export const supabaseRepo = {
     must(await supabase.from('decisions').delete().eq('id', id))
     return { ok: true }
   },
+  // Horodate le partage au CS. Volontairement hors updateDecision : ce n'est
+  // pas une modification de contenu, et une relance doit rester possible.
+  async markDecisionNotified(id) {
+    return must(
+      await supabase.from('decisions')
+        .update({ date_notification: new Date().toISOString() })
+        .eq('id', id).select(),
+    )[0]
+  },
   async recordDecision(id, { statut, quorum_atteint, composition_snapshot, date_enregistrement }) {
     const current = must(await supabase.from('decisions').select('statut').eq('id', id).maybeSingle())
     const row = must(
