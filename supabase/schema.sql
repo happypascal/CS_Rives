@@ -15,10 +15,6 @@ create table if not exists membres_cs (
   nom           text not null,
   prenom        text not null,
   email         text not null,
-  -- Notifications WhatsApp (CallMeBot) : la clé API est propre à chaque
-  -- destinataire. Facultatif — sans ces champs, le membre ne reçoit que l'email.
-  telephone       text,
-  whatsapp_apikey text,
   role          text not null default 'membre' check (role in ('president','membre')),
   date_election date not null,
   date_fin      date,

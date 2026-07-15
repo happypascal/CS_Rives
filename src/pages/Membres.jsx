@@ -6,7 +6,7 @@ import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
-const EMPTY = { nom: '', prenom: '', email: '', telephone: '', whatsapp_apikey: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', actif: true }
+const EMPTY = { nom: '', prenom: '', email: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', actif: true }
 
 export default function Membres() {
   const { isAdmin } = useAuth()
@@ -114,8 +114,6 @@ function MembreModal({ membre, onClose, onSaved }) {
         nom: form.nom,
         prenom: form.prenom,
         email: form.email,
-        telephone: form.telephone || null,
-        whatsapp_apikey: form.whatsapp_apikey || null,
         role: form.role,
         date_election: form.date_election,
         ag_election: form.ag_election || null,
@@ -156,17 +154,6 @@ function MembreModal({ membre, onClose, onSaved }) {
           <Input label="Prénom" value={form.prenom} onChange={set('prenom')} required />
         </div>
         <Input label="Email" type="email" value={form.email} onChange={set('email')} required />
-        <div className="space-y-3 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-          <p className="text-xs text-slate-600">
-            <strong className="text-slate-700">Notification WhatsApp (facultatif).</strong> Le membre autorise
-            d’abord le bot CallMeBot depuis son WhatsApp et reçoit une clé personnelle, à coller ici
-            (procédure : <code>docs/GUIDE_C_whatsapp.md</code>). Sans ces deux champs, il ne reçoit que l’email.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input label="Téléphone WhatsApp" value={form.telephone || ''} onChange={set('telephone')} placeholder="+41791234567" />
-            <Input label="Clé CallMeBot" value={form.whatsapp_apikey || ''} onChange={set('whatsapp_apikey')} placeholder="123456" />
-          </div>
-        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Select label="Rôle" value={form.role} onChange={set('role')}>
             <option value="membre">Membre</option>

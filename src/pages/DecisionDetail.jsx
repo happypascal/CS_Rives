@@ -9,6 +9,7 @@ import { tally, tallySummary, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLo
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
+import { decisionShareText, whatsappShareUrl } from '../lib/share'
 
 // Membres actifs à une date ISO (date_election <= date <= date_fin|∞).
 function activeMembersAt(members, dateISO) {
@@ -33,6 +34,7 @@ export default function DecisionDetail() {
   const [busy, setBusy] = useState(false)
   const [confirmRecord, setConfirmRecord] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [share, setShare] = useState(false)
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [replyText, setReplyText] = useState('')
@@ -163,6 +165,9 @@ export default function DecisionDetail() {
         subtitle={`Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`}
         actions={
           <>
+            {isAdmin && !locked && (
+              <Button onClick={() => setShare(true)}>Prévenir le CS</Button>
+            )}
             <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa })}>
               Export PDF
             </Button>
@@ -470,6 +475,8 @@ export default function DecisionDetail() {
         </div>
       </div>
 
+      <ShareModal open={share} onClose={() => setShare(false)} decision={decision} />
+
       <Modal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
@@ -503,6 +510,42 @@ export default function DecisionDetail() {
         </div>
       </Modal>
     </div>
+  )
+}
+
+// Partage manuel dans le groupe WhatsApp du CS : le texte est affiché tel qu'il
+// sera envoyé, avec une copie presse-papier en repli (WhatsApp Web non connecté,
+// envoi par un autre canal…).
+function ShareModal({ open, onClose, decision }) {
+  const [copied, setCopied] = useState(false)
+  const text = decisionShareText(decision)
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Prévenir le Conseil Syndical"
+      footer={
+        <>
+          <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier le message'}</Button>
+          <Button onClick={() => { window.open(whatsappShareUrl(text), '_blank', 'noopener'); onClose() }}>
+            Ouvrir WhatsApp
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3 text-sm text-slate-600">
+        <p>WhatsApp s’ouvre avec ce message pré-rempli : choisissez le groupe du CS, puis envoyez.</p>
+        <pre className="whitespace-pre-wrap rounded-md border border-navy-100 bg-navy-50/60 px-3 py-2 font-sans text-xs text-slate-700">{text}</pre>
+        <p className="text-xs text-slate-400">Le lien exige une connexion à l’app : seuls les membres du CS peuvent ouvrir la décision.</p>
+      </div>
+    </Modal>
   )
 }
 
