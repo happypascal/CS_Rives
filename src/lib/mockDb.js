@@ -6,7 +6,7 @@
 //   - résolutions AG : résultat seul (majorité + statut) + budget alloué.
 //   - signature : par LOT de décisions sélectionnées.
 
-const STORAGE_KEY = 'cs_rives_mockdb_v4'
+const STORAGE_KEY = 'cs_rives_mockdb_v5'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -27,11 +27,11 @@ function seed() {
   const m5 = uid()
 
   const membres_cs = [
-    { id: mPresident, nom: 'Favre', prenom: 'Pascal', email: 'pfavre25@gmail.com', role: 'president', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
-    { id: mVice, nom: 'Martin', prenom: 'Claire', email: 'claire.martin@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
-    { id: m3, nom: 'Dubois', prenom: 'Henri', email: 'henri.dubois@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
-    { id: m4, nom: 'Leroy', prenom: 'Sophie', email: 'sophie.leroy@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
-    { id: m5, nom: 'Petit', prenom: 'Marc', email: 'marc.petit@example.fr', role: 'membre', date_election: '2024-06-15', date_fin: '2025-06-19', ag_election: 'AGO 15 juin 2024', actif: false, created_at: '2024-06-15T18:00:00Z' },
+    { id: mPresident, nom: 'Favre', prenom: 'Pascal', email: 'pfavre25@gmail.com', telephone: '+41791111111', whatsapp_apikey: '111111', role: 'president', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
+    { id: mVice, nom: 'Martin', prenom: 'Claire', email: 'claire.martin@example.fr', telephone: '+33622222222', whatsapp_apikey: '222222', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
+    { id: m3, nom: 'Dubois', prenom: 'Henri', email: 'henri.dubois@example.fr', telephone: null, whatsapp_apikey: null, role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
+    { id: m4, nom: 'Leroy', prenom: 'Sophie', email: 'sophie.leroy@example.fr', telephone: '+33644444444', whatsapp_apikey: '444444', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
+    { id: m5, nom: 'Petit', prenom: 'Marc', email: 'marc.petit@example.fr', telephone: null, whatsapp_apikey: null, role: 'membre', date_election: '2024-06-15', date_fin: '2025-06-19', ag_election: 'AGO 15 juin 2024', actif: false, created_at: '2024-06-15T18:00:00Z' },
   ]
 
   const accounts = membres_cs
