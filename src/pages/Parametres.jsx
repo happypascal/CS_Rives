@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { repo, BACKEND } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Badge } from '../components/ui'
+import { Card, CardHeader, Button, Badge, Input } from '../components/ui'
 import { formatDateTime } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { SIGNATURE_PROVIDER, ORG } from '../lib/config'
 import { resetMockDb } from '../lib/mockDb'
+import { supabase } from '../lib/supabase'
 
 export default function Parametres() {
   const { user, isAdmin } = useAuth()
@@ -32,6 +33,8 @@ export default function Parametres() {
   return (
     <div>
       <PageHeader title="Paramètres" subtitle="Configuration de l’application et journal d’audit." />
+
+      <div className="mb-6"><ChangePassword /></div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -71,5 +74,52 @@ export default function Parametres() {
         </Card>
       </div>
     </div>
+  )
+}
+
+// Changement de mot de passe (utilisateur connecté). Sert notamment à remplacer
+// le mot de passe provisoire du premier accès.
+function ChangePassword() {
+  const [pwd, setPwd] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setMsg('')
+    if (pwd.length < 8) return setErr('Le mot de passe doit faire au moins 8 caractères.')
+    if (pwd !== confirm) return setErr('Les deux mots de passe ne correspondent pas.')
+    if (BACKEND !== 'supabase') return setErr('Indisponible en mode démo.')
+    setBusy(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwd })
+      if (error) throw new Error(error.message)
+      setMsg('Mot de passe mis à jour.')
+      setPwd('')
+      setConfirm('')
+    } catch (e2) {
+      setErr(e2.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Mon mot de passe" subtitle="Changez votre mot de passe (ex. après un premier accès avec mot de passe provisoire)." />
+      <form onSubmit={submit} className="space-y-3 px-5 py-4 sm:max-w-md">
+        {BACKEND !== 'supabase' && (
+          <p className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-700">Mode démo : la modification du mot de passe est disponible uniquement en production (Supabase).</p>
+        )}
+        <Input label="Nouveau mot de passe" type="password" autoComplete="new-password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+        <Input label="Confirmer" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+        <Button type="submit" disabled={busy || BACKEND !== 'supabase'}>{busy ? 'Enregistrement…' : 'Changer le mot de passe'}</Button>
+      </form>
+    </Card>
   )
 }

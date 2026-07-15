@@ -1,0 +1,63 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Guide du membre - Voter</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>
+@page { size: A4; margin: 1.6cm 1.8cm; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; color: #1e2530; line-height: 1.35; }
+h1 { font-size: 17pt; color: #1F3864; margin: 0 0 2pt 0; }
+.sub { font-size: 10pt; color: #55617a; margin: 0 0 10pt 0; }
+h2 { font-size: 11.5pt; color: #1F3864; margin: 11pt 0 3pt 0; border-bottom: 1px solid #d3dbe9; padding-bottom: 2pt; }
+p { margin: 3pt 0; }
+ul { margin: 3pt 0 3pt 0; padding-left: 18pt; }
+li { margin: 1.5pt 0; }
+.tag { background: #eef1f7; color: #1F3864; padding: 1pt 5pt; border-radius: 3pt; font-weight: 600; }
+.url { color: #1F3864; font-weight: 600; }
+.foot { margin-top: 12pt; font-size: 8.5pt; color: #8a93a6; border-top: 1px solid #d3dbe9; padding-top: 4pt; }
+</style>
+</head>
+<body>
+
+<h1>Registre des Décisions du Conseil Syndical</h1>
+<p class="sub">Guide du membre &mdash; voter sur vos sujets &middot; ASL Lotissement de Rives, Nernier (74140)</p>
+
+<h2>1. Se connecter</h2>
+<ul>
+<li>Ouvrez l'adresse : <span class="url">https://cs-rives.vercel.app</span></li>
+<li>Saisissez <b>votre e-mail</b> et le <b>mot de passe provisoire</b> transmis par le président.</li>
+<li><b>Au premier accès</b>, changez votre mot de passe : menu <span class="tag">Param&egrave;tres</span> &rarr; <b>Changer mon mot de passe</b>.</li>
+</ul>
+
+<h2>2. Voter sur vos d&eacute;cisions</h2>
+<ul>
+<li>La page d'accueil est <span class="tag">D&eacute;cisions CS</span>.</li>
+<li>Cliquez le bouton <span class="tag">&Agrave; voter</span> en haut : il ne montre que les d&eacute;cisions <b>en attente de votre vote</b>.</li>
+<li>Ouvrez une d&eacute;cision : en haut, l'encadr&eacute; <b>&laquo;&nbsp;Votre vote&nbsp;&raquo;</b> propose trois boutons&nbsp;: <b>Pour</b>, <b>Contre</b>, <b>Abstention</b>.</li>
+<li>Cliquez votre choix ; vous pouvez ajouter un <b>commentaire</b> (facultatif).</li>
+<li>Votre vote est <b>modifiable</b> tant que le pr&eacute;sident n'a pas enregistr&eacute; la d&eacute;cision.</li>
+<li>Une d&eacute;cision affich&eacute;e <b>en rouge</b> = la <b>date limite de r&eacute;ponse est d&eacute;pass&eacute;e</b> et votre vote manque : votez au plus vite.</li>
+</ul>
+
+<h2>3. Depuis votre t&eacute;l&eacute;phone</h2>
+<ul>
+<li>M&ecirc;me adresse, m&ecirc;me connexion. Sur mobile vous pouvez <b>consulter</b> et <b>voter</b> (la cr&eacute;ation des d&eacute;cisions se fait sur ordinateur).</li>
+<li>Sur la page d'une d&eacute;cision, l'encadr&eacute; &laquo;&nbsp;Votre vote&nbsp;&raquo; permet de voter <b>en un geste</b>.</li>
+</ul>
+
+<h2>4. Mot de passe oubli&eacute;</h2>
+<ul>
+<li>Sur l'&eacute;cran de connexion, cliquez <b>&laquo;&nbsp;Mot de passe oubli&eacute;&nbsp;?&nbsp;&raquo;</b>, saisissez votre e-mail.</li>
+<li>Vous recevez un lien par courriel pour <b>d&eacute;finir un nouveau mot de passe</b>.</li>
+</ul>
+
+<h2>5. Poser une question</h2>
+<ul>
+<li>Chaque d&eacute;cision a une section <b>Questions &amp; r&eacute;ponses</b> : posez-y vos questions, un autre membre ou le pr&eacute;sident r&eacute;pond.</li>
+<li>Pour toute difficult&eacute; d'acc&egrave;s, contactez le <b>pr&eacute;sident du Conseil Syndical</b>.</li>
+</ul>
+
+<p class="foot">Vos donn&eacute;es sont priv&eacute;es et r&eacute;serv&eacute;es au Conseil Syndical. Vos mots de passe sont chiffr&eacute;s et ne sont jamais visibles, m&ecirc;me par le pr&eacute;sident.</p>
+
+</body>
+</html>
