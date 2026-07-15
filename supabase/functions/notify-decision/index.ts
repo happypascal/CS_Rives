@@ -1,13 +1,15 @@
 // Edge Function Supabase — notifie les membres du CS par email lorsqu'une
 // nouvelle décision à voter est créée.
 //
-// Déclenchement : Database Webhook sur INSERT de la table `decisions`
-// (Dashboard → Database → Webhooks). Le webhook envoie { type, record }.
+// Déclenchement : Database Webhook sur INSERT de la table `decisions`.
 //
-// Secrets requis (Dashboard → Edge Functions → notify-decision → Secrets) :
-//   RESEND_API_KEY  : clé API Resend (https://resend.com)
-//   FROM_EMAIL      : expéditeur vérifié dans Resend (ex: "CS Rives <cs@ton-domaine.fr>")
-//   APP_URL         : (optionnel) URL de l'app, défaut https://cs-rives.vercel.app
+// Secrets (Dashboard → Edge Functions → Secrets) :
+//   RESEND_API_KEY  : clé API Resend (requis)
+//   FROM_EMAIL      : expéditeur (défaut onboarding@resend.dev en mode test)
+//   APP_URL         : URL de l'app (défaut https://cs-rives.vercel.app)
+//   TEST_EMAIL      : si défini, envoie UNIQUEMENT à cette adresse (mode test).
+//                     En mode test Resend n'accepte que l'email du compte Resend.
+//                     Laisse ce secret VIDE en production (domaine vérifié).
 //
 // SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont fournis automatiquement.
 
@@ -16,6 +18,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const FROM_EMAIL = Deno.env.get('FROM_EMAIL') ?? 'CS Rives <onboarding@resend.dev>'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://cs-rives.vercel.app'
+const TEST_EMAIL = Deno.env.get('TEST_EMAIL')?.trim()
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -36,14 +39,18 @@ Deno.serve(async (req) => {
       return new Response('Ignoré (pas une décision)', { status: 200 })
     }
 
-    // Destinataires : membres actifs (ils ont tous à voter).
-    const { data: membres, error } = await supabase
-      .from('membres_cs')
-      .select('email, prenom')
-      .eq('actif', true)
-    if (error) throw new Error(error.message)
-
-    const recipients = (membres ?? []).map((m) => m.email).filter(Boolean)
+    // Destinataires : en mode test, uniquement TEST_EMAIL ; sinon membres actifs.
+    let recipients: string[]
+    if (TEST_EMAIL) {
+      recipients = [TEST_EMAIL]
+    } else {
+      const { data: membres, error } = await supabase
+        .from('membres_cs')
+        .select('email')
+        .eq('actif', true)
+      if (error) throw new Error(error.message)
+      recipients = (membres ?? []).map((m) => m.email).filter(Boolean)
+    }
     if (recipients.length === 0) return new Response('Aucun destinataire', { status: 200 })
 
     const limite = fmtDate(dec.date_limite_reponse)
@@ -57,23 +64,23 @@ Deno.serve(async (req) => {
         <p style="font-size:12px;color:#8a93a6;margin-top:16px">Registre des décisions du Conseil Syndical — ASL Lotissement de Rives, Nernier.</p>
       </div>`
 
-    // Un envoi par membre (chacun ne voit que son adresse).
-    const results = await Promise.allSettled(
-      recipients.map((to) =>
-        fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: FROM_EMAIL,
-            to,
-            subject: `Nouvelle décision à voter — n° ${dec.numero ?? ''}`,
-            html,
-          }),
+    // Envoi + capture de la réponse Resend (visible dans les logs).
+    const results = []
+    for (const to of recipients) {
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to,
+          subject: `Nouvelle décision à voter — n° ${dec.numero ?? ''}`,
+          html,
         }),
-      ),
-    )
-    const sent = results.filter((r) => r.status === 'fulfilled').length
-    return new Response(JSON.stringify({ ok: true, sent, total: recipients.length }), {
+      })
+      results.push({ to, status: r.status, body: await r.text() })
+    }
+    console.log('notify-decision', JSON.stringify({ from: FROM_EMAIL, results }))
+    return new Response(JSON.stringify({ ok: true, from: FROM_EMAIL, results }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (e) {
