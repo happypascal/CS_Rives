@@ -70,7 +70,14 @@ async function sendWhatsApp(phone: string, apikey: string, text: string) {
     + `?phone=${encodeURIComponent(phone)}`
     + `&text=${encodeURIComponent(text)}`
     + `&apikey=${encodeURIComponent(apikey)}`
-  const r = await fetch(url)
+  // Sans User-Agent de navigateur, CallMeBot répond un 403 Apache (le User-Agent
+  // Deno par défaut est filtré comme robot). Cf. GUIDE_C_whatsapp.md.
+  const r = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,*/*',
+    },
+  })
   // Réponse en HTML : on la tronque, elle ne sert qu'au diagnostic dans les logs.
   return { to: phone, status: r.status, body: (await r.text()).slice(0, 300) }
 }
