@@ -120,8 +120,15 @@ export default function DecisionDetail() {
     await reload()
   }
 
-  // Suppression : président uniquement, décision non enregistrée et SANS aucun vote.
-  const canDelete = isAdmin && !isMobile && !locked && decision.votes.length === 0
+  // Suppression : président uniquement, décision NON ENREGISTRÉE, et au plus UN vote.
+  //
+  // L'enregistrement est le verrou dur : il fait entrer la délibération au registre
+  // légal, elle n'est plus effaçable — jamais, par personne.
+  // Le seuil « au plus 1 vote » (arbitrage Pascal 2026-07-16, auparavant « aucun vote »)
+  // est un garde-fou de saisie, pas une règle statutaire : une décision mal rédigée
+  // dont un seul membre a eu le temps de voter reste corrigeable en la supprimant.
+  // Au 2e vote, la délibération est réellement engagée à plusieurs → on ne l'efface plus.
+  const canDelete = isAdmin && !isMobile && !locked && decision.votes.length <= 1
   const doDelete = async () => {
     setBusy(true)
     try {

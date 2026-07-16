@@ -230,6 +230,16 @@ create policy "decisions_owner_update" on decisions for update to authenticated
   using (created_by = current_membre_id() and enregistree = false)
   with check (created_by = current_membre_id() and enregistree = false);
 
+-- Suppression : une décision enregistrée est au registre légal, elle n'est plus
+-- effaçable — par personne, président compris. `write_admin` (for all) couvrant
+-- le DELETE sans garde, et les policies permissives se cumulant en OU, seule une
+-- policy RESTRICTIVE (combinée en ET) peut fermer ce chemin. Le reste de la règle
+-- (président seul, au plus 1 vote) est applicatif : cf. DecisionDetail.canDelete.
+drop policy if exists "decisions_no_delete_enregistree" on decisions;
+create policy "decisions_no_delete_enregistree" on decisions
+  as restrictive for delete to authenticated
+  using (enregistree = false);
+
 -- Votes : admin tout ; membre gère uniquement SON vote, et seulement tant que
 -- la décision n'est pas enregistrée.
 drop policy if exists "votes_admin" on votes;

@@ -171,9 +171,16 @@ export const supabaseRepo = {
   async updateDecision(id, patch) {
     return must(await supabase.from('decisions').update(patch).eq('id', id).select())[0]
   },
+  // Deux gardes distinctes, à ne pas confondre :
+  //  - `enregistree` = verrou légal. Doublé en base par la policy restrictive
+  //    `decisions_no_delete_enregistree` (migration 008) : le contrôle ci-dessous
+  //    ne sert qu'à rendre l'erreur lisible.
+  //  - « au plus 1 vote » = garde-fou de saisie, applicatif seulement.
   async deleteDecision(id) {
+    const d = must(await supabase.from('decisions').select('enregistree').eq('id', id).maybeSingle())
+    if (d?.enregistree) throw new Error('Décision enregistrée : non supprimable.')
     const { count } = await supabase.from('votes').select('id', { count: 'exact', head: true }).eq('decision_id', id)
-    if (count > 0) throw new Error('Décision avec des votes : non supprimable.')
+    if (count > 1) throw new Error('Décision déjà votée par plusieurs membres : non supprimable.')
     must(await supabase.from('decisions').delete().eq('id', id))
     return { ok: true }
   },
