@@ -49,11 +49,15 @@ function seed() {
   const rElection = uid()
   const rBudgetVoirie = uid()
   const rProvision = uid()
+  const rEauxPluviales = uid()
   const resolutions_ag = [
     { id: rApprobStatuts, ag_id: agAGO, numero: 1, titre: 'Approbation des statuts de l’ASL', description: "L'assemblée approuve les statuts de l'ASL du Lotissement de Rives.", majorite_requise: 'double_qualifiee', statut: 'adoptee', budget_alloue: 4200, budget_intitule: 'Honoraires Me Garnier — statuts ASL', observations: 'Double majorité qualifiée atteinte (détail au PV).', created_at: '2025-06-19T18:30:00Z' },
     { id: rElection, ag_id: agAGO, numero: 2, titre: 'Élection des membres du Conseil Syndical', description: 'Élection de Pascal Favre (président), Claire Martin, Henri Dubois, Sophie Leroy.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: null, budget_intitule: '', observations: '', created_at: '2025-06-19T19:00:00Z' },
     { id: rBudgetVoirie, ag_id: agAGO, numero: 3, titre: 'Budget travaux de voirie 2025', description: 'Réfection de la voirie principale, répartie à la superficie.', majorite_requise: 'absolue', statut: 'adoptee', budget_alloue: 85000, budget_intitule: 'Réfection voirie principale', observations: '', created_at: '2025-06-19T19:30:00Z' },
     { id: rProvision, ag_id: agAGO, numero: 4, titre: 'Provision entretien & espaces verts 2025', description: 'Enveloppe annuelle pour l’entretien courant et les espaces verts communs.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: 12000, budget_intitule: 'Provision entretien espaces verts', observations: 'Le CS engage les dépenses dans la limite de cette enveloppe.', created_at: '2025-06-19T19:45:00Z' },
+    // AGE à venir : inscrite à l'ordre du jour, pas encore votée. Son budget est une
+    // proposition — il n'est pas alloué et n'est pas engageable tant que l'AG n'a pas eu lieu.
+    { id: rEauxPluviales, ag_id: agAGE, numero: 1, titre: 'Travaux de réfection du réseau d’eaux pluviales', description: 'Reprise du collecteur principal et des regards, suite au diagnostic de mars 2026.', majorite_requise: 'double_qualifiee', statut: 'a_voter', budget_alloue: 47000, budget_intitule: 'Réfection réseau eaux pluviales', observations: '', created_at: '2026-07-01T10:15:00Z' },
   ]
 
   const p1 = uid()
@@ -291,7 +295,11 @@ const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 // aux projets issus de cette résolution.
 export function computeAGBudgets(data) {
   const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
-  const budgets = data.resolutions_ag.filter((r) => r.budget_alloue != null && r.budget_alloue !== '')
+  // Seule une résolution ADOPTÉE ouvre un budget. Une résolution `a_voter` n'est
+  // qu'une proposition à l'ordre du jour ; `rejetee`/`retiree` n'allouent rien.
+  // Effet de bord voulu : ces résolutions disparaissent des cibles d'engagement
+  // proposées par DecisionForm — on ne peut pas engager sur un budget non voté.
+  const budgets = data.resolutions_ag.filter((r) => r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== '')
   return budgets.map((r) => {
     const ag = agById[r.ag_id]
     const alloue = Number(r.budget_alloue)

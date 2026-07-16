@@ -7,7 +7,7 @@ import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS } from '../lib/agLogic'
+import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS } from '../lib/agLogic'
 
 export default function AGDetail() {
   const { id } = useParams()
@@ -41,7 +41,10 @@ export default function AGDetail() {
     )
   }
 
-  const budgetTotal = ag.resolutions.reduce((s, r) => s + (Number(r.budget_alloue) || 0), 0)
+  // Seule une résolution ADOPTÉE alloue un budget : tant qu'elle est à voter (ou si
+  // elle est rejetée/retirée), le montant n'est qu'une proposition.
+  const budgetTotal = ag.resolutions.filter((r) => r.statut === 'adoptee').reduce((s, r) => s + (Number(r.budget_alloue) || 0), 0)
+  const budgetPropose = ag.resolutions.filter((r) => r.statut === 'a_voter').reduce((s, r) => s + (Number(r.budget_alloue) || 0), 0)
   const linkedCount = (resolutionId) => decisions.filter((d) => d.resolution_id === resolutionId).length
   const agLocked = decisions.some((d) => d.ag_id === id)
 
@@ -70,11 +73,12 @@ export default function AGDetail() {
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Président de séance</p>
-          <p className="mt-1 text-sm font-medium text-navy-800">{ag.president_seance}</p>
+          <p className={`mt-1 text-sm font-medium ${ag.president_seance ? 'text-navy-800' : 'italic text-slate-400'}`}>{ag.president_seance || 'Désigné en séance'}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Budgets alloués</p>
           <p className="mt-1 text-lg font-semibold text-navy-800">{eur(budgetTotal)}</p>
+          {budgetPropose > 0 && <p className="mt-0.5 text-xs text-amber-700">dont {eur(budgetPropose)} soumis au vote</p>}
         </Card>
       </div>
 
@@ -88,8 +92,8 @@ export default function AGDetail() {
       <Card>
         <CardHeader
           title="Résolutions"
-          subtitle="Résultat du vote (au prorata des superficies — détail au PV) et budget alloué."
-          actions={canManage && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'adoptee', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
+          subtitle="À voter tant que l’AG ne s’est pas tenue, puis résultat du vote (au prorata des superficies — détail au PV)."
+          actions={canManage && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
         />
         <div className="divide-y divide-navy-50">
           {ag.resolutions.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">Aucune résolution.</p>}
@@ -112,7 +116,7 @@ export default function AGDetail() {
                 {r.budget_alloue != null && r.budget_alloue !== '' && (
                   <span className="font-medium text-navy-700">Budget : {eur(r.budget_alloue)}{r.budget_intitule ? ` · ${r.budget_intitule}` : ''}</span>
                 )}
-                {canManage && r.budget_alloue != null && r.budget_alloue !== '' && (
+                {canManage && r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== '' && (
                   <Link to={`/projets/nouveau?resolution=${r.id}&ag=${ag.id}`} className="text-navy-600 underline">Ouvrir un projet</Link>
                 )}
               </div>
@@ -182,10 +186,8 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
           <Select label="Majorité requise" value={form.majorite_requise} onChange={set('majorite_requise')}>
             {MAJORITE_VALUES.map((v) => <option key={v} value={v}>{MAJORITE_LABELS[v]}</option>)}
           </Select>
-          <Select label="Résultat" value={form.statut} onChange={set('statut')}>
-            <option value="adoptee">Adoptée</option>
-            <option value="rejetee">Rejetée</option>
-            <option value="retiree">Retirée</option>
+          <Select label="Statut / résultat" value={form.statut} onChange={set('statut')}>
+            {RESOLUTION_STATUT_VALUES.map((v) => <option key={v} value={v}>{RESOLUTION_STATUT_LABELS[v]}</option>)}
           </Select>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">

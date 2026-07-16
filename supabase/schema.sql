@@ -30,7 +30,7 @@ create table if not exists assemblees_generales (
   type             text not null check (type in ('AGO','AGE')),
   date_ag          date not null,
   lieu             text,
-  president_seance text not null,
+  president_seance text,                                  -- désigné EN séance : inconnu à la planification
   ordre_du_jour    text,
   statut           text not null default 'en_cours' check (statut in ('en_cours','cloturee','annulee')),
   pv_url           text,
@@ -40,6 +40,8 @@ create table if not exists assemblees_generales (
 
 -- ------------------------------------------------------------ resolutions_ag
 -- Résultat seul : les voix (au prorata superficie) restent dans le PV.
+-- Cycle : 'a_voter' (inscrite à l'ordre du jour, AG pas encore tenue) → résultat.
+-- Seule une résolution 'adoptee' alloue réellement un budget (cf. computeAGBudgets).
 create table if not exists resolutions_ag (
   id               uuid primary key default gen_random_uuid(),
   ag_id            uuid not null references assemblees_generales(id) on delete cascade,
@@ -47,7 +49,7 @@ create table if not exists resolutions_ag (
   titre            text not null,
   description      text not null,
   majorite_requise text not null default 'simple' check (majorite_requise in ('simple','absolue','double_qualifiee','unanimite')),
-  statut           text check (statut in ('adoptee','rejetee','retiree')),
+  statut           text default 'a_voter' check (statut in ('a_voter','adoptee','rejetee','retiree')),
   budget_alloue    numeric(12,2),
   budget_intitule  text,
   observations     text,

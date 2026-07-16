@@ -12,7 +12,16 @@ export const MAJORITE_LABELS = {
   unanimite: 'Unanimité',
 }
 
+// Cycle de vie d'une résolution : inscrite à l'ordre du jour d'une AG à venir
+// (`a_voter`), puis résultat du vote une fois l'AG tenue.
+// `a_voter` est l'état de DÉPART : quand on planifie une AG, rien n'est encore voté.
+// Conséquence portée par computeAGBudgets : seule une résolution ADOPTÉE alloue un
+// budget. Une résolution à voter, rejetée ou retirée n'alloue rien et ne peut donc
+// ni recevoir d'engagement, ni ouvrir de projet.
+export const RESOLUTION_STATUT_VALUES = ['a_voter', 'adoptee', 'rejetee', 'retiree']
+
 export const RESOLUTION_STATUT_LABELS = {
+  a_voter: 'À voter',
   adoptee: 'Adoptée',
   rejetee: 'Rejetée',
   retiree: 'Retirée',

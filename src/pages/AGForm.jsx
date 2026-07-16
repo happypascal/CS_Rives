@@ -7,7 +7,20 @@ import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
+// Les clés de EMPTY = exactement les colonnes éditables de assemblees_generales.
+// `repo.getAG()` renvoie EN PLUS un tableau `resolutions` (jointure) : il ne doit
+// jamais repartir dans un update, sinon PostgREST rejette la colonne inconnue.
 const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', ordre_du_jour: '', statut: 'en_cours', pv_url: '' }
+
+// Ne garde que les colonnes réelles, et normalise les champs vides en null.
+function toPayload(form) {
+  const payload = {}
+  for (const k of Object.keys(EMPTY)) {
+    const v = form[k]
+    payload[k] = typeof v === 'string' && v.trim() === '' ? null : v
+  }
+  return payload
+}
 
 export default function AGForm() {
   const { id } = useParams()
@@ -53,14 +66,16 @@ export default function AGForm() {
     e.preventDefault()
     setError('')
     if (!form.numero.trim()) return setError('Le numéro est obligatoire (ex: AGO-2026-01).')
-    if (!form.president_seance.trim()) return setError('Le président de séance est obligatoire.')
+    // Le président de séance est élu EN séance : inconnu tant que l'AG n'a pas eu
+    // lieu. On ne l'exige donc jamais à la saisie ; il se renseigne après coup.
     setSaving(true)
     try {
+      const payload = toPayload(form)
       if (editing) {
-        await repo.updateAG(id, form)
+        await repo.updateAG(id, payload)
         navigate(`/ag/${id}`)
       } else {
-        const created = await repo.createAG(form)
+        const created = await repo.createAG(payload)
         navigate(`/ag/${created.id}`)
       }
     } catch (err) {
@@ -84,7 +99,7 @@ export default function AGForm() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Lieu" value={form.lieu} onChange={set('lieu')} placeholder="Salle des fêtes de Nernier" />
-            <Input label="Président de séance" value={form.president_seance} onChange={set('president_seance')} required />
+            <Input label="Président de séance (désigné en séance)" value={form.president_seance || ''} onChange={set('president_seance')} placeholder="À renseigner après l’AG" />
           </div>
           <Textarea label="Ordre du jour" value={form.ordre_du_jour} onChange={set('ordre_du_jour')} rows={4} placeholder="1. …&#10;2. …" />
           <div className="grid gap-4 sm:grid-cols-2">
