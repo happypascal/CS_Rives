@@ -10,6 +10,7 @@ import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
 import { decisionShareText, whatsappShareUrl } from '../lib/share'
+import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { TEST_VOTES } from '../lib/config'
 
 // Membres actifs à une date ISO (date_election <= date <= date_fin|∞).
@@ -253,14 +254,25 @@ export default function DecisionDetail() {
           Le détail vivait dans « Budget & rattachement », en bas de page et en
           petit : on votait un engagement d'argent ou la suspension d'un projet
           sans l'avoir lu. On ne vote pas ce qu'on ne voit pas. */}
-      {(decision.montant_engage != null || decision.projet_action) && (
+      {(cibleLabel || decision.montant_engage != null || decision.projet_action) && (
         <div className="mb-4 rounded-md border-l-4 border-navy-500 border-y border-r border-navy-200 bg-navy-50 px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wide text-navy-600">Objet de la décision</p>
-          {decision.montant_engage != null && (
+          {decision.montant_engage != null ? (
             <p className="mt-1 text-lg font-semibold text-navy-900">
               Engage {eur(decision.montant_engage)}
               {cibleLabel && <span className="font-normal text-navy-700"> sur {cibleLabel}</span>}
             </p>
+          ) : (
+            // Rattachée sans engager : le dire quand même. Le bandeau ne se
+            // déclenchait que sur un montant ou une action — une décision qui
+            // ne fait « que » porter sur un projet n'annonçait donc RIEN, et on
+            // votait sans savoir sur quoi elle porte.
+            cibleLabel && !decision.projet_action && (
+              <p className="mt-1 text-lg font-semibold text-navy-900">
+                Concerne <span className="font-normal text-navy-700">{cibleLabel}</span>
+                <span className="ml-1 text-sm font-normal text-navy-600">— sans engagement de montant</span>
+              </p>
+            )
           )}
           {decision.projet_action && projet && (
             <p className="mt-1 text-lg font-semibold text-navy-900">
@@ -309,7 +321,7 @@ export default function DecisionDetail() {
             </div>
             <input
               defaultValue={myVote?.commentaire || ''}
-              onBlur={(e) => myVote && e.target.value !== (myVote.commentaire || '') && setMyComment(e.target.value)}
+              onBlur={(e) => myVote && e.target.value !== (myVote.commentaire || '') && setCommentFor(myId, e.target.value)}
               placeholder={myVote ? 'Commentaire (optionnel)…' : 'Votez d’abord pour ajouter un commentaire'}
               disabled={!myVote}
               className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy-400 focus:outline-none disabled:bg-slate-50"
