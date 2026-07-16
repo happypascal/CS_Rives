@@ -159,7 +159,14 @@ export const supabaseRepo = {
   },
   // Les résolutions sont détachées par la FK (`on delete set null`, migration 009),
   // pas ici : c'est la base qui garantit qu'aucune ne reste orpheline.
+  //
+  // La garde « décision enregistrée » est doublée en base par le trigger
+  // `projets_delete_guard` (migration 010) : le contrôle ci-dessous ne sert qu'à
+  // rendre l'erreur lisible avant l'aller-retour.
   async deleteProjet(id) {
+    const { count } = await supabase.from('decisions').select('id', { count: 'exact', head: true })
+      .eq('projet_id', id).eq('enregistree', true)
+    if (count > 0) throw new Error('Projet non supprimable : une décision enregistrée y est rattachée.')
     must(await supabase.from('projets').delete().eq('id', id))
     return { ok: true }
   },

@@ -121,6 +121,29 @@ create table if not exists decisions (
   updated_at           timestamptz not null default now()
 );
 
+-- Un projet portant une décision ENREGISTRÉE n'est plus supprimable (couvre la
+-- règle « de l'argent y est engagé » : l'engagement vient toujours d'une décision
+-- enregistrée et adoptée). Sans ce trigger, le `on delete set null` de
+-- `decisions.projet_id` détacherait ces décisions — donc MODIFIERAIT une
+-- délibération figée au registre, en silence et hors RLS (une action de clé
+-- étrangère n'est pas soumise aux policies de la table enfant). Un
+-- `on delete restrict` serait trop large : détacher une décision NON enregistrée
+-- reste légitime. Déclaré ici, après `decisions`, dont il dépend.
+create or replace function projet_delete_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from decisions d where d.projet_id = old.id and d.enregistree) then
+    raise exception 'Projet non supprimable : une décision enregistrée y est rattachée.'
+      using errcode = 'restrict_violation';
+  end if;
+  return old;
+end $$;
+
+drop trigger if exists projets_delete_guard on projets;
+create trigger projets_delete_guard
+  before delete on projets
+  for each row execute function projet_delete_guard();
+
 -- ------------------------------------------------------------ votes (self-only)
 create table if not exists votes (
   id          uuid primary key default gen_random_uuid(),

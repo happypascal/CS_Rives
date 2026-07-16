@@ -142,7 +142,17 @@ et **zéro vote**.
 - `date_limite_reponse` = publication **+ 7 jours ouvrés** (`addBusinessDaysISO`), recalculée
   automatiquement jusqu'à édition manuelle.
 - Résolution **verrouillée** dès qu'une décision ou un projet la référence. AG non supprimable
-  avec décisions attachées. Supprimer un projet détache ses décisions.
+  avec décisions attachées.
+- **Projet non supprimable dès qu'une décision ENREGISTRÉE y est rattachée** (règle Pascal : « dès
+  qu'on a engagé de l'argent »— l'engagement vient toujours d'une décision enregistrée et adoptée).
+  Doublé en base par le trigger `projets_delete_guard` (migration 010) : `decisions.projet_id` étant
+  en `on delete set null`, supprimer le projet **modifiait une délibération figée**, en silence et
+  hors RLS (une action de FK échappe aux policies de la table enfant). Pas de `on delete restrict` :
+  détacher une décision **non** enregistrée reste légitime.
+- **Statut projet `ouvert` → `en_cours` DÉRIVÉ** (`computeProjectBudgets`) dès que `engage > 0`
+  (décision enregistrée **et** adoptée) : c'est un fait, pas un choix à ressaisir. `suspendu` et
+  `termine` sont des décisions explicites du CS et **priment**. Dérivé, pas stocké — même raison
+  que le budget.
 - **Une AG se planifie avant d'avoir lieu.** À la convocation, le **président de séance est
   inconnu** (il est désigné *en* séance) → jamais obligatoire. Ne pas le rendre requis « pour
   la propreté de la donnée » : cela force à inventer un nom, donc à écrire une information

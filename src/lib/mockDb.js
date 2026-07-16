@@ -371,8 +371,16 @@ export function computeProjectBudgets(data) {
     const alloue = sources.filter(ouvreUnBudget).reduce((s, r) => s + Number(r.budget_alloue), 0)
     const chef = memById[p.chef_projet_id]
 
+    // « Ouvert » = ouvert, mais rien d'engagé encore. Dès qu'une décision y engage
+    // réellement de l'argent (enregistrée ET adoptée), le projet est EN COURS :
+    // c'est un fait, pas un choix à ressaisir. Dérivé et non stocké, même raison
+    // que le budget — un statut recopié divergerait du premier engagement venu.
+    // `suspendu` et `termine` sont des décisions explicites du CS : elles priment.
+    const statut = p.statut === 'ouvert' && engage > 0 ? 'en_cours' : p.statut
+
     return {
       ...p,
+      statut,
       alloue,
       engage,
       engage_en_cours: engageEnCours,
@@ -562,8 +570,18 @@ export const mockRepo = {
   async deleteProjet(id) {
     await delay()
     const data = load()
-    // Détachement, jamais destruction : les décisions ET les résolutions du projet
-    // lui survivent (miroir du `on delete set null` côté Supabase).
+    // Un projet sur lequel de l'argent est engagé n'est plus supprimable.
+    //
+    // La garde porte sur les décisions ENREGISTRÉES, ce qui couvre exactement la
+    // règle : l'argent engagé vient forcément d'une décision enregistrée et
+    // adoptée. Et elle ferme au passage une atteinte au verrou d'enregistrement —
+    // supprimer le projet remettait `projet_id` à null sur ces décisions, donc
+    // MODIFIAIT une délibération figée au registre légal.
+    if (data.decisions.some((d) => d.projet_id === id && d.enregistree)) {
+      throw new Error('Projet non supprimable : une décision enregistrée y est rattachée.')
+    }
+    // Détachement, jamais destruction : les décisions non enregistrées ET les
+    // résolutions du projet lui survivent (miroir du `on delete set null` Supabase).
     data.decisions.forEach((d) => { if (d.projet_id === id) d.projet_id = null })
     data.resolutions_ag.forEach((r) => { if (r.projet_id === id) r.projet_id = null })
     data.projets = data.projets.filter((x) => x.id !== id)

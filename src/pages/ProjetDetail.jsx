@@ -42,10 +42,21 @@ export default function ProjetDetail() {
     )
   }
 
+  // Dès qu'une décision ENREGISTRÉE est rattachée, le projet n'est plus effaçable.
+  // Deux raisons qui se rejoignent : l'argent engagé vient forcément d'une décision
+  // enregistrée et adoptée ; et la suppression détache les décisions (projet_id à
+  // null), ce qui MODIFIERAIT une délibération figée au registre légal.
+  const decisionsEnregistrees = projet.decisions.filter((d) => d.enregistree)
+  const canDelete = canManage && decisionsEnregistrees.length === 0
+
   const del = async () => {
     if (!confirm(`Supprimer le projet « ${projet.nom} » ? Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).`)) return
-    await repo.deleteProjet(id)
-    navigate('/projets')
+    try {
+      await repo.deleteProjet(id)
+      navigate('/projets')
+    } catch (e) {
+      alert(e.message)
+    }
   }
 
   const pct = projet.alloue > 0 ? Math.min(100, Math.round((projet.engage / projet.alloue) * 100)) : 0
@@ -59,11 +70,25 @@ export default function ProjetDetail() {
           canManage && (
             <>
               <Link to={`/projets/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
-              <Button variant="danger" onClick={del}>Supprimer</Button>
+              {canDelete ? (
+                <Button variant="danger" onClick={del}>Supprimer</Button>
+              ) : (
+                <span className="text-xs text-slate-400" title="Une décision enregistrée y est rattachée">
+                  🔒 non supprimable
+                </span>
+              )}
             </>
           )
         }
       />
+
+      {canManage && !canDelete && (
+        <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
+          Projet non supprimable : {decisionsEnregistrees.length} décision(s) enregistrée(s) y sont rattachées
+          {projet.engage > 0 && <> et {eur(projet.engage)} y sont engagés</>}. Une décision enregistrée est figée au
+          registre : elle ne peut pas être détachée de son projet.
+        </div>
+      )}
 
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-4">
