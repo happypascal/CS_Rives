@@ -184,6 +184,18 @@ export default function DecisionDetail() {
     await reload()
   }
 
+  // Nommé une fois, réutilisé par le bandeau d'objet et le texte de notification.
+  const cibleLabel = projet
+    ? `le projet « ${projet.nom} »`
+    : resolution
+      ? `la résolution n° ${resolution.numero} — ${resolution.titre}`
+      : null
+  const statutVise = decision.projet_action
+    ? (PROJET_ACTION_STATUT[decision.projet_action]
+        ? PROJET_STATUT_LABELS[PROJET_ACTION_STATUT[decision.projet_action]]
+        : 'son statut naturel (ouvert / en cours)')
+    : null
+
   const questions = decision.qa.filter((q) => q.type === 'question')
   const reponsesByParent = decision.qa.filter((q) => q.type === 'reponse').reduce((acc, r) => { (acc[r.parent_id] ||= []).push(r); return acc }, {})
 
@@ -234,6 +246,39 @@ export default function DecisionDetail() {
       {locked && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           Décision enregistrée le {formatDate(decision.date_enregistrement)} — verrouillée (non modifiable).
+        </div>
+      )}
+
+      {/* CE QUE LA DÉCISION FAIT — annoncé AVANT le bloc de vote, en grand.
+          Le détail vivait dans « Budget & rattachement », en bas de page et en
+          petit : on votait un engagement d'argent ou la suspension d'un projet
+          sans l'avoir lu. On ne vote pas ce qu'on ne voit pas. */}
+      {(decision.montant_engage != null || decision.projet_action) && (
+        <div className="mb-4 rounded-md border-l-4 border-navy-500 border-y border-r border-navy-200 bg-navy-50 px-4 py-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-navy-600">Objet de la décision</p>
+          {decision.montant_engage != null && (
+            <p className="mt-1 text-lg font-semibold text-navy-900">
+              Engage {eur(decision.montant_engage)}
+              {cibleLabel && <span className="font-normal text-navy-700"> sur {cibleLabel}</span>}
+            </p>
+          )}
+          {decision.projet_action && projet && (
+            <p className="mt-1 text-lg font-semibold text-navy-900">
+              {PROJET_ACTION_LABELS[decision.projet_action]} : « {projet.nom} »
+            </p>
+          )}
+          <p className="mt-1.5 text-xs text-navy-700">
+            {locked && decision.statut === 'adoptee' ? (
+              <>Adoptée et enregistrée{decision.projet_action && <> — le projet est passé en <strong>{statutVise}</strong></>}.</>
+            ) : locked ? (
+              <>Décision {decision.statut === 'rejetee' ? 'rejetée' : 'non adoptée'} : sans effet.</>
+            ) : (
+              <>
+                Prend effet si la décision est <strong>adoptée puis enregistrée</strong> par le président
+                {decision.projet_action && <> — le projet passera alors en <strong>{statutVise}</strong></>}. C’est l’objet de votre vote.
+              </>
+            )}
+          </p>
         </div>
       )}
 
@@ -539,6 +584,7 @@ export default function DecisionDetail() {
         open={share}
         onClose={() => setShare(false)}
         decision={decision}
+        contexte={{ projetNom: projet?.nom, cibleLabel }}
         onShared={async () => { await repo.markDecisionNotified(id); await reload() }}
       />
 
@@ -587,9 +633,9 @@ export default function DecisionDetail() {
 // Partage manuel dans le groupe WhatsApp du CS : le texte est affiché tel qu'il
 // sera envoyé, avec une copie presse-papier en repli (WhatsApp Web non connecté,
 // envoi par un autre canal…).
-function ShareModal({ open, onClose, decision, onShared }) {
+function ShareModal({ open, onClose, decision, onShared, contexte }) {
   const [copied, setCopied] = useState(false)
-  const text = decisionShareText(decision)
+  const text = decisionShareText(decision, contexte)
   const dejaNotifiee = Boolean(decision.date_notification)
 
   const copy = async () => {

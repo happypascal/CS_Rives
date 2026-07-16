@@ -175,7 +175,8 @@ export function Spinner({ label = 'Chargement…' }) {
 }
 
 // Money / number formatting helpers used across pages.
-export const eur = (n) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0)
+// `eur` est défini dans lib/format.js — les libs en ont besoin sans dépendre des
+// composants — et ré-exporté ici pour que les pages gardent un import unique.
+export { eur } from '../lib/format'
 
 export const num = (n) => new Intl.NumberFormat('fr-FR').format(Number(n) || 0)

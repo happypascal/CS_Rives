@@ -1,7 +1,8 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatDate } from './format'
+import { formatDate, eur } from './format'
 import { tally, tallySummary, VOTE_LABELS } from './decisionLogic'
+import { PROJET_ACTION_LABELS } from './projetLogic'
 import { ORG } from './config'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -83,14 +84,22 @@ function decisionBlock(doc, decision, opts = {}) {
   doc.text(bodyLines, 20, y)
   y += bodyLines.length * 5 + 4
 
-  // Engagement budgétaire (sur un budget voté en AG).
-  if (decision.montant_engage != null && decision.montant_engage !== '') {
-    const montant = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(decision.montant_engage))
+  // Portée de la délibération : ce qu'elle engage, et son effet sur un projet.
+  // Le PDF est la trace légale : il doit dire ce que le CS a voté, pas seulement
+  // le texte de la décision.
+  const aUnEffet = decision.montant_engage != null && decision.montant_engage !== ''
+  if (aUnEffet || decision.projet_action) {
     y = sectionTitle(doc, 'ENGAGEMENT BUDGÉTAIRE', y)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
-    doc.text(`Montant engagé : ${montant}`, 20, y)
-    y += 6
+    if (aUnEffet) {
+      doc.text(`Montant engagé : ${eur(decision.montant_engage)}`, 20, y)
+      y += 6
+    }
+    if (decision.projet_action) {
+      doc.text(`Effet sur le projet : ${PROJET_ACTION_LABELS[decision.projet_action]}`, 20, y)
+      y += 6
+    }
   }
 
   // Composition snapshot (fall back to current members).

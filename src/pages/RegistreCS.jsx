@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal } from '../components/ui'
+import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal, eur } from '../components/ui'
 import { StatutBadge, SignatureBadge } from '../components/badges'
+import { PROJET_ACTION_LABELS } from '../lib/projetLogic'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -230,6 +231,16 @@ export default function RegistreCS() {
                       {toVote && !overdue && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à voter</span>}
                       {d.created_by === user?.membre_id && !d.enregistree && !d.date_notification && (
                         <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>
+                      )}
+                      {/* Ce que la décision fait, visible dès la liste : le titre
+                          seul ne dit pas qu'on engage 20 000 € ou qu'on suspend
+                          un projet. */}
+                      {(d.montant_engage != null || d.projet_action) && (
+                        <span className="mt-0.5 block text-xs text-navy-700">
+                          {d.montant_engage != null && <span className="font-medium">Engage {eur(d.montant_engage)}</span>}
+                          {d.montant_engage != null && d.projet_action && ' · '}
+                          {d.projet_action && <span className="font-medium">{PROJET_ACTION_LABELS[d.projet_action]}</span>}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>

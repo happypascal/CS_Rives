@@ -1,6 +1,12 @@
 import { format, parseISO, isValid, addBusinessDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
+// Montant en euros, format FR. Vit ici et non dans `ui.jsx` : les libs (share.js,
+// pdf.js) doivent pouvoir formater un montant sans importer un module de
+// composants. `ui.jsx` le ré-exporte, les pages continuent de l'importer de là.
+export const eur = (n) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0)
+
 // Display a date-only ISO string (YYYY-MM-DD) as JJ/MM/AAAA.
 export function formatDate(value) {
   if (!value) return '—'
