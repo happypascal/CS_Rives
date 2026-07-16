@@ -202,8 +202,12 @@ export default function DecisionDetail() {
 
   return (
     <div>
+      {/* L'en-tête ne porte que le numéro : le titre vit dans le bloc de lecture
+          ci-dessous, avec la description, l'impact et les pièces jointes. Un titre
+          ici serait à la fois long (il chasserait les boutons) et séparé de ce
+          qu'il annonce. */}
       <PageHeader
-        title={<span><span className="text-slate-400">{decision.numero}</span> · {decision.titre}</span>}
+        title={<span className="text-slate-500">Décision {decision.numero}</span>}
         subtitle={`Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`}
         actions={
           <>
@@ -250,49 +254,87 @@ export default function DecisionDetail() {
         </div>
       )}
 
-      {/* CE QUE LA DÉCISION FAIT — annoncé AVANT le bloc de vote, en grand.
-          Le détail vivait dans « Budget & rattachement », en bas de page et en
-          petit : on votait un engagement d'argent ou la suspension d'un projet
-          sans l'avoir lu. On ne vote pas ce qu'on ne voit pas. */}
-      {(cibleLabel || decision.montant_engage != null || decision.projet_action) && (
-        <div className="mb-4 rounded-md border-l-4 border-navy-500 border-y border-r border-navy-200 bg-navy-50 px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-navy-600">Objet de la décision</p>
-          {decision.montant_engage != null ? (
-            <p className="mt-1 text-lg font-semibold text-navy-900">
-              Engage {eur(decision.montant_engage)}
-              {cibleLabel && <span className="font-normal text-navy-700"> sur {cibleLabel}</span>}
-            </p>
-          ) : (
-            // Rattachée sans engager : le dire quand même. Le bandeau ne se
-            // déclenchait que sur un montant ou une action — une décision qui
-            // ne fait « que » porter sur un projet n'annonçait donc RIEN, et on
-            // votait sans savoir sur quoi elle porte.
-            cibleLabel && !decision.projet_action && (
-              <p className="mt-1 text-lg font-semibold text-navy-900">
-                Concerne <span className="font-normal text-navy-700">{cibleLabel}</span>
-                <span className="ml-1 text-sm font-normal text-navy-600">— sans engagement de montant</span>
-              </p>
-            )
-          )}
-          {decision.projet_action && projet && (
-            <p className="mt-1 text-lg font-semibold text-navy-900">
-              {PROJET_ACTION_LABELS[decision.projet_action]} : « {projet.nom} »
-            </p>
-          )}
-          <p className="mt-1.5 text-xs text-navy-700">
-            {locked && decision.statut === 'adoptee' ? (
-              <>Adoptée et enregistrée{decision.projet_action && <> — le projet est passé en <strong>{statutVise}</strong></>}.</>
-            ) : locked ? (
-              <>Décision {decision.statut === 'rejetee' ? 'rejetée' : 'non adoptée'} : sans effet.</>
-            ) : (
-              <>
-                Prend effet si la décision est <strong>adoptée puis enregistrée</strong> par le président
-                {decision.projet_action && <> — le projet passera alors en <strong>{statutVise}</strong></>}. C’est l’objet de votre vote.
-              </>
-            )}
-          </p>
+      {/* CE QU'ON VOTE — un seul bloc de lecture : titre, description, impact,
+          pièces jointes. Tout ce dont un membre a besoin pour se décider, dans
+          l'ordre où il se pose les questions, et les boutons de vote juste en
+          dessous. Auparavant c'était éparpillé : titre dans l'en-tête, impact
+          dans un bandeau, description plus bas, pièces jointes dans la colonne de
+          droite — on votait sans avoir tout lu. */}
+      <Card className="mb-6">
+        <div className="border-b border-navy-100 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="min-w-0 text-xl font-semibold text-navy-800">{decision.titre}</h2>
+            <div className="shrink-0"><StatutBadge statut={decision.statut} /></div>
+          </div>
         </div>
-      )}
+
+        {decision.description && decision.description !== '<br>' && (
+          <div className="rich-text border-b border-navy-100 px-5 py-4 text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: decision.description }} />
+        )}
+
+        {(cibleLabel || decision.montant_engage != null || decision.projet_action) && (
+          <div className="border-b border-navy-100 bg-navy-50/60 px-5 py-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-navy-600">Impact</p>
+            {decision.montant_engage != null ? (
+              <p className="mt-1 text-lg font-semibold text-navy-900">
+                Engage {eur(decision.montant_engage)}
+                {cibleLabel && <span className="font-normal text-navy-700"> sur {cibleLabel}</span>}
+              </p>
+            ) : (
+              // Rattachée sans engager : le dire quand même, sinon une décision
+              // qui ne fait « que » porter sur un projet n'annonce rien.
+              cibleLabel && !decision.projet_action && (
+                <p className="mt-1 text-lg font-semibold text-navy-900">
+                  Concerne <span className="font-normal text-navy-700">{cibleLabel}</span>
+                  <span className="ml-1 text-sm font-normal text-navy-600">— sans engagement de montant</span>
+                </p>
+              )
+            )}
+            {decision.projet_action && projet && (
+              <p className="mt-1 text-lg font-semibold text-navy-900">
+                {PROJET_ACTION_LABELS[decision.projet_action]} :{' '}
+                <Link to={`/projets/${projet.id}`} className="underline decoration-navy-300 underline-offset-2 hover:decoration-navy-600">« {projet.nom} »</Link>
+              </p>
+            )}
+            <p className="mt-1.5 text-xs text-navy-700">
+              {locked && decision.statut === 'adoptee' ? (
+                <>Adoptée et enregistrée{decision.projet_action && <> — le projet est passé en <strong>{statutVise}</strong></>}.</>
+              ) : locked ? (
+                <>Décision {decision.statut === 'rejetee' ? 'rejetée' : 'non adoptée'} : sans effet.</>
+              ) : (
+                <>
+                  Prend effet si la décision est <strong>adoptée puis enregistrée</strong> par le président
+                  {decision.projet_action && <> — le projet passera alors en <strong>{statutVise}</strong></>}. C’est l’objet de votre vote.
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Les pièces jointes sont les DEVIS et les offres : on ne peut pas voter
+            un engagement sans elles. Leur place est ici, pas dans une colonne
+            latérale sous le résultat du vote. */}
+        <div className="px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Pièces jointes {(decision.documents || []).length > 0 && `(${decision.documents.length})`}
+          </p>
+          {(decision.documents || []).length === 0 ? (
+            <p className="mt-1 text-sm text-slate-400">Aucune pièce jointe.</p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {decision.documents.map((doc) => (
+                <li key={doc.id}>
+                  <a href={doc.dataUrl} download={doc.name} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm hover:bg-navy-50/50">
+                    <span className="truncate text-navy-700">{doc.name}</span>
+                    <span className="ml-2 shrink-0 text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {isOwner && !locked && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
+        </div>
+      </Card>
 
       {/* Mon vote — bloc proéminent (voter facilement, y compris au mobile). */}
       {iAmInComposition && !locked && (
@@ -333,9 +375,10 @@ export default function DecisionDetail() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          {/* Titre, description, impact et pièces jointes sont remontés dans le
+              bloc de lecture, au-dessus du vote. Ne restent ici que les dates. */}
           <Card>
-            <CardHeader title="Décision" actions={<StatutBadge statut={decision.statut} />} />
-            <div className="rich-text px-5 py-4 text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: decision.description }} />
+            <CardHeader title="Dates" />
             <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
               <Info label="Publication" value={formatDate(decision.date_publication)} />
               <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />
@@ -489,16 +532,13 @@ export default function DecisionDetail() {
             </div>
           </Card>
 
-          {(decision.montant_engage != null || decision.ag_id || projet) && (
+          {/* Le projet et le montant sont dans le bloc « Impact », en haut : ne
+              reste ici que ce qu'il n'y a pas — l'origine AG, et l'état du budget
+              sur lequel s'impute l'engagement. */}
+          {(decision.ag_id || projet || budget) && (
             <Card>
-              <CardHeader title="Budget & rattachement" />
+              <CardHeader title="Suivi budgétaire" />
               <dl className="divide-y divide-navy-50 text-sm">
-                {projet && (
-                  <div className="flex items-center justify-between px-5 py-3">
-                    <dt className="text-slate-500">Projet</dt>
-                    <dd><Link to={`/projets/${projet.id}`} className="font-medium text-navy-700 hover:underline">{projet.nom}</Link></dd>
-                  </div>
-                )}
                 {ag && (
                   <div className="flex items-center justify-between px-5 py-3">
                     <dt className="text-slate-500">AG rattachée</dt>
@@ -509,12 +549,6 @@ export default function DecisionDetail() {
                   <div className="flex items-center justify-between gap-3 px-5 py-3">
                     <dt className="text-slate-500">Résolution</dt>
                     <dd className="text-right text-slate-700">N° {resolution.numero} — {resolution.titre}</dd>
-                  </div>
-                )}
-                {decision.montant_engage != null && (
-                  <div className="flex items-center justify-between px-5 py-3">
-                    <dt className="text-slate-500">Montant engagé</dt>
-                    <dd className="font-medium text-navy-800">{eur(decision.montant_engage)}</dd>
                   </div>
                 )}
               </dl>
@@ -533,27 +567,6 @@ export default function DecisionDetail() {
             </Card>
           )}
 
-          {/* Documents */}
-          <Card>
-            <CardHeader title="Pièces jointes" />
-            <div className="px-5 py-4">
-              {(decision.documents || []).length === 0 ? (
-                <p className="text-sm text-slate-500">Aucune pièce jointe.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {decision.documents.map((doc) => (
-                    <li key={doc.id}>
-                      <a href={doc.dataUrl} download={doc.name} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm hover:bg-navy-50/50">
-                        <span className="truncate text-navy-700">{doc.name}</span>
-                        <span className="text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {isAdmin && !locked && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
-            </div>
-          </Card>
 
           <Card>
             <CardHeader title="Signature électronique" />
