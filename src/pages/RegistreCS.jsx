@@ -273,7 +273,7 @@ export default function RegistreCS() {
         footer={<><Button variant="secondary" onClick={() => setSigModal(false)}>Annuler</Button><Button onClick={sendForSignature} disabled={busy}>{busy ? 'Envoi…' : 'Envoyer'}</Button></>}
       >
         <div className="space-y-3 text-sm text-slate-600">
-          <p>{selectedCount} décision(s) seront regroupées dans une seule demande de signature. Les signataires sont les membres ayant voté « Pour » ou « Abstention ».</p>
+          <p>{selectedCount} décision(s) seront regroupées dans une seule demande de signature. Les signataires sont les membres présents à la délibération, c’est-à-dire tous ceux ayant voté — y compris « Contre » (art. 15).</p>
           <Input label="Titre du lot" value={sigTitle} onChange={(e) => setSigTitle(e.target.value)} placeholder="ex : Décisions du 1er trimestre 2026" />
           {isMockSignature && <p className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-700">Mode démo : aucun email réel n’est envoyé (stub Yousign).</p>}
         </div>

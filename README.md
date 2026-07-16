@@ -63,18 +63,28 @@ La couche signature est abstraite (`src/lib/signatureProvider.js`) :
 > ⚠️ **Sécurité** : la clé API Yousign ne doit **jamais** être exposée côté client.
 > En production, l'appel se fait via une **Edge Function Supabase** ; le stub client
 > présent ici documente l'interface attendue. Workflow : le président envoie la décision
-> **adoptée et clôturée** ; les signataires sont les membres ayant voté « Pour » ou
-> « Abstention ».
+> **adoptée et enregistrée** ; les signataires sont les membres **présents à la
+> délibération**, c'est-à-dire tous ceux ayant voté — y compris « Contre » (art. 15).
 
 ---
 
 ## Règles métier figées
 
-- **Quorum décision CS** : > 50 % des membres actifs *présents* (présent = a voté
-  pour/contre/abstention, pas « absent »).
-- **Adoption décision CS** : majorité des voix *exprimées* (pour > contre ; abstentions
-  et absents hors dénominateur).
-- **Clôture** : fige le statut, le quorum et un **snapshot de la composition** du CS
+Source : **ARTICLE 15 des statuts de l'ASL**. En cas de doute, relire l'article — il prime
+sur ce README et sur les commentaires du code.
+
+- **Quorum décision CS** : > 50 % des membres actifs ont voté (présent = a voté
+  pour/contre/abstention ; « absent » n'est pas un choix, c'est l'absence de vote).
+  ⚠ Règle **interne**, volontairement plus stricte : l'art. 15 n'impose aucun quorum au CS.
+- **Adoption décision CS** : majorité des membres **présents** (`pour × 2 > présents`).
+  Les **abstentions restent au dénominateur** et font donc obstacle à l'adoption.
+- **Partage des voix** : `pour × 2 === présents` → la voix du **président est
+  prépondérante**. S'il n'a pas voté, personne ne départage → rejetée.
+- **Signataires** : tous les membres **présents à la délibération**, y compris ceux ayant
+  voté « Contre ».
+- **Non couvert** : la représentation (« ou représentés »). Le modèle est self-only ; un
+  membre sans vote est absent, jamais représenté.
+- **Enregistrement** : fige le statut, le quorum et un **snapshot de la composition** du CS
   (le PDF reste fidèle même après un changement de mandat).
 - **Résolutions AG** : `simple` (pour > contre), `double_qualifiee` (2/3 des propriétaires
   ET 2/3 des superficies), `unanimite`.
