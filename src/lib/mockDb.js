@@ -655,9 +655,15 @@ export const mockRepo = {
   },
 
   // ---- Décisions CS ----
+  // `documents` est retiré ICI AUSSI, pour rester à parité avec Supabase, qui ne
+  // le sélectionne pas (les pièces jointes pèsent trop pour une liste). Sans ça
+  // le mock serait plus riche que la prod et masquerait un écran de liste qui
+  // lirait `documents` : il marcherait en démo, pas en production.
   async listDecisions() {
     await delay()
-    return clone(load().decisions).sort(byDateDesc('date_publication'))
+    return clone(load().decisions)
+      .map(({ documents, ...d }) => d) // eslint-disable-line no-unused-vars
+      .sort(byDateDesc('date_publication'))
   },
   async getDecision(id) {
     await delay()

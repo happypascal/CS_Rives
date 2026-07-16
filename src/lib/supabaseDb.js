@@ -190,8 +190,22 @@ export const supabaseRepo = {
   },
 
   // ---- Décisions ----
+  // Toutes les colonnes SAUF `documents`.
+  //
+  // Les pièces jointes sont stockées en base64 dans ce jsonb (pas encore de
+  // Supabase Storage) : un `select('*')` faisait donc télécharger TOUTES les
+  // pièces jointes de TOUTES les décisions à chaque ouverture du registre. Le
+  // base64 gonflant de 33 %, vingt décisions avec un devis de 2 Mo = ~54 Mo par
+  // chargement de page. Aucun écran de liste ne lit `documents` — seules les
+  // fiches, qui passent par getDecision.
+  //
+  // Énumération explicite parce que PostgREST n'a pas de « tout sauf ». Une
+  // colonne ajoutée à `decisions` doit être ajoutée ICI, sinon elle sera
+  // silencieusement absente des listes en prod (le mock, lui, la renverra).
   async listDecisions() {
-    return must(await supabase.from('decisions').select('*').order('date_publication', { ascending: false }))
+    return must(await supabase.from('decisions')
+      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,projet_id,ag_id,resolution_id,projet_action,created_by,created_at,updated_at')
+      .order('date_publication', { ascending: false }))
   },
   async getDecision(id) {
     const d = must(await supabase.from('decisions').select('*').eq('id', id).maybeSingle())
