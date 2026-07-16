@@ -42,6 +42,14 @@ create table if not exists assemblees_generales (
 -- Résultat seul : les voix (au prorata superficie) restent dans le PV.
 -- Cycle : 'a_voter' (inscrite à l'ordre du jour, AG pas encore tenue) → résultat.
 -- Seule une résolution 'adoptee' alloue réellement un budget (cf. computeAGBudgets).
+--
+-- `projet_id` (ajouté plus bas par alter, cf. dépendance circulaire) : le projet
+-- que cette enveloppe finance. C'est la RÉSOLUTION qui pointe le projet, jamais
+-- l'inverse — une colonne scalaire ne contenant qu'une valeur, la règle « une
+-- résolution ne finance qu'un projet » est structurelle, sans contrainte à écrire.
+-- Le sens inverse est libre : PLUSIEURS résolutions peuvent pointer le même projet
+-- (augmentation de budget votée plus tard, projet mené en phases) — donc surtout
+-- pas d'unique sur projet_id.
 create table if not exists resolutions_ag (
   id               uuid primary key default gen_random_uuid(),
   ag_id            uuid not null references assemblees_generales(id) on delete cascade,
@@ -58,19 +66,20 @@ create table if not exists resolutions_ag (
 );
 
 -- ------------------------------------------------------------ projets
--- Toujours issu d'une résolution AG ADOPTÉE, dont il hérite du budget voté :
--- `budget_alloue` recopie `resolutions_ag.budget_alloue`, il n'est pas saisi.
--- L'enveloppe étant indivisible, une résolution ne porte qu'UN projet (garde
--- applicative dans ProjetForm : pas de contrainte d'unicité, les projets
--- historiques ne la respectent pas forcément).
+-- Exécution par le CS d'une ou plusieurs résolutions d'AG adoptées.
+--
+-- Le projet ne porte NI budget NI AG : les deux se dérivent des résolutions qui
+-- le pointent (`resolutions_ag.projet_id`).
+--   - budget = somme des `budget_alloue` des résolutions ADOPTÉES rattachées
+--     (cf. computeProjectBudgets). Le stocker créerait une divergence silencieuse
+--     dès qu'une résolution est ajoutée ou change de statut.
+--   - AG d'origine = celles des résolutions rattachées. Un projet financé sur deux
+--     exercices a deux AG d'origine ; une colonne `ag_id` unique mentirait.
 create table if not exists projets (
   id             uuid primary key default gen_random_uuid(),
   nom            text not null,
   description    text,
   chef_projet_id uuid references membres_cs(id),
-  ag_id          uuid references assemblees_generales(id) on delete set null,
-  resolution_id  uuid not null references resolutions_ag(id) on delete restrict,
-  budget_alloue  numeric(12,2),
   statut         text not null default 'ouvert' check (statut in ('ouvert','en_cours','termine','suspendu')),
   documents      jsonb not null default '[]',
   date_ouverture date,
@@ -78,6 +87,15 @@ create table if not exists projets (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
+
+-- resolutions_ag → projets : posé après coup, les deux tables se référençant
+-- mutuellement (projets n'existe pas encore au create de resolutions_ag).
+-- `on delete set null` : supprimer un projet DÉTACHE ses résolutions, il ne les
+-- détruit pas — une résolution votée par l'AG survit toujours à un projet du CS.
+alter table resolutions_ag
+  add column if not exists projet_id uuid references projets(id) on delete set null;
+
+create index if not exists resolutions_ag_projet_id_idx on resolutions_ag (projet_id);
 
 -- ------------------------------------------------------------ decisions (CS)
 create table if not exists decisions (

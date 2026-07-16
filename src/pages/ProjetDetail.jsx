@@ -43,7 +43,7 @@ export default function ProjetDetail() {
   }
 
   const del = async () => {
-    if (!confirm(`Supprimer le projet « ${projet.nom} » ? Les décisions rattachées seront détachées.`)) return
+    if (!confirm(`Supprimer le projet « ${projet.nom} » ? Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).`)) return
     await repo.deleteProjet(id)
     navigate('/projets')
   }
@@ -54,7 +54,7 @@ export default function ProjetDetail() {
     <div>
       <PageHeader
         title={projet.nom}
-        subtitle={`${projet.ag_numero ? projet.ag_numero + ' · ' : ''}${projet.resolution_titre ? 'Résolution : ' + projet.resolution_titre : ''}`}
+        subtitle={projet.ags?.length ? `Financé par ${projet.ags.map((a) => a.numero).join(' · ')}` : 'Aucune résolution rattachée'}
         actions={
           canManage && (
             <>
@@ -86,6 +86,42 @@ export default function ProjetDetail() {
           </div>
         </Card>
       </div>
+
+      {/* D'où vient l'alloué : le budget n'est stocké nulle part, il est la somme
+          des enveloppes votées. L'afficher ligne à ligne est le seul moyen de
+          rendre ce total vérifiable — et de montrer qu'une rallonge non encore
+          votée ne compte pas. */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Résolutions qui financent ce projet"
+          subtitle="Le budget alloué est la somme des enveloppes votées en AG. Il ne se saisit pas : il se rattache."
+        />
+        <ul className="divide-y divide-navy-50">
+          {(!projet.resolutions || projet.resolutions.length === 0) && (
+            <li className="px-5 py-6 text-center text-sm text-slate-500">
+              Aucune résolution rattachée : ce projet n’a aucun budget. Rattachez-lui une résolution adoptée depuis la fiche de l’AG.
+            </li>
+          )}
+          {projet.resolutions?.map((r) => (
+            <li key={r.id} className="flex items-start justify-between gap-3 px-5 py-3">
+              <div className="min-w-0">
+                <Link to={`/ag/${r.ag_id}`} className="text-sm font-medium text-navy-700 hover:underline">
+                  {r.ag_numero} — résolution n° {r.numero}
+                </Link>
+                <p className="truncate text-xs text-slate-500">{r.titre}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className={`text-sm font-semibold ${r.compte_dans_alloue ? 'text-navy-800' : 'text-slate-400 line-through'}`}>
+                  {r.budget_alloue == null ? '—' : eur(r.budget_alloue)}
+                </p>
+                {!r.compte_dans_alloue && (
+                  <p className="text-xs text-amber-700">non voté — hors budget</p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
       {projet.description && (
         <Card className="mb-6">

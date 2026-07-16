@@ -15,7 +15,9 @@ delete from decision_status_history;
 delete from signature_batches;
 delete from audit_log;
 
--- 2) Décisions, projets, résolutions, AG (dans cet ordre pour les clés étrangères)
+-- 2) Décisions, projets, résolutions, AG (dans cet ordre pour les clés étrangères).
+-- `projets` avant `resolutions_ag` : c'est la résolution qui pointe le projet
+-- (resolutions_ag.projet_id), et son `on delete set null` détache proprement.
 delete from decisions;
 delete from projets;
 delete from resolutions_ag;

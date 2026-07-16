@@ -76,6 +76,15 @@ export default function DecisionForm() {
   const selProjet = useMemo(() => (kind === 'projet' ? projets.find((p) => p.id === targetId) : null), [kind, targetId, projets])
   const selRes = useMemo(() => (kind === 'resolution' ? agBudgets.find((b) => b.resolution_id === targetId) : null), [kind, targetId, agBudgets])
 
+  // Une enveloppe rattachée à un projet y est passée EN ENTIER : son restant est nul
+  // et un engagement direct dessus serait forcément refusé. On ne la propose donc
+  // pas — l'engagement se fait sur le projet. Exception : la cible déjà choisie par
+  // la décision qu'on édite, sinon elle disparaîtrait de son propre formulaire.
+  const engageablesDirect = useMemo(
+    () => agBudgets.filter((b) => !b.projet_id || b.resolution_id === targetId),
+    [agBudgets, targetId],
+  )
+
   // Restant disponible sur la cible (en réintégrant l'engagement de CETTE décision si on l'édite).
   const restantDispo = useMemo(() => {
     const src = selProjet || selRes
@@ -134,10 +143,13 @@ export default function DecisionForm() {
       return setError(`Montant engagé (${eur(engage)}) supérieur au disponible (${eur(restantDispo)}).`)
     }
     // Résout la cible en projet_id / resolution_id / ag_id.
+    // Un projet peut être financé par plusieurs AG : `ag_id` ne vaut que s'il n'y
+    // en a qu'une. Sinon on le laisse vide plutôt que d'en élire une arbitrairement
+    // — l'AG d'origine se lit sur la fiche projet, qui les montre toutes.
     let projet_id = null, resolution_id = null, ag_id = null
     if (kind === 'projet' && selProjet) {
       projet_id = selProjet.id
-      ag_id = selProjet.ag_id || null
+      ag_id = selProjet.ags?.length === 1 ? selProjet.ags[0].id : null
     } else if (kind === 'resolution' && selRes) {
       resolution_id = selRes.resolution_id
       ag_id = selRes.ag_id || null
@@ -196,9 +208,9 @@ export default function DecisionForm() {
                   {projets.map((p) => <option key={p.id} value={`projet:${p.id}`}>{p.nom} (restant {eur(p.restant)})</option>)}
                 </optgroup>
               )}
-              {agBudgets.length > 0 && (
+              {engageablesDirect.length > 0 && (
                 <optgroup label="Résolutions AG (engagement direct)">
-                  {agBudgets.map((b) => <option key={b.resolution_id} value={`resolution:${b.resolution_id}`}>{b.ag_numero} · {b.intitule} (restant {eur(b.restant)})</option>)}
+                  {engageablesDirect.map((b) => <option key={b.resolution_id} value={`resolution:${b.resolution_id}`}>{b.ag_numero} · {b.intitule} (restant {eur(b.restant)})</option>)}
                 </optgroup>
               )}
             </Select>

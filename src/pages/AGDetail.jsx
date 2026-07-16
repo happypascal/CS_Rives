@@ -17,13 +17,20 @@ export default function AGDetail() {
   const canManage = isAdmin && !isMobile
   const [ag, setAg] = useState(null)
   const [decisions, setDecisions] = useState([])
+  const [projets, setProjets] = useState([])
   const [loading, setLoading] = useState(true)
   const [resModal, setResModal] = useState(null)
+  const [rattachModal, setRattachModal] = useState(null)
 
   const reload = useCallback(async () => {
-    const [data, ds] = await Promise.all([repo.getAG(id), repo.listDecisions()])
+    const [data, ds, ps] = await Promise.all([
+      repo.getAG(id),
+      repo.listDecisions(),
+      repo.listProjets().catch(() => []),
+    ])
     setAg(data)
     setDecisions(ds)
+    setProjets(ps)
     setLoading(false)
   }, [id])
 
@@ -47,6 +54,9 @@ export default function AGDetail() {
   const budgetPropose = ag.resolutions.filter((r) => r.statut === 'a_voter').reduce((s, r) => s + (Number(r.budget_alloue) || 0), 0)
   const linkedCount = (resolutionId) => decisions.filter((d) => d.resolution_id === resolutionId).length
   const agLocked = decisions.some((d) => d.ag_id === id)
+  const projetById = Object.fromEntries(projets.map((p) => [p.id, p]))
+  // Une résolution ne finance un projet que si l'AG l'a adoptée ET dotée.
+  const peutFinancer = (r) => r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
 
   const deleteAG = async () => {
     if (!confirm(`Supprimer l’AG ${ag.numero} et toutes ses résolutions ?`)) return
@@ -116,8 +126,23 @@ export default function AGDetail() {
                 {r.budget_alloue != null && r.budget_alloue !== '' && (
                   <span className="font-medium text-navy-700">Budget : {eur(r.budget_alloue)}{r.budget_intitule ? ` · ${r.budget_intitule}` : ''}</span>
                 )}
-                {canManage && r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== '' && (
-                  <Link to={`/projets/nouveau?resolution=${r.id}&ag=${ag.id}`} className="text-navy-600 underline">Ouvrir un projet</Link>
+                {/* Le rattachement se pilote ICI : l'AG vote l'enveloppe, puis on
+                    décide si elle ouvre un projet ou en abonde un existant. */}
+                {peutFinancer(r) && r.projet_id && (
+                  <span className="text-slate-600">
+                    Finance le projet <Link to={`/projets/${r.projet_id}`} className="font-medium text-navy-600 underline">{projetById[r.projet_id]?.nom || 'projet'}</Link>
+                    {canManage && (
+                      <button onClick={() => setRattachModal(r)} className="ml-2 text-navy-600 underline">changer</button>
+                    )}
+                  </span>
+                )}
+                {canManage && peutFinancer(r) && !r.projet_id && (
+                  <>
+                    <Link to={`/projets/nouveau?resolution=${r.id}`} className="text-navy-600 underline">Ouvrir un projet</Link>
+                    {projets.length > 0 && (
+                      <button onClick={() => setRattachModal(r)} className="text-navy-600 underline">Rattacher à un projet existant</button>
+                    )}
+                  </>
                 )}
               </div>
               {r.observations && <p className="mt-2 text-xs italic text-slate-400">{r.observations}</p>}
@@ -129,7 +154,70 @@ export default function AGDetail() {
       {resModal && (
         <ResolutionModal ag={ag} resolution={resModal} onClose={() => setResModal(null)} onSaved={async () => { setResModal(null); await reload() }} />
       )}
+      {rattachModal && (
+        <RattachementModal
+          resolution={rattachModal}
+          projets={projets}
+          onClose={() => setRattachModal(null)}
+          onSaved={async () => { setRattachModal(null); await reload() }}
+        />
+      )}
     </div>
+  )
+}
+
+// Rattache l'enveloppe d'une résolution à un projet — ou l'en détache.
+// Une résolution ne pointant qu'un projet, choisir en remplace un autre : la règle
+// « une résolution ne finance qu'un projet » n'a pas à être vérifiée, elle tient à
+// la forme de la donnée. L'inverse est libre : plusieurs résolutions par projet.
+function RattachementModal({ resolution, projets, onClose, onSaved }) {
+  const [projetId, setProjetId] = useState(resolution.projet_id || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const save = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      await repo.setResolutionProjet(resolution.id, projetId || null)
+      await onSaved()
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+    }
+  }
+
+  const cible = projets.find((p) => p.id === projetId)
+
+  return (
+    <Modal title={`Résolution n° ${resolution.numero} — rattachement`} onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+          L’enveloppe de <strong>{eur(resolution.budget_alloue)}</strong> votée par cette résolution finance :
+        </p>
+        <Select label="Projet financé" value={projetId} onChange={(e) => setProjetId(e.target.value)}>
+          <option value="">— Aucun (enveloppe non affectée) —</option>
+          {projets.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+        </Select>
+        {cible && (
+          <p className="text-xs text-slate-500">
+            Budget de « {cible.nom} » après rattachement :{' '}
+            <strong>{eur(cible.id === resolution.projet_id ? cible.alloue : cible.alloue + Number(resolution.budget_alloue || 0))}</strong>
+            {cible.id !== resolution.projet_id && <> (aujourd’hui {eur(cible.alloue)})</>}
+          </p>
+        )}
+        {!projetId && resolution.projet_id && (
+          <p className="text-xs text-amber-700">
+            L’enveloppe sera retirée du budget du projet, qui diminuera d’autant. La résolution, elle, reste intacte.
+          </p>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>Annuler</Button>
+          <Button onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

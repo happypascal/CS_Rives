@@ -86,17 +86,19 @@ export const supabaseRepo = {
   async createResolution(input) {
     return must(await supabase.from('resolutions_ag').insert(input).select())[0]
   },
+  // Le rattachement vit désormais sur la résolution : le verrou se lit sur
+  // `resolutions_ag.projet_id`, plus par un compte de projets.
   async updateResolution(id, patch) {
     const { count: dc } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
-    const { count: pc } = await supabase.from('projets').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
-    if (dc > 0 || pc > 0) throw new Error('Résolution verrouillée : une décision ou un projet y est rattaché.')
+    const r = must(await supabase.from('resolutions_ag').select('projet_id').eq('id', id).maybeSingle())
+    if (dc > 0 || r?.projet_id) throw new Error('Résolution verrouillée : une décision ou un projet y est rattaché.')
     return must(await supabase.from('resolutions_ag').update(patch).eq('id', id).select())[0]
   },
   async deleteResolution(id) {
     const { count: dc } = await supabase.from('decisions').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
-    const { count: pc } = await supabase.from('projets').select('id', { count: 'exact', head: true }).eq('resolution_id', id)
+    const r = must(await supabase.from('resolutions_ag').select('projet_id').eq('id', id).maybeSingle())
     if (dc > 0) throw new Error('Résolution non supprimable : une décision y est rattachée.')
-    if (pc > 0) throw new Error('Résolution non supprimable : un projet en découle.')
+    if (r?.projet_id) throw new Error('Résolution non supprimable : elle finance un projet.')
     must(await supabase.from('resolutions_ag').delete().eq('id', id))
     return { ok: true }
   },
@@ -106,17 +108,22 @@ export const supabaseRepo = {
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('*'))
     const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage'))
-    const projets = must(await supabase.from('projets').select('id,resolution_id,budget_alloue,nom'))
+    const projets = must(await supabase.from('projets').select('id,nom'))
     return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions, projets })
   },
 
   // ---- Projets ----
+  // ⚠ Les colonnes listées ici ALIMENTENT computeProjectBudgets : le budget d'un
+  // projet est dérivé de `resolutions_ag` (projet_id + statut + budget_alloue).
+  // Un select trop étroit ne lève AUCUNE erreur — il rend juste des budgets à 0,
+  // en prod seulement (le mock, lui, a toujours les objets complets). Toute
+  // colonne lue par les fonctions de calcul doit figurer ci-dessous.
   async _projectData() {
     const projets = must(await supabase.from('projets').select('*'))
     const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage'))
     const membres_cs = must(await supabase.from('membres_cs').select('id,nom,prenom'))
-    const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero'))
-    const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,numero,titre'))
+    const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
+    const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,ag_id,numero,titre,statut,budget_alloue,projet_id'))
     return { projets, decisions, membres_cs, assemblees_generales, resolutions_ag }
   },
   async listProjets() {
@@ -128,15 +135,36 @@ export const supabaseRepo = {
     const decisions = must(await supabase.from('decisions').select('*').eq('projet_id', id))
     return { ...computed, decisions }
   },
-  async createProjet(input) {
-    return must(await supabase.from('projets').insert(input).select())[0]
+  // `resolution_ids` est un champ VIRTUEL (le rattachement vit sur la résolution),
+  // à retirer du payload : PostgREST rejette toute colonne inconnue.
+  //
+  // ⚠ Non atomique : insert projets + update resolutions_ag. Si le 2e échoue, on
+  // se retrouverait avec un projet sans résolution, donc à budget 0 — on le
+  // supprime alors pour ne pas laisser d'orphelin. Une RPC serait plus propre ;
+  // pas d'Edge Function ni de RPC dans ce projet à ce jour (cf. CLAUDE.md).
+  async createProjet({ resolution_ids = [], ...input }) {
+    const p = must(await supabase.from('projets').insert(input).select())[0]
+    if (resolution_ids.length) {
+      const { error } = await supabase.from('resolutions_ag').update({ projet_id: p.id }).in('id', resolution_ids)
+      if (error) {
+        await supabase.from('projets').delete().eq('id', p.id)
+        throw new Error(`Projet non créé (rattachement des résolutions impossible) : ${error.message}`)
+      }
+    }
+    return p
   },
   async updateProjet(id, patch) {
-    return must(await supabase.from('projets').update(patch).eq('id', id).select())[0]
+    const { resolution_ids, ...cols } = patch // eslint-disable-line no-unused-vars
+    return must(await supabase.from('projets').update(cols).eq('id', id).select())[0]
   },
+  // Les résolutions sont détachées par la FK (`on delete set null`, migration 009),
+  // pas ici : c'est la base qui garantit qu'aucune ne reste orpheline.
   async deleteProjet(id) {
     must(await supabase.from('projets').delete().eq('id', id))
     return { ok: true }
+  },
+  async setResolutionProjet(resolutionId, projetId) {
+    return must(await supabase.from('resolutions_ag').update({ projet_id: projetId || null }).eq('id', resolutionId).select())[0]
   },
   async addProjetDocument(projetId, doc) {
     const p = must(await supabase.from('projets').select('documents').eq('id', projetId).maybeSingle())

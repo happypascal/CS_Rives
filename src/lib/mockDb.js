@@ -6,7 +6,7 @@
 //   - résolutions AG : résultat seul (majorité + statut) + budget alloué.
 //   - signature : par LOT de décisions sélectionnées.
 
-const STORAGE_KEY = 'cs_rives_mockdb_v5'
+const STORAGE_KEY = 'cs_rives_mockdb_v6'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -39,28 +39,40 @@ function seed() {
     .map((m) => ({ id: m.id, email: m.email, password: 'demo', role: m.role === 'president' ? 'admin' : 'membre', membre_id: m.id }))
 
   const agAGO = uid()
+  const agAGO2026 = uid()
   const agAGE = uid()
   const assemblees_generales = [
     { id: agAGO, numero: 'AGO-2025-01', type: 'AGO', date_ag: '2025-06-19', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Approbation des statuts ASL\n2. Élection du Conseil Syndical\n3. Budget travaux voirie 2025', statut: 'cloturee', pv_url: null, created_at: '2025-06-19T18:00:00Z', updated_at: '2025-06-20T09:00:00Z' },
-    { id: agAGE, numero: 'AGE-2026-01', type: 'AGE', date_ag: '2026-09-12', lieu: 'Mairie de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Travaux réfection réseau eaux pluviales\n2. Appel de fonds exceptionnel', statut: 'en_cours', pv_url: null, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z' },
+    // AG tenue : c'est elle qui vote la rallonge du projet voirie ouvert en 2025.
+    { id: agAGO2026, numero: 'AGO-2026-01', type: 'AGO', date_ag: '2026-03-20', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Comptes 2025\n2. Complément de budget voirie', statut: 'cloturee', pv_url: null, created_at: '2026-03-20T18:00:00Z', updated_at: '2026-03-21T09:00:00Z' },
+    // AG à venir : président de séance non désigné, résolutions encore à voter.
+    { id: agAGE, numero: 'AGE-2026-01', type: 'AGE', date_ag: '2026-09-12', lieu: 'Mairie de Nernier', president_seance: null, ordre_du_jour: '1. Travaux réfection réseau eaux pluviales\n2. Appel de fonds exceptionnel', statut: 'en_cours', pv_url: null, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z' },
   ]
+
+  // p1 est déclaré AVANT resolutions_ag : ce sont les résolutions qui pointent le
+  // projet (resolutions_ag.projet_id), plus l'inverse.
+  const p1 = uid()
 
   const rApprobStatuts = uid()
   const rElection = uid()
   const rBudgetVoirie = uid()
   const rProvision = uid()
+  const rVoirieComplement = uid()
   const rEauxPluviales = uid()
   const resolutions_ag = [
-    { id: rApprobStatuts, ag_id: agAGO, numero: 1, titre: 'Approbation des statuts de l’ASL', description: "L'assemblée approuve les statuts de l'ASL du Lotissement de Rives.", majorite_requise: 'double_qualifiee', statut: 'adoptee', budget_alloue: 4200, budget_intitule: 'Honoraires Me Garnier — statuts ASL', observations: 'Double majorité qualifiée atteinte (détail au PV).', created_at: '2025-06-19T18:30:00Z' },
-    { id: rElection, ag_id: agAGO, numero: 2, titre: 'Élection des membres du Conseil Syndical', description: 'Élection de Pascal Favre (président), Claire Martin, Henri Dubois, Sophie Leroy.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: null, budget_intitule: '', observations: '', created_at: '2025-06-19T19:00:00Z' },
-    { id: rBudgetVoirie, ag_id: agAGO, numero: 3, titre: 'Budget travaux de voirie 2025', description: 'Réfection de la voirie principale, répartie à la superficie.', majorite_requise: 'absolue', statut: 'adoptee', budget_alloue: 85000, budget_intitule: 'Réfection voirie principale', observations: '', created_at: '2025-06-19T19:30:00Z' },
-    { id: rProvision, ag_id: agAGO, numero: 4, titre: 'Provision entretien & espaces verts 2025', description: 'Enveloppe annuelle pour l’entretien courant et les espaces verts communs.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: 12000, budget_intitule: 'Provision entretien espaces verts', observations: 'Le CS engage les dépenses dans la limite de cette enveloppe.', created_at: '2025-06-19T19:45:00Z' },
+    { id: rApprobStatuts, ag_id: agAGO, numero: 1, titre: 'Approbation des statuts de l’ASL', description: "L'assemblée approuve les statuts de l'ASL du Lotissement de Rives.", majorite_requise: 'double_qualifiee', statut: 'adoptee', budget_alloue: 4200, budget_intitule: 'Honoraires Me Garnier — statuts ASL', observations: 'Double majorité qualifiée atteinte (détail au PV).', projet_id: null, created_at: '2025-06-19T18:30:00Z' },
+    { id: rElection, ag_id: agAGO, numero: 2, titre: 'Élection des membres du Conseil Syndical', description: 'Élection de Pascal Favre (président), Claire Martin, Henri Dubois, Sophie Leroy.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: null, budget_intitule: '', observations: '', projet_id: null, created_at: '2025-06-19T19:00:00Z' },
+    { id: rBudgetVoirie, ag_id: agAGO, numero: 3, titre: 'Budget travaux de voirie 2025', description: 'Réfection de la voirie principale, répartie à la superficie.', majorite_requise: 'absolue', statut: 'adoptee', budget_alloue: 85000, budget_intitule: 'Réfection voirie principale', observations: '', projet_id: p1, created_at: '2025-06-19T19:30:00Z' },
+    { id: rProvision, ag_id: agAGO, numero: 4, titre: 'Provision entretien & espaces verts 2025', description: 'Enveloppe annuelle pour l’entretien courant et les espaces verts communs.', majorite_requise: 'simple', statut: 'adoptee', budget_alloue: 12000, budget_intitule: 'Provision entretien espaces verts', observations: 'Le CS engage les dépenses dans la limite de cette enveloppe.', projet_id: null, created_at: '2025-06-19T19:45:00Z' },
+    // Le cas qui justifie le modèle : une 2e AG rallonge l'enveloppe d'un projet
+    // déjà ouvert. Le budget du projet passe de 85 000 à 105 000 sans que personne
+    // ne saisisse "105 000" — il se dérive des deux résolutions.
+    { id: rVoirieComplement, ag_id: agAGO2026, numero: 1, titre: 'Complément de budget — voirie principale', description: 'Rallonge votée après la découverte d’un affaissement sur le tronçon nord.', majorite_requise: 'absolue', statut: 'adoptee', budget_alloue: 20000, budget_intitule: 'Complément réfection voirie', observations: 'Complète la résolution n°3 de l’AGO 2025.', projet_id: p1, created_at: '2026-03-20T18:30:00Z' },
     // AGE à venir : inscrite à l'ordre du jour, pas encore votée. Son budget est une
     // proposition — il n'est pas alloué et n'est pas engageable tant que l'AG n'a pas eu lieu.
-    { id: rEauxPluviales, ag_id: agAGE, numero: 1, titre: 'Travaux de réfection du réseau d’eaux pluviales', description: 'Reprise du collecteur principal et des regards, suite au diagnostic de mars 2026.', majorite_requise: 'double_qualifiee', statut: 'a_voter', budget_alloue: 47000, budget_intitule: 'Réfection réseau eaux pluviales', observations: '', created_at: '2026-07-01T10:15:00Z' },
+    { id: rEauxPluviales, ag_id: agAGE, numero: 1, titre: 'Travaux de réfection du réseau d’eaux pluviales', description: 'Reprise du collecteur principal et des regards, suite au diagnostic de mars 2026.', majorite_requise: 'double_qualifiee', statut: 'a_voter', budget_alloue: 47000, budget_intitule: 'Réfection réseau eaux pluviales', observations: '', projet_id: null, created_at: '2026-07-01T10:15:00Z' },
   ]
 
-  const p1 = uid()
   const d1 = uid()
   const d2 = uid()
   const d3 = uid()
@@ -68,16 +80,14 @@ function seed() {
   const d5 = uid()
   const d6 = uid()
 
-  // Projet issu de la résolution "Budget travaux de voirie 2025".
+  // Projet financé par DEUX résolutions : 85 000 (AGO 2025) + 20 000 (AGO 2026).
+  // Ni budget ni ag_id ici : les deux se dérivent des résolutions qui le pointent.
   const projets = [
     {
       id: p1,
       nom: 'Réfection de la voirie principale',
-      description: 'Exécution des travaux de voirie votés en AGO 2025.',
+      description: 'Exécution des travaux de voirie votés en AGO 2025, complétés en AGO 2026.',
       chef_projet_id: m3,
-      ag_id: agAGO,
-      resolution_id: rBudgetVoirie,
-      budget_alloue: 85000,
       statut: 'en_cours',
       documents: [{ id: uid(), name: 'Cahier_des_charges_voirie.txt', type: 'text/plain', size: 40, dataUrl: textDataUrl('Cahier des charges — réfection voirie principale'), uploaded_at: '2025-07-02T09:00:00Z' }],
       date_ouverture: '2025-07-01',
@@ -290,16 +300,24 @@ export const mockAuth = {
 const clone = (v) => JSON.parse(JSON.stringify(v))
 const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 
+// Une résolution n'OUVRE un budget que si l'AG l'a ADOPTÉE et l'a dotée. Une
+// résolution `a_voter` n'est qu'une proposition à l'ordre du jour ; `rejetee` /
+// `retiree` n'allouent rien.
+//
+// Prédicat unique et exporté À DESSEIN : la règle est lue par computeAGBudgets
+// (enveloppe côté AG) ET par computeProjectBudgets (budget dérivé côté projet).
+// Dupliquée, elle divergerait — et une résolution d'augmentation encore `a_voter`
+// gonflerait le budget d'un projet sans que l'AG l'ait votée.
+export const ouvreUnBudget = (r) =>
+  r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
+
 // Budgets AG (enveloppe votée par résolution). Le "restant" tient compte à la
-// fois des engagements DIRECTS (décisions sans projet) et des budgets alloués
-// aux projets issus de cette résolution.
+// fois des engagements DIRECTS (décisions sans projet) et de l'enveloppe
+// transférée au projet que la résolution finance.
 export function computeAGBudgets(data) {
   const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
-  // Seule une résolution ADOPTÉE ouvre un budget. Une résolution `a_voter` n'est
-  // qu'une proposition à l'ordre du jour ; `rejetee`/`retiree` n'allouent rien.
-  // Effet de bord voulu : ces résolutions disparaissent des cibles d'engagement
-  // proposées par DecisionForm — on ne peut pas engager sur un budget non voté.
-  const budgets = data.resolutions_ag.filter((r) => r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== '')
+  const projetById = Object.fromEntries((data.projets || []).map((p) => [p.id, p]))
+  const budgets = data.resolutions_ag.filter(ouvreUnBudget)
   return budgets.map((r) => {
     const ag = agById[r.ag_id]
     const alloue = Number(r.budget_alloue)
@@ -307,9 +325,12 @@ export function computeAGBudgets(data) {
     const direct = data.decisions.filter((d) => d.resolution_id === r.id && !d.projet_id && d.montant_engage != null)
     const engageDirect = direct.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
     const directEnCours = direct.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
-    // Budgets alloués aux projets de cette résolution.
-    const projetsOnR = (data.projets || []).filter((p) => p.resolution_id === r.id)
-    const projetsAlloue = projetsOnR.reduce((s, p) => s + (Number(p.budget_alloue) || 0), 0)
+    // L'enveloppe est indivisible : si la résolution finance un projet, elle y
+    // passe EN ENTIER (le projet ne prend pas "une partie" d'une résolution).
+    // D'où un restant nul côté AG — l'argent n'a pas disparu, il se suit
+    // désormais sur le projet, où les décisions viennent l'engager.
+    const projet = r.projet_id ? projetById[r.projet_id] : null
+    const projetsAlloue = projet ? alloue : 0
     const engage = engageDirect + projetsAlloue
     return {
       resolution_id: r.id,
@@ -324,26 +345,32 @@ export function computeAGBudgets(data) {
       projets_alloue: projetsAlloue,
       engage_en_cours: directEnCours,
       restant: alloue - engage,
+      projet_id: r.projet_id || null,
       engagements: direct.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
-      projets: projetsOnR.map((p) => ({ id: p.id, nom: p.nom, budget_alloue: Number(p.budget_alloue) || 0 })),
+      projets: projet ? [{ id: projet.id, nom: projet.nom, budget_alloue: alloue }] : [],
     }
   })
 }
 
-// Budgets par PROJET : alloué (budget du projet) / engagé (décisions adoptées
-// rattachées) / restant. + méta chef, résolution, AG.
+// Budgets par PROJET : alloué (somme des résolutions qui le financent) / engagé
+// (décisions adoptées rattachées) / restant. + méta chef et résolutions sources.
 export function computeProjectBudgets(data) {
   const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
-  const resById = Object.fromEntries(data.resolutions_ag.map((r) => [r.id, r]))
   const memById = Object.fromEntries(data.membres_cs.map((m) => [m.id, m]))
   return (data.projets || []).map((p) => {
     const liees = data.decisions.filter((d) => d.projet_id === p.id && d.montant_engage != null)
     const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
     const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
-    const alloue = Number(p.budget_alloue) || 0
+
+    // Le budget du projet est DÉRIVÉ, jamais stocké : somme des enveloppes votées
+    // qui le financent. Une 2e résolution votée l'an prochain l'augmente d'elle-même.
+    // `sources` = toutes les résolutions rattachées, y compris celles qui n'ouvrent
+    // pas (encore) de budget : l'écran doit pouvoir montrer une augmentation
+    // soumise au vote sans la compter dans l'alloué.
+    const sources = data.resolutions_ag.filter((r) => r.projet_id === p.id)
+    const alloue = sources.filter(ouvreUnBudget).reduce((s, r) => s + Number(r.budget_alloue), 0)
     const chef = memById[p.chef_projet_id]
-    const ag = agById[p.ag_id]
-    const res = resById[p.resolution_id]
+
     return {
       ...p,
       alloue,
@@ -351,9 +378,23 @@ export function computeProjectBudgets(data) {
       engage_en_cours: engageEnCours,
       restant: alloue - engage,
       chef_nom: chef ? `${chef.prenom} ${chef.nom}` : null,
-      ag_numero: ag?.numero || null,
-      resolution_titre: res?.titre || null,
-      resolution_numero: res?.numero ?? null,
+      // AG d'origine : autant que de résolutions sources. Dédoublonné et trié par
+      // date — un projet pluriannuel affiche « AGO-2025-01, AGE-2026-01 ».
+      ags: [...new Map(sources.map((r) => [r.ag_id, agById[r.ag_id]]).filter(([, a]) => a))
+        .values()].sort((a, b) => (a.date_ag < b.date_ag ? -1 : 1)),
+      resolutions: sources
+        .map((r) => ({
+          id: r.id,
+          numero: r.numero,
+          titre: r.titre,
+          statut: r.statut,
+          budget_alloue: r.budget_alloue == null || r.budget_alloue === '' ? null : Number(r.budget_alloue),
+          compte_dans_alloue: ouvreUnBudget(r),
+          ag_id: r.ag_id,
+          ag_numero: agById[r.ag_id]?.numero || null,
+          ag_date: agById[r.ag_id]?.date_ag || null,
+        }))
+        .sort((a, b) => (a.ag_date < b.ag_date ? -1 : a.ag_date > b.ag_date ? 1 : a.numero - b.numero)),
       engagements: liees.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
     }
   })
@@ -449,7 +490,7 @@ export const mockRepo = {
     const data = load()
     const r = data.resolutions_ag.find((x) => x.id === id)
     if (!r) throw new Error('Résolution introuvable')
-    if (data.decisions.some((d) => d.resolution_id === id) || (data.projets || []).some((p) => p.resolution_id === id)) {
+    if (data.decisions.some((d) => d.resolution_id === id) || r.projet_id) {
       throw new Error('Résolution verrouillée : une décision ou un projet y est rattaché.')
     }
     Object.assign(r, patch)
@@ -463,8 +504,8 @@ export const mockRepo = {
     if (data.decisions.some((d) => d.resolution_id === id)) {
       throw new Error('Résolution non supprimable : une décision y est rattachée.')
     }
-    if ((data.projets || []).some((p) => p.resolution_id === id)) {
-      throw new Error('Résolution non supprimable : un projet en découle.')
+    if (data.resolutions_ag.find((x) => x.id === id)?.projet_id) {
+      throw new Error('Résolution non supprimable : elle finance un projet.')
     }
     data.resolutions_ag = data.resolutions_ag.filter((x) => x.id !== id)
     save(data)
@@ -493,11 +534,14 @@ export const mockRepo = {
     const decisions = data.decisions.filter((d) => d.projet_id === id)
     return { ...clone(computed), decisions: clone(decisions) }
   },
-  async createProjet(input) {
+  // `resolution_ids` est un champ VIRTUEL : le rattachement vit sur la résolution
+  // (resolutions_ag.projet_id), pas sur le projet. Il est retiré du row projet.
+  async createProjet({ resolution_ids = [], ...input }) {
     await delay()
     const data = load()
     const p = { id: uid(), statut: 'ouvert', documents: [], date_cloture: null, created_at: nowISO(), updated_at: nowISO(), ...input }
     data.projets.push(p)
+    data.resolutions_ag.forEach((r) => { if (resolution_ids.includes(r.id)) r.projet_id = p.id })
     audit(data, 'projets', p.id, 'create', `Ouverture projet ${p.nom}`)
     save(data)
     return clone(p)
@@ -507,7 +551,10 @@ export const mockRepo = {
     const data = load()
     const p = data.projets.find((x) => x.id === id)
     if (!p) throw new Error('Projet introuvable')
-    Object.assign(p, patch, { updated_at: nowISO() })
+    // Rattachements exclus : ils passent par setResolutionProjet, jamais par un
+    // patch de projet (le mock avalerait la clé, Supabase la rejetterait).
+    const { resolution_ids, ...cols } = patch // eslint-disable-line no-unused-vars
+    Object.assign(p, cols, { updated_at: nowISO() })
     audit(data, 'projets', id, 'update', `Modification projet ${p.nom}`)
     save(data)
     return clone(p)
@@ -515,12 +562,31 @@ export const mockRepo = {
   async deleteProjet(id) {
     await delay()
     const data = load()
-    // Les décisions rattachées sont détachées (projet_id -> null).
+    // Détachement, jamais destruction : les décisions ET les résolutions du projet
+    // lui survivent (miroir du `on delete set null` côté Supabase).
     data.decisions.forEach((d) => { if (d.projet_id === id) d.projet_id = null })
+    data.resolutions_ag.forEach((r) => { if (r.projet_id === id) r.projet_id = null })
     data.projets = data.projets.filter((x) => x.id !== id)
     audit(data, 'projets', id, 'delete', 'Suppression projet')
     save(data)
     return { ok: true }
+  },
+  // Rattache une résolution à un projet, ou l'en détache (projetId = null).
+  // Une résolution ne pointant qu'un projet, rattacher ailleurs remplace : pas
+  // de doublon possible, la règle est portée par la forme de la donnée.
+  async setResolutionProjet(resolutionId, projetId) {
+    await delay()
+    const data = load()
+    const r = data.resolutions_ag.find((x) => x.id === resolutionId)
+    if (!r) throw new Error('Résolution introuvable')
+    if (projetId && !ouvreUnBudget(r)) {
+      throw new Error('Seule une résolution adoptée et dotée d’un budget peut financer un projet.')
+    }
+    r.projet_id = projetId || null
+    const p = projetId ? data.projets.find((x) => x.id === projetId) : null
+    audit(data, 'resolutions_ag', resolutionId, 'update', projetId ? `Résolution ${r.numero} rattachée au projet ${p?.nom || ''}` : `Résolution ${r.numero} détachée de son projet`)
+    save(data)
+    return clone(r)
   },
   async addProjetDocument(projetId, doc) {
     await delay()

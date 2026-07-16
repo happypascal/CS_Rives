@@ -10,6 +10,16 @@ import { useIsMobile } from '../lib/useIsMobile'
 
 const MAX_DOC_BYTES = 2 * 1024 * 1024
 
+// Le projet ne porte ni budget ni AG : ce sont les résolutions qui le financent
+// (resolutions_ag.projet_id) et le budget s'en dérive. Ce formulaire ne saisit
+// donc QUE l'exécution : nom, description, chef, statut, dates, documents.
+// Le rattachement des résolutions se fait depuis la fiche AG — c'est le sens réel :
+// l'AG vote une enveloppe, puis on décide si elle ouvre un projet ou en abonde un.
+const EMPTY = {
+  nom: '', description: '', chef_projet_id: '',
+  statut: 'ouvert', date_ouverture: todayISO(), date_cloture: '', documents: [],
+}
+
 export default function ProjetForm() {
   const { id } = useParams()
   const editing = Boolean(id)
@@ -20,72 +30,41 @@ export default function ProjetForm() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [ags, setAgs] = useState([])
   const [membres, setMembres] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
-  const [projets, setProjets] = useState([])
-  const [resolutions, setResolutions] = useState([])
-  const [form, setForm] = useState({
-    nom: '', description: '', ag_id: '', resolution_id: '', chef_projet_id: '',
-    statut: 'ouvert', date_ouverture: todayISO(), documents: [],
-  })
+  const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
+
+  // Création depuis « Ouvrir un projet » sur une résolution (AGDetail) : la
+  // résolution d'origine est le seul rattachement posé à la création.
+  const resolutionOrigine = params.get('resolution')
 
   useEffect(() => {
     async function init() {
-      const [agList, mem, budgets, projList] = await Promise.all([
-        repo.listAG().catch(() => []),
+      const [mem, budgets] = await Promise.all([
         repo.listMembres().catch(() => []),
         repo.listAGBudgets().catch(() => []),
-        repo.listProjets().catch(() => []),
       ])
-      setAgs(agList)
       setMembres(mem)
       setAgBudgets(budgets)
-      setProjets(projList)
       if (editing) {
         const p = await repo.getProjet(id)
         if (p) {
           setForm({
-            nom: p.nom, description: p.description || '', ag_id: p.ag_id || '', resolution_id: p.resolution_id || '',
-            chef_projet_id: p.chef_projet_id || '', statut: p.statut,
-            date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '', documents: p.documents || [],
+            nom: p.nom, description: p.description || '', chef_projet_id: p.chef_projet_id || '',
+            statut: p.statut, date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '',
+            documents: p.documents || [],
           })
         }
-      } else {
-        // Pré-remplissage depuis "Ouvrir un projet" (AGDetail).
-        const rId = params.get('resolution')
-        const aId = params.get('ag')
-        if (rId) setForm((f) => ({ ...f, resolution_id: rId, ag_id: aId || '' }))
       }
       setLoading(false)
     }
     init()
-  }, [id, editing]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, editing])
 
-  // Seules les résolutions ADOPTÉES et dotées d'un budget peuvent porter un projet.
-  // `agBudgets` (computeAGBudgets) applique déjà exactement ce filtre : on s'y adosse
-  // au lieu de le réécrire, pour que la règle ne vive qu'en un seul endroit.
-  useEffect(() => {
-    if (!form.ag_id) {
-      setResolutions([])
-      return
-    }
-    repo.getAG(form.ag_id).then((ag) => {
-      const eligibles = (ag?.resolutions || []).filter((r) => agBudgets.some((b) => b.resolution_id === r.id))
-      setResolutions(eligibles)
-    })
-  }, [form.ag_id, agBudgets])
-
-  const resBudget = useMemo(() => agBudgets.find((b) => b.resolution_id === form.resolution_id) || null, [agBudgets, form.resolution_id])
-
-  // Le budget du projet EST celui voté par l'AG : ni saisi, ni modifiable.
-  // Conséquence assumée : une résolution ne porte qu'UN projet (son enveloppe est
-  // indivisible). Un 2e projet sur la même résolution dupliquerait l'enveloppe —
-  // il est refusé plus bas plutôt que de laisser le restant devenir négatif.
-  const projetExistant = useMemo(
-    () => projets.find((p) => p.resolution_id === form.resolution_id && p.id !== id) || null,
-    [projets, form.resolution_id, id],
+  const budgetOrigine = useMemo(
+    () => agBudgets.find((b) => b.resolution_id === resolutionOrigine) || null,
+    [agBudgets, resolutionOrigine],
   )
 
   if (isMobile) {
@@ -105,6 +84,22 @@ export default function ProjetForm() {
     )
   }
   if (loading) return <Spinner />
+
+  // Un projet naît toujours d'une résolution : sans elle il n'aurait aucun budget
+  // et aucune AG ne l'aurait voté. On refuse la création à vide plutôt que de
+  // laisser ouvrir une coquille à 0 €.
+  if (!editing && !budgetOrigine) {
+    return (
+      <div>
+        <PageHeader title="Nouveau projet" />
+        <Card className="p-6 text-sm text-slate-600">
+          <p>Un projet s’ouvre depuis une <strong>résolution d’AG adoptée et dotée d’un budget</strong> : c’est elle qui le finance.</p>
+          <p className="mt-2">Ouvrez la fiche de l’AG concernée, puis « Ouvrir un projet » sur la résolution voulue.</p>
+          <Button variant="secondary" className="mt-4" onClick={() => navigate('/ag')}>Aller aux Assemblées Générales</Button>
+        </Card>
+      </div>
+    )
+  }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
@@ -126,19 +121,12 @@ export default function ProjetForm() {
     e.preventDefault()
     setError('')
     if (!form.nom.trim()) return setError('Le nom du projet est obligatoire.')
-    if (!form.resolution_id) return setError('Un projet doit être issu d’une résolution d’AG adoptée.')
-    if (!resBudget) return setError('Cette résolution n’a pas de budget voté : elle ne peut pas porter de projet.')
-    if (projetExistant) return setError(`Le projet « ${projetExistant.nom} » porte déjà l’enveloppe de cette résolution.`)
     setSaving(true)
     try {
       const payload = {
         nom: form.nom,
         description: form.description || null,
-        ag_id: form.ag_id || null,
-        resolution_id: form.resolution_id,
         chef_projet_id: form.chef_projet_id || null,
-        // Toujours le montant voté par l'AG, jamais une saisie.
-        budget_alloue: resBudget.alloue,
         statut: form.statut,
         date_ouverture: form.date_ouverture || null,
         date_cloture: form.date_cloture || null,
@@ -148,7 +136,9 @@ export default function ProjetForm() {
         await repo.updateProjet(id, payload)
         navigate(`/projets/${id}`)
       } else {
-        const created = await repo.createProjet(payload)
+        // resolution_ids : champ virtuel, consommé par le repo pour poser
+        // resolutions_ag.projet_id — ce n'est pas une colonne de `projets`.
+        const created = await repo.createProjet({ ...payload, resolution_ids: [resolutionOrigine] })
         navigate(`/projets/${created.id}`)
       }
     } catch (err) {
@@ -162,22 +152,26 @@ export default function ProjetForm() {
       <PageHeader title={editing ? 'Modifier le projet' : 'Nouveau projet'} />
       <Card className="p-6">
         <form onSubmit={submit} className="space-y-4">
+          {!editing && budgetOrigine && (
+            <div className="rounded-md border border-navy-100 bg-navy-50 p-3 text-sm">
+              <p className="font-medium text-navy-800">
+                Financé par : {budgetOrigine.ag_numero} — résolution n° {budgetOrigine.resolution_numero}
+              </p>
+              <p className="mt-0.5 text-navy-700">{budgetOrigine.intitule} · <strong>{eur(budgetOrigine.alloue)}</strong></p>
+              <p className="mt-1 text-xs text-slate-500">
+                Le budget du projet est la somme des résolutions qui le financent. Pour l’augmenter, rattachez-lui une autre
+                résolution adoptée depuis la fiche de l’AG — il ne se saisit pas ici.
+              </p>
+            </div>
+          )}
+          {editing && (
+            <p className="text-xs text-slate-500">
+              Budget et AG d’origine se dérivent des résolutions rattachées : ils se modifient depuis la fiche AG, pas ici.
+            </p>
+          )}
+
           <Input label="Nom du projet" value={form.nom} onChange={set('nom')} required placeholder="ex : Réfection du réseau d’eaux pluviales" />
           <Textarea label="Description" value={form.description} onChange={set('description')} rows={3} />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Assemblée Générale d’origine" value={form.ag_id} onChange={(e) => setForm((f) => ({ ...f, ag_id: e.target.value, resolution_id: '' }))} required>
-              <option value="">— Choisir —</option>
-              {ags.map((ag) => <option key={ag.id} value={ag.id}>{ag.numero} · {ag.type}</option>)}
-            </Select>
-            <Select label="Résolution adoptée" value={form.resolution_id} onChange={set('resolution_id')} disabled={!form.ag_id} required>
-              <option value="">— Choisir —</option>
-              {resolutions.map((r) => <option key={r.id} value={r.id}>N° {r.numero} — {r.titre}</option>)}
-            </Select>
-          </div>
-          {form.ag_id && resolutions.length === 0 && (
-            <p className="text-sm text-amber-700">Aucune résolution de cette AG n’est adoptée avec un budget voté : aucun projet ne peut en être issu.</p>
-          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
@@ -190,22 +184,8 @@ export default function ProjetForm() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              {/* Affiché, jamais saisi : le budget du projet est celui voté par l'AG. */}
-              <span className="mb-1 block text-sm font-medium text-slate-700">Budget alloué</span>
-              <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-navy-800">
-                {resBudget ? eur(resBudget.alloue) : '— sélectionner une résolution —'}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Montant voté par l’AG en résolution : le projet en hérite intégralement et il n’est pas modifiable ici.
-              </p>
-              {projetExistant && (
-                <p className="mt-1 text-xs text-red-600">
-                  Le projet « {projetExistant.nom} » porte déjà cette enveloppe.
-                </p>
-              )}
-            </div>
             <Input label="Date d’ouverture" type="date" value={form.date_ouverture} onChange={set('date_ouverture')} />
+            <Input label="Date de clôture" type="date" value={form.date_cloture} onChange={set('date_cloture')} />
           </div>
 
           <div>

@@ -154,12 +154,29 @@ et **zéro vote**.
   `computeAGBudgets` (`mockDb.js`) — qui alimente aussi les cibles d'engagement de
   `DecisionForm`, donc on ne peut pas engager sur un budget non voté.
 - Budget : `engagé = engagements directs (enregistrées + adoptées seulement) + budgets alloués
-  aux projets`. **Un projet naît toujours d'une résolution AG adoptée** (`resolution_id` NOT NULL).
-- **Le budget d'un projet EST celui voté en résolution** : recopié depuis
-  `resolutions_ag.budget_alloue`, affiché mais **jamais saisi ni modifiable** (l'AG vote une
-  enveloppe, le CS ne la réécrit pas). Corollaire : l'enveloppe étant indivisible, **une
-  résolution ne porte qu'UN projet** — un 2e la dupliquerait. Garde applicative dans
-  `ProjetForm` (pas de contrainte SQL : les projets antérieurs à cette règle peuvent la violer).
+  aux projets`.
+- **C'est la RÉSOLUTION qui pointe son projet** (`resolutions_ag.projet_id`), jamais l'inverse.
+  Une colonne scalaire ne contenant qu'une valeur, « une résolution ne finance qu'un projet »
+  est **structurel** — rien à vérifier. Le sens inverse est libre et voulu : **plusieurs
+  résolutions peuvent financer le même projet** (rallonge votée l'année suivante, phases) →
+  **pas d'unique sur `projet_id`**. `on delete set null` : supprimer un projet **détache** ses
+  résolutions, une résolution d'AG survit toujours à un projet du CS.
+- **Le budget d'un projet est DÉRIVÉ, jamais stocké** : somme des `budget_alloue` des
+  résolutions **adoptées** qui le pointent (`computeProjectBudgets`). L'AG vote une enveloppe,
+  le CS ne la réécrit pas — le champ n'est ni saisi ni modifiable. Le stocker créerait une
+  divergence dès qu'une résolution est ajoutée ou change de statut. Idem pour l'**AG d'origine**
+  (`projet.ags`) : un projet financé sur deux exercices a deux AG — d'où l'absence de
+  `projets.ag_id` et de `projets.budget_alloue` (migration 009).
+- Le prédicat **`ouvreUnBudget(r)`** (`mockDb.js`, exporté) porte « seule une résolution adoptée
+  et dotée alloue ». Lu par `computeAGBudgets` **et** `computeProjectBudgets` : le dupliquer
+  ferait qu'une rallonge encore `a_voter` gonflerait un budget sans vote de l'AG.
+- Une enveloppe rattachée à un projet y passe **en entier** (indivisible) → son restant côté AG
+  est nul et `DecisionForm` ne la propose plus en engagement direct : on engage sur le projet.
+- **Rattachement piloté depuis la fiche AG** (« Ouvrir un projet » / « Rattacher à un projet
+  existant »), pas depuis `ProjetForm` — l'AG vote, puis le CS affecte. `resolution_ids` passé à
+  `repo.createProjet` est un champ **virtuel** : le repo le retire du payload et pose
+  `resolutions_ag.projet_id`. En Supabase c'est **non atomique** (insert + update) : le projet
+  est supprimé si le rattachement échoue, pour ne pas laisser de projet à 0 €.
 - **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app stocke
   **uniquement le résultat**, ne compte jamais de voix d'AG (`agLogic.js`).
 - Pièces jointes : dataUrl base64 en jsonb, **plafond 2 Mo/fichier**.

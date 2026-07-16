@@ -56,7 +56,9 @@ export default function ProjetList() {
                   <tr key={p.id} className="hover:bg-navy-50/40">
                     <td className="px-4 py-3">
                       <Link to={`/projets/${p.id}`} className="font-medium text-navy-700 hover:underline">{p.nom}</Link>
-                      {p.ag_numero && <span className="block text-xs text-slate-400">{p.ag_numero}</span>}
+                      {/* Autant d'AG que de résolutions le finançant : un projet
+                          pluriannuel en affiche plusieurs. */}
+                      {p.ags?.length > 0 && <span className="block text-xs text-slate-400">{p.ags.map((a) => a.numero).join(' · ')}</span>}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{p.chef_nom || '—'}</td>
                     <td className="px-4 py-3"><ProjetStatutBadge statut={p.statut} /></td>
