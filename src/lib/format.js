@@ -7,6 +7,40 @@ import { fr } from 'date-fns/locale'
 export const eur = (n) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0)
 
+// Le rich-text des descriptions (RichTextEditor / execCommand) en texte brut.
+//
+// Sans DOM à dessein, alors que la version d'origine (dans pdf.js) passait par
+// `document.createElement` : le texte brut sert désormais aussi à construire des
+// résumés, et une fonction sans DOM se teste hors navigateur. Le vocabulaire est
+// fermé et connu — execCommand ne produit que p/div/br/b/strong/i/em/ul/ol/li.
+const ENTITES = { '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': '’', '&rsquo;': '’' }
+
+export function htmlToText(html) {
+  if (!html) return ''
+  return String(html)
+    .replace(/<li[^>]*>/gi, '\n• ')          // puces : la liste doit rester lisible
+    .replace(/<br\s*\/?>/gi, '\n')
+    // `li` volontairement absent : son ouverture pose déjà le saut de ligne, le
+    // fermer aussi séparerait chaque puce par une ligne vide.
+    .replace(/<\/(p|div|ul|ol|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, '')                  // le reste des balises
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&[a-z]+;|&#39;/gi, (e) => ENTITES[e.toLowerCase()] ?? e)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+// Texte tronqué sur un mot entier, avec une ellipse. `max` compte les caractères.
+export function truncate(text, max = 160) {
+  const t = (text || '').replace(/\s+/g, ' ').trim()
+  if (t.length <= max) return t
+  const coupe = t.slice(0, max)
+  const espace = coupe.lastIndexOf(' ')
+  return (espace > max * 0.6 ? coupe.slice(0, espace) : coupe).trimEnd() + '…'
+}
+
 // Display a date-only ISO string (YYYY-MM-DD) as JJ/MM/AAAA.
 export function formatDate(value) {
   if (!value) return '—'

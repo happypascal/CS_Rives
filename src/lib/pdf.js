@@ -1,24 +1,12 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatDate, eur } from './format'
+import { formatDate, eur, htmlToText } from './format'
 import { tally, tallySummary, VOTE_LABELS } from './decisionLogic'
 import { PROJET_ACTION_LABELS } from './projetLogic'
+import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
 
 const NAVY = [31, 56, 100] // #1F3864
-
-// Strip minimal HTML from rich-text descriptions into plain text with line breaks.
-function htmlToText(html) {
-  if (!html) return ''
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html
-  // list items -> "• " lines
-  tmp.querySelectorAll('li').forEach((li) => {
-    li.textContent = '• ' + li.textContent
-  })
-  const text = tmp.textContent || tmp.innerText || ''
-  return text.replace(/\n{3,}/g, '\n\n').trim()
-}
 
 function header(doc, title) {
   doc.setTextColor(...NAVY)
@@ -240,21 +228,40 @@ export function decisionPDFBlob(decision, opts) {
 
 // Full registry PDF with a table of contents + one block per decision.
 export function downloadRegistrePDF(decisions, opts = {}) {
-  const { getDetail } = opts // getDetail(id) -> { votes, qa } (already resolved by caller)
+  // getDetail(d) -> { votes, qa } ; getContexte(d) -> { projetNom, cibleLabel }
+  // (tous deux résolus par l'appelant, qui seul a les projets et les résolutions)
+  const { getDetail, getContexte } = opts
   const doc = new jsPDF()
   header(doc, 'Table des matières')
   autoTable(doc, {
     startY: 44,
-    head: [['N°', 'Date', 'Titre', 'Statut']],
+    // « Objet » plutôt que « Titre » : le titre seul ne dit ni ce qu'on engage,
+    // ni ce que la décision change. C'est le PDF qui part en signature — le
+    // signataire doit savoir ce qu'il signe sans dépiler 20 pages.
+    head: [['N°', 'Date', 'Objet', 'Statut']],
     body: decisions.map((d) => [
       d.numero,
       formatDate(d.date_enregistrement || d.date_publication),
-      d.titre,
+      decisionResumeTexte(d, getContexte ? getContexte(d) : {}, { max: 180 }),
       { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
     ]),
     theme: 'striped',
     headStyles: { fillColor: NAVY },
-    bodyStyles: { fontSize: 9 },
+    bodyStyles: { fontSize: 9, valign: 'top' },
+    // L'objet occupe la place ; le reste est étroit et ne se coupe pas.
+    columnStyles: {
+      0: { cellWidth: 20 },
+      1: { cellWidth: 22 },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 22 },
+    },
+    // L'objet tient sur plusieurs lignes (titre / action / extrait) : un cran plus
+    // petit pour que la table des matières reste dense et lisible.
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 2) {
+        data.cell.styles.fontSize = 8.5
+      }
+    },
     margin: { left: 20, right: 20 },
   })
 

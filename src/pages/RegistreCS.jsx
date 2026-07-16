@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal, eur } from '../components/ui'
+import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal } from '../components/ui'
 import { StatutBadge, SignatureBadge } from '../components/badges'
-import { PROJET_ACTION_LABELS } from '../lib/projetLogic'
+import { decisionResume } from '../lib/decisionResume'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -20,6 +20,8 @@ export default function RegistreCS() {
   const [members, setMembers] = useState([])
   const [batches, setBatches] = useState([])
   const [myVotes, setMyVotes] = useState([])
+  const [projets, setProjets] = useState([])
+  const [agBudgets, setAgBudgets] = useState([])
   const [year, setYear] = useState('all')
   const [statut, setStatut] = useState('all')
   const [q, setQ] = useState('')
@@ -31,16 +33,23 @@ export default function RegistreCS() {
   const [busy, setBusy] = useState(false)
 
   const reload = async () => {
-    const [d, m, b, mv] = await Promise.all([
+    const [d, m, b, mv, p, ab] = await Promise.all([
       repo.listDecisions(),
       repo.listMembres(),
       repo.listSignatureBatches(),
       user?.membre_id ? repo.listMyVotes(user.membre_id) : Promise.resolve([]),
+      // Nom du projet / libellé de l'enveloppe : sans eux le résumé dirait
+      // « Engage 20 000 € » sans dire sur quoi. Secondaires — un échec ne doit
+      // pas vider l'écran, le résumé se dégrade proprement.
+      repo.listProjets().catch(() => []),
+      repo.listAGBudgets().catch(() => []),
     ])
     setDecisions(d)
     setMembers(m)
     setBatches(b)
     setMyVotes(mv)
+    setProjets(p)
+    setAgBudgets(ab)
     setLoading(false)
   }
   useEffect(() => {
@@ -72,6 +81,26 @@ export default function RegistreCS() {
 
   const toVoteCount = useMemo(() => decisions.filter(needsMyVote).length, [decisions, myVotedSet, me]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Contexte du résumé : de quoi nommer la cible d'un engagement. Défini ici parce
+  // que seule la page a les projets et les enveloppes ; les libs n'y accèdent pas.
+  const contexteOf = useMemo(() => {
+    const projetById = Object.fromEntries(projets.map((p) => [p.id, p]))
+    const budgetByRes = Object.fromEntries(agBudgets.map((b) => [b.resolution_id, b]))
+    return (d) => {
+      const projet = d.projet_id ? projetById[d.projet_id] : null
+      const budget = d.resolution_id ? budgetByRes[d.resolution_id] : null
+      return {
+        projetNom: projet?.nom,
+        cibleLabel: projet
+          ? `le projet « ${projet.nom} »`
+          : budget
+            ? `l’enveloppe « ${budget.intitule} » (${budget.ag_numero})`
+            : undefined,
+      }
+    }
+  }, [projets, agBudgets])
+  const resumeOf = (d) => decisionResume(d, contexteOf(d))
+
   const filtered = useMemo(
     () =>
       decisions.filter((d) => {
@@ -101,7 +130,11 @@ export default function RegistreCS() {
     try {
       const details = await Promise.all(filtered.map((d) => repo.getDecision(d.id)))
       const byId = Object.fromEntries(details.map((d) => [d.id, d]))
-      downloadRegistrePDF(filtered, { members, getDetail: (d) => ({ votes: byId[d.id]?.votes || [], qa: byId[d.id]?.qa || [] }) })
+      downloadRegistrePDF(filtered, {
+        members,
+        getDetail: (d) => ({ votes: byId[d.id]?.votes || [], qa: byId[d.id]?.qa || [] }),
+        getContexte: contexteOf,
+      })
     } finally {
       setExporting(false)
     }
@@ -226,21 +259,21 @@ export default function RegistreCS() {
                       {d.date_limite_reponse ? formatDate(d.date_limite_reponse) : '—'}
                       {overdue && <span className="ml-1 text-xs">⚠ dépassée</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      <Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{d.titre}</Link>
+                    {/* Résumé sur trois niveaux — titre, ce que la décision FAIT,
+                        puis un extrait de la description. Le titre seul ne dit ni
+                        qu'on engage 20 000 €, ni qu'on suspend un projet. Même
+                        résumé que le PDF envoyé en signature (decisionResume). */}
+                    <td className="max-w-md px-4 py-3">
+                      <Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{resumeOf(d).titre}</Link>
                       {toVote && !overdue && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à voter</span>}
                       {d.created_by === user?.membre_id && !d.enregistree && !d.date_notification && (
                         <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>
                       )}
-                      {/* Ce que la décision fait, visible dès la liste : le titre
-                          seul ne dit pas qu'on engage 20 000 € ou qu'on suspend
-                          un projet. */}
-                      {(d.montant_engage != null || d.projet_action) && (
-                        <span className="mt-0.5 block text-xs text-navy-700">
-                          {d.montant_engage != null && <span className="font-medium">Engage {eur(d.montant_engage)}</span>}
-                          {d.montant_engage != null && d.projet_action && ' · '}
-                          {d.projet_action && <span className="font-medium">{PROJET_ACTION_LABELS[d.projet_action]}</span>}
-                        </span>
+                      {resumeOf(d).action && (
+                        <span className="mt-0.5 block text-xs font-medium text-navy-700">{resumeOf(d).action}</span>
+                      )}
+                      {resumeOf(d).extrait && (
+                        <span className="mt-0.5 block text-xs leading-snug text-slate-500">{resumeOf(d).extrait}</span>
                       )}
                     </td>
                     <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>
