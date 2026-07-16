@@ -223,7 +223,10 @@ export default function DecisionDetail() {
             Vous pouvez poser le vote de n’importe quel membre. C’est contraire au vote self-only et à l’article 15
             (« signé par tous les membres présents »). N’enregistrez pas une décision réelle votée ainsi : le registre
             attesterait une présence qui n’a pas eu lieu, et l’enregistrement est définitif.
-            Retirez <code className="rounded bg-amber-100 px-1">VITE_TEST_VOTES</code> des variables Vercel pour refermer ce mode.
+          </p>
+          <p className="mt-1 text-xs font-medium">
+            Ce mode est ouvert PAR DÉFAUT le temps de la recette. Pour le refermer dès que les comptes membres existent :
+            poser <code className="rounded bg-amber-100 px-1">VITE_TEST_VOTES=false</code> dans Vercel.
           </p>
         </div>
       )}

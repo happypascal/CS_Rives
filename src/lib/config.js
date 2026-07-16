@@ -26,11 +26,16 @@ export const SIGNATURE_PROVIDER =
 // présence qui n'a pas eu lieu. Ce n'est acceptable que sur des données de test,
 // à effacer, tant que les comptes des autres membres n'existent pas.
 //
-// Piloté par l'env (`VITE_TEST_VOTES=true`) et NON par un booléen en dur : c'est
-// ce qui rend le « provisoire » réellement réversible — on retire la variable
-// dans Vercel, on redéploie, la brèche disparaît sans toucher au code.
-// Défaut : false. Toute autre valeur que la chaîne 'true' laisse le mode fermé.
-export const TEST_VOTES = import.meta.env.VITE_TEST_VOTES?.trim() === 'true'
+// ⚠⚠ DÉFAUT VOLONTAIREMENT **OUVERT** — décision de Pascal du 2026-07-16, le
+// temps de la recette : les comptes des autres membres n'existent pas encore, donc
+// le quorum (> 50 % des membres actifs) est hors d'atteinte et RIEN n'est testable
+// (ni adoption, ni enregistrement, ni verrou de suppression).
+//
+// À REFERMER DÈS LES COMPTES MEMBRES CRÉÉS. Deux façons :
+//   - immédiate, sans toucher au code : poser `VITE_TEST_VOTES=false` dans Vercel ;
+//   - définitive : remettre la comparaison à `=== 'true'` ci-dessous.
+// Tant que ce défaut est ouvert, l'app N'EST PAS conforme à son propre modèle.
+export const TEST_VOTES = import.meta.env.VITE_TEST_VOTES?.trim() !== 'false'
 
 export const ORG = {
   name: 'Association Syndicale Libre',
