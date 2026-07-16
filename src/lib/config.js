@@ -26,16 +26,15 @@ export const SIGNATURE_PROVIDER =
 // présence qui n'a pas eu lieu. Ce n'est acceptable que sur des données de test,
 // à effacer, tant que les comptes des autres membres n'existent pas.
 //
-// ⚠⚠ DÉFAUT VOLONTAIREMENT **OUVERT** — décision de Pascal du 2026-07-16, le
-// temps de la recette : les comptes des autres membres n'existent pas encore, donc
-// le quorum (> 50 % des membres actifs) est hors d'atteinte et RIEN n'est testable
-// (ni adoption, ni enregistrement, ni verrou de suppression).
+// FERMÉ par défaut (refermé le 2026-07-16, la recette du vote étant faite). Le
+// défaut a été ouvert le temps de tester quorum / adoption / enregistrement sans
+// comptes membres ; il ne doit plus l'être — l'app serait non conforme à son
+// propre modèle (self-only, art. 15).
 //
-// À REFERMER DÈS LES COMPTES MEMBRES CRÉÉS. Deux façons :
-//   - immédiate, sans toucher au code : poser `VITE_TEST_VOTES=false` dans Vercel ;
-//   - définitive : remettre la comparaison à `=== 'true'` ci-dessous.
-// Tant que ce défaut est ouvert, l'app N'EST PAS conforme à son propre modèle.
-export const TEST_VOTES = import.meta.env.VITE_TEST_VOTES?.trim() !== 'false'
+// Pour rouvrir ponctuellement une recette : `VITE_TEST_VOTES=true` dans Vercel,
+// et le refermer juste après. Ne jamais ENREGISTRER une décision votée ainsi :
+// le registre attesterait une présence qui n'a pas eu lieu, et c'est définitif.
+export const TEST_VOTES = import.meta.env.VITE_TEST_VOTES?.trim() === 'true'
 
 export const ORG = {
   name: 'Association Syndicale Libre',

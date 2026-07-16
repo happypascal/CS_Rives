@@ -17,11 +17,20 @@ dist-ssr
 .env.*
 !.env.example
 
+# Exports produits par l'app (PDF registre, CSV Foncia) : des sorties, pas des
+# sources. On en dépose à la racine pour juger un rendu — ils n'ont rien à faire
+# dans l'historique.
+registre-CS-*.pdf
+decision-*.pdf
+budgets-CS-Rives-*.csv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+# Métadonnées macOS (dossier synchronisé) : ._nom-du-fichier
+._*
 *.suo
 *.ntvs*
 *.njsproj

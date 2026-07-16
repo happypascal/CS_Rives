@@ -299,7 +299,7 @@ par `config.js`. `.env*` est git-ignored sauf `.env.example`.
 | `VITE_SUPABASE_URL` | URL du projet. Présence + anon key ⇒ `BACKEND='supabase'`, sinon `'mock'` |
 | `VITE_SUPABASE_ANON_KEY` | Clé anon publique (sûre côté client, la RLS protège) |
 | `VITE_SIGNATURE_PROVIDER` | `'mock'` (défaut) ou `'yousign'` |
-| `VITE_TEST_VOTES` | **Défaut OUVERT** (recette) : le président pose le vote de tout membre. `'false'` referme. |
+| `VITE_TEST_VOTES` | `'true'` ouvre le mode test (le président pose le vote de tout membre). **Fermé par défaut** — le laisser fermé. |
 | `VITE_YOUSIGN_API_KEY` | Documentée dans `.env.example`, **lue nulle part** (morte) |
 | `VITE_YOUSIGN_BASE_URL` | Idem, **morte** |
 
@@ -333,12 +333,10 @@ log ; parcours de vote mobile ; changement de mot de passe forcé ; reset ; doub
 mock ⇄ Supabase à parité d'interface.
 
 **Inachevé / stubs** :
-0. ⚠⚠ **`VITE_TEST_VOTES` ouvert par défaut** (`config.js`, 2026-07-16) : le président peut poser
-   le vote de n'importe quel membre. Béquille de recette assumée — les comptes des autres membres
-   n'existent pas, donc le quorum est hors d'atteinte et rien n'est testable. **Tant que ce défaut
-   est ouvert, l'app n'est pas conforme à son propre modèle** (vote self-only, art. 15). À refermer
-   dès les comptes créés : `VITE_TEST_VOTES=false` dans Vercel, puis repasser le défaut à
-   `=== 'true'`. Les décisions votées ainsi ne doivent jamais être enregistrées.
+0. **Mise en page du PDF du registre à refaire entièrement** (jugement Pascal, 2026-07-16 : « ne va
+   pas du tout »). Exemple du rendu actuel à la racine du repo : `registre-CS-2026 (2).pdf` (non
+   versionné). Le *contenu* est validé — la table des matières porte le bon résumé
+   (`decisionResume`) ; c'est la **forme** qui est à reprendre, dans `src/lib/pdf.js`.
 1. **Signature électronique : mock uniquement.** `yousignProvider` throw à chaque appel. Les
    lots, la sélection de signataires et un bouton « Simuler signé (démo) » existent ; aucun
    câblage Yousign réel, aucune Edge Function. Les `VITE_YOUSIGN_*` sont mortes.
