@@ -10,6 +10,7 @@ import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
 import { decisionShareText, whatsappShareUrl } from '../lib/share'
+import { TEST_VOTES } from '../lib/config'
 
 // Membres actifs à une date ISO (date_election <= date <= date_fin|∞).
 function activeMembersAt(members, dateISO) {
@@ -106,17 +107,32 @@ export default function DecisionDetail() {
   const iAmInComposition = compIds.includes(myId)
   const myVote = voteByMember[myId]
 
-  const setMyVote = async (vote) => {
+  // MODE TEST : le président pose le vote de n'importe quel membre. Hors de ce
+  // mode, `canVoteFor` se referme sur soi-même — la règle self-only est intacte.
+  // La RLS autorise déjà l'écriture (policy `votes_admin`) : seul l'écran filtrait.
+  const testVotes = TEST_VOTES && isAdmin && !locked
+  const canVoteFor = (membreId) => !locked && (membreId === myId || testVotes)
+
+  const setVoteFor = async (membreId, vote) => {
     setBusy(true)
-    const existing = voteByMember[myId]
-    await repo.upsertVote(id, myId, vote, existing?.commentaire ?? '')
+    const existing = voteByMember[membreId]
+    await repo.upsertVote(id, membreId, vote, existing?.commentaire ?? '')
     await reload()
     setBusy(false)
   }
-  const setMyComment = async (commentaire) => {
-    const existing = voteByMember[myId]
+  // Retirer un vote = rendre le membre ABSENT (l'absence est l'absence de ligne,
+  // pas une valeur). Indispensable pour éprouver le quorum et le partage des voix.
+  const clearVoteFor = async (membreId) => {
+    setBusy(true)
+    await repo.deleteVote(id, membreId)
+    await reload()
+    setBusy(false)
+  }
+  const setMyVote = (vote) => setVoteFor(myId, vote)
+  const setCommentFor = async (membreId, commentaire) => {
+    const existing = voteByMember[membreId]
     if (!existing) return // il faut d'abord voter
-    await repo.upsertVote(id, myId, existing.vote, commentaire)
+    await repo.upsertVote(id, membreId, existing.vote, commentaire)
     await reload()
   }
 
@@ -196,6 +212,21 @@ export default function DecisionDetail() {
           </>
         }
       />
+
+      {/* Bandeau volontairement voyant : une décision votée en mode test puis
+          ENREGISTRÉE entrerait au registre légal avec une présence fabriquée, et
+          l'enregistrement est irréversible. Le mode doit sauter aux yeux. */}
+      {testVotes && (
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">⚠ Mode test — vote par procuration actif</p>
+          <p className="mt-1 text-xs">
+            Vous pouvez poser le vote de n’importe quel membre. C’est contraire au vote self-only et à l’article 15
+            (« signé par tous les membres présents »). N’enregistrez pas une décision réelle votée ainsi : le registre
+            attesterait une présence qui n’a pas eu lieu, et l’enregistrement est définitif.
+            Retirez <code className="rounded bg-amber-100 px-1">VITE_TEST_VOTES</code> des variables Vercel pour refermer ce mode.
+          </p>
+        </div>
+      )}
 
       {locked && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
@@ -284,9 +315,10 @@ export default function DecisionDetail() {
                   {composition.map((m) => {
                     const v = voteByMember[m.id]
                     const isMe = m.id === myId
-                    const editable = isMe && !locked
+                    const editable = canVoteFor(m.id)
+                    const parProcuration = editable && !isMe
                     return (
-                      <tr key={m.id} className={isMe ? 'bg-navy-50/40' : ''}>
+                      <tr key={m.id} className={isMe ? 'bg-navy-50/40' : parProcuration ? 'bg-amber-50/40' : ''}>
                         <td className="px-4 py-3">
                           <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
                           {m.role === 'president' && <span className="ml-2 text-xs text-slate-400">(président)</span>}
@@ -296,11 +328,19 @@ export default function DecisionDetail() {
                           {editable ? (
                             <div className="flex flex-wrap gap-1">
                               {VOTE_VALUES.map((val) => (
-                                <button key={val} onClick={() => setMyVote(val)} disabled={busy}
+                                <button key={val} onClick={() => setVoteFor(m.id, val)} disabled={busy}
                                   className={['rounded px-2 py-1 text-xs font-medium transition-colors', v?.vote === val ? 'bg-navy-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'].join(' ')}>
                                   {VOTE_LABELS[val]}
                                 </button>
                               ))}
+                              {/* Rendre le membre absent : sans ça, impossible de
+                                  tester un quorum manqué ou un partage des voix. */}
+                              {v && (
+                                <button onClick={() => clearVoteFor(m.id)} disabled={busy} title="Retirer le vote (membre absent)"
+                                  className="rounded px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600">
+                                  ✕
+                                </button>
+                              )}
                             </div>
                           ) : v ? (
                             <VoteBadge vote={v.vote} />
@@ -310,7 +350,7 @@ export default function DecisionDetail() {
                         </td>
                         <td className="px-4 py-3">
                           {editable && v ? (
-                            <input defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setMyComment(e.target.value)} placeholder="Commentaire…"
+                            <input defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setCommentFor(m.id, e.target.value)} placeholder="Commentaire…"
                               className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:border-navy-400 focus:outline-none" />
                           ) : (
                             <span className="text-xs text-slate-500">{v?.commentaire || '—'}</span>
