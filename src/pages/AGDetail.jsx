@@ -190,7 +190,12 @@ function RattachementModal({ resolution, projets, onClose, onSaved }) {
   const cible = projets.find((p) => p.id === projetId)
 
   return (
-    <Modal title={`Résolution n° ${resolution.numero} — rattachement`} onClose={onClose}>
+    <Modal
+      open
+      onClose={onClose}
+      title={`Résolution n° ${resolution.numero} — rattachement`}
+      footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button></>}
+    >
       <div className="space-y-4">
         <p className="text-sm text-slate-600">
           L’enveloppe de <strong>{eur(resolution.budget_alloue)}</strong> votée par cette résolution finance :
@@ -212,10 +217,6 @@ function RattachementModal({ resolution, projets, onClose, onSaved }) {
           </p>
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Annuler</Button>
-          <Button onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>
-        </div>
       </div>
     </Modal>
   )
