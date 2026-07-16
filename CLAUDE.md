@@ -149,10 +149,19 @@ et **zéro vote**.
   en `on delete set null`, supprimer le projet **modifiait une délibération figée**, en silence et
   hors RLS (une action de FK échappe aux policies de la table enfant). Pas de `on delete restrict` :
   détacher une décision **non** enregistrée reste légitime.
-- **Statut projet `ouvert` → `en_cours` DÉRIVÉ** (`computeProjectBudgets`) dès que `engage > 0`
-  (décision enregistrée **et** adoptée) : c'est un fait, pas un choix à ressaisir. `suspendu` et
-  `termine` sont des décisions explicites du CS et **priment**. Dérivé, pas stocké — même raison
-  que le budget.
+- **Statut projet entièrement DÉRIVÉ** (`computeProjectBudgets`), jamais saisi — `projets.statut`
+  a été **supprimée** (migration 011). Deux couches : le statut *naturel* (`ouvert` tant que rien
+  n'est engagé, `en_cours` dès que `engage > 0`) ; puis, s'il existe, l'effet de la **dernière
+  décision enregistrée ET adoptée** portant un `projet_action` (`suspendre` → `suspendu`,
+  `terminer` → `termine`, `reprendre` → rend la main au naturel).
+- **Suspendre ou terminer un projet est une délibération du CS** (arbitrage Pascal 2026-07-16) : ni
+  le chef de projet ni le président ne le font seuls. Cela se saisit dans `DecisionForm`
+  (`decisions.projet_action`, visible seulement si la décision cible un projet) et ne prend effet
+  **qu'à l'enregistrement, décision adoptée** — donc après quorum et vote. Une décision rejetée ou
+  non enregistrée n'a aucun effet.
+- **« Terminé » est RÉVERSIBLE** (choix explicite de Pascal) : la dernière décision enregistrée
+  l'emporte, donc le CS peut rouvrir — et cette réouverture est elle-même une délibération tracée.
+  Ne pas confondre avec l'enregistrement d'une décision, lui définitif.
 - **Une AG se planifie avant d'avoir lieu.** À la convocation, le **président de séance est
   inconnu** (il est désigné *en* séance) → jamais obligatoire. Ne pas le rendre requis « pour
   la propreté de la donnée » : cela force à inventer un nom, donc à écrire une information

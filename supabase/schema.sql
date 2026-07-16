@@ -75,12 +75,15 @@ create table if not exists resolutions_ag (
 --     dès qu'une résolution est ajoutée ou change de statut.
 --   - AG d'origine = celles des résolutions rattachées. Un projet financé sur deux
 --     exercices a deux AG d'origine ; une colonne `ag_id` unique mentirait.
+--   - statut = dérivé des engagements et des décisions portant un `projet_action`
+--     (cf. computeProjectBudgets). Suspendre ou terminer un projet est une
+--     délibération du CS, pas une case à cocher : la colonne a été supprimée
+--     (migration 011) pour qu'aucun écran ne puisse la changer sans vote.
 create table if not exists projets (
   id             uuid primary key default gen_random_uuid(),
   nom            text not null,
   description    text,
   chef_projet_id uuid references membres_cs(id),
-  statut         text not null default 'ouvert' check (statut in ('ouvert','en_cours','termine','suspendu')),
   documents      jsonb not null default '[]',
   date_ouverture date,
   date_cloture   date,
@@ -115,6 +118,7 @@ create table if not exists decisions (
   projet_id            uuid references projets(id) on delete set null,               -- engagement via projet
   ag_id                uuid references assemblees_generales(id) on delete set null,  -- rattachement AG
   resolution_id        uuid references resolutions_ag(id) on delete set null,        -- engagement direct résolution
+  projet_action        text check (projet_action in ('suspendre','reprendre','terminer')),  -- effet sur le statut du projet, appliqué une fois enregistrée ET adoptée
   documents            jsonb not null default '[]',      -- pièces jointes [{id,name,type,size,dataUrl}]
   created_by           uuid references membres_cs(id),   -- owner = membre créateur (id membres_cs)
   created_at           timestamptz not null default now(),

@@ -8,6 +8,7 @@ import { nextNumero } from '../lib/decisionLogic'
 import { todayISO, addBusinessDaysISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
+import { PROJET_ACTION_VALUES, PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 
 const MAX_DOC_BYTES = 2 * 1024 * 1024 // 2 Mo / fichier (démo localStorage)
 
@@ -30,6 +31,8 @@ export default function DecisionForm() {
   // Cible d'engagement : '' | 'projet:<id>' | 'resolution:<id>'
   const [target, setTarget] = useState('')
   const [montantEngage, setMontantEngage] = useState('')
+  // Effet sur le statut du projet ('' | suspendre | reprendre | terminer).
+  const [projetAction, setProjetAction] = useState('')
   const [documents, setDocuments] = useState([])
   const [projets, setProjets] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
@@ -59,6 +62,7 @@ export default function DecisionForm() {
           setDocuments(d.documents || [])
           if (d.projet_id) setTarget(`projet:${d.projet_id}`)
           else if (d.resolution_id) setTarget(`resolution:${d.resolution_id}`)
+          setProjetAction(d.projet_action || '')
         }
       } else {
         setNumero(nextNumero(new Date().getFullYear(), all))
@@ -165,6 +169,9 @@ export default function DecisionForm() {
         resolution_id,
         ag_id,
         montant_engage: engage,
+        // N'a de sens que sur un projet : une décision rattachée à une résolution
+        // ou à rien ne peut pas suspendre quoi que ce soit.
+        projet_action: kind === 'projet' && projetAction ? projetAction : null,
         documents,
       }
       if (editing) {
@@ -201,7 +208,7 @@ export default function DecisionForm() {
           {/* Engagement budgétaire : projet ou résolution directe */}
           <div className="rounded-md border border-navy-100 bg-navy-50/40 p-4">
             <p className="mb-3 text-sm font-medium text-navy-800">Rattachement & engagement budgétaire (optionnel)</p>
-            <Select label="Rattacher à…" value={target} onChange={(e) => { setTarget(e.target.value); if (!e.target.value) setMontantEngage('') }}>
+            <Select label="Rattacher à…" value={target} onChange={(e) => { setTarget(e.target.value); if (!e.target.value) setMontantEngage(''); if (!e.target.value.startsWith('projet:')) setProjetAction('') }}>
               <option value="">— Aucun —</option>
               {projets.length > 0 && (
                 <optgroup label="Projets">
@@ -225,6 +232,24 @@ export default function DecisionForm() {
                 <Input label="Montant engagé par cette décision (€)" type="number" min="0" step="0.01" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000" />
                 {montantEngage !== '' && restantDispo != null && Number(montantEngage) > restantDispo && (
                   <p className="mt-1 text-xs text-red-600">Dépasse le disponible ({eur(restantDispo)}).</p>
+                )}
+              </div>
+            )}
+
+            {/* Suspendre ou terminer un projet est une DÉLIBÉRATION : ça se décide
+                ici, se vote, et ne prend effet qu'à l'enregistrement. Le formulaire
+                projet n'a plus de champ statut. */}
+            {selProjet && (
+              <div className="mt-4">
+                <Select label="Effet sur le projet (optionnel)" value={projetAction} onChange={(e) => setProjetAction(e.target.value)}>
+                  <option value="">— Aucun : la décision engage seulement —</option>
+                  {PROJET_ACTION_VALUES.map((a) => <option key={a} value={a}>{PROJET_ACTION_LABELS[a]}</option>)}
+                </Select>
+                {projetAction && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    « {selProjet.nom} » passera en <strong>{PROJET_ACTION_STATUT[projetAction] ? PROJET_STATUT_LABELS[PROJET_ACTION_STATUT[projetAction]] : 'statut naturel (ouvert / en cours)'}</strong>{' '}
+                    une fois cette décision <strong>adoptée et enregistrée</strong> — pas avant. Une décision ultérieure pourra revenir dessus.
+                  </p>
                 )}
               </div>
             )}

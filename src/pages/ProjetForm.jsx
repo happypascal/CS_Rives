@@ -4,7 +4,6 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly, eur } from '../components/ui'
 import { todayISO } from '../lib/format'
-import { PROJET_STATUT_VALUES, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -15,9 +14,12 @@ const MAX_DOC_BYTES = 2 * 1024 * 1024
 // donc QUE l'exécution : nom, description, chef, statut, dates, documents.
 // Le rattachement des résolutions se fait depuis la fiche AG — c'est le sens réel :
 // l'AG vote une enveloppe, puis on décide si elle ouvre un projet ou en abonde un.
+// Pas de `statut` : suspendre ou terminer un projet est une délibération du CS,
+// pas une case de formulaire (cf. projetLogic + migration 011). Le statut se
+// dérive des engagements et des décisions portant un `projet_action`.
 const EMPTY = {
   nom: '', description: '', chef_projet_id: '',
-  statut: 'ouvert', date_ouverture: todayISO(), date_cloture: '', documents: [],
+  date_ouverture: todayISO(), date_cloture: '', documents: [],
 }
 
 export default function ProjetForm() {
@@ -52,7 +54,7 @@ export default function ProjetForm() {
         if (p) {
           setForm({
             nom: p.nom, description: p.description || '', chef_projet_id: p.chef_projet_id || '',
-            statut: p.statut, date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '',
+            date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '',
             documents: p.documents || [],
           })
         }
@@ -127,7 +129,6 @@ export default function ProjetForm() {
         nom: form.nom,
         description: form.description || null,
         chef_projet_id: form.chef_projet_id || null,
-        statut: form.statut,
         date_ouverture: form.date_ouverture || null,
         date_cloture: form.date_cloture || null,
         documents: form.documents,
@@ -173,15 +174,16 @@ export default function ProjetForm() {
           <Input label="Nom du projet" value={form.nom} onChange={set('nom')} required placeholder="ex : Réfection du réseau d’eaux pluviales" />
           <Textarea label="Description" value={form.description} onChange={set('description')} rows={3} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
-              <option value="">— À définir —</option>
-              {membres.filter((m) => m.actif).map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
-            </Select>
-            <Select label="Statut" value={form.statut} onChange={set('statut')}>
-              {PROJET_STATUT_VALUES.map((s) => <option key={s} value={s}>{PROJET_STATUT_LABELS[s]}</option>)}
-            </Select>
-          </div>
+          <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
+            <option value="">— À définir —</option>
+            {membres.filter((m) => m.actif).map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
+          </Select>
+
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            Le <strong>statut</strong> ne se saisit pas : un projet est « ouvert » tant que rien n’y est engagé, « en cours »
+            dès qu’une décision y engage de l’argent. Le <strong>suspendre</strong> ou le <strong>terminer</strong> est une
+            délibération du Conseil Syndical — cela se fait depuis une décision, après vote.
+          </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Date d’ouverture" type="date" value={form.date_ouverture} onChange={set('date_ouverture')} />

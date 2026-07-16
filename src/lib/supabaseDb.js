@@ -120,7 +120,9 @@ export const supabaseRepo = {
   // colonne lue par les fonctions de calcul doit figurer ci-dessous.
   async _projectData() {
     const projets = must(await supabase.from('projets').select('*'))
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage'))
+    // `projet_action`, `date_enregistrement` et `created_at` alimentent la dérivation
+    // du STATUT (dernière décision enregistrée qui suspend / reprend / termine).
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage,projet_action,date_enregistrement,created_at'))
     const membres_cs = must(await supabase.from('membres_cs').select('id,nom,prenom'))
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,ag_id,numero,titre,statut,budget_alloue,projet_id'))

@@ -6,7 +6,9 @@
 //   - résolutions AG : résultat seul (majorité + statut) + budget alloué.
 //   - signature : par LOT de décisions sélectionnées.
 
-const STORAGE_KEY = 'cs_rives_mockdb_v6'
+import { PROJET_ACTION_STATUT } from './projetLogic'
+
+const STORAGE_KEY = 'cs_rives_mockdb_v7'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -81,14 +83,14 @@ function seed() {
   const d6 = uid()
 
   // Projet financé par DEUX résolutions : 85 000 (AGO 2025) + 20 000 (AGO 2026).
-  // Ni budget ni ag_id ici : les deux se dérivent des résolutions qui le pointent.
+  // Ni budget, ni ag_id, ni statut ici : les trois se dérivent — les deux premiers
+  // des résolutions qui le pointent, le statut des engagements et des décisions.
   const projets = [
     {
       id: p1,
       nom: 'Réfection de la voirie principale',
       description: 'Exécution des travaux de voirie votés en AGO 2025, complétés en AGO 2026.',
       chef_projet_id: m3,
-      statut: 'en_cours',
       documents: [{ id: uid(), name: 'Cahier_des_charges_voirie.txt', type: 'text/plain', size: 40, dataUrl: textDataUrl('Cahier des charges — réfection voirie principale'), uploaded_at: '2025-07-02T09:00:00Z' }],
       date_ouverture: '2025-07-01',
       date_cloture: null,
@@ -371,12 +373,32 @@ export function computeProjectBudgets(data) {
     const alloue = sources.filter(ouvreUnBudget).reduce((s, r) => s + Number(r.budget_alloue), 0)
     const chef = memById[p.chef_projet_id]
 
-    // « Ouvert » = ouvert, mais rien d'engagé encore. Dès qu'une décision y engage
-    // réellement de l'argent (enregistrée ET adoptée), le projet est EN COURS :
-    // c'est un fait, pas un choix à ressaisir. Dérivé et non stocké, même raison
-    // que le budget — un statut recopié divergerait du premier engagement venu.
-    // `suspendu` et `termine` sont des décisions explicites du CS : elles priment.
-    const statut = p.statut === 'ouvert' && engage > 0 ? 'en_cours' : p.statut
+    // ---- Statut : DÉRIVÉ, jamais saisi ----
+    // Deux couches.
+    //
+    // 1. Le statut naturel, qui est un fait : « ouvert » = ouvert mais rien
+    //    d'engagé ; dès qu'une décision y engage réellement de l'argent, le projet
+    //    est « en cours ». Personne n'a à le ressaisir.
+    // 2. Suspendre ou terminer est une DÉLIBÉRATION du CS, pas une case à cocher
+    //    (arbitrage Pascal 2026-07-16) : seule une décision ENREGISTRÉE et ADOPTÉE
+    //    portant un `projet_action` peut l'imposer — donc après quorum et vote.
+    //
+    // La DERNIÈRE décision enregistrée l'emporte : c'est ce qui rend « reprendre »
+    // naturel et « terminé » réversible (choix explicite de Pascal). Rouvrir un
+    // projet est alors, lui aussi, une délibération tracée au registre.
+    const statutNaturel = engage > 0 ? 'en_cours' : 'ouvert'
+    const actions = data.decisions
+      .filter((d) => d.projet_id === p.id && d.enregistree && d.statut === 'adoptee' && d.projet_action)
+      // date_enregistrement est une DATE (pas un timestamp) : deux décisions
+      // enregistrées le même jour s'y égalisent. created_at les départage.
+      .sort((a, b) => {
+        const da = a.date_enregistrement || '', db = b.date_enregistrement || ''
+        if (da !== db) return da < db ? -1 : 1
+        return (a.created_at || '') < (b.created_at || '') ? -1 : 1
+      })
+    const derniereAction = actions[actions.length - 1]?.projet_action || null
+    // 'reprendre' ne pose aucun statut : il rend la main au statut naturel.
+    const statut = PROJET_ACTION_STATUT[derniereAction] || statutNaturel
 
     return {
       ...p,
@@ -386,6 +408,10 @@ export function computeProjectBudgets(data) {
       engage_en_cours: engageEnCours,
       restant: alloue - engage,
       chef_nom: chef ? `${chef.prenom} ${chef.nom}` : null,
+      // Trace lisible : d'où vient le statut, et par quelle délibération.
+      statut_decision: derniereAction
+        ? { action: derniereAction, decision_id: actions[actions.length - 1].id, numero: actions[actions.length - 1].numero, date: actions[actions.length - 1].date_enregistrement }
+        : null,
       // AG d'origine : autant que de résolutions sources. Dédoublonné et trié par
       // date — un projet pluriannuel affiche « AGO-2025-01, AGE-2026-01 ».
       ags: [...new Map(sources.map((r) => [r.ag_id, agById[r.ag_id]]).filter(([, a]) => a))

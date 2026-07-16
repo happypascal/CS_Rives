@@ -94,6 +94,20 @@ export default function ProjetDetail() {
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Statut</p>
           <div className="mt-1"><ProjetStatutBadge statut={projet.statut} /></div>
+          {/* Le statut est dérivé : dire d'où il vient, sinon il paraît arbitraire. */}
+          {projet.statut_decision ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Par la décision{' '}
+              <Link to={`/registre/${projet.statut_decision.decision_id}`} className="text-navy-600 underline">
+                {projet.statut_decision.numero}
+              </Link>
+              {projet.statut_decision.date && <> du {formatDate(projet.statut_decision.date)}</>}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-slate-400">
+              {projet.engage > 0 ? 'Des décisions y engagent de l’argent' : 'Rien d’engagé à ce jour'}
+            </p>
+          )}
           <p className="mt-3 text-xs uppercase tracking-wide text-slate-500">Chef de projet</p>
           <p className="text-sm font-medium text-navy-800">{projet.chef_nom || '— à définir —'}</p>
           {projet.date_ouverture && <p className="mt-2 text-xs text-slate-500">Ouvert le {formatDate(projet.date_ouverture)}</p>}
