@@ -58,7 +58,11 @@ create table if not exists resolutions_ag (
 );
 
 -- ------------------------------------------------------------ projets
--- Toujours issu d'une résolution AG ; hérite de son budget (modifiable).
+-- Toujours issu d'une résolution AG ADOPTÉE, dont il hérite du budget voté :
+-- `budget_alloue` recopie `resolutions_ag.budget_alloue`, il n'est pas saisi.
+-- L'enveloppe étant indivisible, une résolution ne porte qu'UN projet (garde
+-- applicative dans ProjetForm : pas de contrainte d'unicité, les projets
+-- historiques ne la respectent pas forcément).
 create table if not exists projets (
   id             uuid primary key default gen_random_uuid(),
   nom            text not null,

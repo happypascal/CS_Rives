@@ -23,33 +23,34 @@ export default function ProjetForm() {
   const [ags, setAgs] = useState([])
   const [membres, setMembres] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
+  const [projets, setProjets] = useState([])
   const [resolutions, setResolutions] = useState([])
   const [form, setForm] = useState({
     nom: '', description: '', ag_id: '', resolution_id: '', chef_projet_id: '',
-    budget_alloue: '', statut: 'ouvert', date_ouverture: todayISO(), documents: [],
+    statut: 'ouvert', date_ouverture: todayISO(), documents: [],
   })
-  const [budgetTouched, setBudgetTouched] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     async function init() {
-      const [agList, mem, budgets] = await Promise.all([
+      const [agList, mem, budgets, projList] = await Promise.all([
         repo.listAG().catch(() => []),
         repo.listMembres().catch(() => []),
         repo.listAGBudgets().catch(() => []),
+        repo.listProjets().catch(() => []),
       ])
       setAgs(agList)
       setMembres(mem)
       setAgBudgets(budgets)
+      setProjets(projList)
       if (editing) {
         const p = await repo.getProjet(id)
         if (p) {
           setForm({
             nom: p.nom, description: p.description || '', ag_id: p.ag_id || '', resolution_id: p.resolution_id || '',
-            chef_projet_id: p.chef_projet_id || '', budget_alloue: p.budget_alloue ?? '', statut: p.statut,
+            chef_projet_id: p.chef_projet_id || '', statut: p.statut,
             date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '', documents: p.documents || [],
           })
-          setBudgetTouched(true)
         }
       } else {
         // Pré-remplissage depuis "Ouvrir un projet" (AGDetail).
@@ -62,22 +63,30 @@ export default function ProjetForm() {
     init()
   }, [id, editing]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Seules les résolutions ADOPTÉES et dotées d'un budget peuvent porter un projet.
+  // `agBudgets` (computeAGBudgets) applique déjà exactement ce filtre : on s'y adosse
+  // au lieu de le réécrire, pour que la règle ne vive qu'en un seul endroit.
   useEffect(() => {
     if (!form.ag_id) {
       setResolutions([])
       return
     }
-    repo.getAG(form.ag_id).then((ag) => setResolutions(ag?.resolutions || []))
-  }, [form.ag_id])
+    repo.getAG(form.ag_id).then((ag) => {
+      const eligibles = (ag?.resolutions || []).filter((r) => agBudgets.some((b) => b.resolution_id === r.id))
+      setResolutions(eligibles)
+    })
+  }, [form.ag_id, agBudgets])
 
   const resBudget = useMemo(() => agBudgets.find((b) => b.resolution_id === form.resolution_id) || null, [agBudgets, form.resolution_id])
 
-  // Prefill budget avec le restant disponible de la résolution (création).
-  useEffect(() => {
-    if (!editing && !budgetTouched && resBudget) {
-      setForm((f) => ({ ...f, budget_alloue: String(resBudget.restant) }))
-    }
-  }, [resBudget, editing, budgetTouched])
+  // Le budget du projet EST celui voté par l'AG : ni saisi, ni modifiable.
+  // Conséquence assumée : une résolution ne porte qu'UN projet (son enveloppe est
+  // indivisible). Un 2e projet sur la même résolution dupliquerait l'enveloppe —
+  // il est refusé plus bas plutôt que de laisser le restant devenir négatif.
+  const projetExistant = useMemo(
+    () => projets.find((p) => p.resolution_id === form.resolution_id && p.id !== id) || null,
+    [projets, form.resolution_id, id],
+  )
 
   if (isMobile) {
     return (
@@ -117,7 +126,9 @@ export default function ProjetForm() {
     e.preventDefault()
     setError('')
     if (!form.nom.trim()) return setError('Le nom du projet est obligatoire.')
-    if (!form.resolution_id) return setError('Un projet doit être issu d’une résolution d’AG.')
+    if (!form.resolution_id) return setError('Un projet doit être issu d’une résolution d’AG adoptée.')
+    if (!resBudget) return setError('Cette résolution n’a pas de budget voté : elle ne peut pas porter de projet.')
+    if (projetExistant) return setError(`Le projet « ${projetExistant.nom} » porte déjà l’enveloppe de cette résolution.`)
     setSaving(true)
     try {
       const payload = {
@@ -126,7 +137,8 @@ export default function ProjetForm() {
         ag_id: form.ag_id || null,
         resolution_id: form.resolution_id,
         chef_projet_id: form.chef_projet_id || null,
-        budget_alloue: form.budget_alloue === '' ? null : Number(form.budget_alloue),
+        // Toujours le montant voté par l'AG, jamais une saisie.
+        budget_alloue: resBudget.alloue,
         statut: form.statut,
         date_ouverture: form.date_ouverture || null,
         date_cloture: form.date_cloture || null,
@@ -158,14 +170,14 @@ export default function ProjetForm() {
               <option value="">— Choisir —</option>
               {ags.map((ag) => <option key={ag.id} value={ag.id}>{ag.numero} · {ag.type}</option>)}
             </Select>
-            <Select label="Résolution votée" value={form.resolution_id} onChange={set('resolution_id')} disabled={!form.ag_id} required>
+            <Select label="Résolution adoptée" value={form.resolution_id} onChange={set('resolution_id')} disabled={!form.ag_id} required>
               <option value="">— Choisir —</option>
-              {resolutions.map((r) => {
-                const hasBudget = agBudgets.some((b) => b.resolution_id === r.id)
-                return <option key={r.id} value={r.id}>N° {r.numero} — {r.titre}{hasBudget ? ' 💰' : ''}</option>
-              })}
+              {resolutions.map((r) => <option key={r.id} value={r.id}>N° {r.numero} — {r.titre}</option>)}
             </Select>
           </div>
+          {form.ag_id && resolutions.length === 0 && (
+            <p className="text-sm text-amber-700">Aucune résolution de cette AG n’est adoptée avec un budget voté : aucun projet ne peut en être issu.</p>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
@@ -179,8 +191,19 @@ export default function ProjetForm() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Input label="Budget alloué (€)" type="number" min="0" step="0.01" value={form.budget_alloue} onChange={(e) => { setBudgetTouched(true); set('budget_alloue')(e) }} />
-              {resBudget && <p className="mt-1 text-xs text-slate-400">Résolution : {eur(resBudget.alloue)} votés · {eur(resBudget.restant)} encore disponibles.</p>}
+              {/* Affiché, jamais saisi : le budget du projet est celui voté par l'AG. */}
+              <span className="mb-1 block text-sm font-medium text-slate-700">Budget alloué</span>
+              <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-navy-800">
+                {resBudget ? eur(resBudget.alloue) : '— sélectionner une résolution —'}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Montant voté par l’AG en résolution : le projet en hérite intégralement et il n’est pas modifiable ici.
+              </p>
+              {projetExistant && (
+                <p className="mt-1 text-xs text-red-600">
+                  Le projet « {projetExistant.nom} » porte déjà cette enveloppe.
+                </p>
+              )}
             </div>
             <Input label="Date d’ouverture" type="date" value={form.date_ouverture} onChange={set('date_ouverture')} />
           </div>

@@ -155,6 +155,11 @@ et **zéro vote**.
   `DecisionForm`, donc on ne peut pas engager sur un budget non voté.
 - Budget : `engagé = engagements directs (enregistrées + adoptées seulement) + budgets alloués
   aux projets`. **Un projet naît toujours d'une résolution AG adoptée** (`resolution_id` NOT NULL).
+- **Le budget d'un projet EST celui voté en résolution** : recopié depuis
+  `resolutions_ag.budget_alloue`, affiché mais **jamais saisi ni modifiable** (l'AG vote une
+  enveloppe, le CS ne la réécrit pas). Corollaire : l'enveloppe étant indivisible, **une
+  résolution ne porte qu'UN projet** — un 2e la dupliquerait. Garde applicative dans
+  `ProjetForm` (pas de contrainte SQL : les projets antérieurs à cette règle peuvent la violer).
 - **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app stocke
   **uniquement le résultat**, ne compte jamais de voix d'AG (`agLogic.js`).
 - Pièces jointes : dataUrl base64 en jsonb, **plafond 2 Mo/fichier**.
