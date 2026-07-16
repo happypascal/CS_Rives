@@ -27,7 +27,12 @@ export default function BudgetsConsolidated() {
   const totalVote = envelopes.reduce((s, b) => s + Number(b.alloue || 0), 0)
   const totalProjetsAlloue = envelopes.reduce((s, b) => s + Number(b.projets_alloue || 0), 0)
   const totalEngageDirect = envelopes.reduce((s, b) => s + Number(b.engage_direct || 0), 0)
-  const totalRestant = envelopes.reduce((s, b) => s + Number(b.restant || 0), 0)
+  // Le restant vit à deux endroits : non affecté (côté AG) et disponible sur les
+  // projets. Une enveloppe entièrement allouée a un restant AG nul alors qu'il
+  // reste de quoi dépenser sur le projet — cf. Dashboard.
+  const totalRestantNonAffecte = envelopes.reduce((s, b) => s + Number(b.restant || 0), 0)
+  const totalRestantProjets = projets.reduce((s, p) => s + Number(p.restant || 0), 0)
+  const totalRestantDispo = totalRestantNonAffecte + totalRestantProjets
 
   return (
     <div>
@@ -41,7 +46,7 @@ export default function BudgetsConsolidated() {
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Voté en AG</p><p className="mt-1 text-xl font-semibold text-navy-800">{eur(totalVote)}</p></Card>
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Alloué aux projets</p><p className="mt-1 text-xl font-semibold text-navy-600">{eur(totalProjetsAlloue)}</p><p className="mt-0.5 text-xs text-slate-400">affecté, pas encore dépensé</p></Card>
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Engagé direct</p><p className="mt-1 text-xl font-semibold text-amber-700">{eur(totalEngageDirect)}</p><p className="mt-0.5 text-xs text-slate-400">décisions hors projet</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant non affecté</p><p className="mt-1 text-xl font-semibold text-emerald-700">{eur(totalRestant)}</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant disponible</p><p className="mt-1 text-xl font-semibold text-emerald-700">{eur(totalRestantDispo)}</p><p className="mt-0.5 text-xs text-slate-400">{totalRestantProjets > 0 ? `dont ${eur(totalRestantProjets)} sur les projets` : 'non affecté à un projet'}</p></Card>
       </div>
 
       {/* Enveloppes votées en AG */}

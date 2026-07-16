@@ -52,11 +52,22 @@ export default function Dashboard() {
   const totalVote = budgets.reduce((s, b) => s + Number(b.alloue || 0), 0)
   const totalProjetsAlloue = budgets.reduce((s, b) => s + Number(b.projets_alloue || 0), 0)
   const totalEngageDirect = budgets.reduce((s, b) => s + Number(b.engage_direct || 0), 0)
-  const totalRestant = budgets.reduce((s, b) => s + Number(b.restant || 0), 0)
   // Argent réellement engagé par des décisions : les engagements directs sur une
   // enveloppe + ceux portés par les projets. Les deux ensembles sont disjoints
   // (une décision a un projet_id OU un resolution_id seul) : pas de double compte.
   const totalEngageDecisions = totalEngageDirect + projets.reduce((s, p) => s + Number(p.engage || 0), 0)
+
+  // Le restant se lit à DEUX endroits, et n'en montrer qu'un ment.
+  //  - côté AG (`b.restant`) : ce qui n'est ni alloué à un projet, ni engagé direct ;
+  //  - côté projet (`p.restant`) : l'enveloppe reçue, moins ce que les décisions
+  //    y ont engagé.
+  // Une enveloppe entièrement allouée à un projet a un restant AG NUL — l'argent
+  // n'a pas disparu, il est disponible sur le projet. N'afficher que le restant AG
+  // annonçait donc 0 € alors qu'il restait de quoi dépenser.
+  // Identité vérifiée : restantAG + restantProjets == voté − engagé.
+  const totalRestantNonAffecte = budgets.reduce((s, b) => s + Number(b.restant || 0), 0)
+  const totalRestantProjets = projets.reduce((s, p) => s + Number(p.restant || 0), 0)
+  const totalRestantDispo = totalRestantNonAffecte + totalRestantProjets
 
   const stats = [
     { label: 'Décisions', value: decisions.length, sub: `${enCours.length} en cours` },
@@ -64,7 +75,11 @@ export default function Dashboard() {
     { label: 'Voté en AG', value: eur(totalVote), sub: `${budgets.length} enveloppe(s) adoptée(s)` },
     { label: 'Alloué aux projets', value: eur(totalProjetsAlloue), sub: `${projets.length} projet(s)` },
     { label: 'Engagé par décisions', value: eur(totalEngageDecisions), sub: totalEngageDirect > 0 ? `dont ${eur(totalEngageDirect)} hors projet` : 'décisions enregistrées et adoptées' },
-    { label: 'Restant non affecté', value: eur(totalRestant), sub: 'ni alloué, ni engagé' },
+    {
+      label: 'Restant disponible',
+      value: eur(totalRestantDispo),
+      sub: totalRestantProjets > 0 ? `dont ${eur(totalRestantProjets)} sur les projets` : 'non affecté à un projet',
+    },
   ]
 
   return (
