@@ -22,8 +22,11 @@ export default function BudgetsConsolidated() {
 
   if (loading) return <Spinner />
 
+  // Trois natures distinctes, jamais une seule étiquette « engagé » : une enveloppe
+  // allouée à un projet n'est pas dépensée, elle est affectée. Cf. Dashboard.
   const totalVote = envelopes.reduce((s, b) => s + Number(b.alloue || 0), 0)
-  const totalEngage = envelopes.reduce((s, b) => s + Number(b.engage || 0), 0)
+  const totalProjetsAlloue = envelopes.reduce((s, b) => s + Number(b.projets_alloue || 0), 0)
+  const totalEngageDirect = envelopes.reduce((s, b) => s + Number(b.engage_direct || 0), 0)
   const totalRestant = envelopes.reduce((s, b) => s + Number(b.restant || 0), 0)
 
   return (
@@ -34,10 +37,11 @@ export default function BudgetsConsolidated() {
         actions={<Button variant="secondary" onClick={() => downloadCSV(`budgets-CS-Rives-${new Date().getFullYear()}.csv`, budgetsToCSV(envelopes))} disabled={envelopes.length === 0}>Export CSV (Foncia)</Button>}
       />
 
-      <div className="mb-6 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Voté en AG</p><p className="mt-1 text-xl font-semibold text-navy-800">{eur(totalVote)}</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Engagé / alloué</p><p className="mt-1 text-xl font-semibold text-amber-700">{eur(totalEngage)}</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant</p><p className="mt-1 text-xl font-semibold text-emerald-700">{eur(totalRestant)}</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Alloué aux projets</p><p className="mt-1 text-xl font-semibold text-navy-600">{eur(totalProjetsAlloue)}</p><p className="mt-0.5 text-xs text-slate-400">affecté, pas encore dépensé</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Engagé direct</p><p className="mt-1 text-xl font-semibold text-amber-700">{eur(totalEngageDirect)}</p><p className="mt-0.5 text-xs text-slate-400">décisions hors projet</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant non affecté</p><p className="mt-1 text-xl font-semibold text-emerald-700">{eur(totalRestant)}</p></Card>
       </div>
 
       {/* Enveloppes votées en AG */}

@@ -45,6 +45,18 @@ body {
   overflow-x: clip;
 }
 
+/* Tailwind v4 remet les <button> à `cursor: default` (v3 mettait `pointer`).
+   Conséquence visible : un <button> stylé en lien n'a pas la main au survol,
+   alors qu'un <Link> (donc une <a>) l'a — deux actions côte à côte, deux
+   comportements. Remède recommandé par le guide d'upgrade v4 ; les utilitaires
+   restent prioritaires, `disabled:cursor-not-allowed` du composant Button gagne. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Minimal rich-text rendering for decision descriptions (bold/italic/lists). */
 .rich-text strong {
   font-weight: 600;

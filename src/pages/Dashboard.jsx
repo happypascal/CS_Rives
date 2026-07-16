@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [ags, setAgs] = useState([])
   const [budgets, setBudgets] = useState([])
   const [batches, setBatches] = useState([])
+  const [projets, setProjets] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -23,12 +24,14 @@ export default function Dashboard() {
       repo.listAG().catch(() => []),
       repo.listAGBudgets().catch(() => []),
       repo.listSignatureBatches().catch(() => []),
+      repo.listProjets().catch(() => []),
     ])
-      .then(([d, a, b, s]) => {
+      .then(([d, a, b, s, p]) => {
         setDecisions(d)
         setAgs(a)
         setBudgets(b)
         setBatches(s)
+        setProjets(p)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -40,15 +43,28 @@ export default function Dashboard() {
   const nextAG = ags.filter((a) => a.statut === 'en_cours').sort((x, y) => (x.date_ag < y.date_ag ? -1 : 1))[0]
   const anyBatchDecisionIds = new Set(batches.flatMap((b) => b.decision_ids))
   const toSign = decisions.filter((d) => d.enregistree && d.statut === 'adoptee' && !anyBatchDecisionIds.has(d.id))
-  const totalAlloue = budgets.reduce((s, b) => s + Number(b.alloue || 0), 0)
-  const totalEngage = budgets.reduce((s, b) => s + Number(b.engage || 0), 0)
+  // ALLOUER ≠ ENGAGER. Le `engage` d'une enveloppe AG additionne deux choses de
+  // nature différente : les décisions qui engagent directement, et l'enveloppe
+  // transférée à un projet — laquelle n'est pas dépensée, juste affectée. Les
+  // présenter sous une seule étiquette « engagé » fait lire comme dépensé un
+  // argent qui ne l'est pas. On sépare donc les trois étapes du cheminement :
+  // voté en AG → alloué à un projet (ou engagé direct) → engagé par décision.
+  const totalVote = budgets.reduce((s, b) => s + Number(b.alloue || 0), 0)
+  const totalProjetsAlloue = budgets.reduce((s, b) => s + Number(b.projets_alloue || 0), 0)
+  const totalEngageDirect = budgets.reduce((s, b) => s + Number(b.engage_direct || 0), 0)
   const totalRestant = budgets.reduce((s, b) => s + Number(b.restant || 0), 0)
+  // Argent réellement engagé par des décisions : les engagements directs sur une
+  // enveloppe + ceux portés par les projets. Les deux ensembles sont disjoints
+  // (une décision a un projet_id OU un resolution_id seul) : pas de double compte.
+  const totalEngageDecisions = totalEngageDirect + projets.reduce((s, p) => s + Number(p.engage || 0), 0)
 
   const stats = [
     { label: 'Décisions', value: decisions.length, sub: `${enCours.length} en cours` },
     { label: 'Assemblées Générales', value: ags.length, sub: nextAG ? 'prochaine planifiée' : 'aucune à venir' },
-    { label: 'Budget engagé', value: eur(totalEngage), sub: `sur ${eur(totalAlloue)} alloués` },
-    { label: 'Budget restant', value: eur(totalRestant), sub: `${budgets.length} budget(s) AG` },
+    { label: 'Voté en AG', value: eur(totalVote), sub: `${budgets.length} enveloppe(s) adoptée(s)` },
+    { label: 'Alloué aux projets', value: eur(totalProjetsAlloue), sub: `${projets.length} projet(s)` },
+    { label: 'Engagé par décisions', value: eur(totalEngageDecisions), sub: totalEngageDirect > 0 ? `dont ${eur(totalEngageDirect)} hors projet` : 'décisions enregistrées et adoptées' },
+    { label: 'Restant non affecté', value: eur(totalRestant), sub: 'ni alloué, ni engagé' },
   ]
 
   return (
@@ -59,7 +75,7 @@ export default function Dashboard() {
         actions={!isMobile && <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
         {stats.map((s) => (
           <Card key={s.label} className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{s.label}</p>
