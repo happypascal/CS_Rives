@@ -6,8 +6,7 @@ import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly, eur } from
 import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-
-const MAX_DOC_BYTES = 2 * 1024 * 1024
+import { MAX_DOC_BYTES, BACKEND } from '../lib/config'
 
 // Le projet ne porte ni budget ni AG : ce sont les résolutions qui le financent
 // (resolutions_ag.projet_id) et le budget s'en dérive. Ce formulaire ne saisit
@@ -35,7 +34,13 @@ export default function ProjetForm() {
   const [membres, setMembres] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [form, setForm] = useState(EMPTY)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+
+  // Id tiré côté client : une pièce jointe est téléversée avant que la ligne
+  // existe, et son chemin doit porter cet id (`projets/<id>/…`, migration 012).
+  const [newId] = useState(() => crypto.randomUUID())
+  const entityId = editing ? id : newId
 
   // Création depuis « Ouvrir un projet » sur une résolution (AGDetail) : la
   // résolution d'origine est le seul rattachement posé à la création.
@@ -105,18 +110,26 @@ export default function ProjetForm() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  // Même patron que DecisionForm : envoi au choix du fichier, « Retirer » ne
+  // supprime pas l'objet du bucket (annuler ensuite laisserait un chemin mort).
   const onFile = async (e) => {
     setError('')
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    if (file.size > MAX_DOC_BYTES) return setError(`Fichier trop volumineux (max ${MAX_DOC_BYTES / 1024 / 1024} Mo).`)
-    const dataUrl = await new Promise((res) => {
-      const r = new FileReader()
-      r.onload = () => res(r.result)
-      r.readAsDataURL(file)
-    })
-    setForm((f) => ({ ...f, documents: [...f.documents, { id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, dataUrl, uploaded_at: new Date().toISOString() }] }))
+    if (file.size > MAX_DOC_BYTES) {
+      const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
+      return setError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
+    }
+    setUploading(true)
+    try {
+      const record = await repo.uploadDocument('projets', entityId, file)
+      setForm((f) => ({ ...f, documents: [...f.documents, record] }))
+    } catch (err) {
+      setError(`Envoi du fichier impossible : ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const submit = async (e) => {
@@ -139,7 +152,8 @@ export default function ProjetForm() {
       } else {
         // resolution_ids : champ virtuel, consommé par le repo pour poser
         // resolutions_ag.projet_id — ce n'est pas une colonne de `projets`.
-        const created = await repo.createProjet({ ...payload, resolution_ids: [resolutionOrigine] })
+        // `id` explicite : les pièces jointes sont déjà sous `projets/<newId>/…`.
+        const created = await repo.createProjet({ id: newId, ...payload, resolution_ids: [resolutionOrigine] })
         navigate(`/projets/${created.id}`)
       }
     } catch (err) {
@@ -199,17 +213,20 @@ export default function ProjetForm() {
                   <button type="button" onClick={() => setForm((f) => ({ ...f, documents: f.documents.filter((x) => x.id !== doc.id) }))} className="text-xs text-red-600 underline">Retirer</button>
                 </div>
               ))}
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 hover:bg-navy-100">
-                + Ajouter un fichier
-                <input type="file" className="hidden" onChange={onFile} />
+              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${uploading ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+                {uploading ? 'Envoi…' : '+ Ajouter un fichier'}
+                <input type="file" className="hidden" disabled={uploading} onChange={onFile} />
               </label>
+              <p className="text-xs text-slate-400">
+                {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
+              </p>
             </div>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Ouvrir le projet'}</Button>
+            <Button type="submit" disabled={saving || uploading}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Ouvrir le projet'}</Button>
           </div>
         </form>
       </Card>

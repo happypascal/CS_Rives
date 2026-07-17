@@ -7,6 +7,7 @@ import { ProjetStatutBadge, StatutBadge } from '../components/badges'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
+import { downloadDocument } from '../lib/documents'
 
 export default function ProjetDetail() {
   const { id } = useParams()
@@ -16,6 +17,17 @@ export default function ProjetDetail() {
   const canManage = isAdmin && !isMobile
   const [projet, setProjet] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [docError, setDocError] = useState('')
+
+  // Bucket privé : l'URL est signée au clic, un échec doit se voir.
+  const openDoc = async (doc) => {
+    setDocError('')
+    try {
+      await downloadDocument(doc)
+    } catch (err) {
+      setDocError(`« ${doc.name} » n’a pas pu être ouvert : ${err.message}`)
+    }
+  }
 
   const reload = useCallback(async () => {
     try {
@@ -199,14 +211,15 @@ export default function ProjetDetail() {
               <ul className="space-y-2">
                 {projet.documents.map((doc) => (
                   <li key={doc.id}>
-                    <a href={doc.dataUrl} download={doc.name} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm hover:bg-navy-50/50">
+                    <button type="button" onClick={() => openDoc(doc)} className="flex w-full cursor-pointer items-center justify-between rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-navy-50/50">
                       <span className="truncate text-navy-700">{doc.name}</span>
-                      <span className="text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
-                    </a>
+                      <span className="ml-2 shrink-0 text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
+                    </button>
                   </li>
                 ))}
               </ul>
             )}
+            {docError && <p className="mt-2 text-xs text-red-600">{docError}</p>}
             {canManage && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
           </div>
         </Card>

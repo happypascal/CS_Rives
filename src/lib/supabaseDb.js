@@ -9,6 +9,10 @@ function must(result) {
   return result.data
 }
 
+// Bucket privé des pièces jointes (migration 012). Privé = aucune adresse
+// permanente n'existe ; tout accès passe par une URL signée à durée courte.
+const DOCUMENTS_BUCKET = 'documents'
+
 export const supabaseAuth = {
   async signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
@@ -175,19 +179,6 @@ export const supabaseRepo = {
   async setResolutionProjet(resolutionId, projetId) {
     return must(await supabase.from('resolutions_ag').update({ projet_id: projetId || null }).eq('id', resolutionId).select())[0]
   },
-  async addProjetDocument(projetId, doc) {
-    const p = must(await supabase.from('projets').select('documents').eq('id', projetId).maybeSingle())
-    const record = { id: crypto.randomUUID(), uploaded_at: new Date().toISOString(), ...doc }
-    const documents = [...(p?.documents || []), record]
-    must(await supabase.from('projets').update({ documents }).eq('id', projetId))
-    return record
-  },
-  async removeProjetDocument(projetId, docId) {
-    const p = must(await supabase.from('projets').select('documents').eq('id', projetId).maybeSingle())
-    const documents = (p?.documents || []).filter((x) => x.id !== docId)
-    must(await supabase.from('projets').update({ documents }).eq('id', projetId))
-    return { ok: true }
-  },
 
   // ---- Décisions ----
   // Toutes les colonnes SAUF `documents`.
@@ -256,19 +247,50 @@ export const supabaseRepo = {
     return row
   },
 
-  // ---- Documents ----
-  async addDocument(decisionId, doc) {
-    const d = must(await supabase.from('decisions').select('documents').eq('id', decisionId).maybeSingle())
-    const record = { id: crypto.randomUUID(), uploaded_at: new Date().toISOString(), ...doc }
-    const documents = [...(d?.documents || []), record]
-    must(await supabase.from('decisions').update({ documents }).eq('id', decisionId))
-    return record
+  // ---- Documents (pièces jointes) ----
+  //
+  // Le fichier va dans le bucket privé ; la ligne ne garde que {path,name,type,
+  // size}. Le chemin PORTE l'id de l'entité — c'est lui que relisent les policies
+  // de la migration 012 pour refuser de toucher au fichier d'une décision
+  // enregistrée. Ne pas changer la convention sans les relire.
+  //
+  // L'entité n'existe pas forcément encore : à la création, le formulaire tire
+  // l'id côté client et téléverse avant l'insert. D'où `entityId` en paramètre
+  // plutôt qu'une relecture en base.
+  async uploadDocument(scope, entityId, file) {
+    const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'bin'
+    const path = `${scope}/${entityId}/${crypto.randomUUID()}.${ext}`
+    const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).upload(path, file, {
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
+    })
+    if (error) throw new Error(error.message)
+    return {
+      id: crypto.randomUUID(),
+      path,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      uploaded_at: new Date().toISOString(),
+    }
   },
-  async removeDocument(decisionId, docId) {
-    const d = must(await supabase.from('decisions').select('documents').eq('id', decisionId).maybeSingle())
-    const documents = (d?.documents || []).filter((x) => x.id !== docId)
-    must(await supabase.from('decisions').update({ documents }).eq('id', decisionId))
-    return { ok: true }
+  // URL signée fabriquée AU CLIC, valable 5 minutes. On ne stocke jamais d'URL :
+  // le bucket est privé, donc aucune adresse permanente n'existe, et un registre
+  // légal se relit dix ans plus tard.
+  //
+  // `download` fait répondre le Storage en Content-Disposition: attachment — le
+  // fichier se télécharge sous son vrai nom au lieu de s'ouvrir dans l'onglet.
+  //
+  // `doc.dataUrl` = pièce jointe d'AVANT le Storage (base64 en jsonb). Servie
+  // telle quelle, sans migration : celles qui pendent à une décision enregistrée
+  // ne peuvent de toute façon pas être déplacées sans modifier une délibération
+  // figée. Les deux formats cohabitent donc, indéfiniment et volontairement.
+  async getDocumentUrl(doc) {
+    if (doc.dataUrl) return doc.dataUrl
+    const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET)
+      .createSignedUrl(doc.path, 300, { download: doc.name })
+    if (error) throw new Error(error.message)
+    return data.signedUrl
   },
 
   // ---- Votes ----

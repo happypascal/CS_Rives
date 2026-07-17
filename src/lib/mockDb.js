@@ -632,27 +632,6 @@ export const mockRepo = {
     save(data)
     return clone(r)
   },
-  async addProjetDocument(projetId, doc) {
-    await delay()
-    const data = load()
-    const p = data.projets.find((x) => x.id === projetId)
-    if (!p) throw new Error('Projet introuvable')
-    const record = { id: uid(), uploaded_at: nowISO(), ...doc }
-    p.documents = [...(p.documents || []), record]
-    p.updated_at = nowISO()
-    audit(data, 'projets', projetId, 'attach', `Pièce jointe : ${doc.name}`)
-    save(data)
-    return clone(record)
-  },
-  async removeProjetDocument(projetId, docId) {
-    await delay()
-    const data = load()
-    const p = data.projets.find((x) => x.id === projetId)
-    if (!p) throw new Error('Projet introuvable')
-    p.documents = (p.documents || []).filter((x) => x.id !== docId)
-    save(data)
-    return { ok: true }
-  },
 
   // ---- Décisions CS ----
   // `documents` est retiré ICI AUSSI, pour rester à parité avec Supabase, qui ne
@@ -748,26 +727,26 @@ export const mockRepo = {
   },
 
   // ---- Documents (pièces jointes) ----
-  async addDocument(decisionId, doc) {
+  //
+  // Parité d'INTERFACE avec Supabase, pas de stockage : la démo n'a pas de
+  // bucket, elle garde le base64 dans localStorage. `scope`/`entityId` ne servent
+  // donc à rien ici — ils existent pour que la signature soit la même des deux
+  // côtés, et le plafond de 2 Mo de MAX_DOC_BYTES est la conséquence directe de
+  // ce stockage (quota navigateur), pas une règle du produit.
+  //
+  // ⚠ Le mode démo ne peut donc PAS vérifier le chemin du bucket ni les policies
+  // de la migration 012. Ce qui marche ici ne prouve rien sur la prod.
+  async uploadDocument(scope, entityId, file) { // eslint-disable-line no-unused-vars
     await delay()
-    const data = load()
-    const d = data.decisions.find((x) => x.id === decisionId)
-    if (!d) throw new Error('Décision introuvable')
-    const record = { id: uid(), uploaded_at: nowISO(), ...doc }
-    d.documents = [...(d.documents || []), record]
-    d.updated_at = nowISO()
-    audit(data, 'decisions', decisionId, 'attach', `Pièce jointe : ${doc.name}`)
-    save(data)
-    return clone(record)
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+    })
+    return { id: uid(), name: file.name, type: file.type, size: file.size, dataUrl, uploaded_at: nowISO() }
   },
-  async removeDocument(decisionId, docId) {
-    await delay()
-    const data = load()
-    const d = data.decisions.find((x) => x.id === decisionId)
-    if (!d) throw new Error('Décision introuvable')
-    d.documents = (d.documents || []).filter((x) => x.id !== docId)
-    save(data)
-    return { ok: true }
+  async getDocumentUrl(doc) {
+    return doc.dataUrl
   },
 
   // ---- Votes (self-only côté UI) ----

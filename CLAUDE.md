@@ -198,7 +198,27 @@ et **zéro vote**.
   est supprimé si le rattachement échoue, pour ne pas laisser de projet à 0 €.
 - **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app stocke
   **uniquement le résultat**, ne compte jamais de voix d'AG (`agLogic.js`).
-- Pièces jointes : dataUrl base64 en jsonb, **plafond 2 Mo/fichier**.
+- **Pièces jointes : bucket privé `documents`** (migration 012). La ligne ne garde que
+  `{path,name,type,size}` ; le fichier vit dans le Storage. Plafond **25 Mo/fichier** en prod
+  (`MAX_DOC_BYTES` dans `config.js` **et** `file_size_limit` du bucket — les deux ensemble).
+  - **On stocke un CHEMIN, jamais une URL** : le bucket est privé, donc aucune adresse
+    permanente n'existe. `repo.getDocumentUrl(doc)` signe une URL de 5 min au clic.
+  - **Convention de chemin PORTEUSE** : `decisions/<decision_id>/<uuid>.<ext>` (idem
+    `projets/`). L'id est dans le chemin pour que les policies puissent relire la ligne, donc
+    refuser de toucher au fichier d'une décision **enregistrée**. Ne pas la changer sans
+    relire la migration 012.
+  - **L'id de l'entité est tiré côté client** (`crypto.randomUUID()` dans `DecisionForm` /
+    `ProjetForm`, passé à l'insert) : à la création, le fichier part AVANT que la ligne
+    existe. C'est pourquoi la policy d'insert n'exige pas que la décision existe.
+  - **Le base64 hérité cohabite, définitivement** : `getDocumentUrl` sert `doc.dataUrl` tel
+    quel s'il est présent. Pas de migration des anciennes PJ — celles qui pendent à une
+    décision enregistrée ne peuvent pas être déplacées sans modifier une délibération figée.
+  - **Orphelins assumés** : « Retirer » dans un formulaire n'efface **pas** l'objet du bucket
+    (annuler ensuite laisserait la ligne avec un chemin mort). Quelques Mo perdus sur 1 Go
+    valent mieux qu'un devis introuvable dans un registre légal.
+  - **Le mode démo n'a pas de bucket** : le mock garde le base64 en localStorage, plafond
+    2 Mo — quota navigateur, pas une règle du produit. Il ne peut donc rien prouver sur les
+    chemins ni sur les policies.
 - Premier login (prod) : les non-admins sont bloqués par `<ForcePasswordChange>` tant que
   `user_metadata.password_changed !== true`. Min 8 caractères.
 
@@ -343,7 +363,6 @@ mock ⇄ Supabase à parité d'interface.
 2. **Représentation (art. 15 « ou représentés »)** — non implémentée, documentée comme telle.
 3. `resolutions_ag.majorite_requise` accepte `'absolue'` ; aucune logique ne différencie les
    majorités (les résultats d'AG sont saisis, pas calculés).
-4. **Pas de Supabase Storage** — les pièces jointes sont des dataUrls en jsonb.
 
 **Piège de coordination** : les messages de commit référencent un fichier **`SPECS`** (§4.3, §4.5,
 §5) qui **n'existe ni dans le repo ni dans l'historique git**. Il vit hors versioning. Ne pas

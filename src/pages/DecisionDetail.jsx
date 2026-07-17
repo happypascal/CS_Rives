@@ -12,6 +12,7 @@ import { downloadDecisionPDF } from '../lib/pdf'
 import { decisionShareText, whatsappShareUrl } from '../lib/share'
 import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { TEST_VOTES } from '../lib/config'
+import { downloadDocument } from '../lib/documents'
 
 // Membres actifs à une date ISO (date_election <= date <= date_fin|∞).
 function activeMembersAt(members, dateISO) {
@@ -40,6 +41,18 @@ export default function DecisionDetail() {
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [replyText, setReplyText] = useState('')
+  const [docError, setDocError] = useState('')
+
+  // Le bucket est privé : pas de href posable dans le JSX, l'URL est signée au
+  // clic. Un échec doit se voir — sans ça le clic ne ferait simplement rien.
+  const openDoc = async (doc) => {
+    setDocError('')
+    try {
+      await downloadDocument(doc)
+    } catch (err) {
+      setDocError(`« ${doc.name} » n’a pas pu être ouvert : ${err.message}`)
+    }
+  }
 
   const reload = useCallback(async () => {
     try {
@@ -324,14 +337,15 @@ export default function DecisionDetail() {
             <ul className="mt-2 space-y-2">
               {decision.documents.map((doc) => (
                 <li key={doc.id}>
-                  <a href={doc.dataUrl} download={doc.name} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm hover:bg-navy-50/50">
+                  <button type="button" onClick={() => openDoc(doc)} className="flex w-full cursor-pointer items-center justify-between rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-navy-50/50">
                     <span className="truncate text-navy-700">{doc.name}</span>
                     <span className="ml-2 shrink-0 text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
           )}
+          {docError && <p className="mt-2 text-xs text-red-600">{docError}</p>}
           {isOwner && !locked && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
         </div>
       </Card>

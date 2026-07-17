@@ -9,8 +9,7 @@ import { todayISO, addBusinessDaysISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { PROJET_ACTION_VALUES, PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
-
-const MAX_DOC_BYTES = 2 * 1024 * 1024 // 2 Mo / fichier (démo localStorage)
+import { MAX_DOC_BYTES, BACKEND } from '../lib/config'
 
 export default function DecisionForm() {
   const { id } = useParams()
@@ -34,9 +33,18 @@ export default function DecisionForm() {
   // Effet sur le statut du projet ('' | suspendre | reprendre | terminer).
   const [projetAction, setProjetAction] = useState('')
   const [documents, setDocuments] = useState([])
+  const [uploading, setUploading] = useState(false)
   const [projets, setProjets] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [error, setError] = useState('')
+
+  // L'id de la décision est tiré ICI, pas par Postgres, parce qu'une pièce
+  // jointe est téléversée AVANT que la ligne existe et que son chemin dans le
+  // bucket doit porter cet id (`decisions/<id>/…`, migration 012). `useState`
+  // avec initialiseur : un seul id pour toute la vie du formulaire, alors qu'un
+  // appel direct en tirerait un neuf à chaque rendu.
+  const [newId] = useState(() => crypto.randomUUID())
+  const entityId = editing ? id : newId
 
   useEffect(() => {
     async function init() {
@@ -123,18 +131,33 @@ export default function DecisionForm() {
     )
   }
 
+  // Le fichier part dans le bucket dès qu'il est choisi, pas à la soumission :
+  // le membre voit tout de suite si l'envoi passe, et le formulaire ne garde
+  // qu'un chemin.
+  //
+  // ⚠ Contrepartie assumée : un fichier téléversé puis abandonné (formulaire
+  // quitté, ou « Retirer » ci-dessous) reste dans le bucket, orphelin. « Retirer »
+  // ne supprime volontairement PAS l'objet — annuler ensuite le formulaire
+  // laisserait sinon la ligne enregistrée avec un chemin mort. Quelques Mo perdus
+  // sur 1 Go valent mieux qu'un devis introuvable dans un registre légal.
   const onFile = async (e) => {
     setError('')
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    if (file.size > MAX_DOC_BYTES) return setError(`Fichier trop volumineux (max ${MAX_DOC_BYTES / 1024 / 1024} Mo en mode démo).`)
-    const dataUrl = await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(file)
-    })
-    setDocuments((docs) => [...docs, { id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, dataUrl, uploaded_at: new Date().toISOString() }])
+    if (file.size > MAX_DOC_BYTES) {
+      const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
+      return setError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
+    }
+    setUploading(true)
+    try {
+      const record = await repo.uploadDocument('decisions', entityId, file)
+      setDocuments((docs) => [...docs, record])
+    } catch (err) {
+      setError(`Envoi du fichier impossible : ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const submit = async (e) => {
@@ -178,7 +201,10 @@ export default function DecisionForm() {
         await repo.updateDecision(id, payload)
         navigate(`/registre/${id}`)
       } else {
-        const created = await repo.createDecision({ numero, created_by: user?.membre_id ?? null, ...payload })
+        // `id` explicite : les pièces jointes ont déjà été téléversées sous
+        // `decisions/<newId>/…`. Laisser Postgres en générer un autre mettrait
+        // les fichiers hors de portée des policies (migration 012).
+        const created = await repo.createDecision({ id: newId, numero, created_by: user?.membre_id ?? null, ...payload })
         navigate(`/registre/${created.id}`)
       }
     } catch (err) {
@@ -265,17 +291,20 @@ export default function DecisionForm() {
                   <button type="button" onClick={() => setDocuments((d) => d.filter((x) => x.id !== doc.id))} className="text-xs text-red-600 underline">Retirer</button>
                 </div>
               ))}
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 hover:bg-navy-100">
-                + Ajouter un fichier
-                <input type="file" className="hidden" onChange={onFile} />
+              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${uploading ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+                {uploading ? 'Envoi…' : '+ Ajouter un fichier'}
+                <input type="file" className="hidden" disabled={uploading} onChange={onFile} />
               </label>
+              <p className="text-xs text-slate-400">
+                {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
+              </p>
             </div>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Créer la décision'}</Button>
+            <Button type="submit" disabled={saving || uploading}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Créer la décision'}</Button>
           </div>
         </form>
       </Card>

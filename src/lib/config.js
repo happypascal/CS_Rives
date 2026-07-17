@@ -36,6 +36,17 @@ export const SIGNATURE_PROVIDER =
 // le registre attesterait une présence qui n'a pas eu lieu, et c'est définitif.
 export const TEST_VOTES = import.meta.env.VITE_TEST_VOTES?.trim() === 'true'
 
+// Plafond par fichier — deux valeurs, deux raisons SANS RAPPORT entre elles.
+//
+// En prod : 25 Mo, aligné sur `file_size_limit` du bucket (migration 012). Les
+// deux doivent bouger ensemble, sinon l'un rejette ce que l'autre accepte.
+//
+// En démo : 2 Mo, et ce n'est pas un choix — le mock garde les pièces jointes en
+// base64 dans localStorage, dont le quota navigateur est de 5 à 10 Mo pour TOUTE
+// la base. Le mode démo ne verra donc jamais le Storage : c'est une limite du
+// bac à sable, pas du produit.
+export const MAX_DOC_BYTES = BACKEND === 'supabase' ? 25 * 1024 * 1024 : 2 * 1024 * 1024
+
 export const ORG = {
   name: 'Association Syndicale Libre',
   lotissement: 'Lotissement de Rives',
