@@ -337,6 +337,12 @@ export const supabaseRepo = {
   async listMyVotes(membre_id) {
     return must(await supabase.from('votes').select('decision_id,vote').eq('membre_id', membre_id))
   },
+  // Tous les votes, pour grouper les décisions par ensemble de votants (écran de
+  // signature). Seuls decision_id et membre_id servent — le sens du vote ne
+  // compte pas : un Contre est présent, donc signataire (art. 15).
+  async listVotes() {
+    return must(await supabase.from('votes').select('decision_id,membre_id'))
+  },
   async deleteVote(decision_id, membre_id) {
     must(await supabase.from('votes').delete().eq('decision_id', decision_id).eq('membre_id', membre_id))
     return { ok: true }

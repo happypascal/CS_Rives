@@ -774,6 +774,13 @@ export const mockRepo = {
     await delay(20)
     return clone(load().votes.filter((v) => v.membre_id === membre_id))
   },
+  // Tous les votes, pour grouper les décisions par ensemble de votants (écran de
+  // signature). Volontairement minimal — seuls decision_id et membre_id servent
+  // au groupement ; ni le sens du vote, ni le commentaire.
+  async listVotes() {
+    await delay(20)
+    return clone(load().votes).map((v) => ({ decision_id: v.decision_id, membre_id: v.membre_id }))
+  },
   async deleteVote(decision_id, membre_id) {
     await delay()
     const data = load()
