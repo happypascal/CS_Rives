@@ -21,9 +21,13 @@ Trois conséquences, toutes contre-intuitives :
 - **Un absent ne signe pas.** Un non-vote est une absence, pas une abstention.
 - La signature vaut **par délibération**, pas par lot.
 
-**Réserve jamais levée** : assimiler le vote *asynchrone* de l'app à « membres présents à la
-délibération » est une lecture, pas une certitude. À faire confirmer par le notaire si le
-registre doit servir en contentieux.
+**Réserve à faire lever par le notaire** : l'art. 15 fait signer les membres « présents à la
+délibération ». Ici personne n'est jamais réuni — chacun vote depuis son téléphone, à distance
+et à des moments différents. Interpréter « présent » comme « a participé au vote » est une
+lecture (la nôtre, vraisemblablement conforme à l'esprit du texte), pas une certitude. Ne bloque
+rien, l'app est déjà bâtie ainsi ; à confirmer d'une phrase au notaire lors de la validation des
+statuts : « nos délibérations et signatures se font par vote électronique à distance, conforme à
+l'art. 15 ? ».
 
 ## 2. Le bug à corriger
 
@@ -113,8 +117,11 @@ que toute infrastructure automatique. `signature_batches` existe déjà et convi
 
 ## 8. Non couvert, assumé
 
-- **La représentation** (art. 15, « ou représentés ») : non implémentée, documentée comme
-  telle. Un membre sans vote est absent, jamais représenté.
+- **La représentation** (art. 15, « ou représentés ») : **écartée par conception**, pas
+  seulement non implémentée (arbitrage Pascal 2026-07-17). Le vote est électronique et
+  individuel — chacun vote seul depuis son téléphone, ou ne vote pas. Il n'existe aucun moment
+  où un membre pourrait porter la voix d'un autre : voté ou pas voté, rien entre les deux. Ne
+  pas réintroduire « ou représentés » sans un changement de modèle de vote décidé en amont.
 - Le renommage **Yousign → Youtrust** : le code garde le nom mort
   (`signatureProvider.js`, colonne `yousign_request_id`). Conservé sciemment — un renommage
   cosmétique ne vaut pas une migration.
