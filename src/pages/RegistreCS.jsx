@@ -227,6 +227,56 @@ export default function RegistreCS() {
 
       {filtered.length === 0 ? (
         <EmptyState title="Aucune décision" hint="Aucune décision ne correspond aux filtres." action={<Link to="/registre/nouvelle"><Button>Créer une décision</Button></Link>} />
+      ) : isMobile ? (
+        /* Mobile : une carte par décision, tapable en entier. Le tableau à 7
+           colonnes ne tenait pas dans l'écran et défilait horizontalement — or
+           c'est au téléphone que les membres votent réellement. Même contenu et
+           même hiérarchie que la colonne « Titre » du tableau (résumé sur trois
+           niveaux) ; les dates passent en pied de carte, en clair. */
+        <ul className="space-y-3">
+          {filtered.map((d) => {
+            const r = resumeOf(d)
+            const overdue = overdueForMe(d)
+            const toVote = needsMyVote(d)
+            const toNotify = d.created_by === user?.membre_id && !d.enregistree && !d.date_notification
+            const batch = batchByDecision[d.id]
+            return (
+              <li key={d.id}>
+                <Link
+                  to={`/registre/${d.id}`}
+                  className={`block rounded-lg border p-4 shadow-sm active:bg-navy-50 ${overdue ? 'border-red-200 bg-red-50' : 'border-navy-100 bg-white'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-slate-500">{d.numero}</span>
+                    <StatutBadge statut={d.statut} />
+                  </div>
+                  <p className="mt-1 font-medium text-navy-800">{r.titre}</p>
+                  {r.action && <p className="mt-0.5 text-xs font-medium text-navy-700">{r.action}</p>}
+                  {r.extrait && <p className="mt-1 text-xs leading-snug text-slate-500">{r.extrait}</p>}
+                  {(toVote || toNotify) && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {toVote && (
+                        <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${overdue ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {overdue ? 'à voter — en retard' : 'à voter'}
+                        </span>
+                      )}
+                      {toNotify && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>}
+                    </div>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    <span>Publiée le {formatDate(d.date_publication)}</span>
+                    {d.date_limite_reponse && (
+                      <span className={overdue ? 'font-semibold text-red-700' : undefined}>
+                        Réponse avant le {formatDate(d.date_limite_reponse)}
+                      </span>
+                    )}
+                    {batch && <SignatureBadge statut={batch.statut} />}
+                  </div>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
