@@ -314,9 +314,76 @@ create policy "qa_self_insert" on questions_reponses for insert to authenticated
   with check (auteur_id = current_membre_id());
 
 -- =============================================================================
+-- Storage — bucket privé `documents` (voir migration 012 pour le raisonnement)
+--
+-- Les pièces jointes vivent dans le bucket ; `documents[]` ne garde que
+-- {path,name,type,size}. On stocke un CHEMIN, pas une URL : le bucket est privé,
+-- l'accès passe par une URL signée à durée courte, et un registre légal se relit
+-- dix ans plus tard.
+--
+-- Convention de chemin PORTEUSE — les policies en dépendent :
+--     decisions/<decision_id>/<uuid>.<ext>
+--     projets/<projet_id>/<uuid>.<ext>
+-- L'id dans le chemin est ce qui permet de refuser la suppression d'un fichier
+-- attaché à une décision enregistrée (verrou de l'art. 15).
+-- =============================================================================
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('documents', 'documents', false, 26214400)
+on conflict (id) do update
+  set public = false,
+      file_size_limit = 26214400;
+
+-- Tout membre connecté lit tout — même règle que `read_auth` sur les tables.
+drop policy if exists "documents_read_auth" on storage.objects;
+create policy "documents_read_auth" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'documents');
+
+-- Membre actif, jamais sur une décision enregistrée. `d.id::text` comparé au
+-- segment de chemin, et pas l'inverse : caster un chemin quelconque en uuid
+-- lèverait une erreur au lieu de renvoyer faux.
+drop policy if exists "documents_insert_membre" on storage.objects;
+create policy "documents_insert_membre" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'documents'
+    and exists (
+      select 1 from public.membres_cs m
+      where m.id = public.current_membre_id() and m.actif
+    )
+    and not exists (
+      select 1 from public.decisions d
+      where d.id::text = (storage.foldername(name))[2]
+        and d.enregistree
+    )
+  );
+
+-- Pas de policy UPDATE, volontairement : chaque fichier est écrit sous un uuid
+-- neuf. Sans policy, l'écrasement est impossible.
+
+-- Président, ou owner de la décision — jamais sur une décision enregistrée.
+drop policy if exists "documents_delete" on storage.objects;
+create policy "documents_delete" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'documents'
+    and not exists (
+      select 1 from public.decisions d
+      where d.id::text = (storage.foldername(name))[2]
+        and d.enregistree
+    )
+    and (
+      public.is_admin()
+      or exists (
+        select 1 from public.decisions d
+        where d.id::text = (storage.foldername(name))[2]
+          and d.created_by = public.current_membre_id()
+      )
+    )
+  );
+
+-- =============================================================================
 -- NOTE Auth : créer les comptes (Authentication > Users) avec le MÊME email
 -- que membres_cs. Pas d'auto-inscription (spec §4.1).
--- NOTE Documents : le stockage des pièces jointes en jsonb (dataUrl) convient
--- pour de petits fichiers. Pour de gros fichiers, utiliser Supabase Storage et
--- ne conserver que l'URL dans documents[].
 -- =============================================================================
