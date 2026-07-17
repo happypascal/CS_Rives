@@ -9,7 +9,7 @@ import { tally, tallySummary, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLo
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
-import { decisionShareText, whatsappShareUrl } from '../lib/share'
+import { decisionShareText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
 import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { TEST_VOTES } from '../lib/config'
 import { downloadDocument } from '../lib/documents'
@@ -686,7 +686,17 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
     await onShared()
   }
 
-  const openWhatsApp = async () => {
+  // App native via le schéma whatsapp:// : location.href laisse l'OS ouvrir
+  // l'app sans créer d'onglet vide (window.open en laisserait un). Si l'app n'est
+  // pas installée, rien ne se passe — d'où le lien « WhatsApp Web » de secours et
+  // le bouton « Copier » ci-dessous.
+  const openWhatsAppApp = async () => {
+    window.location.href = whatsappAppUrl(text)
+    onClose()
+    await onShared()
+  }
+
+  const openWhatsAppWeb = async () => {
     window.open(whatsappShareUrl(text), '_blank', 'noopener')
     onClose()
     await onShared()
@@ -700,7 +710,7 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
       footer={
         <>
           <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier le message'}</Button>
-          <Button onClick={openWhatsApp}>Ouvrir WhatsApp</Button>
+          <Button onClick={openWhatsAppApp}>Ouvrir WhatsApp</Button>
         </>
       }
     >
@@ -710,8 +720,11 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
             Déjà notifiée le {formatDateTime(decision.date_notification)}. Continuer enverra une <strong>relance</strong>.
           </p>
         )}
-        <p>WhatsApp s’ouvre avec ce message pré-rempli : choisissez le groupe du CS, puis envoyez.</p>
+        <p>L’application WhatsApp s’ouvre avec ce message pré-rempli : choisissez le groupe du CS, puis envoyez.</p>
         <pre className="whitespace-pre-wrap rounded-md border border-navy-100 bg-navy-50/60 px-3 py-2 font-sans text-xs text-slate-700">{text}</pre>
+        <p className="text-xs text-slate-400">
+          WhatsApp ne s’ouvre pas ? <button type="button" onClick={openWhatsAppWeb} className="text-navy-600 underline">Ouvrir WhatsApp Web</button> à la place.
+        </p>
         <p className="text-xs text-slate-400">Le lien exige une connexion à l’app : seuls les membres du CS peuvent ouvrir la décision.</p>
       </div>
     </Modal>

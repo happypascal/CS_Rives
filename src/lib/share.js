@@ -34,8 +34,18 @@ export function decisionShareText(decision, contexte = {}) {
   return lines.join('\n')
 }
 
-// wa.me sans numéro : WhatsApp s'ouvre (app sur mobile, web sur PC) et laisse
-// choisir le destinataire — donc le groupe du CS.
+// Deux façons d'ouvrir WhatsApp avec le message pré-rempli, sans numéro (on
+// choisit le groupe du CS à l'arrivée) :
+//
+// - whatsappAppUrl : schéma `whatsapp://`, capté par l'APP native (desktop Mac,
+//   ou mobile). Le navigateur passe la main à l'OS sans ouvrir d'onglet. Défaut,
+//   car c'est ce que veut Pascal — plus de tab WhatsApp Web à chaque fois.
+// - whatsappShareUrl : `wa.me`, ouvre WhatsApp **Web** dans un onglet. Ne dépend
+//   d'aucune app installée → fallback universel.
+export function whatsappAppUrl(text) {
+  return `whatsapp://send?text=${encodeURIComponent(text)}`
+}
+
 export function whatsappShareUrl(text) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`
 }
