@@ -230,7 +230,9 @@ export default function DecisionDetail() {
                 {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
               </Button>
             )}
-            <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa })}>
+            {/* `contexte` : le PDF titre « PROJET IMPACTÉ » et doit le nommer.
+                Seule la page a les projets — les libs n'y accèdent pas. */}
+            <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa, contexte: { projetNom: projet?.nom } })}>
               Export PDF
             </Button>
             {isOwner && !locked && !isMobile && (

@@ -37,6 +37,17 @@ export const PROJET_ACTION_LABELS = {
   terminer: 'Terminer le projet',
 }
 
+// Les mêmes actions, nommées et non conjuguées — pour le registre PDF, qui
+// constate un fait plutôt que de proposer une action. Table distincte et non
+// dérivée : dans l'UI l'infinitif est juste (c'est un choix à faire), dans le
+// registre il ne l'est pas (c'est une chose faite). Noter « Clôture » là où
+// l'UI dit « Terminer » : c'est le mot de Pascal pour le registre.
+export const PROJET_ACTION_NOMS = {
+  suspendre: 'Suspension',
+  reprendre: 'Reprise',
+  terminer: 'Clôture',
+}
+
 // Statut résultant d'une action, une fois la décision enregistrée et adoptée.
 // 'reprendre' ne pose aucun statut : il annule la suspension / la clôture et rend
 // la main au statut naturel (ouvert ou en_cours selon les engagements).

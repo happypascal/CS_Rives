@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatDate, eur, htmlToText } from './format'
 import { tally, tallySummary, VOTE_LABELS } from './decisionLogic'
-import { PROJET_ACTION_LABELS } from './projetLogic'
+import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
@@ -25,6 +25,14 @@ const PAGE_W = 210
 const PAGE_H = 297
 const CONTENT_W = PAGE_W - 2 * M
 const BOTTOM = PAGE_H - 16 // laisse la place au pied de page
+
+// Espace vertical unique : sous l'en-tête de page, et entre deux décisions.
+// Pascal : « prévoir un espace entre entête et entre chaque décision toujours
+// identique ». Une seule constante — deux valeurs finiraient par diverger.
+const GAP = 8
+
+// Le cadre de chaque décision déborde des marges de texte de 3 mm.
+const FRAME_PAD = 3
 
 // Normalise le texte avant de le dessiner. INDISPENSABLE.
 //
@@ -79,7 +87,7 @@ function coverHeader(doc) {
   doc.setDrawColor(...NAVY)
   doc.setLineWidth(0.4)
   doc.line(M, 28, PAGE_W - M, 28)
-  return 38
+  return 28 + GAP // même écart que celui qui sépare deux décisions
 }
 
 // Pieds de page numérotés, posés à la FIN sur toutes les pages : « Page 3 / 12 »
@@ -110,12 +118,29 @@ function sectionTitle(doc, label, y) {
   return y + 4.5
 }
 
+// Le cadre d'une décision. Dessiné APRÈS coup : sa hauteur n'est connue qu'une
+// fois le contenu posé. Un bloc peut enjamber plusieurs pages — on ferme alors
+// un rectangle par page, sinon le trait serait tiré dans le vide.
+function drawFrame(doc, startPage, startY, endY) {
+  const endPage = doc.internal.getCurrentPageInfo().pageNumber
+  doc.setDrawColor(205, 212, 222)
+  doc.setLineWidth(0.3)
+  for (let p = startPage; p <= endPage; p++) {
+    doc.setPage(p)
+    const top = p === startPage ? startY : 16
+    const bot = p === endPage ? endY : BOTTOM + 2
+    doc.roundedRect(M - FRAME_PAD, top, CONTENT_W + FRAME_PAD * 2, bot - top, 1.5, 1.5)
+  }
+  doc.setPage(endPage)
+}
+
 // Un bloc « décision », à partir de `y`. Renvoie le y de sortie.
 //
 // Ne force JAMAIS de saut de page en entrée : c'est l'appelant qui décide. Le
 // contenu s'écoule et ouvre une page quand il déborde (cf. ensure).
 function decisionBlock(doc, decision, opts = {}) {
-  const { members = [], votes = [], qa = [], includeQA = true, y: startY = 20 } = opts
+  const { members = [], votes = [], qa = [], includeQA = true, contexte = {}, y: startY = 20 } = opts
+  const startPage = doc.internal.getCurrentPageInfo().pageNumber
   let y = startY
 
   const composition = decision.composition_snapshot?.length ? decision.composition_snapshot : members
@@ -123,35 +148,38 @@ function decisionBlock(doc, decision, opts = {}) {
   const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null)
   const adoptee = t.quorumAtteint && t.adoptee
 
-  // Bandeau de décision : numéro à gauche, VERDICT à droite en couleur.
-  // Pascal : « il faut mettre VALIDÉ / REJETÉ en en-tête de la décision ». Le
-  // verdict était enterré 15 lignes plus bas, après le détail du vote — or c'est
-  // la première chose qu'on cherche en feuilletant un registre.
-  y = ensure(doc, y, 30)
-  doc.setFillColor(245, 247, 250)
-  doc.rect(M, y - 5, CONTENT_W, 9, 'F')
+  // Bandeau : numéro à gauche, VERDICT à droite en couleur.
+  doc.setFillColor(243, 246, 250)
+  doc.rect(M - FRAME_PAD, y, CONTENT_W + FRAME_PAD * 2, 9, 'F')
   font(doc, 'bold', 11, NAVY)
-  text(doc, `Décision n° ${decision.numero}`, M + 2, y + 1)
+  text(doc, `Décision n° ${decision.numero}`, M, y + 6.2)
 
   // « Non enregistrée » est un troisième état, distinct de rejetée : la décision
   // n'a pas encore été actée par le président, son verdict n'est pas définitif.
   const verdict = !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'VALIDÉE' : 'REJETÉE'
   const verdictColor = !decision.enregistree ? GREY : adoptee ? GREEN : RED
   font(doc, 'bold', 11, verdictColor)
-  text(doc, verdict, PAGE_W - M - 2, y + 1, { align: 'right' })
-  y += 9
+  text(doc, verdict, PAGE_W - M, y + 6.2, { align: 'right' })
+  y += 9 + 5
 
+  // Une seule date : celle de la décision. Publication et limite de réponse sont
+  // de la mécanique de vote, sans intérêt une fois la délibération actée (Pascal).
+  // Repli sur la publication pour une décision NON enregistrée : elle n'a pas
+  // encore de date de décision, et une ligne sans aucune date serait pire.
   font(doc, 'normal', 8, GREY)
-  const dates = [
-    `Publication : ${formatDate(decision.date_publication)}`,
-    decision.date_limite_reponse ? `Limite de réponse : ${formatDate(decision.date_limite_reponse)}` : null,
-    decision.date_enregistrement ? `Enregistrement : ${formatDate(decision.date_enregistrement)}` : null,
-  ].filter(Boolean).join('   ·   ')
-  text(doc, dates, M, y)
+  text(
+    doc,
+    decision.date_enregistrement
+      ? `Décidée le ${formatDate(decision.date_enregistrement)}`
+      : `Publiée le ${formatDate(decision.date_publication)} — pas encore enregistrée`,
+    M,
+    y,
+  )
   y += 6
 
-  y = sectionTitle(doc, 'OBJET', y)
-  font(doc, 'normal', 10)
+  // L'objet, sans titre de section : gras bleu, il se lit comme un titre — c'en
+  // est un. « OBJET » au-dessus ne disait rien que la mise en forme ne dise.
+  font(doc, 'bold', 10, NAVY)
   const titleLines = lines(doc, decision.titre, CONTENT_W)
   y = ensure(doc, y, titleLines.length * 5)
   doc.text(titleLines, M, y)
@@ -159,8 +187,7 @@ function decisionBlock(doc, decision, opts = {}) {
 
   const body = htmlToText(decision.description)
   if (body.trim()) {
-    y = sectionTitle(doc, 'DÉCISION', y)
-    font(doc, 'normal', 10)
+    font(doc, 'normal', 10, INK)
     // Coupé ligne à ligne plutôt qu'en bloc : un texte long doit pouvoir
     // enjamber une page sans être tronqué ni déborder du bas.
     for (const line of lines(doc, body, CONTENT_W)) {
@@ -171,35 +198,53 @@ function decisionBlock(doc, decision, opts = {}) {
     y += 2
   }
 
-  // Ce que la délibération engage. Le PDF est la trace légale : il doit dire ce
-  // que le CS a voté, pas seulement le texte de la décision.
+  // Ce que la délibération fait au projet. Le PDF est la trace légale : il doit
+  // dire ce que le CS a voté, pas seulement le texte de la décision.
+  //
+  // Titré « PROJET IMPACTÉ » et non « ENGAGEMENT BUDGÉTAIRE » : Pascal — ce
+  // dernier est FAUX quand la décision suspend ou clôture un projet sans
+  // engager un centime. On nomme le projet, puis ce qui lui arrive.
+  //
+  // Sans projet (engagement direct sur une résolution d'AG), le titre redevient
+  // « ENGAGEMENT » : il n'y a pas de projet à impacter, et l'annoncer serait faux.
   const engage = decision.montant_engage != null && decision.montant_engage !== ''
-  if (engage || decision.projet_action) {
-    y = sectionTitle(doc, 'ENGAGEMENT BUDGÉTAIRE', y)
-    font(doc, 'normal', 10)
-    if (engage) {
+  const effets = [
+    engage ? `Engagement ${eur(decision.montant_engage)}` : null,
+    decision.projet_action ? PROJET_ACTION_NOMS[decision.projet_action] : null,
+  ].filter(Boolean)
+  if (effets.length) {
+    const surProjet = Boolean(decision.projet_id)
+    y = sectionTitle(doc, surProjet ? 'PROJET IMPACTÉ' : 'ENGAGEMENT', y)
+    if (surProjet) {
+      font(doc, 'normal', 10, INK)
       y = ensure(doc, y, 5)
-      text(doc, `Montant engagé : ${eur(decision.montant_engage)}`, M, y)
+      text(doc, contexte.projetNom || '(projet non identifié)', M, y)
+      y += 5
+    } else if (contexte.cibleLabel) {
+      font(doc, 'normal', 9, GREY)
+      y = ensure(doc, y, 5)
+      text(doc, `Sur ${contexte.cibleLabel}`, M, y)
       y += 5
     }
-    if (decision.projet_action) {
+    font(doc, 'normal', 10, INK)
+    for (const e of effets) {
       y = ensure(doc, y, 5)
-      text(doc, `Effet sur le projet : ${PROJET_ACTION_LABELS[decision.projet_action]}`, M, y)
+      text(doc, e, M, y)
       y += 5
     }
     y += 2
   }
 
-  // UNE table : composition ET vote de chacun.
+  // UNE table : composition ET vote de chacun, sans titre — le tableau se
+  // présente tout seul (Pascal).
   //
-  // Pascal : « inutile d'avoir la liste des membres et ensuite les votes ». Il y
-  // avait deux tables — la composition figée, puis le détail des votes — qui
-  // répétaient les mêmes noms. Fusionnées ; un membre sans ligne de vote porte
-  // « Pas voté », ce qui est exactement la définition statutaire de l'absent
-  // (art. 15 : présent = a voté ; un non-vote est une absence, pas une
+  // Il y avait deux tables — la composition figée, puis le détail des votes —
+  // qui répétaient les mêmes noms. Fusionnées ; un membre sans ligne de vote
+  // porte « Pas voté », ce qui est exactement la définition statutaire de
+  // l'absent (art. 15 : présent = a voté ; un non-vote est une absence, pas une
   // abstention). La table dit donc aussi qui devait signer.
   const voteBy = Object.fromEntries(votes.map((v) => [v.membre_id, v]))
-  y = sectionTitle(doc, 'COMPOSITION ET VOTES', y)
+  y = ensure(doc, y, 20)
   autoTable(doc, {
     startY: y,
     head: [['Membre', 'Rôle', 'Vote', 'Commentaire']],
@@ -261,7 +306,10 @@ function decisionBlock(doc, decision, opts = {}) {
 
   // Pas de lignes de signature manuscrite ici — voir le commentaire de
   // downloadRegistrePDF pour le raisonnement (art. 15).
-  return y + 4
+
+  const endY = y + 2
+  drawFrame(doc, startPage, startY, endY)
+  return endY
 }
 
 // ---- Décision seule -------------------------------------------------------
@@ -336,7 +384,7 @@ function buildRegistre(decisions, opts, tocPages) {
   // page seulement s'il ne reste pas de quoi commencer un bloc — sinon on
   // laisserait un en-tête de décision seul en bas de page.
   const startPages = []
-  y = doc.lastAutoTable.finalY + 8
+  y = doc.lastAutoTable.finalY + GAP
   for (const d of decisions) {
     if (y + 60 > BOTTOM) {
       doc.addPage()
@@ -344,11 +392,11 @@ function buildRegistre(decisions, opts, tocPages) {
     }
     startPages.push(doc.getNumberOfPages())
     const detail = getDetail ? getDetail(d) : {}
-    y = decisionBlock(doc, d, { ...opts, ...detail, y })
-    y += 4
-    doc.setDrawColor(225)
-    doc.setLineWidth(0.2)
-    if (y < BOTTOM) doc.line(M, y - 2, PAGE_W - M, y - 2)
+    y = decisionBlock(doc, d, { ...opts, ...detail, contexte: getContexte ? getContexte(d) : {}, y })
+    // Plus de trait séparateur : chaque décision a désormais son cadre, deux
+    // lignes côte à côte feraient doublon. Un seul écart, le même que sous
+    // l'en-tête de page.
+    y += GAP
   }
 
   paginate(doc)
