@@ -1,3 +1,8 @@
+// PDF du registre : une décision par bloc, table des matières paginée.
+//
+// Refonte du 2026-07-17 sur retour de Pascal (« ne va pas du tout »). Le contenu
+// était validé ; c'était la forme. Voir les commentaires de chaque section pour
+// le pourquoi de chaque choix — plusieurs sont contre-intuitifs.
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatDate, eur, htmlToText } from './format'
@@ -5,271 +10,368 @@ import { tally, tallySummary, VOTE_LABELS } from './decisionLogic'
 import { PROJET_ACTION_LABELS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
+import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
+const INK = [30, 37, 48]
+const GREY = [120, 120, 120]
+const GREEN = [21, 128, 61]
+const RED = [185, 28, 28]
 
-function header(doc, title) {
-  doc.setTextColor(...NAVY)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.text('REGISTRE DES DÉCISIONS', 105, 18, { align: 'center' })
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.text(`${ORG.name} — ${ORG.lotissement}, ${ORG.commune}`, 105, 24, { align: 'center' })
+// Marges. 14 mm au lieu de 20 : Pascal les trouvait trop grandes, et la colonne
+// « Objet » de la table des matières a besoin de cette largeur.
+const M = 14
+const PAGE_W = 210
+const PAGE_H = 297
+const CONTENT_W = PAGE_W - 2 * M
+const BOTTOM = PAGE_H - 16 // laisse la place au pied de page
+
+// Normalise le texte avant de le dessiner. INDISPENSABLE.
+//
+// Intl.NumberFormat('fr-FR') sépare les milliers avec U+202F (espace fine
+// insécable) et précède le € d'un U+00A0. U+202F n'existe ni dans WinAnsi, ni
+// dans le sous-ensemble latin d'Assistant : jsPDF retombait sur l'octet de poids
+// faible, 0x202F & 0xFF = 0x2F = « / » — d'où « 20/000,00 » signalé par Pascal.
+// Le même caractère faussait la mesure de largeur, donc la coupe des lignes :
+// la colonne Objet de la TdM débordait de son cadre. UN caractère, trois bugs.
+//
+// Remplacé par U+00A0, couvert par la police et insécable comme l'original : un
+// montant ne doit pas se couper en fin de ligne.
+// Échappements explicites, jamais les caractères littéraux : U+202F et U+2009
+// sont invisibles dans un éditeur — un copier-coller les perdrait sans que
+// personne ne voie la règle disparaître.
+const pdfText = (s) => String(s ?? '').replace(/[\u202F\u2009]/g, '\u00A0')
+
+// Enregistre Assistant. Pascal : « Arial c'est moche ». Effet de bord utile —
+// une police embarquée passe en Identity-H, donc Unicode, là où les polices
+// standard de jsPDF sont limitées à WinAnsi.
+function setupFont(doc) {
+  doc.addFileToVFS('Assistant-Regular.ttf', ASSISTANT_REGULAR)
+  doc.addFont('Assistant-Regular.ttf', 'Assistant', 'normal')
+  doc.addFileToVFS('Assistant-Bold.ttf', ASSISTANT_BOLD)
+  doc.addFont('Assistant-Bold.ttf', 'Assistant', 'bold')
+  doc.setFont('Assistant', 'normal')
+}
+
+// ⚠ Assistant n'a pas d'italique embarqué. Toute demande d'italique serait
+// synthétisée ou ignorée : on marque les incises par la taille et le gris.
+const font = (doc, style = 'normal', size = 10, color = INK) => {
+  doc.setFont('Assistant', style)
+  doc.setFontSize(size)
+  doc.setTextColor(...color)
+}
+
+const text = (doc, s, x, y, opts) => doc.text(pdfText(s), x, y, opts)
+
+// Coupe un texte à la largeur donnée, après normalisation — sinon les largeurs
+// sont mesurées sur des caractères que la police ne connaît pas.
+const lines = (doc, s, width) => doc.splitTextToSize(pdfText(s), width)
+
+// Bandeau de tête. Réservé à la première page : Pascal — « l'en-tête registre
+// des décisions est inutile sur les pages des décisions ». Le titre du document
+// n'a besoin d'être affirmé qu'une fois ; ensuite c'est du bruit qui mange la
+// hauteur utile dont on a besoin pour tenir deux décisions par page.
+function coverHeader(doc) {
+  font(doc, 'bold', 14, NAVY)
+  text(doc, 'REGISTRE DES DÉCISIONS', PAGE_W / 2, 18, { align: 'center' })
+  font(doc, 'normal', 9, NAVY)
+  text(doc, `${ORG.name} — ${ORG.lotissement}, ${ORG.commune}`, PAGE_W / 2, 24, { align: 'center' })
   doc.setDrawColor(...NAVY)
   doc.setLineWidth(0.4)
-  doc.line(20, 28, 190, 28)
-  if (title) {
-    doc.setTextColor(...NAVY)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.text(title, 20, 38)
+  doc.line(M, 28, PAGE_W - M, 28)
+  return 38
+}
+
+// Pieds de page numérotés, posés à la FIN sur toutes les pages : « Page 3 / 12 »
+// exige de connaître le total, qui n'est connu qu'une fois tout dessiné. Exigé
+// par Pascal — une table des matières sans numéros de page ne sert à rien.
+function paginate(doc) {
+  const total = doc.getNumberOfPages()
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p)
+    font(doc, 'normal', 8, GREY)
+    text(doc, `${ORG.lotissement} — Registre des décisions du Conseil Syndical`, M, PAGE_H - 8)
+    text(doc, `Page ${p} / ${total}`, PAGE_W - M, PAGE_H - 8, { align: 'right' })
   }
 }
 
-function sectionTitle(doc, text, y) {
-  doc.setTextColor(...NAVY)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.text(text, 20, y)
-  return y + 5
+// Réserve `needed` mm ; ouvre une page si le bloc ne tient pas. C'est ce qui
+// permet à deux décisions de partager une page au lieu d'un saut systématique.
+function ensure(doc, y, needed) {
+  if (y + needed <= BOTTOM) return y
+  doc.addPage()
+  return 20
 }
 
-// Build one decision block starting at y, returns the new y (may add pages).
-function decisionBlock(doc, decision, opts = {}) {
-  const { members = [], votes = [], qa = [], includeQA = true } = opts
-  let y = 44
+function sectionTitle(doc, label, y) {
+  y = ensure(doc, y, 10)
+  font(doc, 'bold', 9, NAVY)
+  text(doc, label, M, y)
+  return y + 4.5
+}
 
-  doc.setTextColor(30, 37, 48)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.text(`Décision n° ${decision.numero}`, 20, y)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  const dLabel = decision.date_enregistrement
-    ? `Enregistrée le ${formatDate(decision.date_enregistrement)}`
-    : `Publiée le ${formatDate(decision.date_publication)}`
-  doc.text(dLabel, 190, y, { align: 'right' })
-  y += 5
-  doc.setFontSize(8)
-  doc.setTextColor(120, 120, 120)
-  doc.text(`Publication : ${formatDate(decision.date_publication)}  ·  Limite réponse : ${formatDate(decision.date_limite_reponse)}`, 20, y)
-  doc.setTextColor(30, 37, 48)
+// Un bloc « décision », à partir de `y`. Renvoie le y de sortie.
+//
+// Ne force JAMAIS de saut de page en entrée : c'est l'appelant qui décide. Le
+// contenu s'écoule et ouvre une page quand il déborde (cf. ensure).
+function decisionBlock(doc, decision, opts = {}) {
+  const { members = [], votes = [], qa = [], includeQA = true, y: startY = 20 } = opts
+  let y = startY
+
+  const composition = decision.composition_snapshot?.length ? decision.composition_snapshot : members
+  const presidentId = composition.find((m) => m.role === 'president')?.id
+  const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null)
+  const adoptee = t.quorumAtteint && t.adoptee
+
+  // Bandeau de décision : numéro à gauche, VERDICT à droite en couleur.
+  // Pascal : « il faut mettre VALIDÉ / REJETÉ en en-tête de la décision ». Le
+  // verdict était enterré 15 lignes plus bas, après le détail du vote — or c'est
+  // la première chose qu'on cherche en feuilletant un registre.
+  y = ensure(doc, y, 30)
+  doc.setFillColor(245, 247, 250)
+  doc.rect(M, y - 5, CONTENT_W, 9, 'F')
+  font(doc, 'bold', 11, NAVY)
+  text(doc, `Décision n° ${decision.numero}`, M + 2, y + 1)
+
+  // « Non enregistrée » est un troisième état, distinct de rejetée : la décision
+  // n'a pas encore été actée par le président, son verdict n'est pas définitif.
+  const verdict = !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'VALIDÉE' : 'REJETÉE'
+  const verdictColor = !decision.enregistree ? GREY : adoptee ? GREEN : RED
+  font(doc, 'bold', 11, verdictColor)
+  text(doc, verdict, PAGE_W - M - 2, y + 1, { align: 'right' })
+  y += 9
+
+  font(doc, 'normal', 8, GREY)
+  const dates = [
+    `Publication : ${formatDate(decision.date_publication)}`,
+    decision.date_limite_reponse ? `Limite de réponse : ${formatDate(decision.date_limite_reponse)}` : null,
+    decision.date_enregistrement ? `Enregistrement : ${formatDate(decision.date_enregistrement)}` : null,
+  ].filter(Boolean).join('   ·   ')
+  text(doc, dates, M, y)
   y += 6
 
   y = sectionTitle(doc, 'OBJET', y)
-  doc.setTextColor(30, 37, 48)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  const titleLines = doc.splitTextToSize(decision.titre, 170)
-  doc.text(titleLines, 20, y)
+  font(doc, 'normal', 10)
+  const titleLines = lines(doc, decision.titre, CONTENT_W)
+  y = ensure(doc, y, titleLines.length * 5)
+  doc.text(titleLines, M, y)
   y += titleLines.length * 5 + 3
 
-  y = sectionTitle(doc, 'DÉCISION', y)
-  const bodyLines = doc.splitTextToSize(htmlToText(decision.description), 170)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.text(bodyLines, 20, y)
-  y += bodyLines.length * 5 + 4
-
-  // Portée de la délibération : ce qu'elle engage, et son effet sur un projet.
-  // Le PDF est la trace légale : il doit dire ce que le CS a voté, pas seulement
-  // le texte de la décision.
-  const aUnEffet = decision.montant_engage != null && decision.montant_engage !== ''
-  if (aUnEffet || decision.projet_action) {
-    y = sectionTitle(doc, 'ENGAGEMENT BUDGÉTAIRE', y)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    if (aUnEffet) {
-      doc.text(`Montant engagé : ${eur(decision.montant_engage)}`, 20, y)
-      y += 6
+  const body = htmlToText(decision.description)
+  if (body.trim()) {
+    y = sectionTitle(doc, 'DÉCISION', y)
+    font(doc, 'normal', 10)
+    // Coupé ligne à ligne plutôt qu'en bloc : un texte long doit pouvoir
+    // enjamber une page sans être tronqué ni déborder du bas.
+    for (const line of lines(doc, body, CONTENT_W)) {
+      y = ensure(doc, y, 5)
+      doc.text(line, M, y)
+      y += 5
     }
-    if (decision.projet_action) {
-      doc.text(`Effet sur le projet : ${PROJET_ACTION_LABELS[decision.projet_action]}`, 20, y)
-      y += 6
-    }
+    y += 2
   }
 
-  // Composition snapshot (fall back to current members).
-  const composition = decision.composition_snapshot?.length
-    ? decision.composition_snapshot
-    : members
+  // Ce que la délibération engage. Le PDF est la trace légale : il doit dire ce
+  // que le CS a voté, pas seulement le texte de la décision.
+  const engage = decision.montant_engage != null && decision.montant_engage !== ''
+  if (engage || decision.projet_action) {
+    y = sectionTitle(doc, 'ENGAGEMENT BUDGÉTAIRE', y)
+    font(doc, 'normal', 10)
+    if (engage) {
+      y = ensure(doc, y, 5)
+      text(doc, `Montant engagé : ${eur(decision.montant_engage)}`, M, y)
+      y += 5
+    }
+    if (decision.projet_action) {
+      y = ensure(doc, y, 5)
+      text(doc, `Effet sur le projet : ${PROJET_ACTION_LABELS[decision.projet_action]}`, M, y)
+      y += 5
+    }
+    y += 2
+  }
+
+  // UNE table : composition ET vote de chacun.
+  //
+  // Pascal : « inutile d'avoir la liste des membres et ensuite les votes ». Il y
+  // avait deux tables — la composition figée, puis le détail des votes — qui
+  // répétaient les mêmes noms. Fusionnées ; un membre sans ligne de vote porte
+  // « Pas voté », ce qui est exactement la définition statutaire de l'absent
+  // (art. 15 : présent = a voté ; un non-vote est une absence, pas une
+  // abstention). La table dit donc aussi qui devait signer.
+  const voteBy = Object.fromEntries(votes.map((v) => [v.membre_id, v]))
+  y = sectionTitle(doc, 'COMPOSITION ET VOTES', y)
   autoTable(doc, {
     startY: y,
-    head: [['Nom', 'Prénom', 'Rôle', 'Élu en AG']],
-    body: composition.map((m) => [
-      m.nom,
-      m.prenom,
-      m.role === 'president' ? 'Président' : 'Membre',
-      m.ag_election || (m.date_election ? formatDate(m.date_election) : '—'),
-    ]),
+    head: [['Membre', 'Rôle', 'Vote', 'Commentaire']],
+    body: composition.map((m) => {
+      const v = voteBy[m.id]
+      return [
+        pdfText(`${m.prenom} ${m.nom}`),
+        m.role === 'president' ? 'Président' : 'Membre',
+        v ? VOTE_LABELS[v.vote] || v.vote : 'Pas voté',
+        pdfText(v?.commentaire || ''),
+      ]
+    }),
     theme: 'grid',
-    headStyles: { fillColor: NAVY, fontSize: 8 },
-    bodyStyles: { fontSize: 8 },
-    margin: { left: 20, right: 20 },
-    didDrawPage: () => {},
+    styles: { font: 'Assistant', fontSize: 8, cellPadding: 1.5 },
+    headStyles: { font: 'Assistant', fontStyle: 'bold', fillColor: NAVY, fontSize: 8 },
+    columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 22 }, 2: { cellWidth: 22 }, 3: { cellWidth: 'auto' } },
+    // Un membre qui n'a pas voté est grisé : l'absence doit se voir d'un coup d'œil.
+    didParseCell: (data) => {
+      if (data.section !== 'body') return
+      const m = composition[data.row.index]
+      if (!voteBy[m?.id]) data.cell.styles.textColor = GREY
+    },
+    margin: { left: M, right: M, bottom: 16 },
   })
-  y = doc.lastAutoTable.finalY + 6
+  y = doc.lastAutoTable.finalY + 5
 
-  // Vote result — art. 15 : la voix du président départage un partage.
-  const presidentId = composition.find((m) => m.role === 'president')?.id
-  const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null)
-  y = sectionTitle(doc, 'RÉSULTAT DU VOTE', y)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(30, 37, 48)
-  doc.text(tallySummary(t.counts), 20, y)
-  y += 6
-  doc.setFont('helvetica', 'bold')
-  const verdict = !t.quorumAtteint
-    ? 'QUORUM NON ATTEINT — DÉCISION REJETÉE'
-    : t.adoptee
-      ? '→ Décision ADOPTÉE'
-      : '→ Décision REJETÉE'
-  doc.setTextColor(...(t.adoptee && t.quorumAtteint ? [21, 128, 61] : [185, 28, 28]))
-  doc.text(verdict, 20, y)
-  y += 6
-  // Le registre doit porter la raison du départage, pas seulement son résultat.
+  y = ensure(doc, y, 12)
+  font(doc, 'normal', 9)
+  text(doc, tallySummary(t.counts), M, y)
+  y += 5
+  font(doc, 'bold', 9, !t.quorumAtteint ? RED : adoptee ? GREEN : RED)
+  text(doc, !t.quorumAtteint ? 'Quorum non atteint — décision rejetée' : adoptee ? 'Décision adoptée' : 'Décision rejetée', M, y)
+  y += 5
+  // Le registre doit porter la RAISON du départage, pas seulement son résultat.
   if (t.quorumAtteint && t.partage) {
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(8)
-    doc.setTextColor(90, 90, 90)
-    doc.text('Partage des voix — voix prépondérante du président (art. 15 des statuts).', 20, y)
+    y = ensure(doc, y, 5)
+    font(doc, 'normal', 7.5, GREY)
+    text(doc, 'Partage des voix — voix prépondérante du président (art. 15 des statuts).', M, y)
     y += 4
   }
   y += 2
 
-  // Vote detail
-  if (votes.length) {
-    y = sectionTitle(doc, 'DÉTAIL DES VOTES', y)
-    const nameById = Object.fromEntries(composition.map((m) => [m.id, `${m.prenom} ${m.nom}`]))
-    autoTable(doc, {
-      startY: y,
-      head: [['Membre', 'Vote', 'Commentaire']],
-      body: votes.map((v) => [nameById[v.membre_id] || '—', VOTE_LABELS[v.vote] || v.vote, v.commentaire || '']),
-      theme: 'grid',
-      headStyles: { fillColor: NAVY, fontSize: 8 },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 20, right: 20 },
-    })
-    y = doc.lastAutoTable.finalY + 6
-  }
-
-  // Q&A
   if (includeQA && qa.length) {
     y = sectionTitle(doc, 'QUESTIONS ET RÉPONSES', y)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(30, 37, 48)
+    font(doc, 'normal', 8.5)
     const nameById = Object.fromEntries(composition.map((m) => [m.id, `${m.prenom} ${m.nom}`]))
     for (const item of qa) {
+      const indent = item.parent_id ? M + 6 : M
       const prefix = item.type === 'question' ? 'Q' : 'R'
-      const lines = doc.splitTextToSize(
-        `${prefix} — ${nameById[item.auteur_id] || 'Membre'} : ${item.texte}`,
-        item.parent_id ? 160 : 170,
-      )
-      if (y > 260) {
-        doc.addPage()
-        y = 20
+      for (const line of lines(doc, `${prefix} — ${nameById[item.auteur_id] || 'Membre'} : ${item.texte}`, CONTENT_W - (indent - M))) {
+        y = ensure(doc, y, 4.5)
+        doc.text(line, indent, y)
+        y += 4.5
       }
-      doc.text(lines, item.parent_id ? 28 : 20, y)
-      y += lines.length * 5 + 2
+      y += 1.5
     }
-    y += 4
+    y += 2
   }
 
-  // Signatures
-  if (y > 240) {
-    doc.addPage()
-    y = 20
-  }
-  y = sectionTitle(doc, 'SIGNATURES', y)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(30, 37, 48)
-  // Art. 15 : le registre est signé par « tous les membres présents à la
-  // délibération » — donc les votants, quel que soit leur vote. Un absent n'a
-  // pas à signer : pas de ligne pour lui.
-  const votedIds = new Set(votes.map((v) => v.membre_id))
-  const signers = composition.filter((m) => votedIds.has(m.id))
-  let col = 0
-  let rowY = y + 4
-  for (const m of signers) {
-    const x = col === 0 ? 20 : 110
-    doc.text(`${m.prenom} ${m.nom}`, x, rowY)
-    doc.setDrawColor(150)
-    doc.line(x, rowY + 12, x + 70, rowY + 12)
-    if (col === 1) {
-      rowY += 22
-      col = 0
-    } else {
-      col = 1
-    }
-  }
-  return rowY
+  // Pas de lignes de signature manuscrite ici — voir le commentaire de
+  // downloadRegistrePDF pour le raisonnement (art. 15).
+  return y + 4
 }
 
-// Single decision PDF -> opens in a new tab / triggers download.
+// ---- Décision seule -------------------------------------------------------
+
 export function generateDecisionPDF(decision, opts) {
   const doc = new jsPDF()
-  header(doc)
-  decisionBlock(doc, decision, opts)
+  setupFont(doc)
+  const y = coverHeader(doc)
+  decisionBlock(doc, decision, { ...opts, y })
+  paginate(doc)
   return doc
 }
 
 export function downloadDecisionPDF(decision, opts) {
-  const doc = generateDecisionPDF(decision, opts)
-  doc.save(`decision-${decision.numero}.pdf`)
+  generateDecisionPDF(decision, opts).save(`decision-${decision.numero}.pdf`)
 }
 
 export function decisionPDFBlob(decision, opts) {
   return generateDecisionPDF(decision, opts).output('blob')
 }
 
-// Full registry PDF with a table of contents + one block per decision.
-export function downloadRegistrePDF(decisions, opts = {}) {
-  // getDetail(d) -> { votes, qa } ; getContexte(d) -> { projetNom, cibleLabel }
-  // (tous deux résolus par l'appelant, qui seul a les projets et les résolutions)
+// ---- Registre complet -----------------------------------------------------
+
+// Rend le registre entier. `tocPages` = numéro de page de chaque décision, ou
+// null au premier passage (voir downloadRegistrePDF).
+function buildRegistre(decisions, opts, tocPages) {
   const { getDetail, getContexte } = opts
   const doc = new jsPDF()
-  header(doc, 'Table des matières')
+  setupFont(doc)
+
+  let y = coverHeader(doc)
+  font(doc, 'bold', 12, NAVY)
+  text(doc, 'Table des matières', M, y)
+  y += 6
+
   autoTable(doc, {
-    startY: 44,
+    startY: y,
     // « Objet » plutôt que « Titre » : le titre seul ne dit ni ce qu'on engage,
     // ni ce que la décision change. C'est le PDF qui part en signature — le
-    // signataire doit savoir ce qu'il signe sans dépiler 20 pages.
-    head: [['N°', 'Date', 'Objet', 'Statut']],
-    body: decisions.map((d) => [
+    // signataire doit savoir ce qu'il signe sans dépiler vingt pages.
+    head: [['N°', 'Date', 'Objet', 'Statut', 'Page']],
+    body: decisions.map((d, i) => [
       d.numero,
       formatDate(d.date_enregistrement || d.date_publication),
-      decisionResumeTexte(d, getContexte ? getContexte(d) : {}, { max: 180 }),
+      pdfText(decisionResumeTexte(d, getContexte ? getContexte(d) : {}, { max: 180 })),
       { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
+      // Placeholder au 1er passage : même largeur de colonne, donc mêmes hauteurs
+      // de ligne qu'au 2e — c'est ce qui rend la pagination stable.
+      tocPages ? String(tocPages[i]) : '—',
     ]),
     theme: 'striped',
-    headStyles: { fillColor: NAVY },
-    bodyStyles: { fontSize: 9, valign: 'top' },
-    // L'objet occupe la place ; le reste est étroit et ne se coupe pas.
+    styles: { font: 'Assistant', fontSize: 9, cellPadding: 1.5 },
+    headStyles: { font: 'Assistant', fontStyle: 'bold', fillColor: NAVY },
+    bodyStyles: { valign: 'top' },
+    // L'objet prend toute la place restante ; le reste est étroit et fixe.
+    // C'est le point que Pascal signalait : la colonne était trop serrée.
     columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 22 },
+      0: { cellWidth: 18 },
+      1: { cellWidth: 20 },
       2: { cellWidth: 'auto' },
-      3: { cellWidth: 22 },
+      3: { cellWidth: 18 },
+      4: { cellWidth: 12, halign: 'right' },
     },
-    // L'objet tient sur plusieurs lignes (titre / action / extrait) : un cran plus
-    // petit pour que la table des matières reste dense et lisible.
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index === 2) {
-        data.cell.styles.fontSize = 8.5
-      }
+      if (data.section === 'body' && data.column.index === 2) data.cell.styles.fontSize = 8.5
     },
-    margin: { left: 20, right: 20 },
+    margin: { left: M, right: M, bottom: 16 },
   })
 
+  // Une décision par bloc, à la suite. Pas d'addPage systématique : deux
+  // décisions courtes tiennent sur une page (demande de Pascal). On ouvre une
+  // page seulement s'il ne reste pas de quoi commencer un bloc — sinon on
+  // laisserait un en-tête de décision seul en bas de page.
+  const startPages = []
+  y = doc.lastAutoTable.finalY + 8
   for (const d of decisions) {
-    doc.addPage()
-    header(doc)
+    if (y + 60 > BOTTOM) {
+      doc.addPage()
+      y = 20
+    }
+    startPages.push(doc.getNumberOfPages())
     const detail = getDetail ? getDetail(d) : {}
-    decisionBlock(doc, d, { ...opts, ...detail })
+    y = decisionBlock(doc, d, { ...opts, ...detail, y })
+    y += 4
+    doc.setDrawColor(225)
+    doc.setLineWidth(0.2)
+    if (y < BOTTOM) doc.line(M, y - 2, PAGE_W - M, y - 2)
   }
+
+  paginate(doc)
+  return { doc, startPages }
+}
+
+// Deux passages : les numéros de page de la table des matières ne sont connus
+// qu'une fois le document rendu, et la TdM est en tête. On rend donc une
+// première fois pour relever les pages, une seconde avec les vrais numéros.
+//
+// Stable parce que le placeholder « — » et un numéro occupent la même colonne
+// de largeur fixe : les hauteurs de ligne, donc la pagination, sont identiques
+// d'un passage à l'autre.
+//
+// PAS de lignes de signature manuscrite (retirées le 2026-07-17, Pascal : « je
+// comprends pas pourquoi il y a les signatures physiques sur chaque décision »).
+// Elles venaient d'un registre papier. La signature retenue est ÉLECTRONIQUE
+// (Youtrust, en manuel) : elle s'appose sur le document entier, pas décision par
+// décision. Et la table « composition et votes » nomme désormais les présents,
+// donc les signataires au sens de l'art. 15 — l'information est conservée, seul
+// le trait à remplir au stylo disparaît. À restaurer si le CS revenait au papier.
+export function downloadRegistrePDF(decisions, opts = {}) {
+  const { startPages } = buildRegistre(decisions, opts, null)
+  const { doc } = buildRegistre(decisions, opts, startPages)
   doc.save(`registre-CS-${new Date().getFullYear()}.pdf`)
 }

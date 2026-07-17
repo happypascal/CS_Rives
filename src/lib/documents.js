@@ -15,9 +15,9 @@ export async function downloadDocument(doc) {
   const url = await repo.getDocumentUrl(doc)
   const a = document.createElement('a')
   a.href = url
-  // Les dataUrl (pièces jointes d'avant le Storage) sont same-origin : c'est
-  // l'attribut qui leur donne le bon nom de fichier. Sur une URL signée il
-  // serait ignoré — c'est le serveur qui s'en charge.
+  // Mode démo : le mock rend une dataUrl, same-origin — c'est l'attribut qui lui
+  // donne le bon nom de fichier. Sur une URL signée du Storage il serait ignoré
+  // (cross-origin) : c'est le serveur qui s'en charge, via Content-Disposition.
   if (doc.dataUrl) a.download = doc.name
   a.rel = 'noopener'
   document.body.appendChild(a)

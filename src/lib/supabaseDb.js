@@ -313,12 +313,12 @@ export const supabaseRepo = {
   // `download` fait répondre le Storage en Content-Disposition: attachment — le
   // fichier se télécharge sous son vrai nom au lieu de s'ouvrir dans l'onglet.
   //
-  // `doc.dataUrl` = pièce jointe d'AVANT le Storage (base64 en jsonb). Servie
-  // telle quelle, sans migration : celles qui pendent à une décision enregistrée
-  // ne peuvent de toute façon pas être déplacées sans modifier une délibération
-  // figée. Les deux formats cohabitent donc, indéfiniment et volontairement.
+  // Pas de repli sur `doc.dataUrl` : les dernières pièces jointes en base64
+  // (données de test) ont été effacées le 2026-07-17, la base n'en contient plus
+  // aucune. Le repli était devenu du code mort suggérant une cohabitation qui
+  // n'existe plus. Le mock, lui, sert toujours du base64 — mais par sa propre
+  // implémentation, pas par celle-ci.
   async getDocumentUrl(doc) {
-    if (doc.dataUrl) return doc.dataUrl
     const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET)
       .createSignedUrl(doc.path, 300, { download: doc.name })
     if (error) throw new Error(error.message)
