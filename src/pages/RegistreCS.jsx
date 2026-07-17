@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Spinner, EmptyState, Modal } from '../components/ui'
 import { StatutBadge, SignatureBadge } from '../components/badges'
 import { decisionResume } from '../lib/decisionResume'
-import { formatDate, formatDateTime, todayISO } from '../lib/format'
+import { formatDate, formatDateTime, todayISO, moisCourant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadRegistrePDF } from '../lib/pdf'
@@ -200,9 +200,13 @@ export default function RegistreCS() {
     }
   }
 
+  // Titre par défaut « juillet 2026 lot 3 » : le rang est celui de la demande
+  // dans le mois, cohérent avec le quota affiché. Éditable — le président peut
+  // le remplacer par « Décisions du 1er trimestre ». Recalculé à chaque
+  // ouverture, pas figé, pour rester juste si un lot est créé entre-temps.
   const openSigModal = (group) => {
     setSigGroup(group)
-    setSigTitle('')
+    setSigTitle(`${moisCourant()} lot ${demandesCeMois + 1}`)
   }
 
   const sendForSignature = async () => {

@@ -69,6 +69,12 @@ export function todayISO() {
   return format(new Date(), 'yyyy-MM-dd')
 }
 
+// Mois courant en toutes lettres : "juillet 2026". Sert à nommer les lots de
+// signature par défaut. 'MMMM' donne le mois en minuscule avec la locale fr.
+export function moisCourant() {
+  return format(new Date(), 'MMMM yyyy', { locale: fr })
+}
+
 // Ajoute N jours ouvrables (lun-ven) à une date ISO et renvoie une date ISO.
 export function addBusinessDaysISO(dateISO, n) {
   const base = dateISO ? parseISO(dateISO) : new Date()
