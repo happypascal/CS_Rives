@@ -83,8 +83,8 @@ src/
     badges.jsx        badges de statut par entité
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
   pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
-                      DecisionForm/Detail, AGList/Form/Detail, ProjetList/Form/Detail,
-                      BudgetsConsolidated, Membres, Parametres
+                      DecisionForm/Detail, Signatures, AGList/Form/Detail,
+                      ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
 supabase/
   schema.sql          schéma + RLS + helpers — source de vérité pour une install neuve
   seed.sql            bootstrap membres_cs
