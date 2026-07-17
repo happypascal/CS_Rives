@@ -154,9 +154,14 @@ function decisionBlock(doc, decision, opts = {}) {
   font(doc, 'bold', 11, NAVY)
   text(doc, `Décision n° ${decision.numero}`, M, y + 6.2)
 
+  // « ADOPTÉE », pas « VALIDÉE » — un seul mot pour une seule chose. Pascal avait
+  // demandé « VALIDÉ » en en-tête, mais « adoptée » est le terme de l'art. 15, de
+  // la colonne `statut` ('adoptee') et des badges de l'app : « validée » aurait
+  // fait diverger le registre légal du vocabulaire de tout le reste.
+  //
   // « Non enregistrée » est un troisième état, distinct de rejetée : la décision
   // n'a pas encore été actée par le président, son verdict n'est pas définitif.
-  const verdict = !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'VALIDÉE' : 'REJETÉE'
+  const verdict = !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'ADOPTÉE' : 'REJETÉE'
   const verdictColor = !decision.enregistree ? GREY : adoptee ? GREEN : RED
   font(doc, 'bold', 11, verdictColor)
   text(doc, verdict, PAGE_W - M, y + 6.2, { align: 'right' })
@@ -271,18 +276,23 @@ function decisionBlock(doc, decision, opts = {}) {
   })
   y = doc.lastAutoTable.finalY + 5
 
+  // Le décompte, puis la RAISON quand il en faut une — jamais le verdict, qui
+  // est déjà dans le bandeau. Il y était écrit deux fois, et avec deux mots
+  // différents (« VALIDÉE » en haut, « Décision adoptée » ici) : c'est ce que
+  // Pascal a relevé. Un verdict, un endroit, un mot.
   y = ensure(doc, y, 12)
   font(doc, 'normal', 9)
   text(doc, tallySummary(t.counts), M, y)
   y += 5
-  font(doc, 'bold', 9, !t.quorumAtteint ? RED : adoptee ? GREEN : RED)
-  text(doc, !t.quorumAtteint ? 'Quorum non atteint — décision rejetée' : adoptee ? 'Décision adoptée' : 'Décision rejetée', M, y)
-  y += 5
-  // Le registre doit porter la RAISON du départage, pas seulement son résultat.
-  if (t.quorumAtteint && t.partage) {
+  const raison = !t.quorumAtteint
+    ? 'Quorum non atteint — la majorité des membres actifs ne s’est pas exprimée.'
+    : t.partage
+      ? 'Partage des voix — voix prépondérante du président (art. 15 des statuts).'
+      : null
+  if (raison) {
     y = ensure(doc, y, 5)
     font(doc, 'normal', 7.5, GREY)
-    text(doc, 'Partage des voix — voix prépondérante du président (art. 15 des statuts).', M, y)
+    text(doc, raison, M, y)
     y += 4
   }
   y += 2
@@ -333,6 +343,33 @@ export function decisionPDFBlob(decision, opts) {
 
 // ---- Registre complet -----------------------------------------------------
 
+// Hauteur d'un bloc, mesurée en le dessinant pour de faux.
+//
+// Pascal : « il faut faire un saut de page avant si le cadre empiète sur 2
+// pages ». Impossible à décider sans la hauteur — et la hauteur d'une décision
+// n'est connue qu'une fois posée (texte coupé selon la police, table dont les
+// lignes s'ajustent au contenu). Un calcul analytique redirait la mise en page
+// une deuxième fois, et divergerait au premier changement.
+//
+// D'où le brouillon : même code, doc jetable, on lit le y de sortie. Le doc est
+// réutilisé d'un appel à l'autre — chaque page de brouillon coûte peu, mais
+// réenregistrer la police à chaque mesure coûterait cher (75 ko de base64).
+//
+// Renvoie Infinity si le bloc dépasse une page à lui seul : aucun saut ne le
+// fera tenir, autant le commencer proprement en haut d'une page et le laisser
+// s'écouler.
+function makeMeasurer() {
+  const scratch = new jsPDF()
+  setupFont(scratch)
+  return (decision, opts) => {
+    scratch.addPage()
+    const p0 = scratch.internal.getCurrentPageInfo().pageNumber
+    const endY = decisionBlock(scratch, decision, { ...opts, y: 20 })
+    const p1 = scratch.internal.getCurrentPageInfo().pageNumber
+    return p1 === p0 ? endY - 20 : Infinity
+  }
+}
+
 // Rend le registre entier. `tocPages` = numéro de page de chaque décision, ou
 // null au premier passage (voir downloadRegistrePDF).
 function buildRegistre(decisions, opts, tocPages) {
@@ -380,19 +417,24 @@ function buildRegistre(decisions, opts, tocPages) {
   })
 
   // Une décision par bloc, à la suite. Pas d'addPage systématique : deux
-  // décisions courtes tiennent sur une page (demande de Pascal). On ouvre une
-  // page seulement s'il ne reste pas de quoi commencer un bloc — sinon on
-  // laisserait un en-tête de décision seul en bas de page.
+  // décisions courtes tiennent sur une page (demande de Pascal). Mais un cadre
+  // ne doit pas se couper en deux : on mesure d'abord, et on saute la page si
+  // le bloc ne tient pas dans ce qui reste.
+  const measure = makeMeasurer()
   const startPages = []
   y = doc.lastAutoTable.finalY + GAP
   for (const d of decisions) {
-    if (y + 60 > BOTTOM) {
+    const detail = getDetail ? getDetail(d) : {}
+    const contexte = getContexte ? getContexte(d) : {}
+    const h = measure(d, { ...opts, ...detail, contexte })
+    // `y > 20` : si on est déjà en haut d'une page, sauter n'apporterait rien —
+    // et sur un bloc plus haut qu'une page (h = Infinity) on bouclerait.
+    if (y + h > BOTTOM && y > 20) {
       doc.addPage()
       y = 20
     }
     startPages.push(doc.getNumberOfPages())
-    const detail = getDetail ? getDetail(d) : {}
-    y = decisionBlock(doc, d, { ...opts, ...detail, contexte: getContexte ? getContexte(d) : {}, y })
+    y = decisionBlock(doc, d, { ...opts, ...detail, contexte, y })
     // Plus de trait séparateur : chaque décision a désormais son cadre, deux
     // lignes côte à côte feraient doublon. Un seul écart, le même que sous
     // l'en-tête de page.
