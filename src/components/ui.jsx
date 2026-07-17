@@ -165,6 +165,27 @@ export function DesktopOnly({ what = 'Cette action', onBack }) {
   )
 }
 
+// Progression d'un envoi de fichier. `value` entre 0 et 1.
+//
+// Nécessaire, pas décoratif : l'upload se compte en minutes sur une connexion
+// mobile (≈0,5 Mbit/s montant mesuré → ~3 min pour 10 Mo), et sans pourcentage
+// l'utilisateur conclut au plantage et recharge la page.
+export function UploadProgress({ value, name }) {
+  const pct = Math.round(Math.min(Math.max(value, 0), 1) * 100)
+  return (
+    <div className="rounded border border-navy-100 bg-navy-50/60 px-3 py-2">
+      <div className="flex items-center justify-between gap-2 text-xs text-slate-600">
+        <span className="truncate">Envoi de {name}…</span>
+        <span className="shrink-0 font-medium tabular-nums text-navy-700">{pct} %</span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-navy-100">
+        <div className="h-full rounded-full bg-navy-600 transition-all duration-200" style={{ width: `${pct}%` }} />
+      </div>
+      {pct === 100 && <p className="mt-1 text-xs text-slate-400">Fichier transmis, finalisation…</p>}
+    </div>
+  )
+}
+
 export function Spinner({ label = 'Chargement…' }) {
   return (
     <div className="flex items-center justify-center gap-3 py-16 text-slate-500">

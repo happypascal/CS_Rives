@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Spinner, eur, DesktopOnly } from '../components/ui'
+import { Card, Button, Input, Select, Spinner, eur, DesktopOnly, UploadProgress } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
 import { nextNumero } from '../lib/decisionLogic'
 import { todayISO, addBusinessDaysISO } from '../lib/format'
@@ -33,7 +33,8 @@ export default function DecisionForm() {
   // Effet sur le statut du projet ('' | suspendre | reprendre | terminer).
   const [projetAction, setProjetAction] = useState('')
   const [documents, setDocuments] = useState([])
-  const [uploading, setUploading] = useState(false)
+  // null = aucun envoi en cours ; sinon { name, value } avec value entre 0 et 1.
+  const [upload, setUpload] = useState(null)
   const [projets, setProjets] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [error, setError] = useState('')
@@ -149,14 +150,16 @@ export default function DecisionForm() {
       const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
       return setError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
     }
-    setUploading(true)
+    setUpload({ name: file.name, value: 0 })
     try {
-      const record = await repo.uploadDocument('decisions', entityId, file)
+      const record = await repo.uploadDocument('decisions', entityId, file, (value) =>
+        setUpload((u) => (u ? { ...u, value } : u)),
+      )
       setDocuments((docs) => [...docs, record])
     } catch (err) {
       setError(`Envoi du fichier impossible : ${err.message}`)
     } finally {
-      setUploading(false)
+      setUpload(null)
     }
   }
 
@@ -291,12 +294,14 @@ export default function DecisionForm() {
                   <button type="button" onClick={() => setDocuments((d) => d.filter((x) => x.id !== doc.id))} className="text-xs text-red-600 underline">Retirer</button>
                 </div>
               ))}
-              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${uploading ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
-                {uploading ? 'Envoi…' : '+ Ajouter un fichier'}
-                <input type="file" className="hidden" disabled={uploading} onChange={onFile} />
+              {upload && <UploadProgress value={upload.value} name={upload.name} />}
+              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${upload ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+                + Ajouter un fichier
+                <input type="file" className="hidden" disabled={Boolean(upload)} onChange={onFile} />
               </label>
               <p className="text-xs text-slate-400">
                 {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
+                {BACKEND === 'supabase' && ' Un gros fichier peut prendre plusieurs minutes sur une connexion mobile.'}
               </p>
             </div>
           </div>
@@ -304,7 +309,7 @@ export default function DecisionForm() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>
-            <Button type="submit" disabled={saving || uploading}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Créer la décision'}</Button>
+            <Button type="submit" disabled={saving || Boolean(upload)}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Créer la décision'}</Button>
           </div>
         </form>
       </Card>

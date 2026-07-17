@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly, eur } from '../components/ui'
+import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly, eur, UploadProgress } from '../components/ui'
 import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -34,7 +34,8 @@ export default function ProjetForm() {
   const [membres, setMembres] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [form, setForm] = useState(EMPTY)
-  const [uploading, setUploading] = useState(false)
+  // null = aucun envoi en cours ; sinon { name, value } avec value entre 0 et 1.
+  const [upload, setUpload] = useState(null)
   const [error, setError] = useState('')
 
   // Id tiré côté client : une pièce jointe est téléversée avant que la ligne
@@ -121,14 +122,16 @@ export default function ProjetForm() {
       const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
       return setError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
     }
-    setUploading(true)
+    setUpload({ name: file.name, value: 0 })
     try {
-      const record = await repo.uploadDocument('projets', entityId, file)
+      const record = await repo.uploadDocument('projets', entityId, file, (value) =>
+        setUpload((u) => (u ? { ...u, value } : u)),
+      )
       setForm((f) => ({ ...f, documents: [...f.documents, record] }))
     } catch (err) {
       setError(`Envoi du fichier impossible : ${err.message}`)
     } finally {
-      setUploading(false)
+      setUpload(null)
     }
   }
 
@@ -213,12 +216,14 @@ export default function ProjetForm() {
                   <button type="button" onClick={() => setForm((f) => ({ ...f, documents: f.documents.filter((x) => x.id !== doc.id) }))} className="text-xs text-red-600 underline">Retirer</button>
                 </div>
               ))}
-              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${uploading ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
-                {uploading ? 'Envoi…' : '+ Ajouter un fichier'}
-                <input type="file" className="hidden" disabled={uploading} onChange={onFile} />
+              {upload && <UploadProgress value={upload.value} name={upload.name} />}
+              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${upload ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+                + Ajouter un fichier
+                <input type="file" className="hidden" disabled={Boolean(upload)} onChange={onFile} />
               </label>
               <p className="text-xs text-slate-400">
                 {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
+                {BACKEND === 'supabase' && ' Un gros fichier peut prendre plusieurs minutes sur une connexion mobile.'}
               </p>
             </div>
           </div>
@@ -226,7 +231,7 @@ export default function ProjetForm() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>
-            <Button type="submit" disabled={saving || uploading}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Ouvrir le projet'}</Button>
+            <Button type="submit" disabled={saving || Boolean(upload)}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Ouvrir le projet'}</Button>
           </div>
         </form>
       </Card>

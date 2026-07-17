@@ -2,6 +2,7 @@
 // Only exercised when VITE_SUPABASE_URL/ANON_KEY are configured.
 // Table shapes follow supabase/schema.sql.
 import { supabase } from './supabase'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config'
 import { computeAGBudgets, computeProjectBudgets } from './mockDb'
 
 function must(result) {
@@ -257,14 +258,45 @@ export const supabaseRepo = {
   // L'entité n'existe pas forcément encore : à la création, le formulaire tire
   // l'id côté client et téléverse avant l'insert. D'où `entityId` en paramètre
   // plutôt qu'une relecture en base.
-  async uploadDocument(scope, entityId, file) {
+  //
+  // XHR plutôt que `supabase.storage.upload()`, pour UNE raison : `fetch` — que
+  // storage-js utilise — n'expose pas la progression de l'envoi. Or l'upload est
+  // lent : mesuré à ~30 s pour 2 Mo sur la 5G de Pascal (≈0,5 Mbit/s soutenu, là
+  // où fast.com annonce 1,8 en pointe), soit plusieurs MINUTES pour un devis de
+  // 10 Mo. Sans pourcentage, on croit que c'est planté et on recharge la page.
+  //
+  // La requête reproduit exactement celle de storage-js : même endpoint, même
+  // FormData, même en-têtes, JWT de la session en cours. La RLS s'applique donc
+  // à l'identique — c'est bien le membre connecté qui écrit, pas la clé anon.
+  async uploadDocument(scope, entityId, file, onProgress) {
     const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'bin'
     const path = `${scope}/${entityId}/${crypto.randomUUID()}.${ext}`
-    const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).upload(path, file, {
-      contentType: file.type || 'application/octet-stream',
-      upsert: false,
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Session expirée — reconnectez-vous avant d’envoyer un fichier.')
+
+    await new Promise((resolve, reject) => {
+      const form = new FormData()
+      form.append('cacheControl', '3600')
+      form.append('', file)
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${DOCUMENTS_BUCKET}/${path}`)
+      xhr.setRequestHeader('authorization', `Bearer ${session.access_token}`)
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY)
+      xhr.setRequestHeader('x-upsert', 'false')
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress?.(e.loaded / e.total)
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) return resolve()
+        // Le Storage répond en JSON ({message}) sur un refus RLS ou un dépassement
+        // de file_size_limit. Un proxy en travers peut répondre autre chose.
+        let msg = `Envoi refusé (HTTP ${xhr.status})`
+        try { msg = JSON.parse(xhr.responseText)?.message || msg } catch { /* réponse non JSON */ }
+        reject(new Error(msg))
+      }
+      xhr.onerror = () => reject(new Error('Connexion interrompue pendant l’envoi.'))
+      xhr.send(form)
     })
-    if (error) throw new Error(error.message)
     return {
       id: crypto.randomUUID(),
       path,

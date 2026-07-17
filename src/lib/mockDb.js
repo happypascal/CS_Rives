@@ -736,13 +736,16 @@ export const mockRepo = {
   //
   // ⚠ Le mode démo ne peut donc PAS vérifier le chemin du bucket ni les policies
   // de la migration 012. Ce qui marche ici ne prouve rien sur la prod.
-  async uploadDocument(scope, entityId, file) { // eslint-disable-line no-unused-vars
+  async uploadDocument(scope, entityId, file, onProgress) { // eslint-disable-line no-unused-vars
     await delay()
     const dataUrl = await new Promise((resolve) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result)
       reader.readAsDataURL(file)
     })
+    // Rien à mesurer : le fichier ne quitte pas le navigateur. On annonce 100 %
+    // pour que l'appelant n'ait pas à distinguer les deux backends.
+    onProgress?.(1)
     return { id: uid(), name: file.name, type: file.type, size: file.size, dataUrl, uploaded_at: nowISO() }
   },
   async getDocumentUrl(doc) {
