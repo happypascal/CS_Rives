@@ -12,6 +12,9 @@ const NAV = [
   { to: '/ag', label: 'Assemblées Générales' },
   { to: '/projets', label: 'Projets' },
   { to: '/budgets', label: 'Budgets' },
+  // Signature du registre : réservée au président (art. 15). Masquée pour les
+  // autres membres — la page elle-même redouble la garde.
+  { to: '/signatures', label: 'Signatures', adminOnly: true },
   { to: '/membres', label: 'Membres du CS' },
   { to: '/parametres', label: 'Paramètres' },
 ]
@@ -77,7 +80,7 @@ export default function Layout() {
             <span className="h-px flex-1 bg-navy-600" />
           </div>
           <div className="space-y-1">
-            {NAV.map((item) => (
+            {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => (
               <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={() => setMenuOpen(false)}>
                 {item.label}
               </NavLink>

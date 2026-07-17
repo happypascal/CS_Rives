@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import RegistreCS from './pages/RegistreCS'
+import Signatures from './pages/Signatures'
 import DecisionForm from './pages/DecisionForm'
 import DecisionDetail from './pages/DecisionDetail'
 import AGList from './pages/AGList'
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/registre/nouvelle" element={<DecisionForm />} />
             <Route path="/registre/:id" element={<DecisionDetail />} />
             <Route path="/registre/:id/modifier" element={<DecisionForm />} />
+            <Route path="/signatures" element={<Signatures />} />
             <Route path="/ag" element={<AGList />} />
             <Route path="/ag/nouvelle" element={<AGForm />} />
             <Route path="/ag/:id" element={<AGDetail />} />
