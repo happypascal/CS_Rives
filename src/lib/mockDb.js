@@ -8,7 +8,7 @@
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
 
-const STORAGE_KEY = 'cs_rives_mockdb_v7'
+const STORAGE_KEY = 'cs_rives_mockdb_v8'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -27,9 +27,15 @@ function seed() {
   const m3 = uid()
   const m4 = uid()
   const m5 = uid()
+  const mTres = uid()
 
+  // 5 membres actifs (art. 14 : 3 à 5) : président + trésorier + 3 membres. C'est
+  // le minimum pour tester la règle d'engagement (point 3) — il faut 3 membres
+  // ordinaires pour former une majorité SANS le bureau. Marc Petit reste un ancien
+  // membre (inactif), pour l'exemple d'un mandat terminé.
   const membres_cs = [
     { id: mPresident, nom: 'Favre', prenom: 'Pascal', email: 'pfavre25@gmail.com', role: 'president', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
+    { id: mTres, nom: 'Roux', prenom: 'Bernard', email: 'bernard.roux@example.fr', role: 'tresorier', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
     { id: mVice, nom: 'Martin', prenom: 'Claire', email: 'claire.martin@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
     { id: m3, nom: 'Dubois', prenom: 'Henri', email: 'henri.dubois@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
     { id: m4, nom: 'Leroy', prenom: 'Sophie', email: 'sophie.leroy@example.fr', role: 'membre', date_election: '2025-06-19', date_fin: null, ag_election: 'AGO 19 juin 2025', actif: true, created_at: '2025-06-19T18:00:00Z' },
