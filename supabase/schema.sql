@@ -83,7 +83,7 @@ create table if not exists projets (
   id             uuid primary key default gen_random_uuid(),
   nom            text not null,
   description    text,
-  chef_projet_id uuid references membres_cs(id),
+  chef_projet_id uuid references membres_cs(id),           -- chef = rôle fonctionnel ET ancre de permission (le chef modifie)
   documents      jsonb not null default '[]',
   date_ouverture date,
   date_cloture   date,
@@ -288,6 +288,22 @@ drop policy if exists "decisions_no_delete_enregistree" on decisions;
 create policy "decisions_no_delete_enregistree" on decisions
   as restrictive for delete to authenticated
   using (enregistree = false);
+
+-- Projets : le chef de projet modifie son projet (migration 013). Un membre crée
+-- un projet dont il est le chef ; le chef modifie. Le président (write_admin)
+-- crée/assigne/supprime. La permission s'ancre sur chef_projet_id — un created_by
+-- (= le créateur) empêcherait un chef désigné par le président de modifier.
+drop policy if exists "projets_chef_insert" on projets;
+create policy "projets_chef_insert" on projets for insert to authenticated
+  with check (
+    chef_projet_id = current_membre_id()
+    and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
+  );
+
+drop policy if exists "projets_chef_update" on projets;
+create policy "projets_chef_update" on projets for update to authenticated
+  using (chef_projet_id = current_membre_id())
+  with check (chef_projet_id = current_membre_id());
 
 -- Votes : admin tout ; membre gère uniquement SON vote, et seulement tant que
 -- la décision n'est pas enregistrée.

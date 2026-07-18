@@ -4,13 +4,14 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Spinner, EmptyState, eur } from '../components/ui'
 import { ProjetStatutBadge } from '../components/badges'
-import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
 export default function ProjetList() {
-  const { isAdmin } = useAuth()
   const isMobile = useIsMobile()
-  const canManage = isAdmin && !isMobile
+  // Tout membre peut créer un projet et en devenir owner (desktop). L'ancienne
+  // garde président (isAdmin) est levée — création ouverte, modification réservée
+  // à l'owner sur la fiche (RLS projets_owner_*, migration 013).
+  const canCreate = !isMobile
   const [loading, setLoading] = useState(true)
   const [projets, setProjets] = useState([])
 
@@ -28,14 +29,14 @@ export default function ProjetList() {
     <div>
       <PageHeader
         title="Projets"
-        subtitle="Chantiers issus des résolutions d’AG : chef de projet, documents, décisions et budget."
-        actions={canManage && <Link to="/projets/nouveau"><Button>+ Nouveau projet</Button></Link>}
+        subtitle="Chantiers du lotissement : chef de projet, documents, décisions et budget."
+        actions={canCreate && <Link to="/projets/nouveau"><Button>+ Nouveau projet</Button></Link>}
       />
       {projets.length === 0 ? (
         <EmptyState
           title="Aucun projet"
-          hint="Ouvre un projet depuis une résolution d’AG dotée d’un budget."
-          action={canManage && <Link to="/projets/nouveau"><Button>Créer un projet</Button></Link>}
+          hint="Crée un projet ; son budget viendra d’une résolution d’AG rattachée ensuite."
+          action={canCreate && <Link to="/projets/nouveau"><Button>Créer un projet</Button></Link>}
         />
       ) : (
         <Card className="overflow-hidden">

@@ -573,6 +573,8 @@ export const mockRepo = {
   async createProjet({ resolution_ids = [], ...input }) {
     await delay()
     const data = load()
+    // La permission s'ancre sur chef_projet_id (le chef modifie), posé par le
+    // formulaire — pas de created_by. Cf. migration 013.
     const p = { id: uid(), statut: 'ouvert', documents: [], date_cloture: null, created_at: nowISO(), updated_at: nowISO(), ...input }
     data.projets.push(p)
     data.resolutions_ag.forEach((r) => { if (resolution_ids.includes(r.id)) r.projet_id = p.id })

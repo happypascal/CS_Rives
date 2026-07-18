@@ -31,13 +31,13 @@ Le syndic les prépare, le CS les contrôle 30 jours avant. La « validation par
 | Créer / modifier SON projet (owner) | ✅ | ✅ | ✅ | ✅ |
 | Supprimer un projet (non engagé) | ✅ | — | — | — |
 | Créer / modifier une AG | ✅ | ✅ | — | — |
-| **Valider les comptes** d'une AGO | ✅¹ | — | ✅ | — |
+| **Approuver les comptes** d'une AGO | ✅ (1 des 2) | — | ✅ (1 des 2) | — |
 | **Faire signer** (gérer les signatures) | ✅ | ✅ | — | — |
 | Attribuer les rôles | ✅ | — | — | — |
 | Voter (self-only) | ✅ | ✅ | ✅ | ✅ |
 
-¹ Le trésorier est le responsable désigné ; le président peut valider aussi (autorité
-supérieure). À confirmer si Pascal veut le **restreindre au trésorier seul**.
+Les comptes d'une AGO ne sont **validés que lorsque le trésorier ET le président ont approuvé**
+(deux approbations distinctes, cf. feature 4).
 
 `is_admin()` reste = `président`. On ajoute `is_secretaire()` et `is_tresorier()`
 (même forme : email du JWT = membre actif portant le rôle). Les droits « faire signer » et
@@ -45,12 +45,22 @@ supérieure). À confirmer si Pascal veut le **restreindre au trésorier seul**.
 
 ## Les cinq features
 
-### 1. Projet owned par son créateur — INDÉPENDANT, implémenté à part
-Tout membre actif crée un projet et en devient **owner** (`projets.created_by`). L'owner seul
-le modifie ; les autres membres ne le modifient pas ; **personne ne le supprime sauf le
-président** (et seulement s'il n'est pas engagé — garde existante `projets_delete_guard`).
-Calque exact du modèle des décisions (`decisions_owner_*`). `created_by` distinct de
-`chef_projet_id` (rôle fonctionnel, pas de permission).
+### 1. Le chef de projet modifie son projet — INDÉPENDANT, implémenté (migration 013)
+Tout membre actif crée un projet **en tant que chef de projet** (`chef_projet_id = lui`) et le
+modifie à ce titre. Les autres membres ne le modifient pas ; **seul le président supprime**
+(projet non engagé — garde `projets_delete_guard`).
+
+⚠ La permission s'ancre sur **`chef_projet_id`**, PAS sur un `created_by` séparé (arbitrage
+Pascal 2026-07-18) : quand le **président** crée un projet et **désigne un membre comme chef**,
+ce membre doit pouvoir le modifier — un `created_by` (= le président créateur) le lui aurait
+interdit. Le chef est donc à la fois rôle fonctionnel et ancre de permission. Aucune colonne
+ajoutée.
+
+Le flux **président inchangé** (sa demande explicite) : bouton « Nouveau projet », il assigne
+le chef, et une résolution d'AG est rattachée ensuite pour financer. Un **membre** crée un
+projet autonome (budget 0) dont il est le chef ; le financement est rattaché plus tard depuis
+l'AG. Un membre ne peut pas ouvrir un projet depuis une résolution (le rattachement écrit sur
+`resolutions_ag`, réservé à l'admin) — d'où la création autonome côté membre.
 
 ### 2. Secrétaire — peut faire signer
 Le secrétaire accède à la page **Signatures** (aujourd'hui président seul) et peut créer les
@@ -62,18 +72,22 @@ Arbitrage Pascal : une décision **financière** n'est **enregistrable** que si 
 ET le président ont voté** (peu importe le sens — présence au sens de l'art. 15). Ils sont
 alors naturellement signataires : **aucun conflit avec l'art. 15**, c'est une condition de
 validité ajoutée à l'enregistrement, pas une signature forcée d'un absent.
-- **« Financière »** = `montant_engage != null` (engagement d'argent). ⚠ À confirmer : une
-  décision qui suspend/clôture un projet (`projet_action`) sans montant compte-t-elle ?
+- **« Financière » = `montant_engage != null`, un point** (arbitrage Pascal 2026-07-18 : « le
+  trésorier ne s'occupe que de l'argent »). Une décision qui suspend/clôture un projet
+  (`projet_action`) **sans montant n'est PAS financière** → pas de vote obligatoire du trésorier.
 - Le bouton « Enregistrer » se désactive, avec le motif, tant que le président ou le trésorier
   n'a pas voté une décision financière. S'ajoute au quorum + adoption existants.
 - **Si aucun trésorier n'est désigné**, la règle est inerte (seul le président). Documenté.
 - Porté dans `decisionLogic` (pur, testable) : `enregistrable(decision, votes, composition)`.
 
-### 4. Trésorier — validation des comptes d'une AGO
-Sur une AG de type **AGO**, un bouton **« Comptes validés »** réservé au trésorier (et au
-président) horodate `comptes_valides_le` + `comptes_valides_par`. Simple attestation — on ne
-gère pas les documents comptables eux-mêmes (le syndic les tient). Le secrétaire, qui peut
-créer/éditer l'AG, **n'a pas** ce bouton.
+### 4. Validation des comptes d'une AGO — CO-APPROBATION trésorier + président
+Sur une AG de type **AGO**, les comptes de l'exercice sont **validés quand le trésorier ET le
+président ont approuvé** (arbitrage Pascal 2026-07-18 : « les 2 doivent avoir approuvé
+obligatoirement »). Deux approbations distinctes, chacune horodatée :
+`comptes_approuve_tresorier_le` + `comptes_approuve_president_le` (+ qui). Les comptes sont
+« validés » seulement quand les deux sont posées. Simple attestation — on ne gère pas les
+documents comptables (le syndic les tient). Le **secrétaire** peut créer/éditer l'AG mais **n'a
+aucun** de ces deux boutons.
 
 ### 5. Secrétaire — édition des AG (corollaire du 2/4)
 Le droit d'écriture sur `assemblees_generales` passe de président seul à
@@ -96,8 +110,8 @@ mention. Coordination code↔SQL comme d'habitude (leçon 011).
    (point 3, `decisionLogic`) ; bouton comptes (point 4) ; édition AG secrétaire (point 5) ;
    attribution des rôles dans Membres.
 
-## Points à confirmer par Pascal
-- 3 : `projet_action` sans montant = décision financière ou non ?
-- 4/¹ : la validation des comptes est-elle réservée au **trésorier seul**, ou président aussi ?
-- Un membre peut-il cumuler deux rôles (président **et** trésorier) ? Art. 14 les distingue ;
-  je suppose **exclusif** (un rôle par membre).
+## Tranché (arbitrages Pascal 2026-07-18)
+- 3 : financière = `montant_engage != null` **seulement** ; `projet_action` sans montant = non.
+- 4 : comptes validés = **trésorier ET président** ont approuvé (co-approbation).
+- Rôles **exclusifs** : un seul rôle par membre (pas de cumul président/trésorier).
+- Point 1 : ancre de permission = `chef_projet_id`, pas de `created_by`. Flux président inchangé.

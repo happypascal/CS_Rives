@@ -12,7 +12,7 @@ import { downloadDocument } from '../lib/documents'
 export default function ProjetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const isMobile = useIsMobile()
   const canManage = isAdmin && !isMobile
   const [projet, setProjet] = useState(null)
@@ -60,6 +60,10 @@ export default function ProjetDetail() {
   // null), ce qui MODIFIERAIT une délibération figée au registre légal.
   const decisionsEnregistrees = projet.decisions.filter((d) => d.enregistree)
   const canDelete = canManage && decisionsEnregistrees.length === 0
+  // Modification : le chef de projet ou le président (desktop). Suppression :
+  // président seul (canManage), et projet non engagé — le chef ne supprime pas
+  // (migration 013).
+  const canEdit = !isMobile && (isAdmin || projet.chef_projet_id === user?.membre_id)
 
   const del = async () => {
     if (!confirm(`Supprimer le projet « ${projet.nom} » ? Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).`)) return
@@ -79,16 +83,16 @@ export default function ProjetDetail() {
         title={projet.nom}
         subtitle={projet.ags?.length ? `Financé par ${projet.ags.map((a) => a.numero).join(' · ')}` : 'Aucune résolution rattachée'}
         actions={
-          canManage && (
+          (canEdit || canManage) && (
             <>
-              <Link to={`/projets/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
-              {canDelete ? (
+              {canEdit && <Link to={`/projets/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
+              {canManage && (canDelete ? (
                 <Button variant="danger" onClick={del}>Supprimer</Button>
               ) : (
                 <span className="text-xs text-slate-400" title="Une décision enregistrée y est rattachée">
                   🔒 non supprimable
                 </span>
-              )}
+              ))}
             </>
           )
         }
@@ -220,7 +224,7 @@ export default function ProjetDetail() {
               </ul>
             )}
             {docError && <p className="mt-2 text-xs text-red-600">{docError}</p>}
-            {canManage && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
+            {canEdit && <p className="mt-2 text-xs text-slate-400">Ajout / retrait via « Modifier ».</p>}
           </div>
         </Card>
       </div>

@@ -26,7 +26,7 @@ export default function ProjetForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const isMobile = useIsMobile()
 
   const [loading, setLoading] = useState(true)
@@ -34,6 +34,9 @@ export default function ProjetForm() {
   const [membres, setMembres] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [form, setForm] = useState(EMPTY)
+  // Chef du projet édité : lui (ou le président) peut modifier. Ancre de
+  // permission — cf. migration 013.
+  const [chefId, setChefId] = useState(null)
   // null = aucun envoi en cours ; sinon { name, value } avec value entre 0 et 1.
   const [upload, setUpload] = useState(null)
   const [error, setError] = useState('')
@@ -58,17 +61,22 @@ export default function ProjetForm() {
       if (editing) {
         const p = await repo.getProjet(id)
         if (p) {
+          setChefId(p.chef_projet_id || null)
           setForm({
             nom: p.nom, description: p.description || '', chef_projet_id: p.chef_projet_id || '',
             date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '',
             documents: p.documents || [],
           })
         }
+      } else if (!isAdmin && user?.membre_id) {
+        // Création par un membre : il est le chef de projet (ancre de permission),
+        // champ verrouillé. Le président, lui, choisit librement le chef.
+        setForm((f) => ({ ...f, chef_projet_id: user.membre_id }))
       }
       setLoading(false)
     }
     init()
-  }, [id, editing])
+  }, [id, editing, isAdmin, user])
 
   const budgetOrigine = useMemo(
     () => agBudgets.find((b) => b.resolution_id === resolutionOrigine) || null,
@@ -83,28 +91,16 @@ export default function ProjetForm() {
       </div>
     )
   }
-  if (!isAdmin) {
+  if (loading) return <Spinner />
+
+  // Modification réservée au chef de projet (ou au président). Un membre modifie
+  // les projets dont il est le chef, pas ceux des autres (RLS projets_chef_*,
+  // migration 013).
+  if (editing && chefId && !isAdmin && chefId !== user?.membre_id) {
     return (
       <div>
         <PageHeader title="Accès restreint" />
-        <Card className="p-6 text-sm text-slate-600">Seul le président peut créer ou modifier un projet.</Card>
-      </div>
-    )
-  }
-  if (loading) return <Spinner />
-
-  // Un projet naît toujours d'une résolution : sans elle il n'aurait aucun budget
-  // et aucune AG ne l'aurait voté. On refuse la création à vide plutôt que de
-  // laisser ouvrir une coquille à 0 €.
-  if (!editing && !budgetOrigine) {
-    return (
-      <div>
-        <PageHeader title="Nouveau projet" />
-        <Card className="p-6 text-sm text-slate-600">
-          <p>Un projet s’ouvre depuis une <strong>résolution d’AG adoptée et dotée d’un budget</strong> : c’est elle qui le finance.</p>
-          <p className="mt-2">Ouvrez la fiche de l’AG concernée, puis « Ouvrir un projet » sur la résolution voulue.</p>
-          <Button variant="secondary" className="mt-4" onClick={() => navigate('/ag')}>Aller aux Assemblées Générales</Button>
-        </Card>
+        <Card className="p-6 text-sm text-slate-600">Seul le chef de projet peut le modifier. <button className="text-navy-600 underline" onClick={() => navigate(`/projets/${id}`)}>Retour au détail</button></Card>
       </div>
     )
   }
@@ -154,9 +150,16 @@ export default function ProjetForm() {
         navigate(`/projets/${id}`)
       } else {
         // resolution_ids : champ virtuel, consommé par le repo pour poser
-        // resolutions_ag.projet_id — ce n'est pas une colonne de `projets`.
-        // `id` explicite : les pièces jointes sont déjà sous `projets/<newId>/…`.
-        const created = await repo.createProjet({ id: newId, ...payload, resolution_ids: [resolutionOrigine] })
+        // resolutions_ag.projet_id — ce n'est pas une colonne de `projets`. Vide
+        // pour une création autonome : le rattachement du budget se fait plus tard
+        // depuis l'AG (côté président). Non vide seulement quand on ouvre le projet
+        // depuis une résolution (« Ouvrir un projet »). La permission tient au
+        // chef_projet_id du payload. `id` explicite : PJ déjà sous projets/<newId>/.
+        const created = await repo.createProjet({
+          id: newId,
+          ...payload,
+          resolution_ids: resolutionOrigine ? [resolutionOrigine] : [],
+        })
         navigate(`/projets/${created.id}`)
       }
     } catch (err) {
@@ -191,10 +194,16 @@ export default function ProjetForm() {
           <Input label="Nom du projet" value={form.nom} onChange={set('nom')} required placeholder="ex : Réfection du réseau d’eaux pluviales" />
           <Textarea label="Description" value={form.description} onChange={set('description')} rows={3} />
 
-          <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
-            <option value="">— À définir —</option>
-            {membres.filter((m) => m.actif).map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
-          </Select>
+          {/* Le président choisit librement le chef ; un membre est chef de son
+              propre projet (ancre de permission, verrouillé sur lui). */}
+          {isAdmin ? (
+            <Select label="Chef de projet" value={form.chef_projet_id} onChange={set('chef_projet_id')}>
+              <option value="">— À définir —</option>
+              {membres.filter((m) => m.actif).map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
+            </Select>
+          ) : (
+            <Input label="Chef de projet" value={membres.find((m) => m.id === form.chef_projet_id) ? `${membres.find((m) => m.id === form.chef_projet_id).prenom} ${membres.find((m) => m.id === form.chef_projet_id).nom} (vous)` : 'Vous'} readOnly className="bg-slate-50" />
+          )}
 
           <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
             Le <strong>statut</strong> ne se saisit pas : un projet est « ouvert » tant que rien n’y est engagé, « en cours »
