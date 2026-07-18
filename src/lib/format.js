@@ -7,6 +7,22 @@ import { fr } from 'date-fns/locale'
 export const eur = (n) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(n) || 0)
 
+// Parse un montant saisi à la main. Tolérant au format suisse/français :
+// apostrophe, espace (y compris fine/insécable) comme séparateurs de milliers
+// (20'000, 20 000), virgule OU point décimal.
+//
+// Arrondi à 2 décimales à la fin, pour tuer les artefacts flottants : une molette
+// de souris au-dessus d'un <input type=number step=0.01> décrémente 20000 en
+// 19999.99 (piège vécu par Pascal). Renvoie null si vide/illisible.
+export function parseMontant(value) {
+  if (value == null) return null
+  const cleaned = String(value).replace(/[\s'’]/g, '').replace(',', '.')
+  if (cleaned === '') return null
+  const n = Number(cleaned)
+  if (!Number.isFinite(n)) return null
+  return Math.round(n * 100) / 100
+}
+
 // Le rich-text des descriptions (RichTextEditor / execCommand) en texte brut.
 //
 // Sans DOM à dessein, alors que la version d'origine (dans pdf.js) passait par

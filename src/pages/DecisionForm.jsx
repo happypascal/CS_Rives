@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, eur, DesktopOnly, UploadProgress } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
 import { nextNumero } from '../lib/decisionLogic'
-import { todayISO, addBusinessDaysISO } from '../lib/format'
+import { todayISO, addBusinessDaysISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { PROJET_ACTION_VALUES, PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
@@ -167,7 +167,7 @@ export default function DecisionForm() {
     e.preventDefault()
     setError('')
     if (!titre.trim()) return setError('Le titre est obligatoire.')
-    const engage = montantEngage === '' ? null : Number(montantEngage)
+    const engage = parseMontant(montantEngage)
     if (engage != null && !target) return setError('Pour engager un montant, choisissez un projet ou une résolution.')
     if (engage != null && restantDispo != null && engage > restantDispo) {
       return setError(`Montant engagé (${eur(engage)}) supérieur au disponible (${eur(restantDispo)}).`)
@@ -258,8 +258,12 @@ export default function DecisionForm() {
                   <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Déjà engagé</p><p className="font-semibold text-amber-700">{eur((selProjet || selRes).engage)}</p></div>
                   <div className="rounded bg-white px-2 py-1.5"><p className="text-slate-500">Restant</p><p className="font-semibold text-emerald-700">{eur(restantDispo)}</p></div>
                 </div>
-                <Input label="Montant engagé par cette décision (€)" type="number" min="0" step="0.01" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000" />
-                {montantEngage !== '' && restantDispo != null && Number(montantEngage) > restantDispo && (
+                {/* type="text" (pas number) À DESSEIN : un input number capte la
+                    molette et décrémente la valeur (20000 -> 19999.99), et refuse
+                    le format suisse « 20'000 ». inputMode decimal garde le clavier
+                    numérique sur mobile ; parseMontant tolère apostrophe/espace. */}
+                <Input label="Montant engagé par cette décision (€)" type="text" inputMode="decimal" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000 ou 20'000" />
+                {parseMontant(montantEngage) != null && restantDispo != null && parseMontant(montantEngage) > restantDispo && (
                   <p className="mt-1 text-xs text-red-600">Dépasse le disponible ({eur(restantDispo)}).</p>
                 )}
               </div>

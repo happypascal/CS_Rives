@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur } from '../components/ui'
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
-import { formatDate } from '../lib/format'
+import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS } from '../lib/agLogic'
@@ -286,7 +286,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
       description: form.description,
       majorite_requise: form.majorite_requise,
       statut: form.statut,
-      budget_alloue: form.budget_alloue === '' ? null : Number(form.budget_alloue),
+      budget_alloue: parseMontant(form.budget_alloue),
       budget_intitule: form.budget_intitule || null,
       observations: form.observations,
     }
@@ -329,7 +329,9 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
           </Select>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Budget alloué (€) — optionnel" type="number" min="0" step="0.01" value={form.budget_alloue ?? ''} onChange={set('budget_alloue')} />
+          {/* type="text" : voir DecisionForm — évite la molette (19999.99) et
+              accepte le format suisse « 20'000 ». */}
+          <Input label="Budget alloué (€) — optionnel" type="text" inputMode="decimal" value={form.budget_alloue ?? ''} onChange={set('budget_alloue')} placeholder="ex : 20'000" />
           <Input label="Intitulé du budget" value={form.budget_intitule || ''} onChange={set('budget_intitule')} />
         </div>
         <Textarea label="Observations" value={form.observations || ''} onChange={set('observations')} rows={2} />
