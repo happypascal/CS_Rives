@@ -107,13 +107,6 @@ export default function AGDetail() {
         </Card>
       </div>
 
-      {ag.ordre_du_jour && (
-        <Card className="mb-6">
-          <CardHeader title="Ordre du jour" />
-          <pre className="whitespace-pre-wrap px-5 py-4 font-sans text-sm text-slate-700">{ag.ordre_du_jour}</pre>
-        </Card>
-      )}
-
       {/* Comptes de l'exercice — AGO seulement. Validés quand le trésorier ET le
           président ont approuvé (art. 13 : l'AG approuve les comptes ; ici le
           contrôle interne préalable, point 4). Le secrétaire n'approuve pas. */}

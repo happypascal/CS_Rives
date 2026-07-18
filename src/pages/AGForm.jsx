@@ -2,15 +2,19 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Textarea, Spinner, DesktopOnly } from '../components/ui'
+import { Card, Button, Input, Select, Spinner, DesktopOnly } from '../components/ui'
 import { todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
 // Les clés de EMPTY = exactement les colonnes éditables de assemblees_generales.
+// `ordre_du_jour` en est volontairement absent : l'ordre du jour, ce sont les
+// résolutions « à voter » saisies sur la fiche de l'AG (choix Pascal 2026-07-18).
+// La colonne existe encore en base mais n'est plus ni éditée ni affichée — un
+// ancien texte y est simplement laissé tel quel, jamais réécrit.
 // `repo.getAG()` renvoie EN PLUS un tableau `resolutions` (jointure) : il ne doit
 // jamais repartir dans un update, sinon PostgREST rejette la colonne inconnue.
-const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', ordre_du_jour: '', statut: 'en_cours', pv_url: '' }
+const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', statut: 'en_cours', pv_url: '' }
 
 // Ne garde que les colonnes réelles, et normalise les champs vides en null.
 function toPayload(form) {
@@ -104,7 +108,9 @@ export default function AGForm() {
             <Input label="Lieu" value={form.lieu} onChange={set('lieu')} placeholder="Salle des fêtes de Nernier" />
             <Input label="Président de séance (désigné en séance)" value={form.president_seance || ''} onChange={set('president_seance')} placeholder="À renseigner après l’AG" />
           </div>
-          <Textarea label="Ordre du jour" value={form.ordre_du_jour} onChange={set('ordre_du_jour')} rows={4} placeholder="1. …&#10;2. …" />
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            L’ordre du jour se compose en ajoutant des <strong>résolutions « à voter »</strong> sur la fiche de l’AG, une fois celle-ci créée.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Statut" value={form.statut} onChange={set('statut')}>
               <option value="en_cours">En cours</option>
