@@ -236,6 +236,15 @@ export default function DecisionDetail() {
         subtitle={`Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`}
         actions={
           <>
+            {/* L'acte du président : il fige la décision au registre. Sa place est
+                ici, avec les actions de décision — pas dans le tableau des votes.
+                Le pourquoi d'un blocage (quorum, engagement) est expliqué dans la
+                carte des votes ; ici, un tooltip. */}
+            {isAdmin && !locked && !isMobile && (
+              <Button onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
+                Enregistrer la décision
+              </Button>
+            )}
             {/* L'owner porte sa décision : lui seul prévient et relance le CS. */}
             {isOwner && !locked && (
               <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
@@ -419,14 +428,7 @@ export default function DecisionDetail() {
           <Card>
             <CardHeader
               title="Vote du Conseil Syndical"
-              subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision.'}
-              actions={
-                isAdmin && !locked && !isMobile && (
-                  <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
-                    Enregistrer la décision
-                  </Button>
-                )
-              }
+              subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision (bouton en haut de page).'}
             />
             {isAdmin && !locked && !t.quorumAtteint && (
               <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
