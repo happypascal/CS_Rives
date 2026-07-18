@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, eur } from '../components/ui'
 import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementVotesManquants, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -116,6 +116,11 @@ export default function DecisionDetail() {
     voteByMember[presidentId]?.vote ?? null,
   )
 
+  // Point 3 — une décision qui engage un montant n'est enregistrable que si le
+  // trésorier ET le président ont voté. S'ajoute au quorum.
+  const engagementManquants = engagementVotesManquants(decision, decision.votes, composition)
+  const canRecord = t.quorumAtteint && engagementManquants.length === 0
+
   // L'utilisateur courant vote uniquement pour lui-même, tant que non enregistrée.
   const myId = user?.membre_id
   const iAmInComposition = compIds.includes(myId)
@@ -171,6 +176,9 @@ export default function DecisionDetail() {
   }
 
   const doRecord = async () => {
+    // Garde-fou (le bouton est déjà désactivé) : jamais enregistrer sans quorum,
+    // ni un engagement sans le vote du bureau (point 3).
+    if (!canRecord) return
     setBusy(true)
     const snapshot = composition.map((m) => ({ id: m.id, nom: m.nom, prenom: m.prenom, role: m.role, ag_election: m.ag_election, date_election: m.date_election }))
     await repo.recordDecision(id, {
@@ -410,7 +418,7 @@ export default function DecisionDetail() {
               subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision.'}
               actions={
                 isAdmin && !locked && !isMobile && (
-                  <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !t.quorumAtteint} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
+                  <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : engagementManquants.length ? 'Vote du bureau requis pour un engagement' : ''}>
                     Enregistrer la décision
                   </Button>
                 )
@@ -419,6 +427,13 @@ export default function DecisionDetail() {
             {isAdmin && !locked && !t.quorumAtteint && (
               <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
                 Quorum non atteint : {t.votants}/{t.activeCount} membres ont voté. L’enregistrement sera possible dès que &gt; 50 % auront voté.
+              </p>
+            )}
+            {/* Point 3 : un engagement financier exige le vote du trésorier ET du
+                président (co-signature par participation obligatoire). */}
+            {isAdmin && !locked && t.quorumAtteint && engagementManquants.length > 0 && (
+              <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
+                Cette décision engage {eur(decision.montant_engage)} : elle ne peut être enregistrée sans le vote de {engagementManquants.join(' et ')}.
               </p>
             )}
             <div className="overflow-x-auto">

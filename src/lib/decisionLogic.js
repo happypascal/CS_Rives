@@ -75,6 +75,31 @@ export function tallySummary(counts) {
   return `Pour ${counts.pour} / Contre ${counts.contre} / Abst. ${counts.abstention}`
 }
 
+// Point 3 — une décision qui ENGAGE un montant (financière) n'est ENREGISTRABLE
+// que si le trésorier ET le président ont voté. Arbitrage Pascal : ils co-signent
+// les engagements ; par « participation obligatoire », ils doivent avoir pris part
+// au vote — ils sont alors naturellement signataires (art. 15), sans conflit.
+//
+// Condition AJOUTÉE au quorum et à l'adoption. Renvoie la liste des rôles
+// manquants (vide = enregistrable de ce point de vue).
+//
+// « Financière » = montant_engage renseigné, UNIQUEMENT (Pascal : « le trésorier
+// ne s'occupe que de l'argent »). Suspendre/clôturer un projet sans montant n'y
+// est pas soumis.
+//
+// Si aucun trésorier n'est désigné dans la composition, la règle ne porte que sur
+// le président — elle ne peut exiger le vote d'un rôle qui n'existe pas.
+export function engagementVotesManquants(decision, votes, composition = []) {
+  if (decision?.montant_engage == null || decision.montant_engage === '') return []
+  const aVote = new Set((votes || []).map((v) => v.membre_id))
+  const manquants = []
+  const pres = composition.find((m) => m.role === 'president')
+  const tres = composition.find((m) => m.role === 'tresorier')
+  if (pres && !aVote.has(pres.id)) manquants.push('le président')
+  if (tres && !aVote.has(tres.id)) manquants.push('le trésorier')
+  return manquants
+}
+
 // Prochain numéro AAAA-NNN pour une année donnée.
 export function nextNumero(year, existingDecisions) {
   const prefix = `${year}-`
