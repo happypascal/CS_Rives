@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, eur } from '../components/ui'
 import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementVotesManquants, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -110,16 +110,20 @@ export default function DecisionDetail() {
   const voteByMember = Object.fromEntries(decision.votes.map((v) => [v.membre_id, v]))
   // Art. 15 : la voix du président départage un partage — il faut donc son vote.
   const presidentId = composition.find((m) => m.role === 'president')?.id
+  // Point 3 — un engagement financier n'est ADOPTÉ que si, en plus de la majorité,
+  // le trésorier ou le président a voté POUR. Passé à tally, qui l'intègre à
+  // l'adoption (et non plus seulement à l'enregistrement).
+  const engagementOk = engagementApprouve(decision, decision.votes, composition)
   const t = tally(
     decision.votes.filter((v) => compIds.includes(v.membre_id)),
     composition.length,
     voteByMember[presidentId]?.vote ?? null,
+    { engagementApprouve: engagementOk },
   )
 
-  // Point 3 — une décision qui engage un montant n'est enregistrable que si le
-  // trésorier ET le président ont voté. S'ajoute au quorum.
-  const engagementManquants = engagementVotesManquants(decision, decision.votes, composition)
-  const canRecord = t.quorumAtteint && engagementManquants.length === 0
+  // L'enregistrement redevient conditionné au seul quorum : l'adoption reflète
+  // désormais la garde d'engagement, plus besoin de bloquer l'acte séparément.
+  const canRecord = t.quorumAtteint
 
   // L'utilisateur courant vote uniquement pour lui-même, tant que non enregistrée.
   const myId = user?.membre_id
@@ -418,7 +422,7 @@ export default function DecisionDetail() {
               subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision.'}
               actions={
                 isAdmin && !locked && !isMobile && (
-                  <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : engagementManquants.length ? 'Vote du bureau requis pour un engagement' : ''}>
+                  <Button size="sm" onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
                     Enregistrer la décision
                   </Button>
                 )
@@ -429,11 +433,11 @@ export default function DecisionDetail() {
                 Quorum non atteint : {t.votants}/{t.activeCount} membres ont voté. L’enregistrement sera possible dès que &gt; 50 % auront voté.
               </p>
             )}
-            {/* Point 3 : un engagement financier exige le vote du trésorier ET du
-                président (co-signature par participation obligatoire). */}
-            {isAdmin && !locked && t.quorumAtteint && engagementManquants.length > 0 && (
+            {/* Point 3 : la majorité est là, mais l'engagement financier n'est pas
+                approuvé par le bureau → la décision serait REJETÉE. On l'explique. */}
+            {!locked && t.bloqueParEngagement && (
               <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
-                Cette décision engage {eur(decision.montant_engage)} : elle ne peut être enregistrée sans le vote de {engagementManquants.join(' et ')}.
+                Cette décision engage {eur(decision.montant_engage)} : bien que la majorité soit atteinte, elle n’est <strong>adoptée</strong> que si le trésorier ou le président vote « Pour ». En l’état, elle serait <strong>rejetée</strong>.
               </p>
             )}
             <div className="overflow-x-auto">

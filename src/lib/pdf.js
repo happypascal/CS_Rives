@@ -6,7 +6,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatDate, eur, htmlToText } from './format'
-import { tally, tallySummary, VOTE_LABELS } from './decisionLogic'
+import { tally, tallySummary, engagementApprouve, VOTE_LABELS } from './decisionLogic'
 import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
@@ -145,7 +145,11 @@ function decisionBlock(doc, decision, opts = {}) {
 
   const composition = decision.composition_snapshot?.length ? decision.composition_snapshot : members
   const presidentId = composition.find((m) => m.role === 'president')?.id
-  const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null)
+  // Même garde d'engagement qu'à l'écran (point 3) : le verdict du PDF doit
+  // coïncider avec l'adoption calculée dans DecisionDetail.
+  const t = tally(votes, composition.length, votes.find((v) => v.membre_id === presidentId)?.vote ?? null, {
+    engagementApprouve: engagementApprouve(decision, votes, composition),
+  })
   const adoptee = t.quorumAtteint && t.adoptee
 
   // Bandeau : numéro à gauche, VERDICT à droite en couleur.

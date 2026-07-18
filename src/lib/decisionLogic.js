@@ -37,7 +37,12 @@ export const STATUT_LABELS = {
 // activeCount: nombre de membres actifs à la date (dénominateur du quorum).
 // presidentVote: vote du président ('pour'|'contre'|'abstention'|null) — ne sert
 //   qu'à départager un partage des voix (art. 15).
-export function tally(votes, activeCount, presidentVote = null) {
+// `opts.engagementApprouve` (défaut true) : pour une décision qui engage un
+// montant, l'adoption exige EN PLUS de la majorité qu'au moins le trésorier ou le
+// président ait voté POUR (cf. engagementApprouve, point 3). Passé false, la
+// décision ne peut pas être adoptée même à la majorité. tally reste générique :
+// c'est l'appelant qui calcule cette condition (il connaît les rôles).
+export function tally(votes, activeCount, presidentVote = null, opts = {}) {
   const counts = { pour: 0, contre: 0, abstention: 0 }
   for (const v of votes) {
     if (counts[v.vote] !== undefined) counts[v.vote] += 1
@@ -54,7 +59,12 @@ export function tally(votes, activeCount, presidentVote = null) {
   // Partage : autant de Pour que de non-Pour (contre + abstention). Le président
   // départage ; s'il n'a pas voté, personne ne départage → rejet.
   const partage = presents > 0 && counts.pour * 2 === presents
-  const adoptee = quorumAtteint && (majorite || (partage && presidentVote === 'pour'))
+  // Adoption « ordinaire » (art. 15), avant la garde d'engagement.
+  const adopteeMajorite = quorumAtteint && (majorite || (partage && presidentVote === 'pour'))
+  // Garde d'engagement : un engagement financier non approuvé par le bureau n'est
+  // pas adopté, même à la majorité.
+  const engagementApprouve = opts.engagementApprouve !== false
+  const adoptee = adopteeMajorite && engagementApprouve
 
   return {
     counts,
@@ -62,8 +72,12 @@ export function tally(votes, activeCount, presidentVote = null) {
     votants: presents,
     absents: Math.max(0, denomActive - presents),
     quorumAtteint,
+    majorite,
     partage,
     presidentVote,
+    // Vrai si la majorité (art. 15) est acquise mais l'adoption est BLOQUÉE par la
+    // seule garde d'engagement — sert à l'expliquer à l'écran.
+    bloqueParEngagement: adopteeMajorite && !engagementApprouve,
     // Statut projeté si on enregistrait maintenant (valable seulement si quorum).
     statut: adoptee ? 'adoptee' : 'rejetee',
     adoptee,
@@ -75,29 +89,27 @@ export function tallySummary(counts) {
   return `Pour ${counts.pour} / Contre ${counts.contre} / Abst. ${counts.abstention}`
 }
 
-// Point 3 — une décision qui ENGAGE un montant (financière) n'est ENREGISTRABLE
-// que si le trésorier ET le président ont voté. Arbitrage Pascal : ils co-signent
-// les engagements ; par « participation obligatoire », ils doivent avoir pris part
-// au vote — ils sont alors naturellement signataires (art. 15), sans conflit.
+// Point 3 — une décision qui ENGAGE un montant n'est ADOPTÉE que si, EN PLUS de la
+// majorité (art. 15), AU MOINS le trésorier OU le président a voté POUR.
 //
-// Condition AJOUTÉE au quorum et à l'adoption. Renvoie la liste des rôles
-// manquants (vide = enregistrable de ce point de vue).
+// ⚠ Un VETO (les DEUX doivent voter pour) a été écarté par Pascal : contraire à
+// l'art. 15, qui fait décider la majorité des présents — donner à un membre le
+// pouvoir de bloquer seul serait non conforme. « Au moins l'un des deux » est une
+// garde interne plus stricte que l'art. 15, comme le quorum, mais sans veto.
 //
-// « Financière » = montant_engage renseigné, UNIQUEMENT (Pascal : « le trésorier
-// ne s'occupe que de l'argent »). Suspendre/clôturer un projet sans montant n'y
-// est pas soumis.
+// « Financière » = montant_engage renseigné, UNIQUEMENT (« le trésorier ne
+// s'occupe que de l'argent »). Suspendre/clôturer sans montant n'y est pas soumis.
 //
-// Si aucun trésorier n'est désigné dans la composition, la règle ne porte que sur
-// le président — elle ne peut exiger le vote d'un rôle qui n'existe pas.
-export function engagementVotesManquants(decision, votes, composition = []) {
-  if (decision?.montant_engage == null || decision.montant_engage === '') return []
-  const aVote = new Set((votes || []).map((v) => v.membre_id))
-  const manquants = []
-  const pres = composition.find((m) => m.role === 'president')
-  const tres = composition.find((m) => m.role === 'tresorier')
-  if (pres && !aVote.has(pres.id)) manquants.push('le président')
-  if (tres && !aVote.has(tres.id)) manquants.push('le trésorier')
-  return manquants
+// Renvoie true si la garde est satisfaite (ou ne s'applique pas). Un rôle non
+// désigné (pas de trésorier) est simplement absent du OU — si aucun des deux
+// n'existe, la garde ne peut être satisfaite, mais il y a toujours un président.
+export function engagementApprouve(decision, votes, composition = []) {
+  if (decision?.montant_engage == null || decision.montant_engage === '') return true
+  const voteOf = (role) => {
+    const m = composition.find((x) => x.role === role)
+    return m ? (votes || []).find((v) => v.membre_id === m.id)?.vote ?? null : null
+  }
+  return voteOf('president') === 'pour' || voteOf('tresorier') === 'pour'
 }
 
 // Prochain numéro AAAA-NNN pour une année donnée.
