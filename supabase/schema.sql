@@ -344,6 +344,20 @@ drop policy if exists "qa_self_insert" on questions_reponses;
 create policy "qa_self_insert" on questions_reponses for insert to authenticated
   with check (auteur_id = current_membre_id());
 
+-- Signatures : le secrétaire peut faire signer, comme le président (migration
+-- 015). INSERT (créer un lot) + UPDATE (marquer signé) ; pas de DELETE. Le
+-- président garde tout via write_admin (permissives cumulées en OU).
+drop policy if exists "signature_batches_secretaire_insert" on signature_batches;
+create policy "signature_batches_secretaire_insert" on signature_batches
+  for insert to authenticated
+  with check (is_secretaire());
+
+drop policy if exists "signature_batches_secretaire_update" on signature_batches;
+create policy "signature_batches_secretaire_update" on signature_batches
+  for update to authenticated
+  using (is_secretaire())
+  with check (is_secretaire());
+
 -- =============================================================================
 -- Storage — bucket privé `documents` (voir migration 012 pour le raisonnement)
 --

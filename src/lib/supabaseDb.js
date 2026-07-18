@@ -40,7 +40,10 @@ export async function resolveUser(authUser) {
   return {
     id: authUser.id,
     email: authUser.email,
+    // `role` = rôle d'AUTH (admin/membre, pilote isAdmin). `membre_role` = rôle
+    // du bureau tel quel, pour isSecretaire / isTresorier.
     role: membre?.role === 'president' ? 'admin' : 'membre',
+    membre_role: membre?.role ?? null,
     membre_id: membre?.id ?? null,
     nom: membre?.nom,
     prenom: membre?.prenom,

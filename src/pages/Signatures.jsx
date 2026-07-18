@@ -22,8 +22,11 @@ const YOUTRUST_FREE_SIGNATAIRES = 5
 // consultation + vote, utilisé par tous ; la signature ne concerne qu'une
 // personne (décision de placement, Pascal 2026-07-17).
 export default function Signatures() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isSecretaire } = useAuth()
   const isMobile = useIsMobile()
+  // Faire signer = président OU secrétaire (art. 14 : le secrétaire tient le
+  // registre ; arbitrage Pascal). Le trésorier, lui, ne gère pas les signatures.
+  const canSign = isAdmin || isSecretaire
   const [loading, setLoading] = useState(true)
   const [decisions, setDecisions] = useState([])
   const [members, setMembers] = useState([])
@@ -57,10 +60,10 @@ export default function Signatures() {
     setLoading(false)
   }
   useEffect(() => {
-    if (isAdmin && !isMobile) reload()
+    if (canSign && !isMobile) reload()
     else setLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, isMobile])
+  }, [canSign, isMobile])
 
   const memberById = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [members])
 
@@ -191,11 +194,11 @@ export default function Signatures() {
       </div>
     )
   }
-  if (!isAdmin) {
+  if (!canSign) {
     return (
       <div>
         <PageHeader title="Signatures" />
-        <Card className="p-6 text-sm text-slate-600">La gestion des signatures est réservée au président du Conseil Syndical.</Card>
+        <Card className="p-6 text-sm text-slate-600">La gestion des signatures est réservée au président et au secrétaire du Conseil Syndical.</Card>
       </div>
     )
   }

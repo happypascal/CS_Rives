@@ -49,10 +49,14 @@ export function AuthProvider({ children }) {
 
   const resetPassword = useCallback((email) => authApi.resetPassword(email), [])
 
+  // isAdmin = président (rôle d'auth). isSecretaire / isTresorier lisent le rôle
+  // du bureau exposé par resolveUser. Distincts : un secrétaire n'est pas admin.
   const isAdmin = user?.role === 'admin'
+  const isSecretaire = user?.membre_role === 'secretaire'
+  const isTresorier = user?.membre_role === 'tresorier'
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSecretaire, isTresorier, signIn, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )

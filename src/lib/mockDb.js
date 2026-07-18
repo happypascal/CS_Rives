@@ -268,7 +268,10 @@ export const mockAuth = {
     const acc = data.accounts.find((a) => a.email.toLowerCase() === email.trim().toLowerCase())
     if (!acc || acc.password !== password) throw new Error('Identifiants invalides.')
     const membre = data.membres_cs.find((m) => m.id === acc.membre_id)
-    const user = { id: acc.id, email: acc.email, role: acc.role, membre_id: acc.membre_id, nom: membre?.nom, prenom: membre?.prenom }
+    // `role` = rôle d'AUTH (admin/membre, pilote isAdmin). `membre_role` = rôle
+    // du bureau tel quel (president/tresorier/secretaire/membre), pour
+    // isSecretaire / isTresorier. Les deux sont distincts à dessein.
+    const user = { id: acc.id, email: acc.email, role: acc.role, membre_role: membre?.role ?? null, membre_id: acc.membre_id, nom: membre?.nom, prenom: membre?.prenom }
     localStorage.setItem(SESSION_KEY, JSON.stringify({ user }))
     return user
   },
@@ -287,7 +290,10 @@ export const mockAuth = {
         localStorage.removeItem(SESSION_KEY)
         return null
       }
-      return user
+      // Rafraîchit membre_role depuis la base : un changement de rôle (ou une
+      // session stockée avant l'ajout du champ) se reflète au rechargement.
+      const membre = data.membres_cs.find((m) => m.id === user.membre_id)
+      return { ...user, membre_role: membre?.role ?? null }
     } catch {
       return null
     }
