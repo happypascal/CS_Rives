@@ -5,6 +5,7 @@ import { Card, Button, Input, Select, Modal, Spinner, Badge } from '../component
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
+import { ROLE_LABELS, ROLE_TONES, ROLE_VALUES, ROLES_UNIQUES } from '../lib/rolesLogic'
 
 const EMPTY = { nom: '', prenom: '', email: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', actif: true }
 
@@ -66,7 +67,7 @@ export default function Membres() {
                   <td className="px-4 py-3 font-medium text-slate-700">{m.nom}</td>
                   <td className="px-4 py-3 text-slate-600">{m.prenom}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={m.role === 'president' ? 'navy' : 'gray'}>{m.role === 'president' ? 'Président' : 'Membre'}</Badge>
+                    <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(m.date_election)}</td>
                   <td className="px-4 py-3 text-slate-600">{m.ag_election || '—'}</td>
@@ -88,6 +89,7 @@ export default function Membres() {
       {modal && (
         <MembreModal
           membre={modal}
+          membres={membres}
           onClose={() => setModal(null)}
           onSaved={async () => { setModal(null); await reload() }}
         />
@@ -96,7 +98,7 @@ export default function Membres() {
   )
 }
 
-function MembreModal({ membre, onClose, onSaved }) {
+function MembreModal({ membre, membres = [], onClose, onSaved }) {
   const editing = Boolean(membre.id)
   const [form, setForm] = useState({ ...EMPTY, ...membre })
   const [saving, setSaving] = useState(false)
@@ -107,6 +109,15 @@ function MembreModal({ membre, onClose, onSaved }) {
     setError('')
     if (!form.nom || !form.prenom || !form.email || !form.date_election) {
       return setError('Nom, prénom, email et date d’élection sont obligatoires.')
+    }
+    // Un seul titulaire actif par rôle du bureau (art. 14). On bloque plutôt que
+    // de laisser deux présidents ou deux trésoriers coexister — is_admin() /
+    // is_tresorier() renverraient vrai pour deux personnes, résultat imprévisible.
+    if (form.actif && ROLES_UNIQUES.includes(form.role)) {
+      const autre = membres.find((m) => m.id !== membre.id && m.actif && m.role === form.role)
+      if (autre) {
+        return setError(`${ROLE_LABELS[form.role]} déjà attribué à ${autre.prenom} ${autre.nom}. Changez d’abord son rôle.`)
+      }
     }
     setSaving(true)
     try {
@@ -156,8 +167,7 @@ function MembreModal({ membre, onClose, onSaved }) {
         <Input label="Email" type="email" value={form.email} onChange={set('email')} required />
         <div className="grid gap-3 sm:grid-cols-2">
           <Select label="Rôle" value={form.role} onChange={set('role')}>
-            <option value="membre">Membre</option>
-            <option value="president">Président</option>
+            {ROLE_VALUES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </Select>
           <Input label="Date d’élection" type="date" value={form.date_election || ''} onChange={set('date_election')} required />
         </div>

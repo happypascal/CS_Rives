@@ -15,7 +15,7 @@ create table if not exists membres_cs (
   nom           text not null,
   prenom        text not null,
   email         text not null,
-  role          text not null default 'membre' check (role in ('president','membre')),
+  role          text not null default 'membre' check (role in ('president','tresorier','secretaire','membre')),
   date_election date not null,
   date_fin      date,
   ag_election   text,
@@ -215,6 +215,21 @@ returns boolean language sql stable security definer set search_path = public as
     where m.email = (auth.jwt() ->> 'email') and m.role = 'president' and m.actif
   );
 $$;
+
+-- Rôles du bureau (art. 14, migration 014). Mêmes forme et sémantique que
+-- is_admin(). Câblés aux droits « faire signer » (secrétaire) et « valider les
+-- comptes » (trésorier) — cf. points 2-5 de docs/SPEC_ROLES.md.
+-- Balises nommées ($secretaire$ / $tresorier$) : l'éditeur Supabase parse mal
+-- deux fonctions $$ qui se suivent.
+create or replace function is_secretaire()
+returns boolean language sql stable security definer set search_path = public as $secretaire$
+  select exists (select 1 from membres_cs m where m.email = (auth.jwt() ->> 'email') and m.role = 'secretaire' and m.actif);
+$secretaire$;
+
+create or replace function is_tresorier()
+returns boolean language sql stable security definer set search_path = public as $tresorier$
+  select exists (select 1 from membres_cs m where m.email = (auth.jwt() ->> 'email') and m.role = 'tresorier' and m.actif);
+$tresorier$;
 
 create or replace function current_membre_id()
 returns uuid language sql stable security definer set search_path = public as $$
