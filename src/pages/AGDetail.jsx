@@ -12,9 +12,12 @@ import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STAT
 export default function AGDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin, isSecretaire, isTresorier } = useAuth()
   const isMobile = useIsMobile()
-  const canManage = isAdmin && !isMobile
+  // Gestion de l'AG et de ses résolutions : président OU secrétaire (point 5).
+  // La SUPPRESSION reste au président (canDelete), comme toute suppression.
+  const canManage = (isAdmin || isSecretaire) && !isMobile
+  const canDelete = isAdmin && !isMobile
   const [ag, setAg] = useState(null)
   const [decisions, setDecisions] = useState([])
   const [projets, setProjets] = useState([])
@@ -68,12 +71,24 @@ export default function AGDetail() {
     }
   }
 
+  // Comptes de l'exercice (AGO) : co-validation trésorier + président (point 4).
+  const compteBy = Object.fromEntries((ag.comptes || []).map((c) => [c.role, c]))
+  const comptesValides = Boolean(compteBy.tresorier && compteBy.president)
+  const approveComptes = async (role) => {
+    await repo.approveComptes(id, role, user?.membre_id)
+    await reload()
+  }
+  const unapproveComptes = async (role) => {
+    await repo.unapproveComptes(id, role)
+    await reload()
+  }
+
   return (
     <div>
       <PageHeader
         title={<span><span className="text-slate-400">{ag.numero}</span> · {ag.type === 'AGO' ? 'Ordinaire' : 'Extraordinaire'}</span>}
         subtitle={`${formatDate(ag.date_ag)}${ag.lieu ? ' · ' + ag.lieu : ''}`}
-        actions={canManage && (<><Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link><Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button></>)}
+        actions={(canManage || canDelete) && (<>{canManage && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}{canDelete && <Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button>}</>)}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -96,6 +111,47 @@ export default function AGDetail() {
         <Card className="mb-6">
           <CardHeader title="Ordre du jour" />
           <pre className="whitespace-pre-wrap px-5 py-4 font-sans text-sm text-slate-700">{ag.ordre_du_jour}</pre>
+        </Card>
+      )}
+
+      {/* Comptes de l'exercice — AGO seulement. Validés quand le trésorier ET le
+          président ont approuvé (art. 13 : l'AG approuve les comptes ; ici le
+          contrôle interne préalable, point 4). Le secrétaire n'approuve pas. */}
+      {ag.type === 'AGO' && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Comptes de l’exercice"
+            subtitle="Validés lorsque le trésorier et le président les ont approuvés."
+            actions={<Badge tone={comptesValides ? 'green' : 'gray'}>{comptesValides ? 'Comptes validés' : 'En attente'}</Badge>}
+          />
+          <div className="grid gap-px bg-navy-50 sm:grid-cols-2">
+            {[
+              { role: 'tresorier', label: 'Trésorier', can: isTresorier },
+              { role: 'president', label: 'Président', can: isAdmin },
+            ].map(({ role, label, can }) => {
+              const c = compteBy[role]
+              return (
+                <div key={role} className="bg-white px-5 py-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+                  {c ? (
+                    <>
+                      <p className="mt-1 text-sm font-medium text-emerald-700">✓ Approuvé le {formatDate(c.approuve_le)}</p>
+                      {can && !isMobile && (
+                        <button onClick={() => unapproveComptes(role)} className="mt-1 text-xs text-slate-400 underline hover:text-red-600">Annuler mon approbation</button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm text-slate-400">Non approuvé</p>
+                      {can && !isMobile && (
+                        <Button size="sm" className="mt-2" onClick={() => approveComptes(role)}>Approuver les comptes</Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </Card>
       )}
 

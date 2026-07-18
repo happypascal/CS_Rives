@@ -220,7 +220,10 @@ function seed() {
     { id: uid(), entite: 'decisions', entite_id: d1, action: 'record', acteur: mPresident, details: 'Enregistrement — adoptée', created_at: '2026-02-10T11:00:00Z' },
   ]
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, audit_log }
+  // Approbations de comptes d'AGO (trésorier + président). Vide au départ.
+  const comptes_ag = []
+
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -480,7 +483,11 @@ export const mockRepo = {
     const data = load()
     const ag = data.assemblees_generales.find((a) => a.id === id)
     if (!ag) return null
-    return { ...clone(ag), resolutions: clone(data.resolutions_ag.filter((r) => r.ag_id === id).sort((a, b) => a.numero - b.numero)) }
+    return {
+      ...clone(ag),
+      resolutions: clone(data.resolutions_ag.filter((r) => r.ag_id === id).sort((a, b) => a.numero - b.numero)),
+      comptes: clone((data.comptes_ag || []).filter((c) => c.ag_id === id)),
+    }
   },
   async createAG(input) {
     await delay()
@@ -510,7 +517,30 @@ export const mockRepo = {
     }
     data.assemblees_generales = data.assemblees_generales.filter((a) => a.id !== id)
     data.resolutions_ag = data.resolutions_ag.filter((r) => r.ag_id !== id)
+    data.comptes_ag = (data.comptes_ag || []).filter((c) => c.ag_id !== id)
     audit(data, 'assemblees_generales', id, 'delete', 'Suppression AG')
+    save(data)
+    return { ok: true }
+  },
+
+  // ---- Comptes AGO : co-validation trésorier + président (point 4) ----
+  // Le sens du rôle (qui a le droit) est porté par la RLS en prod ; le mock,
+  // plus permissif, ne le vérifie pas — c'est l'UI qui gate les boutons.
+  async approveComptes(agId, role, membreId) {
+    await delay()
+    const data = load()
+    data.comptes_ag ||= []
+    if (!data.comptes_ag.some((c) => c.ag_id === agId && c.role === role)) {
+      data.comptes_ag.push({ id: uid(), ag_id: agId, role, approuve_par: membreId, approuve_le: nowISO() })
+      audit(data, 'assemblees_generales', agId, 'comptes', `Comptes approuvés (${role})`)
+      save(data)
+    }
+    return { ok: true }
+  },
+  async unapproveComptes(agId, role) {
+    await delay()
+    const data = load()
+    data.comptes_ag = (data.comptes_ag || []).filter((c) => !(c.ag_id === agId && c.role === role))
     save(data)
     return { ok: true }
   },

@@ -75,7 +75,19 @@ export const supabaseRepo = {
     const ag = must(await supabase.from('assemblees_generales').select('*').eq('id', id).maybeSingle())
     if (!ag) return null
     const resolutions = must(await supabase.from('resolutions_ag').select('*').eq('ag_id', id).order('numero'))
-    return { ...ag, resolutions }
+    const comptes = must(await supabase.from('comptes_ag').select('*').eq('ag_id', id))
+    return { ...ag, resolutions, comptes }
+  },
+  // Co-validation des comptes d'une AGO (point 4). approuve_par = current membre
+  // (imposé aussi par la RLS with check). Le rôle du bureau autorisé est vérifié
+  // par la RLS ; l'app ne montre les boutons qu'au bon rôle.
+  async approveComptes(agId, role, membreId) {
+    must(await supabase.from('comptes_ag').insert({ ag_id: agId, role, approuve_par: membreId }))
+    return { ok: true }
+  },
+  async unapproveComptes(agId, role) {
+    must(await supabase.from('comptes_ag').delete().eq('ag_id', agId).eq('role', role))
+    return { ok: true }
   },
   async createAG(input) {
     return must(await supabase.from('assemblees_generales').insert(input).select())[0]

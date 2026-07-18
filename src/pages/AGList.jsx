@@ -9,9 +9,10 @@ import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
 export default function AGList() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isSecretaire } = useAuth()
   const isMobile = useIsMobile()
-  const canManage = isAdmin && !isMobile
+  // Président ou secrétaire (point 5).
+  const canManage = (isAdmin || isSecretaire) && !isMobile
   const [loading, setLoading] = useState(true)
   const [ags, setAgs] = useState([])
 

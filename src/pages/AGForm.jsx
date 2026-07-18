@@ -26,8 +26,11 @@ export default function AGForm() {
   const { id } = useParams()
   const editing = Boolean(id)
   const navigate = useNavigate()
-  const { isAdmin } = useAuth()
+  const { isAdmin, isSecretaire } = useAuth()
   const isMobile = useIsMobile()
+  // Créer/modifier une AG : président OU secrétaire (art. 14 — le secrétaire
+  // tient les assemblées). Point 5.
+  const canManage = isAdmin || isSecretaire
   const [form, setForm] = useState(EMPTY)
   const [loading, setLoading] = useState(editing)
   const [saving, setSaving] = useState(false)
@@ -50,11 +53,11 @@ export default function AGForm() {
       </div>
     )
   }
-  if (!isAdmin) {
+  if (!canManage) {
     return (
       <div>
         <PageHeader title="Accès restreint" />
-        <Card className="p-6 text-sm text-slate-600">Seul le président peut créer ou modifier une AG.</Card>
+        <Card className="p-6 text-sm text-slate-600">Seuls le président et le secrétaire peuvent créer ou modifier une AG.</Card>
       </div>
     )
   }

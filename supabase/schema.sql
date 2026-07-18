@@ -194,6 +194,18 @@ create table if not exists decision_status_history (
   changed_at     timestamptz not null default now()
 );
 
+-- ------------------------------------------------------- comptes_ag (co-validation)
+-- Une ligne d'approbation par rôle (tresorier / president). « Comptes validés »
+-- = les deux lignes existent pour l'AG (migration 017, point 4).
+create table if not exists comptes_ag (
+  id           uuid primary key default gen_random_uuid(),
+  ag_id        uuid not null references assemblees_generales(id) on delete cascade,
+  role         text not null check (role in ('tresorier','president')),
+  approuve_par uuid references membres_cs(id),
+  approuve_le  timestamptz not null default now(),
+  unique (ag_id, role)
+);
+
 -- ------------------------------------------------------------ audit_log
 create table if not exists audit_log (
   id         uuid primary key default gen_random_uuid(),
@@ -239,6 +251,7 @@ $$;
 -- =============================================================================
 -- Row Level Security
 -- =============================================================================
+alter table comptes_ag              enable row level security;
 alter table membres_cs              enable row level security;
 alter table assemblees_generales    enable row level security;
 alter table resolutions_ag          enable row level security;
@@ -357,6 +370,38 @@ create policy "signature_batches_secretaire_update" on signature_batches
   for update to authenticated
   using (is_secretaire())
   with check (is_secretaire());
+
+-- AG et résolutions : le secrétaire les gère aussi (migration 016). INSERT +
+-- UPDATE ; pas de DELETE (suppression = président). Le président garde tout.
+drop policy if exists "ag_secretaire_insert" on assemblees_generales;
+create policy "ag_secretaire_insert" on assemblees_generales
+  for insert to authenticated with check (is_secretaire());
+drop policy if exists "ag_secretaire_update" on assemblees_generales;
+create policy "ag_secretaire_update" on assemblees_generales
+  for update to authenticated using (is_secretaire()) with check (is_secretaire());
+drop policy if exists "resolutions_secretaire_insert" on resolutions_ag;
+create policy "resolutions_secretaire_insert" on resolutions_ag
+  for insert to authenticated with check (is_secretaire());
+drop policy if exists "resolutions_secretaire_update" on resolutions_ag;
+create policy "resolutions_secretaire_update" on resolutions_ag
+  for update to authenticated using (is_secretaire()) with check (is_secretaire());
+
+-- Comptes AGO (migration 017) : co-validation trésorier + président. Chacun pose
+-- et retire SA ligne (approuve_par = lui) ; personne n'approuve pour l'autre rôle.
+drop policy if exists "comptes_ag_read" on comptes_ag;
+create policy "comptes_ag_read" on comptes_ag for select to authenticated using (true);
+drop policy if exists "comptes_ag_tresorier_insert" on comptes_ag;
+create policy "comptes_ag_tresorier_insert" on comptes_ag for insert to authenticated
+  with check (is_tresorier() and role = 'tresorier' and approuve_par = current_membre_id());
+drop policy if exists "comptes_ag_president_insert" on comptes_ag;
+create policy "comptes_ag_president_insert" on comptes_ag for insert to authenticated
+  with check (is_admin() and role = 'president' and approuve_par = current_membre_id());
+drop policy if exists "comptes_ag_tresorier_delete" on comptes_ag;
+create policy "comptes_ag_tresorier_delete" on comptes_ag for delete to authenticated
+  using (is_tresorier() and role = 'tresorier');
+drop policy if exists "comptes_ag_president_delete" on comptes_ag;
+create policy "comptes_ag_president_delete" on comptes_ag for delete to authenticated
+  using (is_admin() and role = 'president');
 
 -- =============================================================================
 -- Storage — bucket privé `documents` (voir migration 012 pour le raisonnement)
