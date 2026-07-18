@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { BACKEND } from '../lib/config'
 import { ORG } from '../lib/config'
 import ForcePasswordChange from '../pages/ForcePasswordChange'
+import { ROLE_LABELS } from '../lib/rolesLogic'
 
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
@@ -94,7 +95,10 @@ export default function Layout() {
             </p>
           )}
           <p className="truncate text-sm text-white">{user?.prenom} {user?.nom}</p>
-          <p className="text-xs text-navy-300">{isAdmin ? 'Président (admin)' : 'Membre'}</p>
+          {/* Affiche le rôle réel du bureau (membre_role), pas un simple
+              admin/membre — sert aussi de diagnostic : « Secrétaire » ici = le
+              rôle est bien chargé et isSecretaire est vrai. */}
+          <p className="text-xs text-navy-300">{ROLE_LABELS[user?.membre_role] || 'Membre'}</p>
           <button onClick={handleSignOut} className="mt-2 text-xs text-navy-200 underline hover:text-white">
             Se déconnecter
           </button>
