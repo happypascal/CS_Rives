@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Badge, Spinner, Modal, eur } from '../components/ui'
+import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, eur } from '../components/ui'
 import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { tally, tallySummary, engagementApprouve, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
@@ -398,12 +398,14 @@ export default function DecisionDetail() {
                 )
               })}
             </div>
-            <input
+            <Textarea
+              autoGrow
+              rows={2}
               defaultValue={myVote?.commentaire || ''}
               onBlur={(e) => myVote && e.target.value !== (myVote.commentaire || '') && setCommentFor(myId, e.target.value)}
               placeholder={myVote ? 'Commentaire (optionnel)…' : 'Votez d’abord pour ajouter un commentaire'}
               disabled={!myVote}
-              className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-navy-400 focus:outline-none disabled:bg-slate-50"
+              className="mt-3 disabled:bg-slate-50"
             />
             {myVote && <p className="mt-2 text-xs text-emerald-700">Vote enregistré : {VOTE_LABELS[myVote.vote]}.</p>}
           </div>
@@ -490,8 +492,7 @@ export default function DecisionDetail() {
                         </td>
                         <td className="px-4 py-3">
                           {editable && v ? (
-                            <input defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setCommentFor(m.id, e.target.value)} placeholder="Commentaire…"
-                              className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:border-navy-400 focus:outline-none" />
+                            <Textarea autoGrow rows={2} defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setCommentFor(m.id, e.target.value)} placeholder="Commentaire…" />
                           ) : (
                             <span className="text-xs text-slate-500">{v?.commentaire || '—'}</span>
                           )}
@@ -523,8 +524,8 @@ export default function DecisionDetail() {
                     </div>
                   ))}
                   {replyTo === question.id ? (
-                    <div className="mt-2 ml-4 flex flex-wrap gap-2">
-                      <input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Votre réponse…" className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:border-navy-400 focus:outline-none" />
+                    <div className="mt-2 ml-4 flex flex-wrap items-start gap-2">
+                      <Textarea autoGrow rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Votre réponse…" className="min-w-0 flex-1" />
                       <Button size="sm" onClick={() => addReponse(question.id)}>Répondre</Button>
                       <Button size="sm" variant="ghost" onClick={() => { setReplyTo(null); setReplyText('') }}>Annuler</Button>
                     </div>
@@ -533,8 +534,8 @@ export default function DecisionDetail() {
                   )}
                 </div>
               ))}
-              <div className="flex gap-2 pt-2">
-                <input value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question…" className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-2 text-sm focus:border-navy-400 focus:outline-none" />
+              <div className="flex items-start gap-2 pt-2">
+                <Textarea autoGrow rows={2} value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question…" className="min-w-0 flex-1" />
                 <Button onClick={addQuestion}>Publier</Button>
               </div>
             </div>

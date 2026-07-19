@@ -1,5 +1,5 @@
 // Small set of Tailwind-based UI primitives, sober legal-document tone.
-import { forwardRef } from 'react'
+import { forwardRef, useLayoutEffect, useRef } from 'react'
 
 function cx(...parts) {
   return parts.filter(Boolean).join(' ')
@@ -80,19 +80,51 @@ export const Input = forwardRef(function Input({ className, label, error, ...pro
   )
 })
 
-export const Textarea = forwardRef(function Textarea({ className, label, rows = 4, ...props }, ref) {
+// `autoGrow` : le champ épouse son contenu (multi-lignes extensible). Le
+// redimensionnement se fait sur `onInput` (couvre les champs NON contrôlés, à
+// `defaultValue`/`onBlur`) ET via un effet sur `value` (couvre les champs
+// contrôlés, dont le re-rétrécissement quand la valeur est vidée après envoi).
+// Sans `label` on rend le <textarea> nu, pour qu'il puisse être un enfant flex
+// direct (flex-1 s'applique alors au champ, pas à un <label> englobant).
+export const Textarea = forwardRef(function Textarea({ className, label, rows = 4, autoGrow = false, value, onInput, ...props }, ref) {
+  const innerRef = useRef(null)
+  const setRefs = (el) => {
+    innerRef.current = el
+    if (typeof ref === 'function') ref(el)
+    else if (ref) ref.current = el
+  }
+  const resize = () => {
+    const el = innerRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+  useLayoutEffect(() => {
+    if (autoGrow) resize()
+  }, [autoGrow, value])
+  const handleInput = autoGrow
+    ? (e) => { resize(); onInput?.(e) }
+    : onInput
+
+  const field = (
+    <textarea
+      ref={setRefs}
+      rows={rows}
+      value={value}
+      onInput={handleInput}
+      className={cx(
+        'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500',
+        autoGrow && 'resize-none overflow-hidden',
+        className,
+      )}
+      {...props}
+    />
+  )
+  if (!label) return field
   return (
     <label className="block">
-      {label && <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>}
-      <textarea
-        ref={ref}
-        rows={rows}
-        className={cx(
-          'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500',
-          className,
-        )}
-        {...props}
-      />
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      {field}
     </label>
   )
 })
