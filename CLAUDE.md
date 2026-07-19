@@ -23,8 +23,12 @@ Rives, Nernier (74140)**, France. Base juridique : **ordonnance n°2004-632**.
   (pas une copropriété, pas suisse malgré le lac).
 - Le **CS** (Conseil Syndical) est l'organe exécutif élu. La loi impose que ses délibérations
   soient inscrites sur un **registre spécial** et **signées**. Cette app *est* cette obligation.
-- **En production, avec de vrais utilisateurs** (`cs-rives.vercel.app`). Une régression a des
-  conséquences juridiques réelles, pas seulement des tickets.
+- **Maquette de validation, éprouvée en conditions réelles par le CS** (`cs-rives.vercel.app`) —
+  **pas encore un registre de production** : ni sauvegarde des données, ni signature électronique
+  valide (le module de signature est un *mock*). La fiabilisation (Supabase Pro + sauvegardes,
+  signature réelle, transfert à l'ASL) fait l'objet d'un budget demandé à l'AG. Ne pas la présenter
+  comme « en production ». Une régression a néanmoins des conséquences juridiques réelles (de vrais
+  membres votent sur de vraies décisions), pas seulement des tickets.
 
 Chaîne du domaine :
 **AG** vote des **résolutions** (avec budget) → une résolution engendre des **projets** → le CS

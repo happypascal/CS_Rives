@@ -1,8 +1,9 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-19**. Les collègues du CS **utilisent l'app en vrai** :
-> premiers votes réels, premiers retours, premiers bugs de prod corrigés. On met en place
-> un **environnement de recette (staging)** pour tester les droits sans polluer la prod.
+> Dernière session : **2026-07-19**. Les collègues du CS **éprouvent la maquette en conditions
+> réelles** : premiers votes réels, premiers retours, premiers bugs corrigés. ⚠ C'est une
+> **maquette de validation**, pas encore un registre de production (voir « En bref »). On met en
+> place un **environnement de recette (staging)** pour tester les droits sans polluer la base live.
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
 > Pour le staging/UAT, voir **`docs/STAGING_UAT.md`**.
@@ -11,12 +12,21 @@
 
 ## En bref
 
-L'application est **en production** (**https://cs-rives.vercel.app**) et **complète pour le
-périmètre actuel** : registre des décisions (création, vote, enregistrement, verrou légal), AG +
-résolutions, projets, budgets + CSV Foncia, PDF, signature par groupes homogènes, rôles du bureau.
-La base de prod contient les **5 vrais membres** du CS et l'AG **`AGO-2026-001`** (8 résolutions).
+L'application est une **maquette de validation** (**https://cs-rives.vercel.app**),
+**fonctionnellement complète pour le périmètre actuel** : registre des décisions (création, vote,
+enregistrement, verrou légal), AG + résolutions, projets, budgets + CSV Foncia, PDF, signature par
+groupes homogènes, rôles du bureau. La base live contient les **5 vrais membres** du CS et l'AG
+**`AGO-2026-001`** (8 résolutions).
 
-## Session 2026-07-19 — mise en service réelle + corrections
+⚠ **Ce n'est PAS encore un registre de production**, et il ne faut pas le présenter comme tel :
+- **Aucune sauvegarde** des données (Supabase gratuit) — une perte serait définitive.
+- **Pas de signature électronique valide** — le module est un *mock* (`yousignProvider` throw) ;
+  l'exigence de signature de l'art. 15 n'est donc pas remplie par voie électronique.
+
+La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
+du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-07-19 — validation en conditions réelles + corrections
 
 - **🔴 Bug prod corrigé — casse d'email (RLS).** Un membre (Marc) pouvait lire et télécharger
   mais **ni voter ni publier en Q/R**. Cause : `membres_cs.email` = `Marc@…` (majuscule) ≠ email
