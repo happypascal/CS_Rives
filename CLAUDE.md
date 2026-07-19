@@ -237,6 +237,13 @@ groupe CS. Owner-only, bascule en « Notifier à nouveau ».
 
 **Ne pas réintroduire de notification automatique sans demande explicite.**
 
+> **Demande explicite reçue (2026-07-20), à faire APRÈS l'AG** : ajouter des **notifications
+> automatiques par EMAIL** (4 déclencheurs : décision à voter, réponse Q/R, décision enregistrée,
+> signature demandée) **tout en gardant** le bouton manuel `wa.me` pour le groupe. WhatsApp-API
+> écarté (n'écrit qu'en 1-à-1, jamais dans un groupe). Bloqueurs : domaine vérifié (financé par le
+> budget AG) + réintroduction d'une Edge Function pour l'envoi serveur. Détail et justification :
+> `docs/ETAT_COURANT.md` (backlog). Ne concerne QUE l'email — le WhatsApp automatique reste écarté.
+
 ---
 
 ## Supabase

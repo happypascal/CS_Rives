@@ -58,6 +58,15 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Backlog — à reprendre ensuite
 
+- **Budget de fonctionnement à soumettre à l'AG** (arbitrage CS 2026-07-20). Le CS demande à l'AG
+  une **enveloppe annuelle de 720 €/an** (Supabase 22 + signature 9 + domaine 1 + Claude 18 =
+  **50 €/mois ≈ 600 €**, marge incluse) pour faire passer la **maquette en registre de production**
+  (sauvegardes, signature réelle) **et** transférer les comptes/abonnements à l'ASL. **Majorité
+  simple**, **sans remboursement** (rien n'a été avancé au-delà des offres gratuites). Claude est
+  assumé comme coût de **maintenance transférable** (le successeur en aura besoin), pas un abonnement
+  perso. Textes de la **décision CS** (sans cible, montant 0 — elle ne fait que saisir l'AG) et de
+  la **résolution AG** (`a_voter`, 720 €) rédigés en session, à saisir dans l'app. Voir
+  `TRANSFERT_ASL.md`.
 - **Terminer le staging** (`docs/STAGING_UAT.md`) : côté Pascal, il reste à créer le projet
   Supabase staging, ses 5 comptes Auth, et scoper les variables Vercel **Preview → staging**.
   _(Le durcissement casse-insensible + surface d'erreur Q/R/vote — migration `018` — est **fait**
@@ -66,11 +75,29 @@ du budget demandé à l'AG et du backlog ci-dessous.
   espace président. Même format (Markdown + Word généré par script).
 - **Traiter les retours** des collègues.
 - **Signature Youtrust réelle** : encore un *mock*. Décision : plan payant **One 9 €/mois retenu**
-  (intégré au budget ~32 €/mois annoncé au CS : Supabase 22 € + Youtrust 9 € + domaine ~1 €,
-  Vercel gratuit) ; l'API a été écartée (trop chère). Reste à brancher le provider réel.
+  (désormais intégré au budget **720 €/an** soumis à l'AG — voir la ligne budget en tête de
+  backlog) ; l'API a été écartée (trop chère). Reste à brancher le provider réel.
 - **Supabase Pro + transfert à l'identité ASL** (`TRANSFERT_ASL.md`) : le **seul vrai risque
   restant** — tout est sur l'identité personnelle de Pascal, plan gratuit sans sauvegarde.
   Organisationnel, pas technique, mais important.
+- **Notifications automatiques par email — À FAIRE APRÈS L'AG** (arbitrage Pascal 2026-07-20).
+  Choix retenu : **email automatique** sur 4 déclencheurs, **+ conserver le bouton manuel
+  « Prévenir le CS »** (`wa.me`, `share.js`) pour poster dans le **groupe** WhatsApp. Déclencheurs :
+  (1) nouvelle décision à voter, (2) réponse à un fil Q/R où j'ai posté, (3) décision enregistrée,
+  (4) lot de signature qui m'est adressé.
+  - **Pourquoi email, pas WhatsApp-API** : l'API WhatsApp (officielle ou Twilio) n'écrit qu'en
+    **1-à-1 vers un numéro, jamais dans un groupe** → elle perd l'intérêt du groupe CS. L'email est
+    **auditable** (ce qui compte pour un registre légal), réutilise `membres_cs.email` (pas besoin
+    de re-stocker les téléphones supprimés en **migration 004**), et évite la validation de
+    templates Meta. Le bouton `wa.me` manuel garde, lui, l'accès au **groupe**.
+  - **Bloqueurs (donc strictement post-budget)** : (a) **domaine vérifié** requis, financé par la
+    décision AG, pas encore acheté ; (b) réintroduit une **Edge Function** Supabase (le projet n'en
+    a AUCUNE — choix assumé) pour tenir le secret d'envoi côté serveur (le token ne peut pas vivre
+    dans le client). Envoi via **Resend** (domaine vérifié) ou SMTP. C'est une **décision d'archi**
+    à acter avant de coder.
+  - **Rappel `CLAUDE.md`** : la notif manuelle est un choix documenté (« ne pas réintroduire d'envoi
+    automatique sans demande explicite »). **Cette entrée EST la demande explicite** qui lève le
+    garde-fou — mais uniquement pour l'**email**, et **après l'AG**.
 
 ## Repères techniques pour reprendre
 
