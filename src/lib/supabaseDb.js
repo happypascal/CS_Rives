@@ -10,6 +10,17 @@ function must(result) {
   return result.data
 }
 
+// Email canonique : minuscules + trim. La casse a déjà cassé la RLS en prod
+// (incident 2026-07-19, migration 018) — un membre saisi « Marc@… » ne matchait
+// plus l'email Auth « marc@… », et toute écriture liée à l'identité était rejetée
+// en silence. On normalise ici en écho du trigger `membres_cs_normalize_email` :
+// la base ne fait pas confiance au client, le client n'envoie pas de crasse. On
+// ne touche `email` que s'il est présent — un patch { actif } ne doit rien réécrire.
+function withCanonicalEmail(obj) {
+  if (!obj || typeof obj.email !== 'string') return obj
+  return { ...obj, email: obj.email.trim().toLowerCase() }
+}
+
 // Bucket privé des pièces jointes (migration 012). Privé = aucune adresse
 // permanente n'existe ; tout accès passe par une URL signée à durée courte.
 const DOCUMENTS_BUCKET = 'documents'
@@ -36,7 +47,13 @@ export const supabaseAuth = {
 
 export async function resolveUser(authUser) {
   if (!authUser) return null
-  const { data: membre } = await supabase.from('membres_cs').select('*').eq('email', authUser.email).maybeSingle()
+  // Appariement membre ⇄ Auth par email. Insensible à la casse (migration 018) :
+  // Auth renvoie déjà l'email en minuscules et `membres_cs.email` est normalisé à
+  // l'écriture, donc un `.eq` sur la forme canonique matche exactement. Sans cette
+  // normalisation, un « Marc@… » hérité en base échapperait à la résolution — le
+  // membre serait connecté mais `membre_id` resterait null (identité fantôme).
+  const canonicalEmail = (authUser.email || '').trim().toLowerCase()
+  const { data: membre } = await supabase.from('membres_cs').select('*').eq('email', canonicalEmail).maybeSingle()
   return {
     id: authUser.id,
     email: authUser.email,
@@ -58,10 +75,10 @@ export const supabaseRepo = {
     return must(await supabase.from('membres_cs').select('*').order('nom'))
   },
   async createMembre(input) {
-    return must(await supabase.from('membres_cs').insert(input).select())[0]
+    return must(await supabase.from('membres_cs').insert(withCanonicalEmail(input)).select())[0]
   },
   async updateMembre(id, patch) {
-    return must(await supabase.from('membres_cs').update(patch).eq('id', id).select())[0]
+    return must(await supabase.from('membres_cs').update(withCanonicalEmail(patch)).eq('id', id).select())[0]
   },
   async deactivateMembre(id, date_fin) {
     return this.updateMembre(id, { actif: false, date_fin: date_fin || new Date().toISOString().slice(0, 10) })

@@ -136,27 +136,45 @@ export default function DecisionDetail() {
   const testVotes = TEST_VOTES && isAdmin && !locked
   const canVoteFor = (membreId) => !locked && (membreId === myId || testVotes)
 
+  // Le try/catch n'est pas cosmétique : sans lui, un rejet RLS (ex. identité non
+  // résolue, cf. incident casse d'email du 19/07) était un SILENCE — la ligne ne
+  // partait pas, l'écran ne bougeait pas, « rien ne s'est passé ». Le `finally`
+  // relâche `busy` même en erreur, sinon le bouton restait bloqué.
   const setVoteFor = async (membreId, vote) => {
     setBusy(true)
-    const existing = voteByMember[membreId]
-    await repo.upsertVote(id, membreId, vote, existing?.commentaire ?? '')
-    await reload()
-    setBusy(false)
+    try {
+      const existing = voteByMember[membreId]
+      await repo.upsertVote(id, membreId, vote, existing?.commentaire ?? '')
+      await reload()
+    } catch (e) {
+      alert('Le vote n’a pas pu être enregistré : ' + e.message)
+    } finally {
+      setBusy(false)
+    }
   }
   // Retirer un vote = rendre le membre ABSENT (l'absence est l'absence de ligne,
   // pas une valeur). Indispensable pour éprouver le quorum et le partage des voix.
   const clearVoteFor = async (membreId) => {
     setBusy(true)
-    await repo.deleteVote(id, membreId)
-    await reload()
-    setBusy(false)
+    try {
+      await repo.deleteVote(id, membreId)
+      await reload()
+    } catch (e) {
+      alert('Le vote n’a pas pu être retiré : ' + e.message)
+    } finally {
+      setBusy(false)
+    }
   }
   const setMyVote = (vote) => setVoteFor(myId, vote)
   const setCommentFor = async (membreId, commentaire) => {
     const existing = voteByMember[membreId]
     if (!existing) return // il faut d'abord voter
-    await repo.upsertVote(id, membreId, existing.vote, commentaire)
-    await reload()
+    try {
+      await repo.upsertVote(id, membreId, existing.vote, commentaire)
+      await reload()
+    } catch (e) {
+      alert('Le commentaire n’a pas pu être enregistré : ' + e.message)
+    }
   }
 
   // Suppression : président uniquement, décision NON ENREGISTRÉE, et au plus UN vote.
@@ -196,18 +214,28 @@ export default function DecisionDetail() {
     setBusy(false)
   }
 
+  // Le texte n'est vidé qu'APRÈS succès : sur rejet RLS, l'utilisateur ne perd
+  // pas sa saisie et voit pourquoi (avant le 19/07, l'échec était muet).
   const addQuestion = async () => {
     if (!qText.trim()) return
-    await repo.addQA({ decision_id: id, auteur_id: myId, type: 'question', parent_id: null, texte: qText.trim() })
-    setQText('')
-    await reload()
+    try {
+      await repo.addQA({ decision_id: id, auteur_id: myId, type: 'question', parent_id: null, texte: qText.trim() })
+      setQText('')
+      await reload()
+    } catch (e) {
+      alert('La question n’a pas pu être publiée : ' + e.message)
+    }
   }
   const addReponse = async (parentId) => {
     if (!replyText.trim()) return
-    await repo.addQA({ decision_id: id, auteur_id: myId, type: 'reponse', parent_id: parentId, texte: replyText.trim() })
-    setReplyText('')
-    setReplyTo(null)
-    await reload()
+    try {
+      await repo.addQA({ decision_id: id, auteur_id: myId, type: 'reponse', parent_id: parentId, texte: replyText.trim() })
+      setReplyText('')
+      setReplyTo(null)
+      await reload()
+    } catch (e) {
+      alert('La réponse n’a pas pu être publiée : ' + e.message)
+    }
   }
 
   // Nommé une fois, réutilisé par le bandeau d'objet et le texte de notification.

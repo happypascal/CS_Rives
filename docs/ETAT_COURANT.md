@@ -25,12 +25,16 @@ La base de prod contient les **5 vrais membres** du CS et l'AG **`AGO-2026-001`*
   requise). **Fix appliqué** en base : `update membres_cs set email = lower(trim(email))`. Les 4
   autres membres étaient déjà OK (audit fait). Le membre doit **se reconnecter** pour recharger
   son `membre_id`.
-  - ⚠️ **Durcissement à faire (migration `018`)** : rendre l'appariement **insensible à la casse**
-    partout — `current_membre_id()` en `lower()=lower()`, `resolveUser` idem, et normaliser
-    l'email à l'écriture (`createMembre`/`updateMembre`). Sinon le prochain membre saisi avec une
-    majuscule casse pareil. **Et** faire parler l'échec : `addQuestion`/`addReponse` (et le vote)
-    n'ont pas de `try/catch` → un rejet RLS devient un **silence** (« rien ne s'est passé »).
-    À valider sur le staging **avant** de pousser.
+  - ✅ **Durcissement fait — migration `018` appliquée en prod (2026-07-19).** Appariement email
+    **insensible à la casse** partout : les 4 helpers RLS (`is_admin`, `is_secretaire`,
+    `is_tresorier`, `current_membre_id`) comparent en `lower()=lower()` ; `resolveUser` matche la
+    forme canonique ; `createMembre`/`updateMembre` normalisent l'email ; un **trigger**
+    `membres_cs_normalize_email` garantit `lower(trim())` en base quel que soit le client. **Et**
+    la surface d'erreur : `DecisionDetail.jsx` enveloppe vote / retrait / commentaire / question /
+    réponse dans un `try/catch` → un rejet RLS **s'affiche** au lieu de rester silencieux.
+    **Validé sur staging** (création membre `Test@…` → normalisé, vote/Q-R OK) puis appliqué prod.
+    ⚠ Piège rencontré : l'éditeur Supabase parse mal plusieurs fonctions `$$` — 018 utilise des
+    **balises nommées uniques** (`$is_admin$`, `$current_membre$`, …).
 - **✅ Champs multi-lignes auto-extensibles (déployé prod, commit `96ab1f8`).** Les saisies
   question / réponse / commentaire de vote passent de `<input>` mono-ligne à un `Textarea` qui
   épouse son contenu. `ui.jsx` : `Textarea` gagne une option **`autoGrow`** (opt-in, non cassante ;
@@ -44,8 +48,10 @@ La base de prod contient les **5 vrais membres** du CS et l'AG **`AGO-2026-001`*
 
 ## Backlog — à reprendre ensuite
 
-- **Terminer le staging** (`docs/STAGING_UAT.md`), puis **valider dessus le durcissement casse-
-  insensible + surface d'erreur Q/R/vote**, et le pousser (migration `018`).
+- **Terminer le staging** (`docs/STAGING_UAT.md`) : côté Pascal, il reste à créer le projet
+  Supabase staging, ses 5 comptes Auth, et scoper les variables Vercel **Preview → staging**.
+  _(Le durcissement casse-insensible + surface d'erreur Q/R/vote — migration `018` — est **fait**
+  et **déployé en prod** : voir la session 2026-07-19 ci-dessus.)_
 - **Guide de démarrage, suite** : créer/gérer une AG, résolutions, projets, budgets, signature,
   espace président. Même format (Markdown + Word généré par script).
 - **Traiter les retours** des collègues.
@@ -61,8 +67,8 @@ La base de prod contient les **5 vrais membres** du CS et l'AG **`AGO-2026-001`*
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `018` (001-017 appliquées ; le fix casse du 19/07 était un
-  simple `UPDATE` de données, pas une migration).
+- **Prochaine migration SQL libre** : `019` (001-018 appliquées en prod ; 018 = appariement email
+  insensible à la casse + trigger de normalisation).
 - **Tester sans risque** : le **staging** (vraie RLS, données isolées) — cf. `docs/STAGING_UAT.md`.
   Le mode démo (mock, sans variables Supabase) ne teste **pas** les droits.
 - **Rappel workflow** : une migration s'applique **à la main** dans le SQL Editor **avant** de

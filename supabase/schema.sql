@@ -221,12 +221,12 @@ create table if not exists audit_log (
 -- Helpers
 -- =============================================================================
 create or replace function is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
+returns boolean language sql stable security definer set search_path = public as $is_admin$
   select exists (
     select 1 from membres_cs m
-    where m.email = (auth.jwt() ->> 'email') and m.role = 'president' and m.actif
+    where lower(m.email) = lower(auth.jwt() ->> 'email') and m.role = 'president' and m.actif
   );
-$$;
+$is_admin$;
 
 -- Rôles du bureau (art. 14, migration 014). Mêmes forme et sémantique que
 -- is_admin(). Câblés aux droits « faire signer » (secrétaire) et « valider les
@@ -235,18 +235,39 @@ $$;
 -- deux fonctions $$ qui se suivent.
 create or replace function is_secretaire()
 returns boolean language sql stable security definer set search_path = public as $secretaire$
-  select exists (select 1 from membres_cs m where m.email = (auth.jwt() ->> 'email') and m.role = 'secretaire' and m.actif);
+  select exists (select 1 from membres_cs m where lower(m.email) = lower(auth.jwt() ->> 'email') and m.role = 'secretaire' and m.actif);
 $secretaire$;
 
 create or replace function is_tresorier()
 returns boolean language sql stable security definer set search_path = public as $tresorier$
-  select exists (select 1 from membres_cs m where m.email = (auth.jwt() ->> 'email') and m.role = 'tresorier' and m.actif);
+  select exists (select 1 from membres_cs m where lower(m.email) = lower(auth.jwt() ->> 'email') and m.role = 'tresorier' and m.actif);
 $tresorier$;
 
 create or replace function current_membre_id()
-returns uuid language sql stable security definer set search_path = public as $$
-  select m.id from membres_cs m where m.email = (auth.jwt() ->> 'email') limit 1;
-$$;
+returns uuid language sql stable security definer set search_path = public as $current_membre$
+  select m.id from membres_cs m where lower(m.email) = lower(auth.jwt() ->> 'email') limit 1;
+$current_membre$;
+
+-- Email membre TOUJOURS canonique (lower + trim) à l'écriture (migration 018).
+-- La casse a cassé la RLS en prod (incident 2026-07-19) : « Marc@… » en base ne
+-- matchait plus l'email Auth « marc@… », donc current_membre_id() renvoyait null
+-- et toute écriture liée à l'identité (vote, Q/R) était rejetée. Les helpers
+-- ci-dessus comparent désormais en lower() ; ce trigger garantit en plus que la
+-- table ne stocke jamais d'email non canonique, quel que soit le client.
+create or replace function membres_cs_normalize_email()
+returns trigger language plpgsql set search_path = public as $normalize_email$
+begin
+  if new.email is not null then
+    new.email := lower(trim(new.email));
+  end if;
+  return new;
+end;
+$normalize_email$;
+
+drop trigger if exists trg_membres_cs_normalize_email on membres_cs;
+create trigger trg_membres_cs_normalize_email
+  before insert or update of email on membres_cs
+  for each row execute function membres_cs_normalize_email();
 
 -- =============================================================================
 -- Row Level Security
