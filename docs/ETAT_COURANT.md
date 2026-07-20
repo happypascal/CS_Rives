@@ -1,9 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-19**. Les collègues du CS **éprouvent la maquette en conditions
-> réelles** : premiers votes réels, premiers retours, premiers bugs corrigés. ⚠ C'est une
-> **maquette de validation**, pas encore un registre de production (voir « En bref »). On met en
-> place un **environnement de recette (staging)** pour tester les droits sans polluer la base live.
+> Dernière session : **2026-07-20**. Staging opérationnel, **accès par rôle validés sur vraie RLS**,
+> plusieurs correctifs UI (dont mobile) déployés en prod. ⚠ Toujours une **maquette de validation**,
+> pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
 > Pour le staging/UAT, voir **`docs/STAGING_UAT.md`**.
@@ -25,6 +24,32 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-07-20 — staging, tests RBAC sur vraie RLS, correctifs UI
+
+- **✅ Staging opérationnel** : projet Supabase staging + 5 comptes Auth (president/tresorier/
+  secretaire/membre1/membre2, `pfavre25+role@gmail.com`), variables Vercel **Preview → staging**
+  (les variables prod ont été re-scopées **Production seulement**). URL :
+  `cs-rives-git-staging-happy-pascal.vercel.app`. ⚠ Le staging tourne la branche **`staging`**,
+  qui **ne contient pas** les correctifs UI d'aujourd'hui (partis sur `main`) — à merger si on veut
+  y tester la dernière UI.
+- **✅ Accès par rôle validés sur vraie RLS** (staging, pas le mock) : trésorier, secrétaire,
+  membre testés dans Chrome. Écritures légitimes (vote, Q/R, validation comptes) **passent** →
+  `current_membre_id()` résout bien l'identité = **migration 018 validée grandeur nature**, y
+  compris pour le rôle de Marc (membre). Gating conforme : Signatures = admin/secrétaire ;
+  enregistrement/suppression/gestion membres = président ; comptes = trésorier. **Non fait** :
+  forcer une écriture interdite via la console pour voir le refus RLS explicite (les policies sont
+  les mêmes qu'en prod, revues en code). ⚠ **Traces de recette laissées** sur la décision staging
+  2026-001 (votes + Q/R de test) → nettoyer via `nettoyage.sql` + `seed_staging.sql`.
+- **✅ Sauvegarde locale** : `scripts/backup.mjs` (Node, sans install) — dumpe les 11 tables en
+  JSON + télécharge le bucket `documents`. Lit `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` de
+  l'env. Sortie `backup/` (git-ignorée). Stopgap tant que pas de Supabase Pro.
+- **✅ Correctifs UI déployés en prod** : Dashboard 2/3–1/3 + badges non repliés ; colonne
+  « Quorum » retirée de la liste AG (donnée inexistante, affichait un « Non atteint » factice) ;
+  `confirm()` natifs → `Modal` maison (hook `useConfirm`) ; **mobile** — menu ☰ agrandi, tableau de
+  vote empilé (commentaire pleine largeur), liste membres en cartes 2 lignes.
+- **Revue GUI complète** (12 écrans) : tout fonctionne, budgets cohérents, zéro erreur console.
+  **Reste à traiter** : la **fiche projet en mobile** (#3 des retours, reportée).
 
 ## Session 2026-07-19 — validation en conditions réelles + corrections
 
