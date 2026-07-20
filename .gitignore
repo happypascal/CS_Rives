@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Sauvegardes locales Supabase (scripts/backup.mjs) : données réelles du registre
+# légal + pièces jointes. Jamais dans l'historique.
+backup/
+
 # Exports produits par l'app (PDF registre, CSV Foncia) : des sorties, pas des
 # sources. On en dépose à la racine pour juger un rendu — ils n'ont rien à faire
 # dans l'historique.
