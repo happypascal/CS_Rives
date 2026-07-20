@@ -100,8 +100,11 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      {/* 2/3 pour « Dernières décisions » (colonne au texte le plus long, sinon le
+          badge de statut se replie sur 2 lignes) — 1/3 pour la pile Assemblée + À
+          signer. Grille en 3 colonnes, la carte décisions en occupe 2. */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
           <CardHeader title="Dernières décisions" actions={<Link to="/registre"><Button variant="ghost" size="sm">Tout voir</Button></Link>} />
           <ul className="divide-y divide-navy-50">
             {recent.map((d) => (
