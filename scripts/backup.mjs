@@ -22,6 +22,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+// Import explicite plutôt que le global Node : oxlint (env navigateur) ne connaît
+// pas `process`, et un import en fait une liaison propre — pas de no-undef.
+import process from 'node:process'
 
 const url = process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -94,7 +97,8 @@ async function dumpStorage() {
     if (error) throw new Error(`download ${path} : ${error.message}`)
     const dest = join(outDir, BUCKET, path)
     await mkdir(join(dest, '..'), { recursive: true })
-    await writeFile(dest, Buffer.from(await data.arrayBuffer()))
+    // Uint8Array (accepté par writeFile) plutôt que Buffer : évite le global Node.
+    await writeFile(dest, new Uint8Array(await data.arrayBuffer()))
   }
   return paths.length
 }
