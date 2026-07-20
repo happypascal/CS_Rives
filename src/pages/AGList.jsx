@@ -44,7 +44,6 @@ export default function AGList() {
                   <th className="px-4 py-2.5 font-medium">Type</th>
                   <th className="px-4 py-2.5 font-medium">Date</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
-                  <th className="px-4 py-2.5 font-medium">Quorum</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-50">
@@ -56,13 +55,13 @@ export default function AGList() {
                     <td className="px-4 py-3"><Badge tone={ag.type === 'AGO' ? 'navy' : 'blue'}>{ag.type}</Badge></td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(ag.date_ag)}</td>
                     <td className="px-4 py-3"><AGStatutBadge statut={ag.statut} /></td>
-                    <td className="px-4 py-3">
-                      {ag.quorum_atteint === null ? (
-                        <span className="text-xs text-slate-400">—</span>
-                      ) : (
-                        <Badge tone={ag.quorum_atteint ? 'green' : 'red'}>{ag.quorum_atteint ? 'Atteint' : 'Non atteint'}</Badge>
-                      )}
-                    </td>
+                    {/* Pas de colonne « Quorum » pour les AG : l'app ne compte pas les
+                        voix d'AG (prorata des superficies, comptées dans le PV, cf.
+                        agLogic.js). `assemblees_generales` n'a d'ailleurs pas de champ
+                        quorum_atteint — l'ancienne cellule lisait donc `undefined`, ratait
+                        son test `=== null` et affichait un « Non atteint » rouge factice sur
+                        des AG validement tenues. Un registre légal ne montre pas une donnée
+                        qu'il ne détient pas. */}
                   </tr>
                 ))}
               </tbody>
