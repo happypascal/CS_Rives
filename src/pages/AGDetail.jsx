@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur } from '../components/ui'
+import { useConfirm } from '../components/useConfirm'
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
@@ -24,6 +25,7 @@ export default function AGDetail() {
   const [loading, setLoading] = useState(true)
   const [resModal, setResModal] = useState(null)
   const [rattachModal, setRattachModal] = useState(null)
+  const [confirm, confirmModal] = useConfirm()
 
   const reload = useCallback(async () => {
     const [data, ds, ps] = await Promise.all([
@@ -62,7 +64,7 @@ export default function AGDetail() {
   const peutFinancer = (r) => r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
 
   const deleteAG = async () => {
-    if (!confirm(`Supprimer l’AG ${ag.numero} et toutes ses résolutions ?`)) return
+    if (!(await confirm({ title: `Supprimer l’AG ${ag.numero} ?`, message: 'L’AG et toutes ses résolutions seront supprimées. Cette action est irréversible.', confirmLabel: 'Supprimer', danger: true }))) return
     try {
       await repo.deleteAG(id)
       navigate('/ag')
@@ -211,6 +213,7 @@ export default function AGDetail() {
           onSaved={async () => { setRattachModal(null); await reload() }}
         />
       )}
+      {confirmModal}
     </div>
   )
 }
@@ -275,6 +278,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   const editing = Boolean(resolution.id)
   const [form, setForm] = useState(resolution)
   const [saving, setSaving] = useState(false)
+  const [confirm, confirmModal] = useConfirm()
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const save = async () => {
@@ -302,7 +306,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   }
 
   const del = async () => {
-    if (!confirm('Supprimer cette résolution ?')) return
+    if (!(await confirm({ title: 'Supprimer cette résolution ?', message: 'La résolution sera définitivement supprimée.', confirmLabel: 'Supprimer', danger: true }))) return
     try {
       await repo.deleteResolution(resolution.id)
       await onSaved()
@@ -312,6 +316,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   }
 
   return (
+    <>
     <Modal
       open onClose={onClose} wide
       title={editing ? `Résolution n° ${form.numero}` : 'Nouvelle résolution'}
@@ -337,5 +342,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
         <Textarea label="Observations" value={form.observations || ''} onChange={set('observations')} rows={2} />
       </div>
     </Modal>
+    {confirmModal}
+    </>
   )
 }

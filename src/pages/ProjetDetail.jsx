@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Spinner, eur } from '../components/ui'
+import { useConfirm } from '../components/useConfirm'
 import { ProjetStatutBadge, StatutBadge } from '../components/badges'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
@@ -18,6 +19,7 @@ export default function ProjetDetail() {
   const [projet, setProjet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [docError, setDocError] = useState('')
+  const [confirm, confirmModal] = useConfirm()
 
   // Bucket privé : l'URL est signée au clic, un échec doit se voir.
   const openDoc = async (doc) => {
@@ -66,7 +68,7 @@ export default function ProjetDetail() {
   const canEdit = !isMobile && (isAdmin || projet.chef_projet_id === user?.membre_id)
 
   const del = async () => {
-    if (!confirm(`Supprimer le projet « ${projet.nom} » ? Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).`)) return
+    if (!(await confirm({ title: `Supprimer le projet « ${projet.nom} » ?`, message: 'Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).', confirmLabel: 'Supprimer', danger: true }))) return
     try {
       await repo.deleteProjet(id)
       navigate('/projets')
@@ -228,6 +230,7 @@ export default function ProjetDetail() {
           </div>
         </Card>
       </div>
+      {confirmModal}
     </div>
   )
 }

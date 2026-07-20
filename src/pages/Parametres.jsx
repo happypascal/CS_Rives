@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { repo, BACKEND } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Input } from '../components/ui'
+import { useConfirm } from '../components/useConfirm'
 import { formatDateTime } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { SIGNATURE_PROVIDER, ORG } from '../lib/config'
@@ -11,6 +12,7 @@ import { supabase } from '../lib/supabase'
 export default function Parametres() {
   const { user, isAdmin } = useAuth()
   const [audit, setAudit] = useState([])
+  const [confirm, confirmModal] = useConfirm()
 
   useEffect(() => {
     repo.listAudit(50).then(setAudit).catch(() => setAudit([]))
@@ -24,8 +26,8 @@ export default function Parametres() {
     ['Langue', 'Français'],
   ]
 
-  const handleReset = () => {
-    if (!confirm('Réinitialiser les données de démonstration ? Toutes les modifications locales seront perdues.')) return
+  const handleReset = async () => {
+    if (!(await confirm({ title: 'Réinitialiser les données de démonstration ?', message: 'Toutes les modifications locales seront perdues.', confirmLabel: 'Réinitialiser', danger: true }))) return
     resetMockDb()
     window.location.reload()
   }
@@ -73,6 +75,7 @@ export default function Parametres() {
           </ul>
         </Card>
       </div>
+      {confirmModal}
     </div>
   )
 }

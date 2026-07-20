@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Modal, Spinner, Badge } from '../components/ui'
+import { useConfirm } from '../components/useConfirm'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -103,6 +104,7 @@ function MembreModal({ membre, membres = [], onClose, onSaved }) {
   const [form, setForm] = useState({ ...EMPTY, ...membre })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [confirm, confirmModal] = useConfirm()
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
   const save = async () => {
@@ -141,12 +143,13 @@ function MembreModal({ membre, membres = [], onClose, onSaved }) {
   }
 
   const deactivate = async () => {
-    if (!confirm(`Désactiver ${form.prenom} ${form.nom} ?`)) return
+    if (!(await confirm({ title: `Désactiver ${form.prenom} ${form.nom} ?`, message: 'Le membre passera en « ancien » et ne pourra plus se connecter ni voter. Son historique est conservé.', confirmLabel: 'Désactiver', danger: true }))) return
     await repo.deactivateMembre(membre.id)
     await onSaved()
   }
 
   return (
+    <>
     <Modal
       open
       onClose={onClose}
@@ -181,5 +184,7 @@ function MembreModal({ membre, membres = [], onClose, onSaved }) {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
+    {confirmModal}
+    </>
   )
 }
