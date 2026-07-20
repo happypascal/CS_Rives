@@ -472,64 +472,65 @@ export default function DecisionDetail() {
                 Cette décision engage {eur(decision.montant_engage)} : bien que la majorité soit atteinte, elle n’est <strong>adoptée</strong> que si le trésorier ou le président vote « Pour ». En l’état, elle serait <strong>rejetée</strong>.
               </p>
             )}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2.5 font-medium">Membre</th>
-                    <th className="px-4 py-2.5 font-medium">Vote</th>
-                    <th className="px-4 py-2.5 font-medium">Commentaire</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-navy-50">
-                  {composition.map((m) => {
-                    const v = voteByMember[m.id]
-                    const isMe = m.id === myId
-                    const editable = canVoteFor(m.id)
-                    const parProcuration = editable && !isMe
-                    return (
-                      <tr key={m.id} className={isMe ? 'bg-navy-50/40' : parProcuration ? 'bg-amber-50/40' : ''}>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
-                          {m.role === 'president' && <span className="ml-2 text-xs text-slate-400">(président)</span>}
-                          {isMe && <span className="ml-2 text-xs text-navy-500">— vous</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {editable ? (
-                            <div className="flex flex-wrap gap-1">
-                              {VOTE_VALUES.map((val) => (
-                                <button key={val} onClick={() => setVoteFor(m.id, val)} disabled={busy}
-                                  className={['rounded px-2 py-1 text-xs font-medium transition-colors', v?.vote === val ? 'bg-navy-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'].join(' ')}>
-                                  {VOTE_LABELS[val]}
-                                </button>
-                              ))}
-                              {/* Rendre le membre absent : sans ça, impossible de
-                                  tester un quorum manqué ou un partage des voix. */}
-                              {v && (
-                                <button onClick={() => clearVoteFor(m.id)} disabled={busy} title="Retirer le vote (membre absent)"
-                                  className="rounded px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600">
-                                  ✕
-                                </button>
-                              )}
-                            </div>
-                          ) : v ? (
-                            <VoteBadge vote={v.vote} />
-                          ) : (
-                            <span className="text-xs text-slate-400">non voté</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {editable && v ? (
-                            <Textarea autoGrow rows={2} defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setCommentFor(m.id, e.target.value)} placeholder="Commentaire…" />
-                          ) : (
-                            <span className="text-xs text-slate-500">{v?.commentaire || '—'}</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            {/* Layout responsive, PAS un <table> : sur mobile le commentaire était
+                écrasé sur 1/3 de largeur, illisible. Ici chaque membre s'empile
+                (nom, vote, puis commentaire sur TOUTE la largeur) ; en ≥ md on
+                revient à trois colonnes alignées. */}
+            <div>
+              {/* En-tête colonnes — masquée sur mobile (les lignes s'empilent). */}
+              <div className="hidden border-b border-navy-100 bg-navy-50/60 px-4 py-2.5 text-xs uppercase tracking-wide text-slate-500 md:flex md:gap-4">
+                <div className="w-1/3 font-medium">Membre</div>
+                <div className="w-40 font-medium">Vote</div>
+                <div className="flex-1 font-medium">Commentaire</div>
+              </div>
+              <div className="divide-y divide-navy-50">
+                {composition.map((m) => {
+                  const v = voteByMember[m.id]
+                  const isMe = m.id === myId
+                  const editable = canVoteFor(m.id)
+                  const parProcuration = editable && !isMe
+                  return (
+                    <div key={m.id} className={`px-4 py-3 md:flex md:items-start md:gap-4 ${isMe ? 'bg-navy-50/40' : parProcuration ? 'bg-amber-50/40' : ''}`}>
+                      <div className="md:w-1/3">
+                        <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
+                        {m.role === 'president' && <span className="ml-2 text-xs text-slate-400">(président)</span>}
+                        {isMe && <span className="ml-2 text-xs text-navy-500">— vous</span>}
+                      </div>
+                      <div className="mt-2 md:mt-0 md:w-40">
+                        {editable ? (
+                          <div className="flex flex-wrap gap-1">
+                            {VOTE_VALUES.map((val) => (
+                              <button key={val} onClick={() => setVoteFor(m.id, val)} disabled={busy}
+                                className={['rounded px-2 py-1 text-xs font-medium transition-colors', v?.vote === val ? 'bg-navy-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'].join(' ')}>
+                                {VOTE_LABELS[val]}
+                              </button>
+                            ))}
+                            {/* Rendre le membre absent : sans ça, impossible de
+                                tester un quorum manqué ou un partage des voix. */}
+                            {v && (
+                              <button onClick={() => clearVoteFor(m.id)} disabled={busy} title="Retirer le vote (membre absent)"
+                                className="rounded px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600">
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ) : v ? (
+                          <VoteBadge vote={v.vote} />
+                        ) : (
+                          <span className="text-xs text-slate-400">non voté</span>
+                        )}
+                      </div>
+                      <div className="mt-2 md:mt-0 md:flex-1">
+                        {editable && v ? (
+                          <Textarea autoGrow rows={2} defaultValue={v?.commentaire || ''} onBlur={(e) => e.target.value !== (v?.commentaire || '') && setCommentFor(m.id, e.target.value)} placeholder="Commentaire…" />
+                        ) : (
+                          <span className="text-xs text-slate-500">{v?.commentaire || '—'}</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
             {!iAmInComposition && !locked && (
               <p className="border-t border-navy-100 px-5 py-2 text-xs text-slate-400">Vous n’étiez pas membre actif du CS à la date de publication : vous ne pouvez pas voter cette décision.</p>

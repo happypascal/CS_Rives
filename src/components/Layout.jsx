@@ -51,7 +51,7 @@ export default function Layout() {
             <p className="mt-0.5 text-xs text-navy-300">{ORG.lotissement}, {ORG.commune}</p>
           </div>
           <button
-            className="text-navy-100 md:hidden"
+            className="-m-2 p-2 text-4xl leading-none text-navy-100 md:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Menu"
           >

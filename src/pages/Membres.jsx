@@ -49,7 +49,9 @@ export default function Membres() {
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop : tableau. Mobile : cartes 2 lignes — le tableau (6-7 colonnes)
+            débordait du cadre en portrait. */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -84,6 +86,24 @@ export default function Membres() {
               ))}
             </tbody>
           </table>
+        </div>
+        {/* Mobile : une carte par membre, sur 2 lignes (nom + statut, puis rôle +
+            élection). */}
+        <div className="divide-y divide-navy-50 md:hidden">
+          {visible.map((m) => (
+            <div key={m.id} className="px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
+                <Badge tone={m.actif ? 'green' : 'gray'}>{m.actif ? 'Actif' : `Ancien${m.date_fin ? ' (' + formatDate(m.date_fin) + ')' : ''}`}</Badge>
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
+                <span>Élu le {formatDate(m.date_election)}</span>
+                {m.ag_election && <span>· {m.ag_election}</span>}
+                {canManage && <button onClick={() => setModal(m)} className="ml-auto text-navy-600 underline">Modifier</button>}
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
