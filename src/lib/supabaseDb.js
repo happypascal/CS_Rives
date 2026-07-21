@@ -381,6 +381,11 @@ export const supabaseRepo = {
   },
 
   // ---- Q&A ----
+  // Toutes les Q/R, pour compter les questions sans réponse sur la liste du
+  // registre. Minimal : seuls id/decision_id/type/parent_id servent au comptage.
+  async listQA() {
+    return must(await supabase.from('questions_reponses').select('id,decision_id,type,parent_id'))
+  },
   async addQA(input) {
     return must(await supabase.from('questions_reponses').insert(input).select())[0]
   },

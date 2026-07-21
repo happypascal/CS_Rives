@@ -14,10 +14,13 @@ export default function RegistreCS() {
   const { user } = useAuth()
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [decisions, setDecisions] = useState([])
   const [members, setMembers] = useState([])
   const [batches, setBatches] = useState([])
   const [myVotes, setMyVotes] = useState([])
+  const [allVotes, setAllVotes] = useState([])
+  const [allQA, setAllQA] = useState([])
   const [projets, setProjets] = useState([])
   const [agBudgets, setAgBudgets] = useState([])
   const [year, setYear] = useState('all')
@@ -27,26 +30,43 @@ export default function RegistreCS() {
   const [exporting, setExporting] = useState(false)
 
   const reload = async () => {
-    const [d, m, b, mv, p, ab] = await Promise.all([
-      repo.listDecisions(),
-      repo.listMembres(),
-      // Les lots servent uniquement à afficher le statut de signature dans la
-      // colonne dédiée — la gestion des signatures vit sur sa propre page.
-      repo.listSignatureBatches(),
-      user?.membre_id ? repo.listMyVotes(user.membre_id) : Promise.resolve([]),
-      // Nom du projet / libellé de l'enveloppe : sans eux le résumé dirait
-      // « Engage 20 000 € » sans dire sur quoi. Secondaires — un échec ne doit
-      // pas vider l'écran, le résumé se dégrade proprement.
-      repo.listProjets().catch(() => []),
-      repo.listAGBudgets().catch(() => []),
-    ])
-    setDecisions(d)
-    setMembers(m)
-    setBatches(b)
-    setMyVotes(mv)
-    setProjets(p)
-    setAgBudgets(ab)
-    setLoading(false)
+    setError('')
+    try {
+      const [d, m, b, mv, p, ab, av, qa] = await Promise.all([
+        repo.listDecisions(),
+        repo.listMembres(),
+        // Les lots servent uniquement à afficher le statut de signature dans la
+        // colonne dédiée — la gestion des signatures vit sur sa propre page.
+        repo.listSignatureBatches(),
+        user?.membre_id ? repo.listMyVotes(user.membre_id) : Promise.resolve([]),
+        // Nom du projet / libellé de l'enveloppe : sans eux le résumé dirait
+        // « Engage 20 000 € » sans dire sur quoi. Secondaires — un échec ne doit
+        // pas vider l'écran, le résumé se dégrade proprement.
+        repo.listProjets().catch(() => []),
+        repo.listAGBudgets().catch(() => []),
+        // Tous les votes : sert juste à afficher « votants / actifs » par ligne.
+        // Secondaire — un échec dégrade le compteur, pas la page.
+        repo.listVotes().catch(() => []),
+        // Toutes les Q/R : pour compter les questions sans réponse. Secondaire.
+        repo.listQA().catch(() => []),
+      ])
+      setDecisions(d)
+      setMembers(m)
+      setBatches(b)
+      setMyVotes(mv)
+      setProjets(p)
+      setAgBudgets(ab)
+      setAllVotes(av)
+      setAllQA(qa)
+    } catch (e) {
+      // Sans ce catch, l'échec d'UNE lecture (session expirée, RLS, réseau) faisait
+      // rejeter tout le Promise.all : la page restait VIDE en silence et l'utilisateur
+      // croyait « aucune décision » alors que le chargement avait planté. On rend
+      // l'échec visible — c'est un registre légal, l'invisible est le pire.
+      setError(e?.message || 'Erreur inconnue au chargement des décisions.')
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => {
     reload()
@@ -72,6 +92,31 @@ export default function RegistreCS() {
     for (const b of batches) for (const did of b.decision_ids) map[did] = b
     return map
   }, [batches])
+
+  // Progression du vote par décision : votants (lignes de vote) / membres actifs
+  // concernés. Même dénominateur que le quorum du détail (art. 15) : composition
+  // FIGÉE si la décision est enregistrée, sinon actifs à la date de publication.
+  const votesCountByDecision = useMemo(() => {
+    const map = {}
+    for (const v of allVotes) map[v.decision_id] = (map[v.decision_id] || 0) + 1
+    return map
+  }, [allVotes])
+  const activeCountFor = (d) =>
+    d.composition_snapshot?.length
+      ? d.composition_snapshot.length
+      : members.filter((m) => (!m.date_election || m.date_election <= d.date_publication) && !(m.date_fin && m.date_fin < d.date_publication)).length
+
+  // Questions sans réponse par décision : une question (type 'question') sans
+  // aucune réponse (type 'reponse' pointant sur elle via parent_id). Utile pour
+  // signaler à l'owner qu'on attend une réponse avant le vote.
+  const unansweredByDecision = useMemo(() => {
+    const answered = new Set(allQA.filter((x) => x.type === 'reponse' && x.parent_id).map((x) => x.parent_id))
+    const map = {}
+    for (const x of allQA) {
+      if (x.type === 'question' && !answered.has(x.id)) map[x.decision_id] = (map[x.decision_id] || 0) + 1
+    }
+    return map
+  }, [allQA])
 
   const years = useMemo(() => [...new Set(decisions.map((d) => d.date_publication?.slice(0, 4)))].filter(Boolean).sort().reverse(), [decisions])
 
@@ -125,6 +170,23 @@ export default function RegistreCS() {
   }
 
   if (loading) return <Spinner />
+
+  // Chargement en échec : on l'affiche au lieu de laisser un écran vide qui se
+  // lit à tort comme « aucune décision ». Cas typique : session expirée côté
+  // client — un « Réessayer » après reconnexion suffit souvent.
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Décisions du Conseil Syndical" subtitle="Cœur du registre : décisions courantes du CS (hors résolutions d’AG)." />
+        <Card className="p-6">
+          <p className="text-sm font-semibold text-red-700">Impossible de charger les décisions.</p>
+          <p className="mt-1 text-sm text-slate-600">{error}</p>
+          <p className="mt-2 text-xs text-slate-500">Si le problème persiste : déconnectez-vous puis reconnectez-vous, ou rafraîchissez la page (Ctrl/Cmd + Maj + R).</p>
+          <div className="mt-4"><Button onClick={() => { setLoading(true); reload() }}>Réessayer</Button></div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -186,7 +248,7 @@ export default function RegistreCS() {
                   <p className="mt-1 font-medium text-navy-800">{r.titre}</p>
                   {r.action && <p className="mt-0.5 text-xs font-medium text-navy-700">{r.action}</p>}
                   {r.extrait && <p className="mt-1 text-xs leading-snug text-slate-500">{r.extrait}</p>}
-                  {(toVote || toNotify) && (
+                  {(toVote || toNotify || unansweredByDecision[d.id] > 0) && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {toVote && (
                         <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${overdue ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -194,10 +256,12 @@ export default function RegistreCS() {
                         </span>
                       )}
                       {toNotify && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>}
+                      {unansweredByDecision[d.id] > 0 && <span className="rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">{unansweredByDecision[d.id]} question{unansweredByDecision[d.id] > 1 ? 's' : ''} sans réponse</span>}
                     </div>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                     <span>Publiée le {formatDate(d.date_publication)}</span>
+                    <span title="Membres ayant voté / actifs">{votesCountByDecision[d.id] || 0}/{activeCountFor(d)} votes</span>
                     {d.date_limite_reponse && (
                       <span className={overdue ? 'font-semibold text-red-700' : undefined}>
                         Réponse avant le {formatDate(d.date_limite_reponse)}
@@ -221,6 +285,7 @@ export default function RegistreCS() {
                   <th className="px-4 py-2.5 font-medium">Limite réponse</th>
                   <th className="px-4 py-2.5 font-medium">Titre</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
+                  <th className="px-4 py-2.5 font-medium">Votes</th>
                   <th className="px-4 py-2.5 font-medium">Signature</th>
                 </tr>
               </thead>
@@ -246,6 +311,9 @@ export default function RegistreCS() {
                       {d.created_by === user?.membre_id && !d.enregistree && !d.date_notification && (
                         <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>
                       )}
+                      {unansweredByDecision[d.id] > 0 && (
+                        <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-800">{unansweredByDecision[d.id]} question{unansweredByDecision[d.id] > 1 ? 's' : ''} sans réponse</span>
+                      )}
                       {resumeOf(d).action && (
                         <span className="mt-0.5 block text-xs font-medium text-navy-700">{resumeOf(d).action}</span>
                       )}
@@ -254,6 +322,7 @@ export default function RegistreCS() {
                       )}
                     </td>
                     <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600" title="Membres ayant voté / membres actifs concernés">{votesCountByDecision[d.id] || 0}/{activeCountFor(d)}</td>
                     <td className="px-4 py-3">{batchByDecision[d.id] ? <SignatureBadge statut={batchByDecision[d.id].statut} /> : <span className="text-xs text-slate-400">—</span>}</td>
                   </tr>
                   )

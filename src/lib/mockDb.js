@@ -834,6 +834,12 @@ export const mockRepo = {
   },
 
   // ---- Q&A ----
+  // Toutes les Q/R, pour compter les questions sans réponse sur la liste du
+  // registre. Minimal : seuls id/decision_id/type/parent_id servent au comptage.
+  async listQA() {
+    await delay(20)
+    return clone(load().questions_reponses).map((q) => ({ id: q.id, decision_id: q.decision_id, type: q.type, parent_id: q.parent_id }))
+  },
   async addQA({ decision_id, auteur_id, type, parent_id, texte }) {
     await delay()
     const data = load()
