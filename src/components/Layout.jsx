@@ -5,6 +5,7 @@ import { BACKEND } from '../lib/config'
 import { ORG } from '../lib/config'
 import ForcePasswordChange from '../pages/ForcePasswordChange'
 import { ROLE_LABELS } from '../lib/rolesLogic'
+import { useActivityNotifications } from '../lib/useActivityNotifications'
 
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
@@ -24,6 +25,9 @@ export default function Layout() {
   const { user, isAdmin, isSecretaire, signOut } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  // Notifications de bureau (président/secrétaire) : sondage 30 s des nouveaux
+  // votes/questions tant que l'app est ouverte. Activation dans Paramètres.
+  useActivityNotifications()
 
   const handleSignOut = async () => {
     await signOut()

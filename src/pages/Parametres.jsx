@@ -8,11 +8,29 @@ import { useAuth } from '../lib/AuthContext'
 import { SIGNATURE_PROVIDER, ORG } from '../lib/config'
 import { resetMockDb } from '../lib/mockDb'
 import { supabase } from '../lib/supabase'
+import { activityNotifsEnabled, setActivityNotifs } from '../lib/useActivityNotifications'
+
+// État initial des notifs de bureau : non géré / bloqué par le navigateur / activé / éteint.
+function initialNotifState() {
+  if (typeof Notification === 'undefined') return 'unsupported'
+  if (Notification.permission === 'denied') return 'blocked'
+  return activityNotifsEnabled() ? 'on' : 'off'
+}
 
 export default function Parametres() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isSecretaire } = useAuth()
   const [audit, setAudit] = useState([])
   const [confirm, confirmModal] = useConfirm()
+  const [notifState, setNotifState] = useState(initialNotifState)
+  const canNotify = isAdmin || isSecretaire
+
+  const enableNotifs = async () => {
+    if (typeof Notification === 'undefined') return
+    const perm = await Notification.requestPermission()
+    if (perm === 'granted') { setActivityNotifs(true); setNotifState('on') }
+    else setNotifState('blocked')
+  }
+  const disableNotifs = () => { setActivityNotifs(false); setNotifState('off') }
 
   useEffect(() => {
     repo.listAudit(50).then(setAudit).catch(() => setAudit([]))
@@ -37,6 +55,35 @@ export default function Parametres() {
       <PageHeader title="Paramètres" subtitle="Configuration de l’application et journal d’audit." />
 
       <div className="mb-6"><ChangePassword /></div>
+
+      {canNotify && (
+        <Card className="mb-6">
+          <CardHeader title="Notifications de bureau" subtitle="Réservé au président et au secrétaire." />
+          <div className="px-5 py-4 text-sm text-slate-600">
+            <p>
+              Tant que l’application reste <strong>ouverte</strong> dans le navigateur, recevez une notification à
+              chaque <strong>nouveau vote</strong> ou <strong>nouvelle question</strong> sur une décision (vérification
+              toutes les 30 s). Onglet fermé = pas de notification. C’est un confort d’alerte, pas une preuve de
+              notification (celle-ci reste l’e-mail / le PV).
+            </p>
+            {notifState === 'unsupported' && (
+              <p className="mt-3 text-amber-700">Votre navigateur ne gère pas les notifications.</p>
+            )}
+            {notifState === 'blocked' && (
+              <p className="mt-3 text-amber-700">Notifications bloquées par le navigateur — autorisez-les via le cadenas dans la barre d’adresse, puis réessayez.</p>
+            )}
+            {notifState === 'off' && (
+              <div className="mt-3"><Button onClick={enableNotifs}>Activer les notifications</Button></div>
+            )}
+            {notifState === 'on' && (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="font-medium text-emerald-700">✓ Activées</span>
+                <Button variant="secondary" size="sm" onClick={disableNotifs}>Désactiver</Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

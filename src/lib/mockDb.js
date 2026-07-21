@@ -838,7 +838,7 @@ export const mockRepo = {
   // registre. Minimal : seuls id/decision_id/type/parent_id servent au comptage.
   async listQA() {
     await delay(20)
-    return clone(load().questions_reponses).map((q) => ({ id: q.id, decision_id: q.decision_id, type: q.type, parent_id: q.parent_id }))
+    return clone(load().questions_reponses).map((q) => ({ id: q.id, decision_id: q.decision_id, type: q.type, parent_id: q.parent_id, auteur_id: q.auteur_id }))
   },
   async addQA({ decision_id, auteur_id, type, parent_id, texte }) {
     await delay()
