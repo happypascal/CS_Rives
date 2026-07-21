@@ -373,7 +373,9 @@ export const supabaseRepo = {
   // signature). Seuls decision_id et membre_id servent — le sens du vote ne
   // compte pas : un Contre est présent, donc signataire (art. 15).
   async listVotes() {
-    return must(await supabase.from('votes').select('decision_id,membre_id'))
+    // `vote` sert au détail pour/contre/abstention de la liste du registre ; le
+    // groupement de la page Signatures n'utilise, lui, que decision_id/membre_id.
+    return must(await supabase.from('votes').select('decision_id,membre_id,vote'))
   },
   async deleteVote(decision_id, membre_id) {
     must(await supabase.from('votes').delete().eq('decision_id', decision_id).eq('membre_id', membre_id))

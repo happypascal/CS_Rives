@@ -96,15 +96,32 @@ export default function RegistreCS() {
   // Progression du vote par décision : votants (lignes de vote) / membres actifs
   // concernés. Même dénominateur que le quorum du détail (art. 15) : composition
   // FIGÉE si la décision est enregistrée, sinon actifs à la date de publication.
-  const votesCountByDecision = useMemo(() => {
+  const votesBreakdownByDecision = useMemo(() => {
     const map = {}
-    for (const v of allVotes) map[v.decision_id] = (map[v.decision_id] || 0) + 1
+    for (const v of allVotes) {
+      const b = (map[v.decision_id] ||= { pour: 0, contre: 0, abstention: 0 })
+      if (v.vote === 'pour') b.pour++
+      else if (v.vote === 'contre') b.contre++
+      else if (v.vote === 'abstention') b.abstention++
+    }
     return map
   }, [allVotes])
   const activeCountFor = (d) =>
     d.composition_snapshot?.length
       ? d.composition_snapshot.length
       : members.filter((m) => (!m.date_election || m.date_election <= d.date_publication) && !(m.date_fin && m.date_fin < d.date_publication)).length
+
+  // Détail des votes d'une décision : « P pour · C contre · A abst. · N non voté ».
+  // « non voté » = actifs concernés − (pour + contre + abstention).
+  const renderVotes = (d) => {
+    const b = votesBreakdownByDecision[d.id] || { pour: 0, contre: 0, abstention: 0 }
+    const nonVote = Math.max(0, activeCountFor(d) - b.pour - b.contre - b.abstention)
+    return (
+      <span className="text-xs leading-tight text-slate-500">
+        <span className="font-medium text-emerald-700">{b.pour}</span> pour · <span className="font-medium text-red-700">{b.contre}</span> contre · <span className="font-medium text-amber-700">{b.abstention}</span> abst. · <span className="font-medium text-slate-400">{nonVote}</span> non voté
+      </span>
+    )
+  }
 
   // Questions sans réponse par décision : une question (type 'question') sans
   // aucune réponse (type 'reponse' pointant sur elle via parent_id). Utile pour
@@ -261,7 +278,7 @@ export default function RegistreCS() {
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                     <span>Publiée le {formatDate(d.date_publication)}</span>
-                    <span title="Membres ayant voté / actifs">{votesCountByDecision[d.id] || 0}/{activeCountFor(d)} votes</span>
+                    {renderVotes(d)}
                     {d.date_limite_reponse && (
                       <span className={overdue ? 'font-semibold text-red-700' : undefined}>
                         Réponse avant le {formatDate(d.date_limite_reponse)}
@@ -281,8 +298,7 @@ export default function RegistreCS() {
               <thead>
                 <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-2.5 font-medium">N°</th>
-                  <th className="px-4 py-2.5 font-medium">Publication</th>
-                  <th className="px-4 py-2.5 font-medium">Limite réponse</th>
+                  <th className="px-4 py-2.5 font-medium">Dates</th>
                   <th className="px-4 py-2.5 font-medium">Titre</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
                   <th className="px-4 py-2.5 font-medium">Votes</th>
@@ -296,10 +312,11 @@ export default function RegistreCS() {
                   return (
                   <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : 'hover:bg-navy-50/40'}>
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{d.numero}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(d.date_publication)}</td>
-                    <td className={`whitespace-nowrap px-4 py-3 ${overdue ? 'font-semibold text-red-700' : 'text-slate-600'}`}>
-                      {d.date_limite_reponse ? formatDate(d.date_limite_reponse) : '—'}
-                      {overdue && <span className="ml-1 text-xs">⚠ dépassée</span>}
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      <div>{formatDate(d.date_publication)}</div>
+                      <div className={`text-xs ${overdue ? 'font-semibold text-red-700' : 'text-slate-400'}`}>
+                        {d.date_limite_reponse ? <>limite {formatDate(d.date_limite_reponse)}{overdue ? ' ⚠ dépassée' : ''}</> : 'sans limite'}
+                      </div>
                     </td>
                     {/* Résumé sur trois niveaux — titre, ce que la décision FAIT,
                         puis un extrait de la description. Le titre seul ne dit ni
@@ -322,7 +339,7 @@ export default function RegistreCS() {
                       )}
                     </td>
                     <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600" title="Membres ayant voté / membres actifs concernés">{votesCountByDecision[d.id] || 0}/{activeCountFor(d)}</td>
+                    <td className="px-4 py-3">{renderVotes(d)}</td>
                     <td className="px-4 py-3">{batchByDecision[d.id] ? <SignatureBadge statut={batchByDecision[d.id].statut} /> : <span className="text-xs text-slate-400">—</span>}</td>
                   </tr>
                   )

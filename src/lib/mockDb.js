@@ -818,12 +818,12 @@ export const mockRepo = {
     await delay(20)
     return clone(load().votes.filter((v) => v.membre_id === membre_id))
   },
-  // Tous les votes, pour grouper les décisions par ensemble de votants (écran de
-  // signature). Volontairement minimal — seuls decision_id et membre_id servent
-  // au groupement ; ni le sens du vote, ni le commentaire.
+  // Tous les votes. `vote` sert au détail pour/contre/abstention de la liste du
+  // registre ; le groupement de la page Signatures n'utilise que
+  // decision_id/membre_id. On ne remonte pas le commentaire.
   async listVotes() {
     await delay(20)
-    return clone(load().votes).map((v) => ({ decision_id: v.decision_id, membre_id: v.membre_id }))
+    return clone(load().votes).map((v) => ({ decision_id: v.decision_id, membre_id: v.membre_id, vote: v.vote }))
   },
   async deleteVote(decision_id, membre_id) {
     await delay()
