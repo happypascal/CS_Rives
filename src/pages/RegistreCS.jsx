@@ -117,9 +117,10 @@ export default function RegistreCS() {
     const b = votesBreakdownByDecision[d.id] || { pour: 0, contre: 0, abstention: 0 }
     const nonVote = Math.max(0, activeCountFor(d) - b.pour - b.contre - b.abstention)
     return (
-      <span className="text-xs leading-tight text-slate-500">
-        <span className="font-medium text-emerald-700">{b.pour}</span> pour · <span className="font-medium text-red-700">{b.contre}</span> contre · <span className="font-medium text-amber-700">{b.abstention}</span> abst. · <span className="font-medium text-slate-400">{nonVote}</span> non voté
-      </span>
+      <div className="text-sm leading-tight text-slate-600">
+        <div><span className="font-medium text-emerald-700">{b.pour}</span> pour · <span className="font-medium text-red-700">{b.contre}</span> contre</div>
+        <div><span className="font-medium text-amber-700">{b.abstention}</span> abst. · <span className="font-medium text-slate-400">{nonVote}</span> non voté</div>
+      </div>
     )
   }
 
