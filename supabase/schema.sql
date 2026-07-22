@@ -164,7 +164,7 @@ create table if not exists questions_reponses (
   id          uuid primary key default gen_random_uuid(),
   decision_id uuid not null references decisions(id) on delete cascade,
   auteur_id   uuid not null references membres_cs(id) on delete cascade,
-  type        text not null check (type in ('question','reponse')),
+  type        text not null check (type in ('question','reponse','commentaire')),
   parent_id   uuid references questions_reponses(id) on delete cascade,
   texte       text not null,
   created_at  timestamptz not null default now()

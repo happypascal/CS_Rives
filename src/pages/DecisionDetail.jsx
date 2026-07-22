@@ -41,6 +41,7 @@ export default function DecisionDetail() {
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [replyText, setReplyText] = useState('')
+  const [cText, setCText] = useState('')
   const [docError, setDocError] = useState('')
 
   // Le bucket est privé : pas de href posable dans le JSX, l'URL est signée au
@@ -237,6 +238,18 @@ export default function DecisionDetail() {
       alert('La réponse n’a pas pu être publiée : ' + e.message)
     }
   }
+  // Commentaire = note de SUIVI (après le vote), pas une question. Autorisé même
+  // sur une décision enregistrée : c'est justement le journal de la mise en œuvre.
+  const addCommentaire = async () => {
+    if (!cText.trim()) return
+    try {
+      await repo.addQA({ decision_id: id, auteur_id: myId, type: 'commentaire', parent_id: null, texte: cText.trim() })
+      setCText('')
+      await reload()
+    } catch (e) {
+      alert('Le commentaire n’a pas pu être publié : ' + e.message)
+    }
+  }
 
   // Nommé une fois, réutilisé par le bandeau d'objet et le texte de notification.
   const cibleLabel = projet
@@ -252,6 +265,7 @@ export default function DecisionDetail() {
 
   const questions = decision.qa.filter((q) => q.type === 'question')
   const reponsesByParent = decision.qa.filter((q) => q.type === 'reponse').reduce((acc, r) => { (acc[r.parent_id] ||= []).push(r); return acc }, {})
+  const commentaires = decision.qa.filter((q) => q.type === 'commentaire')
 
   return (
     <div>
@@ -375,10 +389,39 @@ export default function DecisionDetail() {
           </div>
         )}
 
+        {/* Commentaires : notes de SUIVI de la décision, postées APRÈS le vote (mise
+            en œuvre) — distinctes du fil Questions/réponses, qui précède le vote.
+            Placées ici, dans le bloc de lecture, avant les pièces jointes. Un
+            commentaire n'attend pas de réponse (ne compte donc pas comme « question
+            sans réponse ») et reste possible même après enregistrement. */}
+        <div className="border-t border-navy-100 px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Commentaires {commentaires.length > 0 && `(${commentaires.length})`}
+          </p>
+          {commentaires.length === 0 ? (
+            <p className="mt-1 text-sm text-slate-400">Aucun commentaire.</p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {commentaires.map((c) => (
+                <li key={c.id} className="rounded-md border border-navy-100 bg-navy-50/30 p-3">
+                  <p className="text-sm"><span className="font-medium text-navy-700">{nameOf(c.auteur_id)}</span><span className="ml-2 text-xs text-slate-400">{formatDateTime(c.created_at)}</span></p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{c.texte}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {myId && (
+            <div className="mt-2 flex items-start gap-2">
+              <Textarea autoGrow rows={2} value={cText} onChange={(e) => setCText(e.target.value)} placeholder="Ajouter un commentaire (suivi de la décision)…" className="min-w-0 flex-1" />
+              <Button size="sm" onClick={addCommentaire}>Commenter</Button>
+            </div>
+          )}
+        </div>
+
         {/* Les pièces jointes sont les DEVIS et les offres : on ne peut pas voter
             un engagement sans elles. Leur place est ici, pas dans une colonne
             latérale sous le résultat du vote. */}
-        <div className="px-5 py-4">
+        <div className="border-t border-navy-100 px-5 py-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             Pièces jointes {(decision.documents || []).length > 0 && `(${decision.documents.length})`}
           </p>
