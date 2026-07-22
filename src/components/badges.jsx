@@ -14,7 +14,7 @@ export function VoteBadge({ vote }) {
 }
 
 export function ResolutionStatutBadge({ statut }) {
-  const map = { a_voter: 'amber', adoptee: 'green', rejetee: 'red', retiree: 'gray' }
+  const map = { a_voter: 'amber', adoptee: 'green', rejetee: 'red', sans_vote: 'blue', retiree: 'gray' }
   return <Badge tone={map[statut] || 'gray'}>{RESOLUTION_STATUT_LABELS[statut] || statut}</Badge>
 }
 

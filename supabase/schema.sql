@@ -57,7 +57,7 @@ create table if not exists resolutions_ag (
   titre            text not null,
   description      text not null,
   majorite_requise text not null default 'simple' check (majorite_requise in ('simple','absolue','double_qualifiee','unanimite')),
-  statut           text default 'a_voter' check (statut in ('a_voter','adoptee','rejetee','retiree')),
+  statut           text default 'a_voter' check (statut in ('a_voter','adoptee','rejetee','retiree','sans_vote')),
   budget_alloue    numeric(12,2),
   budget_intitule  text,
   observations     text,

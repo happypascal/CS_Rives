@@ -18,12 +18,15 @@ export const MAJORITE_LABELS = {
 // Conséquence portée par computeAGBudgets : seule une résolution ADOPTÉE alloue un
 // budget. Une résolution à voter, rejetée ou retirée n'alloue rien et ne peut donc
 // ni recevoir d'engagement, ni ouvrir de projet.
-export const RESOLUTION_STATUT_VALUES = ['a_voter', 'adoptee', 'rejetee', 'retiree']
+export const RESOLUTION_STATUT_VALUES = ['a_voter', 'adoptee', 'rejetee', 'sans_vote', 'retiree']
 
 export const RESOLUTION_STATUT_LABELS = {
   a_voter: 'À voter',
   adoptee: 'Adoptée',
   rejetee: 'Rejetée',
+  // Présentée mais non soumise au vote (reportée, consensus sans scrutin…).
+  // N'alloue aucun budget, comme rejetée/retirée.
+  sans_vote: 'Sans vote',
   retiree: 'Retirée',
 }
 
