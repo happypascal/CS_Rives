@@ -1,8 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-20**. Staging opérationnel, **accès par rôle validés sur vraie RLS**,
-> plusieurs correctifs UI (dont mobile) déployés en prod. ⚠ Toujours une **maquette de validation**,
-> pas encore un registre de production (voir « En bref »).
+> Dernière session : **2026-07-22**. Notifications de bureau (président/secrétaire) **validées en
+> réel**, registre enrichi (détail des votes, questions sans réponse), chargement durci. ⚠ Toujours
+> une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
 > Pour le staging/UAT, voir **`docs/STAGING_UAT.md`**.
@@ -24,6 +24,32 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-07-21/22 — notifications de bureau, registre enrichi, robustesse
+
+- **✅ Notifications de bureau (président + secrétaire) — validées en réel (Mac + iPhone).**
+  `src/lib/useActivityNotifications.js` (monté dans `Layout`) : tant que l'app est ouverte, un
+  **sondage 30 s** compare votes et questions à une base de référence et affiche une **notification
+  système** (Notifications API) sur tout **nouveau vote / nouvelle question** non écrit par soi.
+  **Aucun backend** (ni service worker, ni push, ni Edge Function) → l'onglet doit rester ouvert.
+  Confort d'alerte, **pas** une preuve (l'e-mail/PV restent la trace). Activation via un bouton dans
+  **Paramètres** (`requestPermission()` exige un geste utilisateur), drapeau localStorage
+  `activity_notifs`. Ne charge rien tant que désactivé. Si un jour on veut de l'instantané →
+  bascule possible en **Supabase Realtime**.
+- **✅ Registre enrichi** (`RegistreCS.jsx`) :
+  - **Chargement durci** : les lectures critiques sont dans un `try/catch` qui **affiche l'erreur +
+    bouton Réessayer** au lieu d'un écran vide silencieux (un seul `Promise.all` qui rejetait vidait
+    toute la page — c'était le piège derrière « le trésorier ne voit rien », en fait une **session
+    expirée côté client** ; la lecture ne dépend pas de l'identité, `read_auth`).
+  - Colonne **« Dates »** fusionnée (publication + limite en dessous, « dépassée » en rouge).
+  - Colonne **« Votes »** : détail **pour / contre / abstention / non voté** (2 lignes), dénominateur
+    = quorum art. 15 (composition figée si enregistrée, sinon actifs à la publication).
+  - Badge **« N question(s) sans réponse »** par décision.
+  - Nouvelles méthodes repo **`listQA()`** et `listVotes()` étendu (`vote`, `auteur_id`) — mock +
+    supabase, `read_auth`. Chargements votes/Q-R en `.catch(() => [])` (secondaires).
+- **Rappel** : le staging tourne la branche `staging`, **sans** ces correctifs (partis sur `main`).
+  Il traîne aussi des **données de recette** (décision staging 2026-001) → nettoyer via
+  `nettoyage.sql` + `seed_staging.sql`.
 
 ## Session 2026-07-20 — staging, tests RBAC sur vraie RLS, correctifs UI
 
