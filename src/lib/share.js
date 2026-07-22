@@ -34,6 +34,18 @@ export function decisionShareText(decision, contexte = {}) {
   return lines.join('\n')
 }
 
+// Gabarit « mise à jour » : point de situation / modification, PAS une relance de
+// vote. Volontairement sobre et destiné à être ÉDITÉ avant l'envoi (le président y
+// précise ce qui change : « 4 sur 5 sont pour, il manque le vote de X », etc.).
+// S'il reste tel quel, il constitue quand même un avis de mise à jour valable.
+export function decisionUpdateText(decision) {
+  return [
+    `*Mise à jour — décision ${decision.numero}*`,
+    decision.titre,
+    `Voir : ${decisionUrl(decision)}`,
+  ].join('\n')
+}
+
 // Deux façons d'ouvrir WhatsApp avec le message pré-rempli, sans numéro (on
 // choisit le groupe du CS à l'arrivée) :
 //

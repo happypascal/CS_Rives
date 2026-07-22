@@ -9,7 +9,7 @@ import { tally, tallySummary, engagementApprouve, VOTE_VALUES, VOTE_LABELS } fro
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
-import { decisionShareText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
+import { decisionShareText, decisionUpdateText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
 import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { TEST_VOTES } from '../lib/config'
 import { downloadDocument } from '../lib/documents'
@@ -726,9 +726,18 @@ export default function DecisionDetail() {
 // sera envoyé, avec une copie presse-papier en repli (WhatsApp Web non connecté,
 // envoi par un autre canal…).
 function ShareModal({ open, onClose, decision, onShared, contexte }) {
+  const [text, setText] = useState('')
   const [copied, setCopied] = useState(false)
-  const text = decisionShareText(decision, contexte)
   const dejaNotifiee = Boolean(decision.date_notification)
+
+  // (Ré)initialise le message à chaque ouverture — gabarit « demande de vote » par
+  // défaut, ensuite LIBREMENT éditable (mise à jour, point de situation, relance…).
+  // La modale reste montée (open piloté par la prop) : d'où l'effet plutôt qu'un
+  // état initial figé une seule fois.
+  useEffect(() => {
+    if (open) { setText(decisionShareText(decision, contexte)); setCopied(false) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, decision.id])
 
   const copy = async () => {
     await navigator.clipboard.writeText(text)
@@ -740,7 +749,7 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
   // App native via le schéma whatsapp:// : location.href laisse l'OS ouvrir
   // l'app sans créer d'onglet vide (window.open en laisserait un). Si l'app n'est
   // pas installée, rien ne se passe — d'où le lien « WhatsApp Web » de secours et
-  // le bouton « Copier » ci-dessous.
+  // le bouton « Copier » ci-dessous. On envoie le texte ÉDITÉ (state), pas le gabarit.
   const openWhatsAppApp = async () => {
     window.location.href = whatsappAppUrl(text)
     onClose()
@@ -757,26 +766,28 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
     <Modal
       open={open}
       onClose={onClose}
-      title={dejaNotifiee ? 'Notifier à nouveau le CS' : 'Prévenir le Conseil Syndical'}
+      title="Prévenir le Conseil Syndical"
       footer={
         <>
-          <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier le message'}</Button>
-          <Button onClick={openWhatsAppApp}>Ouvrir WhatsApp</Button>
+          <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier'}</Button>
+          <Button onClick={openWhatsAppApp} disabled={!text.trim()}>Ouvrir WhatsApp</Button>
         </>
       }
     >
       <div className="space-y-3 text-sm text-slate-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Gabarit :</span>
+          <Button variant="secondary" size="sm" onClick={() => setText(decisionShareText(decision, contexte))}>Demande de vote</Button>
+          <Button variant="secondary" size="sm" onClick={() => setText(decisionUpdateText(decision))}>Mise à jour</Button>
+        </div>
+        <p className="text-xs text-slate-500">Modifiez librement le message avant l’envoi (ex. « 4 sur 5 sont pour, il manque le vote de… »). WhatsApp s’ouvre avec ce texte — choisissez le groupe du CS, puis envoyez.</p>
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} autoGrow />
         {dejaNotifiee && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Déjà notifiée le {formatDateTime(decision.date_notification)}. Continuer enverra une <strong>relance</strong>.
-          </p>
+          <p className="text-xs text-amber-700">Déjà notifiée le {formatDateTime(decision.date_notification)} — vous pouvez renvoyer un message (relance ou mise à jour).</p>
         )}
-        <p>L’application WhatsApp s’ouvre avec ce message pré-rempli : choisissez le groupe du CS, puis envoyez.</p>
-        <pre className="whitespace-pre-wrap rounded-md border border-navy-100 bg-navy-50/60 px-3 py-2 font-sans text-xs text-slate-700">{text}</pre>
         <p className="text-xs text-slate-400">
           WhatsApp ne s’ouvre pas ? <button type="button" onClick={openWhatsAppWeb} className="text-navy-600 underline">Ouvrir WhatsApp Web</button> à la place.
         </p>
-        <p className="text-xs text-slate-400">Le lien exige une connexion à l’app : seuls les membres du CS peuvent ouvrir la décision.</p>
       </div>
     </Modal>
   )
