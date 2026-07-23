@@ -61,8 +61,16 @@ export function useActivityNotifications() {
       ])
       if (stopped || !votes || !qa) return
 
+      // Décisions ENREGISTRÉES (figées) : on ne notifie jamais de leur activité —
+      // elle n'est plus actionnable. Sans ça, le dernier vote arrivé juste avant
+      // l'enregistrement déclenchait une notif « nouveau vote » au tick suivant,
+      // sur une décision déjà figée (le cas remonté par Pascal le 23/07).
       const numeroById = {}
-      for (const d of decisions || []) numeroById[d.id] = d.numero
+      const frozen = new Set()
+      for (const d of decisions || []) {
+        numeroById[d.id] = d.numero
+        if (d.enregistree) frozen.add(d.id)
+      }
       const voteKeys = new Set(votes.map((v) => `${v.decision_id}:${v.membre_id}`))
       const questions = qa.filter((x) => x.type === 'question')
       const questionIds = new Set(questions.map((q) => q.id))
@@ -74,12 +82,12 @@ export function useActivityNotifications() {
 
       for (const v of votes) {
         const k = `${v.decision_id}:${v.membre_id}`
-        if (!baseline.current.votes.has(k) && v.membre_id !== user?.membre_id) {
+        if (!baseline.current.votes.has(k) && v.membre_id !== user?.membre_id && !frozen.has(v.decision_id)) {
           notify('Nouveau vote', v.decision_id, numeroById[v.decision_id])
         }
       }
       for (const q of questions) {
-        if (!baseline.current.questions.has(q.id) && q.auteur_id !== user?.membre_id) {
+        if (!baseline.current.questions.has(q.id) && q.auteur_id !== user?.membre_id && !frozen.has(q.decision_id)) {
           notify('Nouvelle question', q.decision_id, numeroById[q.decision_id])
         }
       }
