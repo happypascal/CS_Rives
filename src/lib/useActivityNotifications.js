@@ -75,23 +75,33 @@ export function useActivityNotifications() {
       const questions = qa.filter((x) => x.type === 'question')
       const questionIds = new Set(questions.map((q) => q.id))
 
+      // Premier passage après activation : on mémorise l'historique SANS notifier.
       if (!baseline.current) {
         baseline.current = { votes: voteKeys, questions: questionIds }
         return
       }
 
+      // La base ACCUMULE (on ajoute, on ne retire JAMAIS) : une clé déjà vue ne
+      // re-notifie plus, même si `listVotes()` renvoie une fois une liste
+      // incomplète (le vote « disparaît » puis « réapparaît »). C'était la cause
+      // des notifications répétées sans nouveau vote. On marque « vu » d'abord,
+      // puis on décide de notifier — un vote à soi / sur une décision figée est
+      // quand même mémorisé, pour ne pas resurgir plus tard.
       for (const v of votes) {
         const k = `${v.decision_id}:${v.membre_id}`
-        if (!baseline.current.votes.has(k) && v.membre_id !== user?.membre_id && !frozen.has(v.decision_id)) {
+        if (baseline.current.votes.has(k)) continue
+        baseline.current.votes.add(k)
+        if (v.membre_id !== user?.membre_id && !frozen.has(v.decision_id)) {
           notify('Nouveau vote', v.decision_id, numeroById[v.decision_id])
         }
       }
       for (const q of questions) {
-        if (!baseline.current.questions.has(q.id) && q.auteur_id !== user?.membre_id && !frozen.has(q.decision_id)) {
+        if (baseline.current.questions.has(q.id)) continue
+        baseline.current.questions.add(q.id)
+        if (q.auteur_id !== user?.membre_id && !frozen.has(q.decision_id)) {
           notify('Nouvelle question', q.decision_id, numeroById[q.decision_id])
         }
       }
-      baseline.current = { votes: voteKeys, questions: questionIds }
     }
 
     tick()
