@@ -9,7 +9,7 @@ import { tally, tallySummary, engagementApprouve, VOTE_VALUES, VOTE_LABELS } fro
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
-import { decisionShareText, decisionUpdateText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
+import { decisionShareText, decisionUpdateText, decisionRecordedText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
 import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
 import { TEST_VOTES } from '../lib/config'
 import { downloadDocument } from '../lib/documents'
@@ -287,8 +287,11 @@ export default function DecisionDetail() {
                 Enregistrer la décision
               </Button>
             )}
-            {/* L'owner porte sa décision : lui seul prévient et relance le CS. */}
-            {isOwner && !locked && (
+            {/* L'owner porte sa décision (prévient / relance) ; le président peut
+                aussi notifier, y compris APRÈS enregistrement — pour annoncer au CS
+                qu'une décision est enregistrée, quel que soit le résultat. D'où le
+                retrait de `!locked` ici (la modale propose le bon gabarit). */}
+            {(isOwner || isAdmin) && (
               <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
                 {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
               </Button>
@@ -778,7 +781,9 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
   // La modale reste montée (open piloté par la prop) : d'où l'effet plutôt qu'un
   // état initial figé une seule fois.
   useEffect(() => {
-    if (open) { setText(decisionShareText(decision, contexte)); setCopied(false) }
+    // Défaut intelligent : une décision enregistrée pré-remplit l'annonce
+    // « enregistrée » ; sinon le gabarit « demande de vote ».
+    if (open) { setText(decision.enregistree ? decisionRecordedText(decision) : decisionShareText(decision, contexte)); setCopied(false) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, decision.id])
 
@@ -822,6 +827,7 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
           <span className="text-xs text-slate-500">Gabarit :</span>
           <Button variant="secondary" size="sm" onClick={() => setText(decisionShareText(decision, contexte))}>Demande de vote</Button>
           <Button variant="secondary" size="sm" onClick={() => setText(decisionUpdateText(decision))}>Mise à jour</Button>
+          {decision.enregistree && <Button variant="secondary" size="sm" onClick={() => setText(decisionRecordedText(decision))}>Décision enregistrée</Button>}
         </div>
         <p className="text-xs text-slate-500">Modifiez librement le message avant l’envoi (ex. « 4 sur 5 sont pour, il manque le vote de… »). WhatsApp s’ouvre avec ce texte — choisissez le groupe du CS, puis envoyez.</p>
         <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} autoGrow />

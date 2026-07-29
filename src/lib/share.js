@@ -46,6 +46,19 @@ export function decisionUpdateText(decision) {
   ].join('\n')
 }
 
+// Gabarit « décision enregistrée » : annonce au CS qu'une délibération est
+// désormais figée au registre, QUEL QUE SOIT le résultat (adoptée ou rejetée).
+// Éditable avant envoi comme les autres.
+const RESULTAT_LABELS = { adoptee: 'Adoptée', rejetee: 'Rejetée', en_cours: 'En cours' }
+export function decisionRecordedText(decision) {
+  return [
+    `*Décision enregistrée — ${decision.numero}*`,
+    decision.titre,
+    `Résultat : ${RESULTAT_LABELS[decision.statut] || decision.statut}`,
+    `Voir : ${decisionUrl(decision)}`,
+  ].join('\n')
+}
+
 // Deux façons d'ouvrir WhatsApp avec le message pré-rempli, sans numéro (on
 // choisit le groupe du CS à l'arrivée) :
 //
