@@ -413,7 +413,9 @@ export default function DecisionDetail() {
               ))}
             </ul>
           )}
-          {myId && (
+          {/* Décision enregistrée = registre figé : plus aucune saisie (commentaire,
+              question, réponse). Seul le contenu déjà présent reste, en lecture seule. */}
+          {myId && !locked && (
             <div className="mt-2 flex items-start gap-2">
               <Textarea autoGrow rows={2} value={cText} onChange={(e) => setCText(e.target.value)} placeholder="Ajouter un commentaire (suivi de la décision)…" className="min-w-0 flex-1" />
               <Button size="sm" onClick={addCommentaire}>Commenter</Button>
@@ -598,7 +600,7 @@ export default function DecisionDetail() {
                       <p className="text-sm text-slate-700">{r.texte}</p>
                     </div>
                   ))}
-                  {replyTo === question.id ? (
+                  {!locked && (replyTo === question.id ? (
                     <div className="mt-2 ml-4 flex flex-wrap items-start gap-2">
                       <Textarea autoGrow rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Votre réponse…" className="min-w-0 flex-1" />
                       <Button size="sm" onClick={() => addReponse(question.id)}>Répondre</Button>
@@ -606,13 +608,15 @@ export default function DecisionDetail() {
                     </div>
                   ) : (
                     <button onClick={() => setReplyTo(question.id)} className="mt-2 ml-4 text-xs text-navy-600 underline">Répondre</button>
-                  )}
+                  ))}
                 </div>
               ))}
-              <div className="flex items-start gap-2 pt-2">
-                <Textarea autoGrow rows={2} value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question…" className="min-w-0 flex-1" />
-                <Button onClick={addQuestion}>Publier</Button>
-              </div>
+              {!locked && (
+                <div className="flex items-start gap-2 pt-2">
+                  <Textarea autoGrow rows={2} value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question…" className="min-w-0 flex-1" />
+                  <Button onClick={addQuestion}>Publier</Button>
+                </div>
+              )}
             </div>
           </Card>
         </div>
