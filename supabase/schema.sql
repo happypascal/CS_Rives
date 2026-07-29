@@ -374,9 +374,14 @@ create policy "votes_self_write" on votes for all to authenticated
 drop policy if exists "qa_admin" on questions_reponses;
 create policy "qa_admin" on questions_reponses for all to authenticated using (is_admin()) with check (is_admin());
 
+-- Insert Q/R/commentaire : par soi-même ET seulement si la décision n'est pas
+-- enregistrée (registre figé — aligné sur votes_self_write, migration 021).
 drop policy if exists "qa_self_insert" on questions_reponses;
 create policy "qa_self_insert" on questions_reponses for insert to authenticated
-  with check (auteur_id = current_membre_id());
+  with check (
+    auteur_id = current_membre_id()
+    and exists (select 1 from decisions d where d.id = decision_id and d.enregistree = false)
+  );
 
 -- Signatures : le secrétaire peut faire signer, comme le président (migration
 -- 015). INSERT (créer un lot) + UPDATE (marquer signé) ; pas de DELETE. Le
