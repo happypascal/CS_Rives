@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-29**. Commentaires de suivi, statut « sans vote », WhatsApp éditable
-> (3 gabarits), corrections des notifications, verrou de saisie sur décision enregistrée (UI + RLS).
+> Dernière session : **2026-07-30**. Gros chantier AG (heures, cycle de statut, quorum + m² a
+> posteriori, clôture qui fige) + **TVA** sur les décisions (budgets en TTC). Migrations 022-024.
 > ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
@@ -24,6 +24,29 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-07-30 — chantier AG (heures, cycle, quorum, clôture) + TVA
+
+Tout en prod (migrations 022-024 appliquées à la main). Validé en mock.
+
+- **✅ Heures d'AG** (migration 022) : `heure_planifiee` + `heure_fin` (texte HH:MM). L'heure de fin
+  n'est saisissable qu'au stade « AG a eu lieu ».
+- **✅ Cycle de statut d'AG révisé** (migration 023). Stockés : `preparation` → `convoquee` →
+  `cloturee` (+ `annulee`). **« AG a eu lieu » est DÉRIVÉ** de la date passée (`effectiveAGStatut`
+  dans `agLogic.js`), **jamais stocké**. Helper `agAEuLieu` = date atteinte et non figée.
+- **✅ Clôture = FIGE l'AG** (bouton « Clôturer l'AG », président, exige l'heure de fin, seulement
+  une fois l'AG tenue). AG figée (cloturee/annulee) → plus de modification de l'AG ni des
+  résolutions. **EXCEPTION** : le rattachement d'une enveloppe à un projet reste actif (acte
+  post-AG). `agFrozen = statut cloturee|annulee`.
+- **✅ Données a posteriori** (migration 023) : `quorum_statut` (quorum_atteint / sans_quorum_accepte
+  / sans_quorum_rejete) + `m2_presents` (m² présents/représentés). Saisis dans un `<fieldset
+  disabled>` activé seulement quand l'AG a eu lieu.
+- **✅ TVA sur les décisions** (migration 024) : `tva_taux` + `tva_incluse`. Le devis est saisi tel
+  quel + taux + HT/TTC → `engagementTTC(d)` (`decisionLogic.js`) calcule le TTC. **Budgets &
+  restant en TTC** (`computeAGBudgets`/`computeProjectBudgets`), le dépassement se contrôle sur le
+  TTC (un devis HT « qui rentre » peut dépasser le budget TTC). Affiché décision + fiche projet.
+  ⚠ Les 3 selects de décisions dans `supabaseDb.js` incluent désormais tva_taux/tva_incluse (sinon
+  budgets faussés en prod). Décisions héritées (tva null) traitées TTC, pas de gonflement.
 
 ## Session 2026-07-23/29 — commentaires, sans vote, WhatsApp éditable, verrous
 
@@ -184,11 +207,10 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `022` (001-021 appliquées en **prod**). Récentes : 018
-  (email insensible à la casse), 019 (type `commentaire`), 020 (statut `sans_vote`), 021 (pas
-  d'insert Q/R sur décision enregistrée). ⚠ Le **staging** est **en pause** (inactivité, plan
-  gratuit) et n'a que jusqu'à ~017 : à réactiver + remettre à niveau (rejouer `schema.sql` ou
-  018→021) avant tout test dessus.
+- **Prochaine migration SQL libre** : `025` (001-024 appliquées en **prod**). Récentes : 021 (pas
+  d'insert Q/R sur décision enregistrée), 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²),
+  024 (TVA sur décisions). ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que
+  jusqu'à ~017 : à réactiver + remettre à niveau (rejouer `schema.sql` ou 018→024) avant tout test.
 - **Sauvegarde prod = MANUELLE et non planifiée** : `scripts/backup.mjs` ne tourne que si on le
   lance à la main (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` en env). **Donc pas de sauvegarde
   auto aujourd'hui.** Décidé de **ne pas** faire de keep-alive/cron (pansement) — le vrai correctif
