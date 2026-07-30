@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur } from '../components/ui'
+import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur, num } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS } from '../lib/agLogic'
+import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
 
 export default function AGDetail() {
   const { id } = useParams()
@@ -65,7 +65,9 @@ export default function AGDetail() {
   // AG FIGÉE : clôturée (ou annulée) → plus de modification de l'AG ni des
   // résolutions (titre, montant, résultat). EXCEPTION assumée : le rattachement
   // d'une enveloppe à un projet reste possible (acte administratif post-AG).
-  const agFrozen = ag.statut !== 'en_cours'
+  // « AG a eu lieu » (date passée) N'est PAS figée : on y saisit encore les
+  // résultats et l'heure de fin avant de clôturer.
+  const agFrozen = ag.statut === 'cloturee' || ag.statut === 'annulee'
 
   const cloturerAG = async () => {
     if (!(await confirm({ title: `Clôturer l’AG ${ag.numero} ?`, message: 'L’AG et ses résolutions seront FIGÉES (plus modifiables). Seul le rattachement des budgets aux projets restera possible. À faire une fois les résultats et l’heure de fin de séance saisis.', confirmLabel: 'Clôturer', danger: true }))) return
@@ -106,9 +108,9 @@ export default function AGDetail() {
         subtitle={`${formatDate(ag.date_ag)}${ag.heure_planifiee ? ' à ' + ag.heure_planifiee : ''}${ag.lieu ? ' · ' + ag.lieu : ''}`}
         actions={<>
           {canManage && !agFrozen && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
-          {/* Clôturer = FIGER l'AG. Président seul (comme l'enregistrement d'une
-              décision), et seulement une fois l'heure de fin de séance saisie. */}
-          {isAdmin && !isMobile && !agFrozen && (
+          {/* Clôturer = FIGER l'AG. Président seul, et seulement une fois l'AG TENUE
+              (date passée) ET l'heure de fin saisie. Avant la date, pas de clôture. */}
+          {isAdmin && !isMobile && agAEuLieu(ag) && (
             <Button onClick={cloturerAG} disabled={!ag.heure_fin} title={!ag.heure_fin ? 'Renseignez d’abord l’heure de fin de séance (Modifier)' : ''}>Clôturer l’AG</Button>
           )}
           {canDelete && !agFrozen && <Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button>}
@@ -118,8 +120,12 @@ export default function AGDetail() {
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Statut</p>
-          <div className="mt-1"><AGStatutBadge statut={ag.statut} /></div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <AGStatutBadge statut={effectiveAGStatut(ag)} />
+            {ag.quorum_statut && <Badge tone={AG_QUORUM_TONES[ag.quorum_statut] || 'gray'}>{AG_QUORUM_LABELS[ag.quorum_statut]}</Badge>}
+          </div>
           {ag.heure_fin && <p className="mt-1 text-xs text-slate-500">Séance close à {ag.heure_fin}</p>}
+          {ag.m2_presents != null && ag.m2_presents !== '' && <p className="mt-0.5 text-xs text-slate-500">{num(ag.m2_presents)} m² présents ou représentés</p>}
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Président de séance</p>

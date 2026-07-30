@@ -34,7 +34,11 @@ create table if not exists assemblees_generales (
   lieu             text,
   president_seance text,                                  -- désigné EN séance : inconnu à la planification
   ordre_du_jour    text,
-  statut           text not null default 'en_cours' check (statut in ('en_cours','cloturee','annulee')),
+  -- Cycle : preparation → convoquee → (a eu lieu : DÉRIVÉ de la date, non stocké) → cloturee. + annulee (migration 023).
+  statut           text not null default 'preparation' check (statut in ('preparation','convoquee','cloturee','annulee')),
+  -- A posteriori (une fois l'AG tenue) : résultat de quorum + m² présents/représentés (migration 023).
+  quorum_statut    text check (quorum_statut in ('quorum_atteint','sans_quorum_accepte','sans_quorum_rejete')),
+  m2_presents      numeric(10,2),
   pv_url           text,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()

@@ -4,6 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import { AGStatutBadge } from '../components/badges'
+import { effectiveAGStatut } from '../lib/agLogic'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -54,7 +55,7 @@ export default function AGList() {
                     </td>
                     <td className="px-4 py-3"><Badge tone={ag.type === 'AGO' ? 'navy' : 'blue'}>{ag.type}</Badge></td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(ag.date_ag)}</td>
-                    <td className="px-4 py-3"><AGStatutBadge statut={ag.statut} /></td>
+                    <td className="px-4 py-3"><AGStatutBadge statut={effectiveAGStatut(ag)} /></td>
                     {/* Pas de colonne « Quorum » pour les AG : l'app ne compte pas les
                         voix d'AG (prorata des superficies, comptées dans le PV, cf.
                         agLogic.js). `assemblees_generales` n'a d'ailleurs pas de champ

@@ -1,6 +1,6 @@
 import { Badge } from './ui'
 import { STATUT_LABELS, VOTE_LABELS } from '../lib/decisionLogic'
-import { RESOLUTION_STATUT_LABELS } from '../lib/agLogic'
+import { RESOLUTION_STATUT_LABELS, AG_STATUT_LABELS, AG_STATUT_TONES } from '../lib/agLogic'
 import { PROJET_STATUT_LABELS, PROJET_STATUT_TONES } from '../lib/projetLogic'
 
 export function StatutBadge({ statut }) {
@@ -18,10 +18,10 @@ export function ResolutionStatutBadge({ statut }) {
   return <Badge tone={map[statut] || 'gray'}>{RESOLUTION_STATUT_LABELS[statut] || statut}</Badge>
 }
 
+// `statut` reçu = statut DÉRIVÉ (via effectiveAGStatut au point d'appel), donc
+// il peut valoir 'tenue' (AG a eu lieu), qui n'est jamais stocké en base.
 export function AGStatutBadge({ statut }) {
-  const map = { en_cours: 'amber', cloturee: 'green', annulee: 'red' }
-  const labels = { en_cours: 'En cours', cloturee: 'Clôturée', annulee: 'Annulée' }
-  return <Badge tone={map[statut] || 'gray'}>{labels[statut] || statut}</Badge>
+  return <Badge tone={AG_STATUT_TONES[statut] || 'gray'}>{AG_STATUT_LABELS[statut] || statut}</Badge>
 }
 
 export function ProjetStatutBadge({ statut }) {

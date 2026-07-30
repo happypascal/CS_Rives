@@ -4,7 +4,8 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Spinner, Button, eur } from '../components/ui'
 import { StatutBadge, AGStatutBadge } from '../components/badges'
-import { formatDate, formatDateLong } from '../lib/format'
+import { formatDate, formatDateLong, todayISO } from '../lib/format'
+import { effectiveAGStatut } from '../lib/agLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -40,7 +41,8 @@ export default function Dashboard() {
 
   const recent = decisions.slice(0, 5)
   const enCours = decisions.filter((d) => !d.enregistree)
-  const nextAG = ags.filter((a) => a.statut === 'en_cours').sort((x, y) => (x.date_ag < y.date_ag ? -1 : 1))[0]
+  // Prochaine AG à venir : ni clôturée ni annulée, et pas encore passée.
+  const nextAG = ags.filter((a) => a.statut !== 'cloturee' && a.statut !== 'annulee' && a.date_ag >= todayISO()).sort((x, y) => (x.date_ag < y.date_ag ? -1 : 1))[0]
   const anyBatchDecisionIds = new Set(batches.flatMap((b) => b.decision_ids))
   const toSign = decisions.filter((d) => d.enregistree && d.statut === 'adoptee' && !anyBatchDecisionIds.has(d.id))
   // ALLOUER ≠ ENGAGER. Le `engage` d'une enveloppe AG additionne deux choses de
@@ -130,7 +132,7 @@ export default function Dashboard() {
                 <Link to={`/ag/${nextAG.id}`} className="block rounded-md p-2 hover:bg-navy-50/50">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-navy-800">{nextAG.numero} · {nextAG.type}</p>
-                    <AGStatutBadge statut={nextAG.statut} />
+                    <AGStatutBadge statut={effectiveAGStatut(nextAG)} />
                   </div>
                   <p className="mt-1 text-sm text-slate-600">{formatDateLong(nextAG.date_ag)}</p>
                   <p className="text-xs text-slate-500">{nextAG.lieu}</p>
