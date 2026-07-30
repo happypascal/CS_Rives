@@ -1,8 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-22**. Notifications de bureau (président/secrétaire) **validées en
-> réel**, registre enrichi (détail des votes, questions sans réponse), chargement durci. ⚠ Toujours
-> une **maquette de validation**, pas encore un registre de production (voir « En bref »).
+> Dernière session : **2026-07-29**. Commentaires de suivi, statut « sans vote », WhatsApp éditable
+> (3 gabarits), corrections des notifications, verrou de saisie sur décision enregistrée (UI + RLS).
+> ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
 > Pour le staging/UAT, voir **`docs/STAGING_UAT.md`**.
@@ -24,6 +24,35 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-07-23/29 — commentaires, sans vote, WhatsApp éditable, verrous
+
+Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 appliquées à la main).
+
+- **✅ Commentaires de suivi sur les décisions** (migration 019 : type `'commentaire'` dans
+  `questions_reponses`). Section « Commentaires » dans le bloc de lecture, **avant les pièces
+  jointes**. Distinction voulue par Pascal : **Q&A précède le vote, le commentaire vient après**
+  (mise en œuvre). Un commentaire n'attend pas de réponse → **ne compte pas** comme « question sans
+  réponse » au registre.
+- **✅ Statut de résolution « Sans vote »** (migration 020 : `'sans_vote'` dans
+  `resolutions_ag.statut`). Résolution présentée mais non soumise au vote. N'alloue aucun budget
+  (comme rejetée/retirée — seule `adoptee` alloue).
+- **✅ WhatsApp éditable, 3 gabarits** (`share.js` + `ShareModal`). Le message figé « relance de
+  vote » devient un **textarea éditable** avec 3 gabarits : **Demande de vote**, **Mise à jour**
+  (point de situation libre), **Décision enregistrée** (annonce le résultat, adoptée/rejetée). Le
+  bouton « Notifier » reste visible **après** enregistrement (`isOwner || isAdmin`).
+- **✅ Notifications de bureau — 2 corrections** (`useActivityNotifications.js`) : (1) ne plus
+  notifier l'activité d'une décision **enregistrée** (le dernier vote avant l'enregistrement
+  déclenchait une notif inutile) ; (2) **base de référence qui accumule** (on n'y retire jamais) →
+  plus de notifs répétées quand `listVotes()` renvoie une fois une liste incomplète. ⚠ Le hook
+  tourne dans l'onglet ouvert : **recharger l'app** (`Cmd+Shift+R`) pour prendre le nouveau code.
+- **✅ Décision enregistrée = registre figé, saisie verrouillée** : les champs commentaire /
+  question / réponse **disparaissent** (UI), **et** la RLS `qa_self_insert` exige désormais
+  `enregistree = false` (migration 021, alignée sur `votes_self_write`). Verrou garanti UI + serveur.
+- **✅ Registre enrichi (suite)** : colonne **« Dates »** fusionnée (publication + limite dessous),
+  colonne **« Votes »** en détail **pour/contre/abstention/non voté** (2 lignes), badge
+  **« N question(s) sans réponse »**, **chargement durci** (erreur affichée au lieu d'un écran vide
+  — cause du « trésorier qui ne voyait rien » : session expirée côté client, pas un bug RLS).
 
 ## Session 2026-07-21/22 — notifications de bureau, registre enrichi, robustesse
 
@@ -155,8 +184,16 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `019` (001-018 appliquées en prod ; 018 = appariement email
-  insensible à la casse + trigger de normalisation).
+- **Prochaine migration SQL libre** : `022` (001-021 appliquées en **prod**). Récentes : 018
+  (email insensible à la casse), 019 (type `commentaire`), 020 (statut `sans_vote`), 021 (pas
+  d'insert Q/R sur décision enregistrée). ⚠ Le **staging** est **en pause** (inactivité, plan
+  gratuit) et n'a que jusqu'à ~017 : à réactiver + remettre à niveau (rejouer `schema.sql` ou
+  018→021) avant tout test dessus.
+- **Sauvegarde prod = MANUELLE et non planifiée** : `scripts/backup.mjs` ne tourne que si on le
+  lance à la main (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` en env). **Donc pas de sauvegarde
+  auto aujourd'hui.** Décidé de **ne pas** faire de keep-alive/cron (pansement) — le vrai correctif
+  reste **Supabase Pro** (backups auto + jamais de pause). Le mail Supabase du 27/07 (pause du
+  staging) rappelle que la prod pourrait aussi se mettre en pause sur une longue période creuse.
 - **Tester sans risque** : le **staging** (vraie RLS, données isolées) — cf. `docs/STAGING_UAT.md`.
   Le mode démo (mock, sans variables Supabase) ne teste **pas** les droits.
 - **Rappel workflow** : une migration s'applique **à la main** dans le SQL Editor **avant** de
