@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, eur } from '../components/ui'
 import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementApprouve, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -358,8 +358,13 @@ export default function DecisionDetail() {
             <p className="text-xs font-medium uppercase tracking-wide text-navy-600">Impact</p>
             {decision.montant_engage != null ? (
               <p className="mt-1 text-lg font-semibold text-navy-900">
-                Engage {eur(decision.montant_engage)}
+                Engage {eur(engagementTTC(decision))} TTC
                 {cibleLabel && <span className="font-normal text-navy-700"> sur {cibleLabel}</span>}
+                <span className="ml-2 text-xs font-normal text-navy-600">
+                  {decision.tva_incluse === false
+                    ? `(${eur(decision.montant_engage)} HT + ${Number(decision.tva_taux) || 0} % TVA)`
+                    : `(TVA ${Number(decision.tva_taux) || 0} % incluse)`}
+                </span>
               </p>
             ) : (
               // Rattachée sans engager : le dire quand même, sinon une décision

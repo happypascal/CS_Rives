@@ -120,7 +120,9 @@ create table if not exists decisions (
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
   composition_snapshot jsonb,
-  montant_engage       numeric(12,2),                    -- engagement (sur projet OU résolution)
+  montant_engage       numeric(12,2),                    -- engagement (sur projet OU résolution), le devis tel quel
+  tva_taux             numeric(5,2),                     -- taux TVA saisi (0/5.5/10/20…) — migration 024
+  tva_incluse          boolean,                          -- le montant inclut-il la TVA (TTC) ou non (HT) ? TTC = calculé
   projet_id            uuid references projets(id) on delete set null,               -- engagement via projet
   ag_id                uuid references assemblees_generales(id) on delete set null,  -- rattachement AG
   resolution_id        uuid references resolutions_ag(id) on delete set null,        -- engagement direct résolution

@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, eur, DesktopOnly, UploadProgress } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
-import { nextNumero } from '../lib/decisionLogic'
+import { nextNumero, engagementTTC } from '../lib/decisionLogic'
 import { todayISO, addBusinessDaysISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -30,6 +30,10 @@ export default function DecisionForm() {
   // Cible d'engagement : '' | 'projet:<id>' | 'resolution:<id>'
   const [target, setTarget] = useState('')
   const [montantEngage, setMontantEngage] = useState('')
+  // TVA sur l'engagement : taux saisi (%) + le montant est-il HT ou TTC. L'app en
+  // déduit le TTC (le budget d'AG est TTC). Défaut : 20 % HT (le devis est souvent HT).
+  const [tvaTaux, setTvaTaux] = useState('20')
+  const [tvaIncluse, setTvaIncluse] = useState(false)
   // Effet sur le statut du projet ('' | suspendre | reprendre | terminer).
   const [projetAction, setProjetAction] = useState('')
   const [documents, setDocuments] = useState([])
@@ -68,6 +72,8 @@ export default function DecisionForm() {
           setTitre(d.titre)
           setDescription(d.description)
           setMontantEngage(d.montant_engage ?? '')
+          setTvaTaux(d.tva_taux != null ? String(d.tva_taux) : '20')
+          setTvaIncluse(d.tva_incluse ?? true) // décisions héritées (null) : traitées TTC, pas de gonflement
           setDocuments(d.documents || [])
           if (d.projet_id) setTarget(`projet:${d.projet_id}`)
           else if (d.resolution_id) setTarget(`resolution:${d.resolution_id}`)
@@ -168,9 +174,11 @@ export default function DecisionForm() {
     setError('')
     if (!titre.trim()) return setError('Le titre est obligatoire.')
     const engage = parseMontant(montantEngage)
+    // Le budget (enveloppe AG) est TTC : la consommation se compare en TTC.
+    const engageTTC = engage == null ? null : engagementTTC({ montant_engage: engage, tva_taux: Number(tvaTaux), tva_incluse: tvaIncluse })
     if (engage != null && !target) return setError('Pour engager un montant, choisissez un projet ou une résolution.')
-    if (engage != null && restantDispo != null && engage > restantDispo) {
-      return setError(`Montant engagé (${eur(engage)}) supérieur au disponible (${eur(restantDispo)}).`)
+    if (engageTTC != null && restantDispo != null && engageTTC > restantDispo) {
+      return setError(`Coût TTC engagé (${eur(engageTTC)}) supérieur au disponible (${eur(restantDispo)}).`)
     }
     // Résout la cible en projet_id / resolution_id / ag_id.
     // Un projet peut être financé par plusieurs AG : `ag_id` ne vaut que s'il n'y
@@ -195,6 +203,9 @@ export default function DecisionForm() {
         resolution_id,
         ag_id,
         montant_engage: engage,
+        // TVA : n'a de sens que s'il y a un engagement. Sinon on remet à null.
+        tva_taux: engage != null ? (Number(tvaTaux) || 0) : null,
+        tva_incluse: engage != null ? tvaIncluse : null,
         // N'a de sens que sur un projet : une décision rattachée à une résolution
         // ou à rien ne peut pas suspendre quoi que ce soit.
         projet_action: kind === 'projet' && projetAction ? projetAction : null,
@@ -262,9 +273,33 @@ export default function DecisionForm() {
                     molette et décrémente la valeur (20000 -> 19999.99), et refuse
                     le format suisse « 20'000 ». inputMode decimal garde le clavier
                     numérique sur mobile ; parseMontant tolère apostrophe/espace. */}
-                <Input label="Montant engagé par cette décision (€)" type="text" inputMode="decimal" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000 ou 20'000" />
-                {parseMontant(montantEngage) != null && restantDispo != null && parseMontant(montantEngage) > restantDispo && (
-                  <p className="mt-1 text-xs text-red-600">Dépasse le disponible ({eur(restantDispo)}).</p>
+                <Input label="Montant du devis engagé (€)" type="text" inputMode="decimal" value={montantEngage} onChange={(e) => setMontantEngage(e.target.value)} placeholder="ex : 12000 ou 20'000" />
+                {parseMontant(montantEngage) != null && (
+                  <>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Select label="Taux de TVA" value={tvaTaux} onChange={(e) => setTvaTaux(e.target.value)}>
+                        <option value="0">Hors TVA / exonéré (0 %)</option>
+                        <option value="5.5">5,5 %</option>
+                        <option value="10">10 %</option>
+                        <option value="20">20 %</option>
+                      </Select>
+                      <Select label="Le montant saisi est…" value={tvaIncluse ? 'ttc' : 'ht'} onChange={(e) => setTvaIncluse(e.target.value === 'ttc')}>
+                        <option value="ht">Hors taxe (HT) — la TVA s’ajoute</option>
+                        <option value="ttc">TVA incluse (TTC)</option>
+                      </Select>
+                    </div>
+                    {(() => {
+                      const m = parseMontant(montantEngage)
+                      const ttc = engagementTTC({ montant_engage: m, tva_taux: Number(tvaTaux), tva_incluse: tvaIncluse })
+                      const over = restantDispo != null && ttc > restantDispo
+                      return (
+                        <p className={`mt-1 text-xs ${over ? 'font-medium text-red-600' : 'text-slate-600'}`}>
+                          Coût <strong>TTC : {eur(ttc)}</strong>{!tvaIncluse && Number(tvaTaux) > 0 ? ` (${eur(m)} HT + ${tvaTaux} % de TVA)` : ''}
+                          {over ? ` — dépasse le disponible (${eur(restantDispo)})` : ''}
+                        </p>
+                      )
+                    })()}
+                  </>
                 )}
               </div>
             )}

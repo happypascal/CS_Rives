@@ -144,7 +144,7 @@ export const supabaseRepo = {
   async listAGBudgets() {
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('*'))
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage'))
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage,tva_taux,tva_incluse'))
     const projets = must(await supabase.from('projets').select('id,nom'))
     return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions, projets })
   },
@@ -159,7 +159,7 @@ export const supabaseRepo = {
     const projets = must(await supabase.from('projets').select('*'))
     // `projet_action`, `date_enregistrement` et `created_at` alimentent la dérivation
     // du STATUT (dernière décision enregistrée qui suspend / reprend / termine).
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage,projet_action,date_enregistrement,created_at'))
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage,tva_taux,tva_incluse,projet_action,date_enregistrement,created_at'))
     const membres_cs = must(await supabase.from('membres_cs').select('id,nom,prenom'))
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,ag_id,numero,titre,statut,budget_alloue,projet_id'))
@@ -228,7 +228,7 @@ export const supabaseRepo = {
   // silencieusement absente des listes en prod (le mock, lui, la renverra).
   async listDecisions() {
     return must(await supabase.from('decisions')
-      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,projet_id,ag_id,resolution_id,projet_action,created_by,created_at,updated_at')
+      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,created_by,created_at,updated_at')
       .order('date_publication', { ascending: false }))
   },
   async getDecision(id) {

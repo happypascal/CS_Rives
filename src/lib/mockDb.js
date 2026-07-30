@@ -7,6 +7,7 @@
 //   - signature : par LOT de décisions sélectionnées.
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
+import { engagementTTC } from './decisionLogic'
 
 const STORAGE_KEY = 'cs_rives_mockdb_v8'
 const SESSION_KEY = 'cs_rives_session'
@@ -340,8 +341,8 @@ export function computeAGBudgets(data) {
     const alloue = Number(r.budget_alloue)
     // Engagements directs (décisions rattachées à la résolution, sans projet).
     const direct = data.decisions.filter((d) => d.resolution_id === r.id && !d.projet_id && d.montant_engage != null)
-    const engageDirect = direct.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
-    const directEnCours = direct.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const engageDirect = direct.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + engagementTTC(d), 0)
+    const directEnCours = direct.filter((d) => !d.enregistree).reduce((s, d) => s + engagementTTC(d), 0)
     // L'enveloppe est indivisible : si la résolution finance un projet, elle y
     // passe EN ENTIER (le projet ne prend pas "une partie" d'une résolution).
     // D'où un restant nul côté AG — l'argent n'a pas disparu, il se suit
@@ -363,7 +364,7 @@ export function computeAGBudgets(data) {
       engage_en_cours: directEnCours,
       restant: alloue - engage,
       projet_id: r.projet_id || null,
-      engagements: direct.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
+      engagements: direct.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: engagementTTC(d), statut: d.statut, enregistree: d.enregistree })),
       projets: projet ? [{ id: projet.id, nom: projet.nom, budget_alloue: alloue }] : [],
     }
   })
@@ -376,8 +377,8 @@ export function computeProjectBudgets(data) {
   const memById = Object.fromEntries(data.membres_cs.map((m) => [m.id, m]))
   return (data.projets || []).map((p) => {
     const liees = data.decisions.filter((d) => d.projet_id === p.id && d.montant_engage != null)
-    const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + Number(d.montant_engage || 0), 0)
-    const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + Number(d.montant_engage || 0), 0)
+    const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + engagementTTC(d), 0)
+    const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + engagementTTC(d), 0)
 
     // Le budget du projet est DÉRIVÉ, jamais stocké : somme des enveloppes votées
     // qui le financent. Une 2e résolution votée l'an prochain l'augmente d'elle-même.

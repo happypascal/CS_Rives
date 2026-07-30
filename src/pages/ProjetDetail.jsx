@@ -5,6 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Spinner, eur } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { ProjetStatutBadge, StatutBadge } from '../components/badges'
+import { engagementTTC } from '../lib/decisionLogic'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -199,7 +200,9 @@ export default function ProjetDetail() {
                   <span className="text-slate-400">{d.numero}</span> · {d.titre}
                 </Link>
                 <div className="flex shrink-0 items-center gap-2">
-                  {d.montant_engage != null && <span className="text-sm text-slate-600">{eur(d.montant_engage)}</span>}
+                  {d.montant_engage != null && (
+                    <span className="text-sm text-slate-600" title={d.tva_incluse === false ? `${eur(d.montant_engage)} HT + ${Number(d.tva_taux) || 0} % TVA` : `TVA ${Number(d.tva_taux) || 0} % incluse`}>{eur(engagementTTC(d))} TTC</span>
+                  )}
                   <StatutBadge statut={d.statut} />
                 </div>
               </li>

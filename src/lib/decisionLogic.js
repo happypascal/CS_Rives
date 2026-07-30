@@ -33,6 +33,25 @@ export const STATUT_LABELS = {
   rejetee: 'Rejetée',
 }
 
+// Coût TTC d'un engagement de décision (migration 024). Le devis est saisi HT ou
+// TTC ; l'enveloppe d'AG étant TTC, la CONSOMMATION de budget se calcule toujours
+// en TTC. `tva_incluse === false` ⇒ HT ⇒ on ajoute la TVA ; sinon (true/null/
+// undefined) le montant est déjà TTC (ou pas de TVA) — donc les décisions
+// existantes (tva_incluse NULL) ne sont pas gonflées rétroactivement.
+export function engagementTTC(d) {
+  const m = Number(d?.montant_engage) || 0
+  if (!m) return 0
+  if (d.tva_incluse === false) return m * (1 + (Number(d.tva_taux) || 0) / 100)
+  return m
+}
+// Libellé court du statut TVA d'une décision, pour l'affichage à côté du montant.
+export function tvaLabel(d) {
+  if (d?.montant_engage == null || d.montant_engage === '') return null
+  const taux = Number(d.tva_taux) || 0
+  if (d.tva_incluse === false) return taux > 0 ? `HT +${taux}% TVA` : 'HT'
+  return taux > 0 ? `TTC (${taux}%)` : 'TTC'
+}
+
 // votes: [{ vote: 'pour'|'contre'|'abstention' }]
 // activeCount: nombre de membres actifs à la date (dénominateur du quorum).
 // presidentVote: vote du président ('pour'|'contre'|'abstention'|null) — ne sert
