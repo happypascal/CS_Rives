@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, DesktopOnly } from '../components/ui'
@@ -14,7 +14,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 // ancien texte y est simplement laissé tel quel, jamais réécrit.
 // `repo.getAG()` renvoie EN PLUS un tableau `resolutions` (jointure) : il ne doit
 // jamais repartir dans un update, sinon PostgREST rejette la colonne inconnue.
-const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), lieu: '', president_seance: '', statut: 'en_cours', pv_url: '' }
+const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), heure_planifiee: '', heure_fin: '', lieu: '', president_seance: '', statut: 'en_cours', pv_url: '' }
 
 // Ne garde que les colonnes réelles, et normalise les champs vides en null.
 function toPayload(form) {
@@ -67,6 +67,17 @@ export default function AGForm() {
   }
   if (loading) return <Spinner />
 
+  // AG clôturée/annulée = figée : on ne l'édite plus (le rattachement d'un budget
+  // à un projet se fait depuis la fiche AG, resté actif — pas ici).
+  if (editing && form.statut !== 'en_cours') {
+    return (
+      <div>
+        <PageHeader title={`AG ${form.numero}`} />
+        <Card className="p-6 text-sm text-slate-600">Cette AG est {form.statut === 'cloturee' ? 'clôturée' : 'annulée'} : elle n’est plus modifiable. <Link to={`/ag/${id}`} className="text-navy-600 underline">Retour à la fiche</Link></Card>
+      </div>
+    )
+  }
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const submit = async (e) => {
@@ -105,6 +116,10 @@ export default function AGForm() {
             <Input label="Date" type="date" value={form.date_ag} onChange={set('date_ag')} required />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Heure planifiée" type="time" value={form.heure_planifiee || ''} onChange={set('heure_planifiee')} />
+            <Input label="Heure de fin de séance" type="time" value={form.heure_fin || ''} onChange={set('heure_fin')} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Lieu" value={form.lieu} onChange={set('lieu')} placeholder="Salle des fêtes de Nernier" />
             <Input label="Président de séance (désigné en séance)" value={form.president_seance || ''} onChange={set('president_seance')} placeholder="À renseigner après l’AG" />
           </div>
@@ -112,9 +127,10 @@ export default function AGForm() {
             L’ordre du jour se compose en ajoutant des <strong>résolutions « à voter »</strong> sur la fiche de l’AG, une fois celle-ci créée.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* « Clôturée » n'est PAS proposé ici : la clôture (qui FIGE l'AG) est une
+                action dédiée sur la fiche de l'AG, exigeant l'heure de fin de séance. */}
             <Select label="Statut" value={form.statut} onChange={set('statut')}>
               <option value="en_cours">En cours</option>
-              <option value="cloturee">Clôturée</option>
               <option value="annulee">Annulée</option>
             </Select>
             <Input label="Lien PV signé (optionnel)" value={form.pv_url || ''} onChange={set('pv_url')} placeholder="https://…" />

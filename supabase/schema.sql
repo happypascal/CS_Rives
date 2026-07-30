@@ -29,6 +29,8 @@ create table if not exists assemblees_generales (
   numero           text not null unique,
   type             text not null check (type in ('AGO','AGE')),
   date_ag          date not null,
+  heure_planifiee  text,                                  -- « HH:MM » prévue à la convocation (migration 022)
+  heure_fin        text,                                  -- « HH:MM » effective de fin de séance, à la clôture
   lieu             text,
   president_seance text,                                  -- désigné EN séance : inconnu à la planification
   ordre_du_jour    text,

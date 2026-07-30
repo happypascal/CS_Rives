@@ -62,6 +62,20 @@ export default function AGDetail() {
   const projetById = Object.fromEntries(projets.map((p) => [p.id, p]))
   // Une résolution ne finance un projet que si l'AG l'a adoptée ET dotée.
   const peutFinancer = (r) => r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
+  // AG FIGÉE : clôturée (ou annulée) → plus de modification de l'AG ni des
+  // résolutions (titre, montant, résultat). EXCEPTION assumée : le rattachement
+  // d'une enveloppe à un projet reste possible (acte administratif post-AG).
+  const agFrozen = ag.statut !== 'en_cours'
+
+  const cloturerAG = async () => {
+    if (!(await confirm({ title: `Clôturer l’AG ${ag.numero} ?`, message: 'L’AG et ses résolutions seront FIGÉES (plus modifiables). Seul le rattachement des budgets aux projets restera possible. À faire une fois les résultats et l’heure de fin de séance saisis.', confirmLabel: 'Clôturer', danger: true }))) return
+    try {
+      await repo.updateAG(id, { statut: 'cloturee' })
+      await reload()
+    } catch (e) {
+      alert(e.message)
+    }
+  }
 
   const deleteAG = async () => {
     if (!(await confirm({ title: `Supprimer l’AG ${ag.numero} ?`, message: 'L’AG et toutes ses résolutions seront supprimées. Cette action est irréversible.', confirmLabel: 'Supprimer', danger: true }))) return
@@ -89,14 +103,23 @@ export default function AGDetail() {
     <div>
       <PageHeader
         title={<span><span className="text-slate-400">{ag.numero}</span> · {ag.type === 'AGO' ? 'Ordinaire' : 'Extraordinaire'}</span>}
-        subtitle={`${formatDate(ag.date_ag)}${ag.lieu ? ' · ' + ag.lieu : ''}`}
-        actions={(canManage || canDelete) && (<>{canManage && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}{canDelete && <Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button>}</>)}
+        subtitle={`${formatDate(ag.date_ag)}${ag.heure_planifiee ? ' à ' + ag.heure_planifiee : ''}${ag.lieu ? ' · ' + ag.lieu : ''}`}
+        actions={<>
+          {canManage && !agFrozen && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
+          {/* Clôturer = FIGER l'AG. Président seul (comme l'enregistrement d'une
+              décision), et seulement une fois l'heure de fin de séance saisie. */}
+          {isAdmin && !isMobile && !agFrozen && (
+            <Button onClick={cloturerAG} disabled={!ag.heure_fin} title={!ag.heure_fin ? 'Renseignez d’abord l’heure de fin de séance (Modifier)' : ''}>Clôturer l’AG</Button>
+          )}
+          {canDelete && !agFrozen && <Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button>}
+        </>}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Statut</p>
           <div className="mt-1"><AGStatutBadge statut={ag.statut} /></div>
+          {ag.heure_fin && <p className="mt-1 text-xs text-slate-500">Séance close à {ag.heure_fin}</p>}
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Président de séance</p>
@@ -154,7 +177,7 @@ export default function AGDetail() {
         <CardHeader
           title="Résolutions"
           subtitle="À voter tant que l’AG ne s’est pas tenue, puis résultat du vote (au prorata des superficies — détail au PV)."
-          actions={canManage && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
+          actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
         />
         <div className="divide-y divide-navy-50">
           {ag.resolutions.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">Aucune résolution.</p>}
@@ -167,7 +190,7 @@ export default function AGDetail() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <ResolutionStatutBadge statut={r.statut} />
-                  {canManage && (linkedCount(r.id) > 0
+                  {canManage && !agFrozen && (linkedCount(r.id) > 0
                     ? <span className="text-xs text-slate-400" title="Verrouillée : décision rattachée">🔒 {linkedCount(r.id)} décision(s)</span>
                     : <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>)}
                 </div>
