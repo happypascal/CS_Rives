@@ -67,6 +67,7 @@ create table if not exists resolutions_ag (
   budget_alloue    numeric(12,2),
   budget_intitule  text,
   observations     text,
+  documents        jsonb not null default '[]',           -- pièces jointes {path,name,type,size} (migration 025)
   created_at       timestamptz not null default now(),
   unique (ag_id, numero)
 );

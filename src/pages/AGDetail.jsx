@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur, num } from '../components/ui'
+import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur, num, UploadProgress } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
+import { MAX_DOC_BYTES, BACKEND } from '../lib/config'
+import { downloadDocument } from '../lib/documents'
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
@@ -226,6 +228,16 @@ export default function AGDetail() {
                 )}
               </div>
               {r.observations && <p className="mt-2 text-xs italic text-slate-400">{r.observations}</p>}
+              {/* PJ téléchargeables par tout membre (les non-gestionnaires n'ouvrent
+                  pas la modale d'édition). */}
+              {(r.documents || []).length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Pièces jointes</span>
+                  {r.documents.map((doc) => (
+                    <button key={doc.id || doc.path} type="button" onClick={() => downloadDocument(doc)} className="text-xs text-navy-600 underline">{doc.name}</button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -307,8 +319,37 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   const editing = Boolean(resolution.id)
   const [form, setForm] = useState(resolution)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [upload, setUpload] = useState(null)
   const [confirm, confirmModal] = useConfirm()
+  // À la création, l'upload a lieu AVANT que la ligne existe : le chemin doit
+  // porter l'id (`resolutions/<id>/…`, migration 025 + 012). On le fixe côté client.
+  const [newId] = useState(() => crypto.randomUUID())
+  const entityId = editing ? resolution.id : newId
+  const docs = form.documents || []
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  // Même patron que ProjetForm : « Retirer » n'efface pas l'objet du bucket
+  // (orphelin assumé — annuler ensuite laisserait un chemin mort).
+  const onFile = async (e) => {
+    setError('')
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > MAX_DOC_BYTES) {
+      const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
+      return setError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
+    }
+    setUpload({ name: file.name, value: 0 })
+    try {
+      const record = await repo.uploadDocument('resolutions', entityId, file, (value) => setUpload((u) => (u ? { ...u, value } : u)))
+      setForm((f) => ({ ...f, documents: [...(f.documents || []), record] }))
+    } catch (err) {
+      setError(`Envoi du fichier impossible : ${err.message}`)
+    } finally {
+      setUpload(null)
+    }
+  }
 
   const save = async () => {
     setSaving(true)
@@ -322,7 +363,11 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
       budget_alloue: parseMontant(form.budget_alloue),
       budget_intitule: form.budget_intitule || null,
       observations: form.observations,
+      documents: docs,
     }
+    // Id explicite à la création : les PJ ont déjà été téléversées sous
+    // resolutions/<newId>/, la ligne doit donc porter ce même id.
+    if (!editing) payload.id = newId
     try {
       if (editing) await repo.updateResolution(resolution.id, payload)
       else await repo.createResolution(payload)
@@ -349,7 +394,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
     <Modal
       open onClose={onClose} wide
       title={editing ? `Résolution n° ${form.numero}` : 'Nouvelle résolution'}
-      footer={<>{editing && <Button variant="danger" onClick={del} className="mr-auto">Supprimer</Button>}<Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving || !form.titre}>{saving ? '…' : 'Enregistrer'}</Button></>}
+      footer={<>{editing && <Button variant="danger" onClick={del} className="mr-auto">Supprimer</Button>}<Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving || Boolean(upload) || !form.titre}>{saving ? '…' : 'Enregistrer'}</Button></>}
     >
       <div className="space-y-3">
         <Input label="Titre" value={form.titre} onChange={set('titre')} required />
@@ -369,6 +414,24 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
           <Input label="Intitulé du budget" value={form.budget_intitule || ''} onChange={set('budget_intitule')} />
         </div>
         <Textarea label="Observations" value={form.observations || ''} onChange={set('observations')} rows={2} />
+        <div>
+          <span className="mb-1 block text-sm font-medium text-slate-700">Pièces jointes</span>
+          <div className="space-y-2">
+            {docs.map((doc) => (
+              <div key={doc.id || doc.path} className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm">
+                <button type="button" onClick={() => downloadDocument(doc)} className="truncate text-left text-navy-700 hover:underline">{doc.name} <span className="text-xs text-slate-400">({Math.round((doc.size || 0) / 1024)} Ko)</span></button>
+                <button type="button" onClick={() => setForm((f) => ({ ...f, documents: (f.documents || []).filter((x) => (x.id || x.path) !== (doc.id || doc.path)) }))} className="ml-2 shrink-0 text-xs text-red-600 underline">Retirer</button>
+              </div>
+            ))}
+            {upload && <UploadProgress value={upload.value} name={upload.name} />}
+            <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${upload ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+              + Ajouter un fichier
+              <input type="file" className="hidden" disabled={Boolean(upload)} onChange={onFile} />
+            </label>
+            <p className="text-xs text-slate-400">{Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.</p>
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
     {confirmModal}
