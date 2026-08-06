@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-07-30**. Gros chantier AG (heures, cycle de statut, quorum + m² a
-> posteriori, clôture qui fige) + **TVA** sur les décisions (budgets en TTC). Migrations 022-024.
+> Dernière session : **2026-08-05**. Pièces jointes sur les résolutions d'AG (migration 025).
+> Précédemment : chantier AG (heures, cycle de statut, quorum/m², clôture) + TVA (022-024).
 > ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
@@ -24,6 +24,16 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-08-05 — pièces jointes sur les résolutions d'AG
+
+- **✅ PJ sur les résolutions d'AG** (migration 025 : `resolutions_ag.documents` jsonb). Même infra
+  Storage que décisions/projets (bucket privé `documents`, chemin `resolutions/<id>/…`). **Aucune
+  nouvelle policy** : l'insert exige un membre actif, son NOT EXISTS ne porte que sur les décisions
+  enregistrées → un chemin `resolutions/…` passe (comme `projets/…`). Upload/retrait dans la
+  `ResolutionModal` (`AGDetail.jsx`, id client via `crypto.randomUUID` car l'upload précède la
+  création de la ligne) ; **téléchargement par tout membre** depuis la ligne de résolution. Suit le
+  verrou de la résolution (pas d'ajout si décision/projet rattaché, ni si AG figée).
 
 ## Session 2026-07-30 — chantier AG (heures, cycle, quorum, clôture) + TVA
 
@@ -207,10 +217,10 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `025` (001-024 appliquées en **prod**). Récentes : 021 (pas
-  d'insert Q/R sur décision enregistrée), 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²),
-  024 (TVA sur décisions). ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que
-  jusqu'à ~017 : à réactiver + remettre à niveau (rejouer `schema.sql` ou 018→024) avant tout test.
+- **Prochaine migration SQL libre** : `026` (001-025 appliquées en **prod**). Récentes : 022 (heures
+  d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur décisions), 025 (PJ sur résolutions).
+  ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
+  + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.
 - **Sauvegarde prod = MANUELLE et non planifiée** : `scripts/backup.mjs` ne tourne que si on le
   lance à la main (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` en env). **Donc pas de sauvegarde
   auto aujourd'hui.** Décidé de **ne pas** faire de keep-alive/cron (pansement) — le vrai correctif
