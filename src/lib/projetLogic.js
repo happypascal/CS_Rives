@@ -5,13 +5,24 @@
 // Les décisions rattachées engagent sur son budget et peuvent changer son statut.
 
 // Statut : jamais saisi, toujours dérivé.
-//   aucun engagement                            → ouvert
+//   date d'ouverture à venir                    → en_preparation
+//   ouvert, aucun engagement                    → ouvert
 //   de l'argent engagé                          → en_cours
 //   dernière décision enregistrée 'suspendre'   → suspendu
 //   dernière décision enregistrée 'terminer'    → termine
-export const PROJET_STATUT_VALUES = ['ouvert', 'en_cours', 'termine', 'suspendu']
+//
+// `en_preparation` (ajouté le 2026-08-25) corrige un vrai faux : un projet dont
+// la `date_ouverture` est dans le futur — typiquement calé après une AG — était
+// annoncé « Ouvert » dès sa création. Il ne l'est pas : il est préparé.
+//
+// Même patron que les AG, où « AG a eu lieu » se DÉRIVE de la date passée sans
+// jamais être stocké (`effectiveAGStatut`, migration 023). Rien à saisir, donc
+// rien à tenir à jour : le 16 septembre au matin, le projet devient ouvert tout
+// seul, sans que personne ait à y penser.
+export const PROJET_STATUT_VALUES = ['en_preparation', 'ouvert', 'en_cours', 'termine', 'suspendu']
 
 export const PROJET_STATUT_LABELS = {
+  en_preparation: 'En préparation',
   ouvert: 'Ouvert',
   en_cours: 'En cours',
   termine: 'Terminé',
@@ -19,6 +30,7 @@ export const PROJET_STATUT_LABELS = {
 }
 
 export const PROJET_STATUT_TONES = {
+  en_preparation: 'gray',
   ouvert: 'blue',
   en_cours: 'amber',
   termine: 'green',

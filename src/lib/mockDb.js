@@ -535,7 +535,18 @@ export function computeProjectBudgets(data) {
     // La DERNIÈRE décision enregistrée l'emporte : c'est ce qui rend « reprendre »
     // naturel et « terminé » réversible (choix explicite de Pascal). Rouvrir un
     // projet est alors, lui aussi, une délibération tracée au registre.
-    const statutNaturel = engage > 0 ? 'en_cours' : 'ouvert'
+    // Trois cas, dans cet ordre — le premier qui matche l'emporte :
+    //  - de l'argent est engagé → « en cours », quelle que soit la date. Un
+    //    engagement voté prime sur un calendrier prévisionnel : si le CS a déjà
+    //    dépensé, le projet a commencé, point.
+    //  - date d'ouverture À VENIR → « en préparation ». Corrige un vrai faux :
+    //    un projet calé après l'AG (ouverture au 16/09) était annoncé « Ouvert »
+    //    dès sa création, alors qu'il n'a pas commencé. Dérivé de la date et
+    //    jamais stocké, comme « AG a eu lieu » (effectiveAGStatut) : le jour dit,
+    //    le projet devient ouvert seul, sans que personne ait à y penser.
+    //  - sinon → « ouvert ».
+    const ouvertureAVenir = Boolean(p.date_ouverture) && p.date_ouverture > todayISO()
+    const statutNaturel = engage > 0 ? 'en_cours' : ouvertureAVenir ? 'en_preparation' : 'ouvert'
     const actions = data.decisions
       .filter((d) => d.projet_id === p.id && d.enregistree && d.statut === 'adoptee' && d.projet_action)
       // date_enregistrement est une DATE (pas un timestamp) : deux décisions

@@ -167,12 +167,20 @@ export default function ProjetDetail() {
               </Link>
               {projet.statut_decision.date && <> du {formatDate(projet.statut_decision.date)}</>}
             </p>
+          ) : projet.statut === 'en_preparation' ? (
+            // Dire la date, sinon « En préparation » ressemble à un état saisi à
+            // la main alors qu'il se déduit de la seule date d'ouverture.
+            <p className="mt-1 text-xs text-slate-500">
+              Ouverture prévue le {formatDate(projet.date_ouverture)} — le projet passera « ouvert » ce jour-là.
+            </p>
           ) : (
             <p className="mt-1 text-xs text-slate-400">
               {projet.engage > 0 ? 'Des décisions y engagent de l’argent' : 'Rien d’engagé à ce jour'}
             </p>
           )}
-          {projet.date_ouverture && <p className="mt-3 text-xs text-slate-500">Ouvert le {formatDate(projet.date_ouverture)}</p>}
+          {projet.date_ouverture && projet.statut !== 'en_preparation' && (
+            <p className="mt-3 text-xs text-slate-500">Ouvert le {formatDate(projet.date_ouverture)}</p>
+          )}
         </Card>
 
         {/* ÉQUIPE PROJET — trois rôles, dont un seul n'est pas encore ouvert.

@@ -261,10 +261,17 @@ et **zéro vote**.
   hors RLS (une action de FK échappe aux policies de la table enfant). Pas de `on delete restrict` :
   détacher une décision **non** enregistrée reste légitime.
 - **Statut projet entièrement DÉRIVÉ** (`computeProjectBudgets`), jamais saisi — `projets.statut`
-  a été **supprimée** (migration 011). Deux couches : le statut *naturel* (`ouvert` tant que rien
-  n'est engagé, `en_cours` dès que `engage > 0`) ; puis, s'il existe, l'effet de la **dernière
-  décision enregistrée ET adoptée** portant un `projet_action` (`suspendre` → `suspendu`,
-  `terminer` → `termine`, `reprendre` → rend la main au naturel).
+  a été **supprimée** (migration 011). Deux couches : le statut *naturel*, puis, s'il existe,
+  l'effet de la **dernière décision enregistrée ET adoptée** portant un `projet_action`
+  (`suspendre` → `suspendu`, `terminer` → `termine`, `reprendre` → rend la main au naturel).
+  Le **naturel** se lit dans cet ordre, premier cas gagnant :
+  1. `engage > 0` → `en_cours` — un engagement voté prime sur un calendrier prévisionnel ;
+  2. `date_ouverture` **à venir** → `en_preparation` (2026-08-25) ;
+  3. sinon → `ouvert`.
+  `en_preparation` corrige un vrai faux : un projet calé après une AG était annoncé « Ouvert » dès
+  sa création. **Aucune colonne, aucune migration** — c'est le même patron que « AG a eu lieu »
+  (`effectiveAGStatut`, 023) : dérivé de la date, jamais stocké, donc le projet bascule seul le
+  jour dit sans que personne ait à y penser.
 - **Suspendre ou terminer un projet est une délibération du CS** (arbitrage Pascal 2026-07-16) : ni
   le chef de projet ni le président ne le font seuls. Cela se saisit dans `DecisionForm`
   (`decisions.projet_action`, visible seulement si la décision cible un projet) et ne prend effet

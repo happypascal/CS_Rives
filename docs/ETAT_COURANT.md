@@ -42,6 +42,13 @@ du budget demandé à l'AG et du backlog ci-dessous.
   fige à l'enregistrement et son fil se ferme (migration 021) ; un projet ne se fige jamais, donc
   aucune garde de verrouillage. Ouvert à **tout membre du CS actif**, pas au seul binôme
   chef/adjoint : le conseil doit pouvoir poser une question sans convoquer une réunion.
+- **✅ Statut projet « En préparation »** (signalé par Pascal) — un projet dont la `date_ouverture`
+  est à venir, typiquement calé après une AG, était annoncé **« Ouvert »** dès sa création. Il ne
+  l'est pas. Nouveau statut **dérivé**, sans colonne ni migration, sur le patron d'`effectiveAGStatut`
+  (023) : le projet bascule « Ouvert » tout seul le jour dit. Ordre de lecture du statut naturel,
+  premier cas gagnant : argent engagé → `en_cours` (un engagement voté prime sur un calendrier),
+  puis ouverture à venir → `en_preparation`, sinon `ouvert`. Le formulaire prévient quand la date
+  saisie est future, pour qu'on ne prenne pas « En préparation » pour un bug.
 - **✅ Rôle « membre d'équipe » VISIBLE mais non assignable** — une carte « Équipe projet » sur la
   fiche montre les trois rôles ; le troisième affiche « — à venir — » et dit pourquoi. Choix
   explicite de Pascal : rendre le rôle visible sans coder le mécanisme tant que l'onboarding des

@@ -231,7 +231,18 @@ export default function ProjetForm() {
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Date d’ouverture" type="date" value={form.date_ouverture} onChange={set('date_ouverture')} />
+            <div>
+              <Input label="Date d’ouverture" type="date" value={form.date_ouverture} onChange={set('date_ouverture')} />
+              {/* Une date à venir n'est pas une coquille : c'est le cas d'usage
+                  d'un projet calé après une AG. Le dire, sinon on croit à un bug
+                  en voyant « En préparation » au lieu de « Ouvert ». */}
+              {form.date_ouverture && form.date_ouverture > todayISO() && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Date à venir : le projet restera <strong>« En préparation »</strong> jusque-là, puis passera
+                  « Ouvert » tout seul.
+                </p>
+              )}
+            </div>
             <Input label="Date de clôture" type="date" value={form.date_cloture} onChange={set('date_cloture')} />
           </div>
 
