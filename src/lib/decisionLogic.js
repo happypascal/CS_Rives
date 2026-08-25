@@ -61,6 +61,34 @@ export const PHASE_TONES = {
   annulee: 'red',
 }
 
+// ---------------------------------------------------------------- visibilité
+//
+// ⚠ AUCUN LECTEUR À CE JOUR : l'accès des colotis au registre n'existe pas
+// (hors périmètre de la spec « brouillon / planifiée », §9). Le champ enregistre
+// l'INTENTION prise à la rédaction, pour ne pas avoir à repasser sur tout
+// l'historique le jour où cet accès s'ouvrira. Il est affiché, il se change —
+// mais il ne masque RIEN aujourd'hui : toute décision reste visible des seuls
+// membres du CS connectés. Ne pas le câbler à un filtre de lecture sans avoir
+// écrit les policies correspondantes.
+export const VISIBILITE_VALUES = ['cs_seul', 'colotis']
+
+export const VISIBILITE_LABELS = {
+  cs_seul: 'Conseil Syndical seulement',
+  colotis: 'Ouverte aux colotis',
+}
+
+// Forme courte, pour les listes où la place manque.
+export const VISIBILITE_COURT = {
+  cs_seul: 'CS seulement',
+  colotis: 'Colotis',
+}
+
+// Les décisions antérieures à la migration 026 valent 'cs_seul' (défaut de la
+// colonne) — comme pour `phase`, on lit toujours par ici plutôt qu'en dur.
+export function visibiliteOf(decision) {
+  return decision?.visibilite || 'cs_seul'
+}
+
 // Les décisions antérieures à la migration 026 n'ont pas de `phase` : elles sont,
 // par définition, déjà soumises au vote. Lire la phase TOUJOURS par ici — un
 // `d.phase === 'ouverte_au_vote'` écrit en dur renverrait faux sur ces lignes

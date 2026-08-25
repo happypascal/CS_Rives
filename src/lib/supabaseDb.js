@@ -305,6 +305,18 @@ export const supabaseRepo = {
   // resté ouvert), pas une modification de celle-ci : passe donc à côté du verrou
   // d'enregistrement, comme `markDecisionNotified`. Réservé au président par la
   // RLS (`write_admin` — `decisions_owner_update` exige `enregistree = false`).
+  // Visibilité PRÉVUE. Comme la ratification, c'est une décision de PUBLICATION,
+  // postérieure et extérieure à la délibération elle-même : elle passe donc à
+  // côté du verrou d'enregistrement, et reste modifiable sur une décision déjà
+  // actée (RLS : `write_admin`, donc le président ; l'owner passe par le
+  // formulaire tant que la décision n'est pas enregistrée).
+  //
+  // ⚠ Le changement n'est PAS tracé côté Supabase — le projet n'écrit dans
+  // `audit_log` que depuis le mock. Sans conséquence tant que le champ ne masque
+  // rien ; à reprendre le jour où il pilotera un accès réel.
+  async changerVisibilite(id, visibilite) {
+    return must(await supabase.from('decisions').update({ visibilite }).eq('id', id).select())[0]
+  },
   async ratifierDecision(id, dateISO) {
     return must(await supabase.from('decisions')
       .update({ ratifiee_en_reunion_le: dateISO || null }).eq('id', id).select())[0]

@@ -103,6 +103,15 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
 - **✅ Budgets** : un brouillon ou une décision annulée ne pèse plus sur une enveloppe
   (`peseSurLeBudget`). ⚠ `phase` ajoutée aux 3 `select` de décisions de `supabaseDb.js` — sans
   elle, un brouillon chiffré serait compté « engagé en cours » **en prod seulement**.
+- **✅ Visibilité affichée et modifiable** (ajout du 25/08, après coup) : la visibilité prévue
+  s'affiche sous le badge d'état dans le registre (gris pour « CS seulement », bleu pour
+  « Colotis ») et sur la fiche. **Le président peut la changer sur une décision ENREGISTRÉE**
+  (`repo.changerVisibilite`, sans migration : le trigger ne bronche pas, `write_admin` suffit) —
+  publier n'est pas délibérer, et le verrou de l'art. 15 protège le texte, pas la décision de qui
+  peut le consulter. Avant/pendant la rédaction, c'est l'auteur qui la fixe depuis le formulaire.
+  ⚠ Toujours **AUCUN effet** : rien ne lit ce champ, l'accès colotis n'existe pas. La carte de la
+  fiche le dit explicitement — ne pas retirer cet avertissement tant que c'est vrai. ⚠ Le
+  changement n'est pas tracé côté Supabase (`audit_log` n'est écrit que par le mock).
 - **✅ PDF** : brouillons et planifiées **exclus** du registre (ce ne sont pas des délibérations) ;
   annulées conservées, verdict « ANNULÉE » + motif ; empreinte et ratification imprimées.
 

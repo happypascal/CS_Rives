@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, EmptyState } from '../components/ui'
 import { DecisionEtatBadge, SignatureBadge } from '../components/badges'
 import { decisionResume } from '../lib/decisionResume'
-import { phaseOf, avantSoumission, voteOuvert } from '../lib/decisionLogic'
+import { phaseOf, avantSoumission, voteOuvert, visibiliteOf, VISIBILITE_COURT } from '../lib/decisionLogic'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -340,6 +340,9 @@ export default function RegistreCS() {
                         )}
                       </>
                     )}
+                    <span className={visibiliteOf(d) === 'colotis' ? 'font-medium text-sky-700' : undefined}>
+                      {VISIBILITE_COURT[visibiliteOf(d)]}
+                    </span>
                     {batch && <SignatureBadge statut={batch.statut} />}
                   </div>
                 </Link>
@@ -408,7 +411,17 @@ export default function RegistreCS() {
                         <span className="mt-0.5 block text-xs leading-snug text-slate-500">{resumeOf(d).extrait}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3"><DecisionEtatBadge decision={d} /></td>
+                    {/* La visibilité PRÉVUE sous le badge d'état, en gris et en
+                        petit : elle ne masque rien aujourd'hui (l'accès des
+                        colotis au registre n'existe pas), donc elle informe sans
+                        prendre le pas sur l'état de la décision. « Colotis » est
+                        mis en avant parce que c'est l'exception. */}
+                    <td className="px-4 py-3">
+                      <DecisionEtatBadge decision={d} />
+                      <span className={`mt-1 block text-xs ${visibiliteOf(d) === 'colotis' ? 'font-medium text-sky-700' : 'text-slate-400'}`}>
+                        {VISIBILITE_COURT[visibiliteOf(d)]}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">{enPrep ? <span className="text-xs text-slate-400">—</span> : renderVotes(d)}</td>
                     <td className="px-4 py-3">{batchByDecision[d.id] ? <SignatureBadge statut={batchByDecision[d.id].statut} /> : <span className="text-xs text-slate-400">—</span>}</td>
                   </tr>

@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, eur, DesktopOnly, UploadProgress } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
-import { engagementTTC, phaseOf, avantSoumission, PHASE_LABELS } from '../lib/decisionLogic'
+import { engagementTTC, phaseOf, avantSoumission, PHASE_LABELS, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
 import { todayISO, addBusinessDaysISO, parseMontant, formatDateTime, toDateTimeLocal, fromDateTimeLocal } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -479,8 +479,7 @@ export default function DecisionForm() {
               décision, le jour où cet accès sera ouvert. */}
           <div>
             <Select label="Visibilité prévue" value={visibilite} onChange={(e) => setVisibilite(e.target.value)}>
-              <option value="cs_seul">Conseil Syndical seulement</option>
-              <option value="colotis">Ouverte aux colotis</option>
+              {VISIBILITE_VALUES.map((v) => <option key={v} value={v}>{VISIBILITE_LABELS[v]}</option>)}
             </Select>
             <p className="mt-1 text-xs text-slate-400">
               Enregistre l’intention. L’accès des colotis au registre n’existe pas encore : aujourd’hui, toute décision

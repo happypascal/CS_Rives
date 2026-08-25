@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Input, eur } from '../components/ui'
+import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Input, Select, eur } from '../components/ui'
 import { DecisionEtatBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -274,6 +274,10 @@ export default function DecisionDetail() {
   // de la consultation écrite resté ouvert), pas une modification de celle-ci.
   const doRatifier = (dateISO) =>
     actePhase(() => repo.ratifierDecision(id, dateISO), 'L’enregistrement de la ratification a échoué')
+  // Visibilité : décision de PUBLICATION, extérieure à la délibération — donc
+  // modifiable même une fois la décision enregistrée, contrairement à son texte.
+  const doVisibilite = (valeur) =>
+    actePhase(() => repo.changerVisibilite(id, valeur), 'Le changement de visibilité a échoué')
 
   // Le texte n'est vidé qu'APRÈS succès : sur rejet RLS, l'utilisateur ne perd
   // pas sa saisie et voit pourquoi (avant le 19/07, l'échec était muet).
@@ -785,6 +789,21 @@ export default function DecisionDetail() {
             </Card>
           )}
 
+          {/* Visibilité prévue. Affichée sur TOUTES les décisions, y compris
+              anciennes (elles valent 'cs_seul' par défaut) : sans ça, on posait
+              une intention qu'on ne pouvait plus relire sans rouvrir le
+              formulaire. Le président peut la changer même sur une décision
+              ENREGISTRÉE — publier n'est pas délibérer, et le verrou de
+              l'art. 15 protège le texte de la délibération, pas la décision de
+              qui peut la consulter. */}
+          <VisibiliteCard
+            key={visibiliteOf(decision)}
+            decision={decision}
+            peutModifier={isAdmin && !isMobile && locked}
+            busy={busy}
+            onSave={doVisibilite}
+          />
+
           {/* Ratification en réunion — art. 15 (spec §4). L'article est écrit pour
               des RÉUNIONS ; un vote asynchrone dans l'app est une consultation
               écrite que les statuts ne prévoient pas expressément. Tant que le
@@ -1099,6 +1118,42 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
         </p>
       </div>
     </Modal>
+  )
+}
+
+// Visibilité prévue de la décision.
+//
+// ⚠ Le texte de la carte dit qu'elle ne masque RIEN aujourd'hui, et ce n'est pas
+// une précaution de style : sans lui, cocher « Ouverte aux colotis » se lit comme
+// une publication effective, alors qu'aucun coloti n'a accès au registre (hors
+// périmètre v1). Ne pas retirer cet avertissement tant que l'accès n'existe pas.
+//
+// Le président seul, et seulement sur une décision ENREGISTRÉE : avant, c'est le
+// rédacteur qui décide, depuis son formulaire.
+function VisibiliteCard({ decision, peutModifier, busy, onSave }) {
+  const courante = visibiliteOf(decision)
+  const [valeur, setValeur] = useState(courante)
+  return (
+    <Card>
+      <CardHeader title="Visibilité" />
+      <div className="space-y-3 px-5 py-4 text-sm">
+        <p className={courante === 'colotis' ? 'font-medium text-sky-800' : 'text-slate-700'}>
+          {VISIBILITE_LABELS[courante]}
+        </p>
+        <p className="text-xs text-slate-500">
+          Intention enregistrée. <strong>Sans effet aujourd’hui</strong> : l’accès des colotis au registre n’existe pas
+          encore, toute décision reste visible des seuls membres du CS connectés.
+        </p>
+        {peutModifier && (
+          <div className="flex items-end gap-2">
+            <Select label="Modifier" value={valeur} onChange={(e) => setValeur(e.target.value)} className="min-w-0 flex-1">
+              {VISIBILITE_VALUES.map((v) => <option key={v} value={v}>{VISIBILITE_LABELS[v]}</option>)}
+            </Select>
+            <Button size="sm" disabled={busy || valeur === courante} onClick={() => onSave(valeur)}>Enregistrer</Button>
+          </div>
+        )}
+      </div>
+    </Card>
   )
 }
 

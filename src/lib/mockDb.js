@@ -7,7 +7,7 @@
 //   - signature : par LOT de décisions sélectionnées.
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
-import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
+import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS, VISIBILITE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
 // v9 : cycle brouillon / planifiée (migration 026). Le numéro de version force le
@@ -1001,6 +1001,19 @@ export const mockRepo = {
     audit(data, 'decisions', null, 'ouverture', `Ouverture automatique : ${dues.map((d) => d.numero).join(', ')}`)
     save(data)
     return { traitees: dues.length }
+  },
+
+  // Visibilité PRÉVUE : décision de PUBLICATION, extérieure à la délibération —
+  // donc modifiable même sur une décision enregistrée, comme la ratification.
+  async changerVisibilite(id, visibilite) {
+    await delay()
+    const data = load()
+    const d = data.decisions.find((x) => x.id === id)
+    if (!d) throw new Error('Décision introuvable')
+    d.visibilite = visibilite
+    audit(data, 'decisions', id, 'visibilite', `Visibilité : ${VISIBILITE_LABELS[visibilite] || visibilite}`)
+    save(data)
+    return clone(d)
   },
 
   // La ratification en réunion est un fait POSTÉRIEUR à la délibération, pas une
