@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Input, Select, eur } from '../components/ui'
+import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Select, eur } from '../components/ui'
 import { DecisionEtatBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
@@ -270,10 +270,6 @@ export default function DecisionDetail() {
     await actePhase(() => repo.annulerDecision(id, motifAnnulation.trim()), 'L’annulation a échoué')
     setMotifAnnulation('')
   }
-  // Ratification en réunion : fait POSTÉRIEUR à la délibération (art. 15, point
-  // de la consultation écrite resté ouvert), pas une modification de celle-ci.
-  const doRatifier = (dateISO) =>
-    actePhase(() => repo.ratifierDecision(id, dateISO), 'L’enregistrement de la ratification a échoué')
   // Visibilité : décision de PUBLICATION, extérieure à la délibération — donc
   // modifiable même une fois la décision enregistrée, contrairement à son texte.
   const doVisibilite = (valeur) =>
@@ -416,7 +412,6 @@ export default function DecisionDetail() {
       {locked && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           Décision enregistrée le {formatDate(decision.date_enregistrement)} — verrouillée (non modifiable).
-          {decision.ratifiee_en_reunion_le && <> Ratifiée en réunion du CS le {formatDate(decision.ratifiee_en_reunion_le)}.</>}
         </div>
       )}
 
@@ -804,20 +799,6 @@ export default function DecisionDetail() {
             onSave={doVisibilite}
           />
 
-          {/* Ratification en réunion — art. 15 (spec §4). L'article est écrit pour
-              des RÉUNIONS ; un vote asynchrone dans l'app est une consultation
-              écrite que les statuts ne prévoient pas expressément. Tant que le
-              point n'est pas tranché avec Me Garnier, on enregistre et on affiche
-              la ratification quand elle a lieu. */}
-          {locked && (
-            <RatificationCard
-              key={decision.ratifiee_en_reunion_le || 'sans-ratification'}
-              decision={decision}
-              peutModifier={isAdmin && !isMobile}
-              busy={busy}
-              onSave={doRatifier}
-            />
-          )}
 
           {/* Versions successives du brouillon : « le texte soumis au vote est
               bien celui qui a été préparé, et par qui ». */}
@@ -1150,40 +1131,6 @@ function VisibiliteCard({ decision, peutModifier, busy, onSave }) {
               {VISIBILITE_VALUES.map((v) => <option key={v} value={v}>{VISIBILITE_LABELS[v]}</option>)}
             </Select>
             <Button size="sm" disabled={busy || valeur === courante} onClick={() => onSave(valeur)}>Enregistrer</Button>
-          </div>
-        )}
-      </div>
-    </Card>
-  )
-}
-
-// Ratification en réunion (spec §4). Composant à part parce qu'il porte un état
-// de saisie propre, initialisé depuis la décision : le monter avec une `key` liée
-// à la valeur enregistrée le resynchronise après sauvegarde, sans effet.
-//
-// Le texte de la carte dit pourquoi ce champ existe — il ne se devine pas, et un
-// champ de date sans explication dans un registre légal invite à l'inventer.
-function RatificationCard({ decision, peutModifier, busy, onSave }) {
-  const [date, setDate] = useState(decision.ratifiee_en_reunion_le || '')
-  const inchangee = (date || '') === (decision.ratifiee_en_reunion_le || '')
-  return (
-    <Card>
-      <CardHeader title="Ratification en réunion" />
-      <div className="space-y-3 px-5 py-4 text-sm">
-        <p className="text-xs text-slate-500">
-          L’article 15 est rédigé pour des <strong>réunions</strong> ; un vote dans l’application est une
-          <strong> consultation écrite</strong>, que les statuts ne prévoient pas expressément. Tant que le point n’est pas
-          tranché, on inscrit ici la réunion du CS qui a ratifié cette décision.
-        </p>
-        {decision.ratifiee_en_reunion_le ? (
-          <p className="text-emerald-700">Ratifiée en réunion du <strong>{formatDate(decision.ratifiee_en_reunion_le)}</strong>.</p>
-        ) : (
-          <p className="text-amber-700">Pas encore ratifiée en réunion.</p>
-        )}
-        {peutModifier && (
-          <div className="flex items-end gap-2">
-            <Input label="Date de la réunion" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-w-0 flex-1" />
-            <Button size="sm" disabled={busy || inchangee} onClick={() => onSave(date || null)}>Enregistrer</Button>
           </div>
         )}
       </div>

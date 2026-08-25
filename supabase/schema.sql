@@ -135,7 +135,6 @@ create table if not exists decisions (
   visibilite           text not null default 'cs_seul' check (visibilite in ('cs_seul','colotis')),  -- ⚠ aucun lecteur : registre colotis hors périmètre v1
   delai_vote_jours     integer not null default 7,        -- durée d'ouverture du vote, en jours OUVRÉS
   motif_annulation     text,                              -- obligatoire si phase = 'annulee'
-  ratifiee_en_reunion_le date,                            -- consultation écrite ratifiée en réunion (art. 15, point ouvert)
   statut               text not null default 'en_cours' check (statut in ('en_cours','adoptee','rejetee')),
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
@@ -443,6 +442,35 @@ drop trigger if exists trg_decisions_cycle_guard on decisions;
 create trigger trg_decisions_cycle_guard
   before insert or update on decisions
   for each row execute function decisions_cycle_guard();
+
+-- Trace d'audit du changement de VISIBILITÉ (migration 027). Un trigger, et pas
+-- un insert côté application : il attrape tous les chemins (carte du président
+-- sur une décision enregistrée, formulaire du rédacteur sur un brouillon), et
+-- `audit_log` n'étant écrivable que par `write_admin`, un insert côté client
+-- aurait échoué pour un rédacteur non président — donc perdu la trace en
+-- silence. C'est le premier écrit dans `audit_log` côté Supabase : jusqu'ici
+-- seul le mode démo l'alimentait. Portée étroite à dessein : la seule
+-- visibilité. Auditer toute la table est un autre chantier.
+create or replace function decisions_audit_visibilite()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.visibilite is distinct from old.visibilite then
+    insert into audit_log (entite, entite_id, action, acteur, details)
+      values (
+        'decisions',
+        new.id,
+        'visibilite',
+        current_membre_id(),
+        concat('Décision ', new.numero, ' — visibilité ', old.visibilite, ' vers ', new.visibilite)
+      );
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists trg_decisions_audit_visibilite on decisions;
+create trigger trg_decisions_audit_visibilite
+  after update on decisions
+  for each row execute function decisions_audit_visibilite();
 
 -- Ouverture automatique des décisions planifiées échues. STRICTEMENT idempotente
 -- (`where phase = 'planifiee'`). Deux déclencheurs, même fonction :

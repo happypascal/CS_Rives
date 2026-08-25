@@ -7,7 +7,7 @@
 //   - signature : par LOT de décisions sélectionnées.
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
-import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS, VISIBILITE_LABELS } from './decisionLogic'
+import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
 // v9 : cycle brouillon / planifiée (migration 026). Le numéro de version force le
@@ -191,7 +191,6 @@ function seed() {
     d.contenu_gele = null
     d.hash_contenu = null
     d.motif_annulation = null
-    d.ratifiee_en_reunion_le = null
   }
 
   // Les deux cas que la migration 026 ouvre : un brouillon en cours de rédaction,
@@ -215,7 +214,7 @@ function seed() {
       composition_snapshot: null, created_by: mVice, created_at: '2026-08-25T09:00:00Z', updated_at: '2026-08-25T09:00:00Z',
       phase: 'brouillon', version: 2, visibilite: 'cs_seul', delai_vote_jours: 7,
       date_soumission_prevue: null, soumise_le: null, contenu_gele: null, hash_contenu: null,
-      motif_annulation: null, ratifiee_en_reunion_le: null,
+      motif_annulation: null,
     },
     {
       id: d8, numero: '2026-008',
@@ -236,7 +235,7 @@ function seed() {
       composition_snapshot: null, created_by: mPresident, created_at: '2026-08-25T10:00:00Z', updated_at: '2026-08-25T10:00:00Z',
       phase: 'planifiee', version: 1, visibilite: 'cs_seul', delai_vote_jours: 7,
       date_soumission_prevue: '2026-09-16T08:00:00Z', soumise_le: null, contenu_gele: null, hash_contenu: null,
-      motif_annulation: null, ratifiee_en_reunion_le: null,
+      motif_annulation: null,
     },
   )
 
@@ -925,7 +924,7 @@ export const mockRepo = {
       // avant. Le formulaire, lui, envoie toujours la phase explicitement.
       phase: 'ouverte_au_vote', version: 1, visibilite: 'cs_seul', delai_vote_jours: 7,
       date_soumission_prevue: null, soumise_le: null, contenu_gele: null, hash_contenu: null,
-      motif_annulation: null, ratifiee_en_reunion_le: null,
+      motif_annulation: null,
       created_by: getSessionUserId(), created_at: nowISO(), updated_at: nowISO(), ...input,
     }
     // Créée directement ouverte (« Soumettre maintenant ») : le texte est gelé
@@ -1004,33 +1003,25 @@ export const mockRepo = {
   },
 
   // Visibilité PRÉVUE : décision de PUBLICATION, extérieure à la délibération —
-  // donc modifiable même sur une décision enregistrée, comme la ratification.
+  // donc modifiable même sur une décision ENREGISTRÉE, contrairement à son
+  // texte. Le verrou de l'art. 15 protège la délibération, pas la décision de
+  // savoir qui peut la consulter. Côté Supabase la trace est posée par un
+  // trigger (migration 027) ; ici, par `audit()`.
   async changerVisibilite(id, visibilite) {
     await delay()
     const data = load()
     const d = data.decisions.find((x) => x.id === id)
     if (!d) throw new Error('Décision introuvable')
+    const avant = d.visibilite || 'cs_seul'
     d.visibilite = visibilite
-    audit(data, 'decisions', id, 'visibilite', `Visibilité : ${VISIBILITE_LABELS[visibilite] || visibilite}`)
+    // Même libellé que le trigger `decisions_audit_visibilite` (migration 027) :
+    // une trace qui diffère selon le backend n'est pas une trace, c'est deux
+    // versions de l'histoire.
+    audit(data, 'decisions', id, 'visibilite', `Décision ${d.numero} — visibilité ${avant} vers ${visibilite}`)
     save(data)
     return clone(d)
   },
 
-  // La ratification en réunion est un fait POSTÉRIEUR à la délibération, pas une
-  // modification de celle-ci : elle passe donc volontairement à côté du verrou
-  // d'enregistrement (comme `markDecisionNotified`), et n'est possible que sur
-  // une décision justement enregistrée.
-  async ratifierDecision(id, dateISO) {
-    await delay()
-    const data = load()
-    const d = data.decisions.find((x) => x.id === id)
-    if (!d) throw new Error('Décision introuvable')
-    if (!d.enregistree) throw new Error('Seule une décision enregistrée peut être ratifiée en réunion.')
-    d.ratifiee_en_reunion_le = dateISO || null
-    audit(data, 'decisions', id, 'ratify', dateISO ? `Ratifiée en réunion le ${dateISO}` : 'Ratification retirée')
-    save(data)
-    return clone(d)
-  },
   async deleteDecision(id) {
     await delay()
     const data = load()

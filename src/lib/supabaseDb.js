@@ -233,7 +233,7 @@ export const supabaseRepo = {
   // silencieusement absente des listes en prod (le mock, lui, la renverra).
   async listDecisions() {
     return must(await supabase.from('decisions')
-      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,phase,date_soumission_prevue,soumise_le,version,visibilite,delai_vote_jours,motif_annulation,ratifiee_en_reunion_le,hash_contenu,created_by,created_at,updated_at')
+      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,phase,date_soumission_prevue,soumise_le,version,visibilite,delai_vote_jours,motif_annulation,hash_contenu,created_by,created_at,updated_at')
       .order('date_publication', { ascending: false }))
   },
   async getDecision(id) {
@@ -301,26 +301,6 @@ export const supabaseRepo = {
     return { traitees: data ?? 0 }
   },
 
-  // Fait POSTÉRIEUR à la délibération (art. 15, point de la consultation écrite
-  // resté ouvert), pas une modification de celle-ci : passe donc à côté du verrou
-  // d'enregistrement, comme `markDecisionNotified`. Réservé au président par la
-  // RLS (`write_admin` — `decisions_owner_update` exige `enregistree = false`).
-  // Visibilité PRÉVUE. Comme la ratification, c'est une décision de PUBLICATION,
-  // postérieure et extérieure à la délibération elle-même : elle passe donc à
-  // côté du verrou d'enregistrement, et reste modifiable sur une décision déjà
-  // actée (RLS : `write_admin`, donc le président ; l'owner passe par le
-  // formulaire tant que la décision n'est pas enregistrée).
-  //
-  // ⚠ Le changement n'est PAS tracé côté Supabase — le projet n'écrit dans
-  // `audit_log` que depuis le mock. Sans conséquence tant que le champ ne masque
-  // rien ; à reprendre le jour où il pilotera un accès réel.
-  async changerVisibilite(id, visibilite) {
-    return must(await supabase.from('decisions').update({ visibilite }).eq('id', id).select())[0]
-  },
-  async ratifierDecision(id, dateISO) {
-    return must(await supabase.from('decisions')
-      .update({ ratifiee_en_reunion_le: dateISO || null }).eq('id', id).select())[0]
-  },
   // Deux gardes distinctes, à ne pas confondre :
   //  - `enregistree` = verrou légal. Doublé en base par la policy restrictive
   //    `decisions_no_delete_enregistree` (migration 008) : le contrôle ci-dessous
@@ -333,6 +313,21 @@ export const supabaseRepo = {
     if (count > 1) throw new Error('Décision déjà votée par plusieurs membres : non supprimable.')
     must(await supabase.from('decisions').delete().eq('id', id))
     return { ok: true }
+  },
+  // Visibilité PRÉVUE : décision de PUBLICATION, extérieure à la délibération
+  // elle-même. Elle passe donc volontairement à côté du verrou d'enregistrement
+  // (comme `markDecisionNotified`) et reste modifiable sur une décision déjà
+  // actée — le verrou de l'art. 15 protège le TEXTE de la délibération, pas la
+  // décision de savoir qui peut la consulter. Réservée au président par la RLS
+  // (`write_admin` ; `decisions_owner_update` exige `enregistree = false`, donc
+  // le rédacteur passe par le formulaire tant que la décision n'est pas actée).
+  //
+  // La TRACE est posée en base par le trigger `trg_decisions_audit_visibilite`
+  // (migration 027), pas ici : il attrape aussi le chemin du formulaire, et
+  // `audit_log` n'est écrivable que par le président — un insert côté client
+  // aurait perdu la trace en silence pour un rédacteur ordinaire.
+  async changerVisibilite(id, visibilite) {
+    return must(await supabase.from('decisions').update({ visibilite }).eq('id', id).select())[0]
   },
   // Horodate le partage au CS. Volontairement hors updateDecision : ce n'est
   // pas une modification de contenu, et une relance doit rester possible.

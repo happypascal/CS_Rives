@@ -193,15 +193,12 @@ function decisionBlock(doc, decision, opts = {}) {
   )
   y += 4
 
-  // Deux mentions de valeur probante, ajoutées par la migration 026 et affichées
-  // seulement quand elles existent (les décisions antérieures n'en ont pas) :
-  //   - l'empreinte du texte gelé à l'ouverture du vote, qui prouve que le texte
-  //     imprimé ici est bien celui sur lequel les membres ont voté ;
-  //   - la réunion du CS qui a ratifié la consultation écrite (art. 15 — point
-  //     laissé ouvert, cf. la spec « brouillon / planifiée » §4).
+  // Mention de valeur probante (migration 026), affichée seulement quand elle
+  // existe — les décisions antérieures au gel n'en ont pas : l'empreinte du
+  // texte figé à l'ouverture du vote, qui prouve que le texte imprimé ici est
+  // bien celui sur lequel les membres ont voté.
   const mentions = [
     decision.hash_contenu ? `Empreinte SHA-256 du texte voté : ${decision.hash_contenu}` : null,
-    decision.ratifiee_en_reunion_le ? `Ratifiée en réunion du CS le ${formatDate(decision.ratifiee_en_reunion_le)}` : null,
   ].filter(Boolean)
   for (const mention of mentions) {
     font(doc, 'normal', 7, GREY)

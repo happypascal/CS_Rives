@@ -196,11 +196,21 @@ ligne dans `decision_status_history`.
 - **Rien ne s'adopte tout seul.** Pas de clôture automatique du vote, pas de `cloturee_le` :
   clôturer = calculer et figer le résultat, c'est-à-dire l'**acte du président**
   (`enregistree`/`date_enregistrement`). La planification ouvre le vote, elle ne l'emporte jamais.
+- **`visibilite`** (`cs_seul` / `colotis`) est affichée au registre et sur la fiche, et le
+  président peut la changer **même sur une décision enregistrée** — publier n'est pas délibérer,
+  le verrou de l'art. 15 protège le TEXTE. Tracée par le trigger `decisions_audit_visibilite`
+  (027), premier écrit dans `audit_log` côté Supabase. ⚠ Elle **n'a toujours aucun lecteur** : le
+  registre colotis est hors périmètre, le champ ne masque rien. L'avertissement affiché sur la
+  fiche doit rester tant que c'est vrai.
+- **PAS de ratification en réunion** (migration 027, arbitrage Pascal 2026-08-26). Le §4 de la spec
+  proposait un champ `ratifiee_en_reunion_le` ; il a été posé par la 026 puis **retiré** :
+  « le but de cette app est de ne PAS avoir à ratifier ces décisions en réunion ». Organiser la
+  ratification dans l'outil, c'était installer la pratique qu'il existe pour éviter. ⚠ La question
+  de fond reste entière — l'art. 15 couvre-t-il la consultation écrite ? — et se tranche avec
+  Me Garnier, pas dans le schéma. **Ne pas réintroduire ce champ sans cet arbitrage.**
 - **Non implémenté, assumé** : `notifications_decision` et les relances e-mail (§6 de la spec) —
   aucun envoyeur n'existe (cf. backlog e-mail). **Personne n'est prévenu à l'ouverture** : l'auteur
-  doit toujours cliquer « Prévenir le CS ». `visibilite` (`cs_seul`/`colotis`) est stockée mais
-  **n'a aucun lecteur** (registre colotis hors périmètre) ; `ratifiee_en_reunion_le` est saisie par
-  le président et affichée (art. 15 écrit pour des réunions, point à trancher avec Me Garnier).
+  doit toujours cliquer « Prévenir le CS ».
 - Le **PDF du registre exclut** brouillons et décisions planifiées (ce ne sont pas des
   délibérations) ; les **annulées y restent**, verdict « ANNULÉE ».
 

@@ -110,8 +110,15 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
   publier n'est pas délibérer, et le verrou de l'art. 15 protège le texte, pas la décision de qui
   peut le consulter. Avant/pendant la rédaction, c'est l'auteur qui la fixe depuis le formulaire.
   ⚠ Toujours **AUCUN effet** : rien ne lit ce champ, l'accès colotis n'existe pas. La carte de la
-  fiche le dit explicitement — ne pas retirer cet avertissement tant que c'est vrai. ⚠ Le
-  changement n'est pas tracé côté Supabase (`audit_log` n'est écrit que par le mock).
+  fiche le dit explicitement — ne pas retirer cet avertissement tant que c'est vrai.
+- **✅ Trace d'audit du changement de visibilité** (migration 027) — **premier écrit dans
+  `audit_log` côté Supabase**, le journal y était resté vide jusqu'ici (seul le mock l'alimentait).
+  C'est un **trigger** (`decisions_audit_visibilite`) et non un insert applicatif, pour deux
+  raisons : il attrape aussi le chemin du formulaire (le rédacteur sur son brouillon), et
+  `audit_log` n'étant écrivable que par `write_admin`, un insert côté client aurait échoué en
+  silence pour un membre ordinaire. Même libellé des deux côtés (mock et trigger) : une trace qui
+  diffère selon le backend n'est pas une trace. Portée volontairement étroite à la seule
+  visibilité — auditer toute la table est un autre chantier (volume, rétention).
 - **✅ PDF** : brouillons et planifiées **exclus** du registre (ce ne sont pas des délibérations) ;
   annulées conservées, verdict « ANNULÉE » + motif ; empreinte et ratification imprimées.
 
@@ -124,11 +131,10 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
 - **Aucune clôture automatique du vote** ni `cloturee_le` (spec §2.1/§6) : clôturer = calculer et
   figer le résultat, c'est l'acte du président. La spec elle-même interdit qu'une échéance emporte
   une décision.
-- **`visibilite`** est stockée et saisissable mais **n'a aucun lecteur** : le registre consultable
-  par les colotis est hors périmètre v1 (spec §9).
-- **`ratifiee_en_reunion_le`** (spec §4) : champ + affichage + PDF. Le **point juridique reste
-  ouvert** — l'art. 15 est écrit pour des réunions, un vote asynchrone est une consultation écrite
-  que les statuts ne prévoient pas expressément. À trancher avec Me Garnier.
+- **`visibilite`** est stockée, saisissable, affichée et tracée, mais **n'a toujours aucun
+  lecteur** : le registre consultable par les colotis est hors périmètre v1 (spec §9).
+- **La ratification en réunion du §4 a été RETIRÉE** le lendemain de sa pose (migration 027) — voir
+  la ligne dédiée plus haut. Le point juridique, lui, reste ouvert : à trancher avec Me Garnier.
 - **La décision « Règle de représentation et de contacts extérieurs » (spec §10) n'est PAS créée
   en prod.** Le mode démo en contient une **trame de six articles**, à remplacer par la rédaction
   réelle du conseil : inventer le texte d'une règle qui sera votée n'appartient pas à l'outil.
@@ -360,7 +366,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `027` (001-026 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `028` (001-027 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.
