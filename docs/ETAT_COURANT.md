@@ -1,7 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
 > Dernière session : **2026-08-25**. Décisions en **brouillon** avec **soumission planifiée**
-> (migration 026, **appliquée en prod**). ⚠ **Code pas encore poussé** — voir la section.
+> (migrations 026 et 027, **appliquées en prod**), **code déployé**. Puis : statuts en révision,
+> l'AG du 15/09 les adapte au fonctionnement de l'app — voir le backlog.
 > Précédemment : PJ sur les résolutions d'AG (025) ; chantier AG + TVA (022-024).
 > ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
@@ -36,8 +37,8 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
 > étape : colonnes (5 décisions toutes restées `ouverte_au_vote`), les 2 tables, les 2 fonctions +
 > le trigger, les 8 policies, et **pg_cron 1.6.4 activé** avec la tâche horaire
 > `ouvrir-decisions-planifiees` (jobid 1, active).
-> ⚠ **RESTE À FAIRE : pousser le code.** Il envoie `phase` dans tous les `select`/`update` de
-> décisions — la base est prête, l'app ne l'est pas encore.
+> ✅ **Code déployé** (commits `70e1253`, `c5ad6cb`, `d3d4171`), puis **migration 027** appliquée :
+> trace d'audit de la visibilité, et retrait de la ratification en réunion.
 
 - **✅ `phase` ≠ `statut`** — nouvelle colonne `decisions.phase` (`brouillon` / `planifiee` /
   `ouverte_au_vote` / `annulee`). `statut` reste le RÉSULTAT de la délibération. **Écart assumé vs
@@ -99,7 +100,7 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
   réservés aux décisions soumises) ; formulaire (3 actes : *Enregistrer le brouillon* /
   *Planifier la soumission* / *Soumettre au vote maintenant*, durée du vote, visibilité, version +
   dernier auteur, texte en lecture seule si gelé) ; fiche (bandeaux par phase, empreinte SHA-256,
-  versions du brouillon, ratification, annulation avec motif obligatoire).
+  versions du brouillon, visibilité, annulation avec motif obligatoire).
 - **✅ Budgets** : un brouillon ou une décision annulée ne pèse plus sur une enveloppe
   (`peseSurLeBudget`). ⚠ `phase` ajoutée aux 3 `select` de décisions de `supabaseDb.js` — sans
   elle, un brouillon chiffré serait compté « engagé en cours » **en prod seulement**.
@@ -133,7 +134,7 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
   une décision.
 - **`visibilite`** est stockée, saisissable, affichée et tracée, mais **n'a toujours aucun
   lecteur** : le registre consultable par les colotis est hors périmètre v1 (spec §9).
-- **La ratification en réunion du §4 a été RETIRÉE** le lendemain de sa pose (migration 027) — voir
+- **La ratification en réunion du §4 a été RETIRÉE** le jour même de sa pose (migration 027) — voir
   la ligne dédiée plus haut. Le point juridique se règle par la révision des statuts (AG du 15/09).
 - **La décision « Règle de représentation et de contacts extérieurs » (spec §10) n'est PAS créée
   en prod.** Le mode démo en contient une **trame de six articles**, à remplacer par la rédaction

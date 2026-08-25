@@ -228,8 +228,8 @@ ligne dans `decision_status_history`.
   (027), premier écrit dans `audit_log` côté Supabase. ⚠ Elle **n'a toujours aucun lecteur** : le
   registre colotis est hors périmètre, le champ ne masque rien. L'avertissement affiché sur la
   fiche doit rester tant que c'est vrai.
-- **PAS de ratification en réunion** (migration 027, arbitrage Pascal 2026-08-26). Le §4 de la spec
-  proposait un champ `ratifiee_en_reunion_le` ; il a été posé par la 026 puis **retiré** :
+- **PAS de ratification en réunion** (migration 027, arbitrage Pascal 2026-08-25). Le §4 de la spec
+  proposait un champ `ratifiee_en_reunion_le` ; il a été posé par la 026 puis **retiré le jour même** :
   « le but de cette app est de ne PAS avoir à ratifier ces décisions en réunion ». Organiser la
   ratification dans l'outil, c'était installer la pratique qu'il existe pour éviter.
   **Ne pas le réintroduire.** Le point juridique se règle par l'autre bout : de NOUVEAUX STATUTS

@@ -14,7 +14,7 @@
 -- =============================================================================
 
 -- --------------------------------------------------------------------------
--- 1. RETRAIT de `ratifiee_en_reunion_le` (arbitrage Pascal 2026-08-26)
+-- 1. RETRAIT de `ratifiee_en_reunion_le` (arbitrage Pascal 2026-08-25)
 --
 -- La colonne a été ajoutée par la 026 sur la foi du §4 de la spec : l'art. 15
 -- étant rédigé pour des RÉUNIONS, un vote asynchrone dans l'app est une
@@ -31,7 +31,7 @@
 -- pas dans le schéma. Si la réponse impose une ratification, c'est cette
 -- migration qu'il faudra défaire — pas une raison de garder un champ mort en
 -- attendant. Aucune donnée perdue : la colonne n'a jamais été renseignée
--- (posée le 25/08, retirée le 26).
+-- (posée puis retirée le 25/08).
 alter table decisions drop column if exists ratifiee_en_reunion_le;
 
 -- --------------------------------------------------------------------------
