@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, EmptyState } from '../components/ui'
-import { StatutBadge, SignatureBadge } from '../components/badges'
+import { DecisionEtatBadge, SignatureBadge } from '../components/badges'
 import { decisionResume } from '../lib/decisionResume'
-import { formatDate, todayISO } from '../lib/format'
+import { phaseOf, avantSoumission, voteOuvert } from '../lib/decisionLogic'
+import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadRegistrePDF } from '../lib/pdf'
@@ -82,8 +83,11 @@ export default function RegistreCS() {
     return elected && !ended
   }
   const myVotedSet = useMemo(() => new Set(myVotes.map((v) => v.decision_id)), [myVotes])
-  // Décision qui attend MON vote : ouverte, je suis actif, je n'ai pas voté.
-  const needsMyVote = (d) => !d.enregistree && iAmActiveAt(d.date_publication) && !myVotedSet.has(d.id)
+  // Décision qui attend MON vote : SOUMISE au vote et pas encore enregistrée
+  // (`voteOuvert`), je suis actif à sa date de publication, je n'ai pas voté.
+  // Sans le `voteOuvert`, un brouillon d'un autre membre s'afficherait « à voter »
+  // et compterait dans le badge — alors que le conseil n'en est pas saisi.
+  const needsMyVote = (d) => voteOuvert(d) && iAmActiveAt(d.date_publication) && !myVotedSet.has(d.id)
   // En retard pour moi : mon vote est attendu et la date limite est dépassée.
   const overdueForMe = (d) => needsMyVote(d) && d.date_limite_reponse && d.date_limite_reponse < todayISO()
 
@@ -160,24 +164,56 @@ export default function RegistreCS() {
   }, [projets, agBudgets])
   const resumeOf = (d) => decisionResume(d, contexteOf(d))
 
+  // Le filtre d'état porte sur DEUX colonnes (migration 026) : la phase du cycle
+  // de vie (brouillon / planifiée / annulée) et, pour les décisions soumises, le
+  // résultat de la délibération (en cours / adoptée / rejetée). Un seul menu
+  // parce que l'utilisateur, lui, n'a qu'une question : « où en est-elle ? ».
+  const matchEtat = (d) => {
+    if (statut === 'all') return true
+    const p = phaseOf(d)
+    if (p !== 'ouverte_au_vote') return p === statut
+    return statut === d.statut
+  }
+
   const filtered = useMemo(
     () =>
-      decisions.filter((d) => {
-        if (onlyToVote && !needsMyVote(d)) return false
-        if (year !== 'all' && d.date_publication?.slice(0, 4) !== year) return false
-        if (statut !== 'all' && d.statut !== statut) return false
-        if (q && !`${d.numero} ${d.titre}`.toLowerCase().includes(q.toLowerCase())) return false
-        return true
-      }),
+      decisions
+        .filter((d) => {
+          if (onlyToVote && !needsMyVote(d)) return false
+          if (year !== 'all' && d.date_publication?.slice(0, 4) !== year) return false
+          if (!matchEtat(d)) return false
+          if (q && !`${d.numero} ${d.titre}`.toLowerCase().includes(q.toLowerCase())) return false
+          return true
+        })
+        // Brouillons et décisions planifiées EN TÊTE (spec §7) : ce sont les
+        // seules qui attendent une action de leur rédacteur. Entre elles, la plus
+        // imminente d'abord ; une non planifiée passe après (pas d'échéance).
+        // Le reste garde l'ordre de `listDecisions` (publication décroissante).
+        .sort((a, b) => {
+          const rangA = avantSoumission(a) ? 0 : 1
+          const rangB = avantSoumission(b) ? 0 : 1
+          if (rangA !== rangB) return rangA - rangB
+          if (rangA === 1) return 0
+          const da = a.date_soumission_prevue || '9999'
+          const db = b.date_soumission_prevue || '9999'
+          return da < db ? -1 : da > db ? 1 : 0
+        }),
     [decisions, year, statut, q, onlyToVote, myVotedSet, me], // eslint-disable-line react-hooks/exhaustive-deps
   )
+
+  // Le PDF est le REGISTRE : il n'y entre que des délibérations. Un brouillon ou
+  // une décision planifiée n'en est pas une — le conseil n'en a pas été saisi —
+  // et l'y faire figurer laisserait croire à une délibération qui n'a pas eu
+  // lieu. Une décision ANNULÉE, elle, y reste : elle a existé, et le registre
+  // doit dire qu'elle a été retirée (et pourquoi).
+  const exportables = useMemo(() => filtered.filter((d) => !avantSoumission(d)), [filtered])
 
   const exportAll = async () => {
     setExporting(true)
     try {
-      const details = await Promise.all(filtered.map((d) => repo.getDecision(d.id)))
+      const details = await Promise.all(exportables.map((d) => repo.getDecision(d.id)))
       const byId = Object.fromEntries(details.map((d) => [d.id, d]))
-      downloadRegistrePDF(filtered, {
+      downloadRegistrePDF(exportables, {
         members,
         getDetail: (d) => ({ votes: byId[d.id]?.votes || [], qa: byId[d.id]?.qa || [] }),
         getContexte: contexteOf,
@@ -216,7 +252,7 @@ export default function RegistreCS() {
             <Button variant={onlyToVote ? 'primary' : 'secondary'} onClick={() => setOnlyToVote((v) => !v)}>
               À voter{toVoteCount > 0 ? ` (${toVoteCount})` : ''}
             </Button>
-            {!isMobile && <Button variant="secondary" onClick={exportAll} disabled={exporting || filtered.length === 0}>{exporting ? 'Génération…' : 'Export PDF'}</Button>}
+            {!isMobile && <Button variant="secondary" onClick={exportAll} disabled={exporting || exportables.length === 0} title="Le registre PDF ne contient que les décisions soumises au conseil (les brouillons et décisions planifiées en sont exclus).">{exporting ? 'Génération…' : 'Export PDF'}</Button>}
             {!isMobile && <Link to="/registre/nouvelle"><Button>+ Nouvelle décision</Button></Link>}
           </>
         }
@@ -230,10 +266,17 @@ export default function RegistreCS() {
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </Select>
           <Select value={statut} onChange={(e) => setStatut(e.target.value)}>
-            <option value="all">Tous les statuts</option>
-            <option value="en_cours">En cours</option>
-            <option value="adoptee">Adoptée</option>
-            <option value="rejetee">Rejetée</option>
+            <option value="all">Tous les états</option>
+            <optgroup label="Avant le vote">
+              <option value="brouillon">Brouillon</option>
+              <option value="planifiee">Planifiée</option>
+              <option value="annulee">Annulée</option>
+            </optgroup>
+            <optgroup label="Soumise au conseil">
+              <option value="en_cours">En cours</option>
+              <option value="adoptee">Adoptée</option>
+              <option value="rejetee">Rejetée</option>
+            </optgroup>
           </Select>
         </div>
       </Card>
@@ -251,7 +294,10 @@ export default function RegistreCS() {
             const r = resumeOf(d)
             const overdue = overdueForMe(d)
             const toVote = needsMyVote(d)
-            const toNotify = d.created_by === user?.membre_id && !d.enregistree && !d.date_notification
+            // « À notifier » ne concerne qu'une décision SOUMISE : il n'y a rien
+            // à annoncer au CS tant qu'elle est en brouillon ou planifiée.
+            const toNotify = d.created_by === user?.membre_id && voteOuvert(d) && !d.date_notification
+            const enPrep = avantSoumission(d)
             const batch = batchByDecision[d.id]
             return (
               <li key={d.id}>
@@ -261,7 +307,7 @@ export default function RegistreCS() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-slate-500">{d.numero}</span>
-                    <StatutBadge statut={d.statut} />
+                    <DecisionEtatBadge decision={d} />
                   </div>
                   <p className="mt-1 font-medium text-navy-800">{r.titre}</p>
                   {r.action && <p className="mt-0.5 text-xs font-medium text-navy-700">{r.action}</p>}
@@ -278,12 +324,21 @@ export default function RegistreCS() {
                     </div>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span>Publiée le {formatDate(d.date_publication)}</span>
-                    {renderVotes(d)}
-                    {d.date_limite_reponse && (
-                      <span className={overdue ? 'font-semibold text-red-700' : undefined}>
-                        Réponse avant le {formatDate(d.date_limite_reponse)}
-                      </span>
+                    {/* Une décision non soumise n'a pas de date de publication
+                        réelle : elle sera posée au jour de l'ouverture. On
+                        annonce donc l'échéance prévue, pas une date fictive. */}
+                    {enPrep ? (
+                      <span>{d.date_soumission_prevue ? `Vote ouvert le ${formatDateTime(d.date_soumission_prevue)}` : 'Aucune date d’ouverture fixée'}</span>
+                    ) : (
+                      <>
+                        <span>Publiée le {formatDate(d.date_publication)}</span>
+                        {renderVotes(d)}
+                        {d.date_limite_reponse && (
+                          <span className={overdue ? 'font-semibold text-red-700' : undefined}>
+                            Réponse avant le {formatDate(d.date_limite_reponse)}
+                          </span>
+                        )}
+                      </>
                     )}
                     {batch && <SignatureBadge statut={batch.statut} />}
                   </div>
@@ -310,14 +365,28 @@ export default function RegistreCS() {
                 {filtered.map((d) => {
                   const overdue = overdueForMe(d)
                   const toVote = needsMyVote(d)
+                  const enPrep = avantSoumission(d)
                   return (
-                  <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : 'hover:bg-navy-50/40'}>
+                  <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : enPrep ? 'bg-slate-50/60 hover:bg-navy-50/40' : 'hover:bg-navy-50/40'}>
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{d.numero}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      <div>{formatDate(d.date_publication)}</div>
-                      <div className={`text-xs ${overdue ? 'font-semibold text-red-700' : 'text-slate-400'}`}>
-                        {d.date_limite_reponse ? <>limite {formatDate(d.date_limite_reponse)}{overdue ? ' ⚠ dépassée' : ''}</> : 'sans limite'}
-                      </div>
+                      {/* Pas encore soumise : la publication n'a pas eu lieu, on
+                          affiche l'échéance d'ouverture — la seule date vraie. */}
+                      {enPrep ? (
+                        <>
+                          <div className="text-xs uppercase tracking-wide text-slate-400">Ouverture</div>
+                          <div className={d.date_soumission_prevue ? 'text-sky-800' : 'text-slate-400'}>
+                            {d.date_soumission_prevue ? formatDateTime(d.date_soumission_prevue) : 'non planifiée'}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>{formatDate(d.date_publication)}</div>
+                          <div className={`text-xs ${overdue ? 'font-semibold text-red-700' : 'text-slate-400'}`}>
+                            {d.date_limite_reponse ? <>limite {formatDate(d.date_limite_reponse)}{overdue ? ' ⚠ dépassée' : ''}</> : 'sans limite'}
+                          </div>
+                        </>
+                      )}
                     </td>
                     {/* Résumé sur trois niveaux — titre, ce que la décision FAIT,
                         puis un extrait de la description. Le titre seul ne dit ni
@@ -326,7 +395,7 @@ export default function RegistreCS() {
                     <td className="max-w-md px-4 py-3">
                       <Link to={`/registre/${d.id}`} className="font-medium text-navy-700 hover:underline">{resumeOf(d).titre}</Link>
                       {toVote && !overdue && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à voter</span>}
-                      {d.created_by === user?.membre_id && !d.enregistree && !d.date_notification && (
+                      {d.created_by === user?.membre_id && voteOuvert(d) && !d.date_notification && (
                         <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">à notifier</span>
                       )}
                       {unansweredByDecision[d.id] > 0 && (
@@ -339,8 +408,8 @@ export default function RegistreCS() {
                         <span className="mt-0.5 block text-xs leading-snug text-slate-500">{resumeOf(d).extrait}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3"><StatutBadge statut={d.statut} /></td>
-                    <td className="px-4 py-3">{renderVotes(d)}</td>
+                    <td className="px-4 py-3"><DecisionEtatBadge decision={d} /></td>
+                    <td className="px-4 py-3">{enPrep ? <span className="text-xs text-slate-400">—</span> : renderVotes(d)}</td>
                     <td className="px-4 py-3">{batchByDecision[d.id] ? <SignatureBadge statut={batchByDecision[d.id].statut} /> : <span className="text-xs text-slate-400">—</span>}</td>
                   </tr>
                   )

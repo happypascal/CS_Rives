@@ -6,6 +6,7 @@ import { ORG } from '../lib/config'
 import ForcePasswordChange from '../pages/ForcePasswordChange'
 import { ROLE_LABELS } from '../lib/rolesLogic'
 import { useActivityNotifications } from '../lib/useActivityNotifications'
+import { useOuvertureAutomatique } from '../lib/useOuvertureAutomatique'
 
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
@@ -28,6 +29,10 @@ export default function Layout() {
   // Notifications de bureau (président/secrétaire) : sondage 30 s des nouveaux
   // votes/questions tant que l'app est ouverte. Activation dans Paramètres.
   useActivityNotifications()
+  // Filet de l'ouverture automatique des décisions planifiées (migration 026) :
+  // pg_cron reste le planificateur, ceci garantit qu'un cron non activé ne fasse
+  // pas qu'une décision planifiée ne s'ouvre jamais, en silence.
+  useOuvertureAutomatique()
 
   const handleSignOut = async () => {
     await signOut()

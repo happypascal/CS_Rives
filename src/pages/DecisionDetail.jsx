@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, eur } from '../components/ui'
-import { StatutBadge, VoteBadge, SignatureBadge } from '../components/badges'
+import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Input, eur } from '../components/ui'
+import { DecisionEtatBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -37,6 +37,9 @@ export default function DecisionDetail() {
   const [busy, setBusy] = useState(false)
   const [confirmRecord, setConfirmRecord] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmSoumettre, setConfirmSoumettre] = useState(false)
+  const [confirmAnnuler, setConfirmAnnuler] = useState(false)
+  const [motifAnnulation, setMotifAnnulation] = useState('')
   const [share, setShare] = useState(false)
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
@@ -94,6 +97,14 @@ export default function DecisionDetail() {
 
   const locked = decision.enregistree
   const isOwner = decision.created_by && decision.created_by === user?.membre_id
+  // Cycle de vie (migration 026). `phase` répond à « où en est la décision ? »,
+  // `statut` à « qu'a décidé le conseil ? » — les deux ne se remplacent pas.
+  const phase = phaseOf(decision)
+  const enPreparation = avantSoumission(decision) // brouillon ou planifiée : le conseil n'est pas saisi
+  const annulee = phase === 'annulee'
+  // Le vote n'est ouvert que si la décision a été SOUMISE et n'est pas encore
+  // enregistrée. Doublé par les policies restrictives `votes_open_only_*`.
+  const voteOuvert = phase === 'ouverte_au_vote' && !locked
   const resolution = ag?.resolutions?.find((r) => r.id === decision.resolution_id) || null
   const budget = agBudgets.find((b) => b.resolution_id === decision.resolution_id) || null
   const projet = decision.projet_id ? projets.find((p) => p.id === decision.projet_id) : null
@@ -124,7 +135,9 @@ export default function DecisionDetail() {
 
   // L'enregistrement redevient conditionné au seul quorum : l'adoption reflète
   // désormais la garde d'engagement, plus besoin de bloquer l'acte séparément.
-  const canRecord = t.quorumAtteint
+  // S'y ajoute l'évidence : on n'acte au registre que ce qui a été soumis au
+  // vote (contrainte `decisions_enregistree_phase_check` côté base).
+  const canRecord = t.quorumAtteint && phase === 'ouverte_au_vote'
 
   // L'utilisateur courant vote uniquement pour lui-même, tant que non enregistrée.
   const myId = user?.membre_id
@@ -134,8 +147,8 @@ export default function DecisionDetail() {
   // MODE TEST : le président pose le vote de n'importe quel membre. Hors de ce
   // mode, `canVoteFor` se referme sur soi-même — la règle self-only est intacte.
   // La RLS autorise déjà l'écriture (policy `votes_admin`) : seul l'écran filtrait.
-  const testVotes = TEST_VOTES && isAdmin && !locked
-  const canVoteFor = (membreId) => !locked && (membreId === myId || testVotes)
+  const testVotes = TEST_VOTES && isAdmin && voteOuvert
+  const canVoteFor = (membreId) => voteOuvert && (membreId === myId || testVotes)
 
   // Le try/catch n'est pas cosmétique : sans lui, un rejet RLS (ex. identité non
   // résolue, cf. incident casse d'email du 19/07) était un SILENCE — la ligne ne
@@ -178,15 +191,29 @@ export default function DecisionDetail() {
     }
   }
 
-  // Suppression : président uniquement, décision NON ENREGISTRÉE, et au plus UN vote.
+  // Suppression — deux cas, deux raisons différentes :
   //
-  // L'enregistrement est le verrou dur : il fait entrer la délibération au registre
-  // légal, elle n'est plus effaçable — jamais, par personne.
-  // Le seuil « au plus 1 vote » (arbitrage Pascal 2026-07-16, auparavant « aucun vote »)
-  // est un garde-fou de saisie, pas une règle statutaire : une décision mal rédigée
-  // dont un seul membre a eu le temps de voter reste corrigeable en la supprimant.
-  // Au 2e vote, la délibération est réellement engagée à plusieurs → on ne l'efface plus.
-  const canDelete = isAdmin && !isMobile && !locked && decision.votes.length <= 1
+  //  1. Le PRÉSIDENT, sur une décision non enregistrée et au plus UN vote.
+  //     L'enregistrement est le verrou dur : il fait entrer la délibération au
+  //     registre légal, elle n'est plus effaçable — jamais, par personne. Le
+  //     seuil « au plus 1 vote » (arbitrage Pascal 2026-07-16, auparavant « aucun
+  //     vote ») est un garde-fou de saisie, pas une règle statutaire : une
+  //     décision mal rédigée dont un seul membre a eu le temps de voter reste
+  //     corrigeable. Au 2e vote, elle est engagée à plusieurs → on ne l'efface plus.
+  //
+  //  2. L'AUTEUR SEUL, tant que sa décision N'EST PAS SOUMISE (arbitrage Pascal
+  //     2026-08-25, migration 026). Un brouillon n'a jamais été soumis au
+  //     conseil : ce n'est pas une délibération, rien ne s'est passé
+  //     juridiquement, rien n'a à rester. Sans ça, une erreur de saisie obligeait
+  //     soit à déranger le président, soit à « annuler » — ce qui gare pour
+  //     toujours une décision annulée au registre, motif obligatoire à l'appui.
+  //     « Annuler » garde tout son sens : il sert quand on VEUT la trace.
+  //
+  // Les deux régimes ne se recouvrent PAS : sur un brouillon, le président n'a
+  // aucun droit de plus qu'un autre membre — il n'en voit d'ailleurs aucun.
+  const canDelete = !isMobile && !locked && (
+    enPreparation ? isOwner : (isAdmin && decision.votes.length <= 1)
+  )
   const doDelete = async () => {
     setBusy(true)
     try {
@@ -214,6 +241,39 @@ export default function DecisionDetail() {
     await reload()
     setBusy(false)
   }
+
+  // ---- Cycle de vie : soumettre / reporter / annuler (migration 026) ----
+  //
+  // Ces trois actes appartiennent à l'AUTEUR du brouillon (le président garde
+  // tout, comme partout). Aucun n'adopte quoi que ce soit : ils ouvrent le vote,
+  // le repoussent, ou retirent la décision AVANT qu'elle soit soumise.
+  const actePhase = async (fn, quoi) => {
+    setBusy(true)
+    try {
+      await fn()
+      await reload()
+    } catch (e) {
+      alert(`${quoi} : ` + e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const doSoumettre = async () => {
+    setConfirmSoumettre(false)
+    await actePhase(() => repo.soumettreDecision(id), 'La soumission au vote a échoué')
+  }
+  const doRemettreEnBrouillon = () =>
+    actePhase(() => repo.remettreEnBrouillon(id), 'Le retour en brouillon a échoué')
+  const doAnnuler = async () => {
+    if (!motifAnnulation.trim()) return
+    setConfirmAnnuler(false)
+    await actePhase(() => repo.annulerDecision(id, motifAnnulation.trim()), 'L’annulation a échoué')
+    setMotifAnnulation('')
+  }
+  // Ratification en réunion : fait POSTÉRIEUR à la délibération (art. 15, point
+  // de la consultation écrite resté ouvert), pas une modification de celle-ci.
+  const doRatifier = (dateISO) =>
+    actePhase(() => repo.ratifierDecision(id, dateISO), 'L’enregistrement de la ratification a échoué')
 
   // Le texte n'est vidé qu'APRÈS succès : sur rejet RLS, l'utilisateur ne perd
   // pas sa saisie et voit pourquoi (avant le 19/07, l'échec était muet).
@@ -275,14 +335,33 @@ export default function DecisionDetail() {
           qu'il annonce. */}
       <PageHeader
         title={<span className="text-slate-500">Décision {decision.numero}</span>}
-        subtitle={`Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`}
+        subtitle={
+          enPreparation
+            ? `${PHASE_LABELS[phase]} · version ${decision.version || 1} · rédigée par ${nameOf(decision.created_by)}`
+            : `Publiée le ${formatDate(decision.date_publication)} · créée par ${nameOf(decision.created_by)}${decision.date_enregistrement ? ' · enregistrée le ' + formatDate(decision.date_enregistrement) : ''}`
+        }
         actions={
           <>
+            {/* Actes du cycle de vie, réservés à l'AUTEUR — et à lui seul, le
+                président compris : demander une décision au conseil n'est pas un
+                pouvoir présidentiel (arbitrage Pascal 2026-08-25). De toute
+                façon il ne voit pas le brouillon d'un autre. Tant que la
+                décision n'est pas soumise, ce sont les seules actions qui ont un
+                sens : rien à voter, rien à enregistrer, rien à notifier. */}
+            {enPreparation && isOwner && !isMobile && (
+              <>
+                <Button onClick={() => setConfirmSoumettre(true)} disabled={busy}>Soumettre au vote</Button>
+                {phase === 'planifiee' && (
+                  <Button variant="secondary" onClick={doRemettreEnBrouillon} disabled={busy}>Remettre en brouillon</Button>
+                )}
+                <Button variant="secondary" onClick={() => setConfirmAnnuler(true)} disabled={busy}>Annuler la décision</Button>
+              </>
+            )}
             {/* L'acte du président : il fige la décision au registre. Sa place est
                 ici, avec les actions de décision — pas dans le tableau des votes.
                 Le pourquoi d'un blocage (quorum, engagement) est expliqué dans la
                 carte des votes ; ici, un tooltip. */}
-            {isAdmin && !locked && !isMobile && (
+            {isAdmin && !locked && !enPreparation && !annulee && !isMobile && (
               <Button onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
                 Enregistrer la décision
               </Button>
@@ -290,8 +369,9 @@ export default function DecisionDetail() {
             {/* L'owner porte sa décision (prévient / relance) ; le président peut
                 aussi notifier, y compris APRÈS enregistrement — pour annoncer au CS
                 qu'une décision est enregistrée, quel que soit le résultat. D'où le
-                retrait de `!locked` ici (la modale propose le bon gabarit). */}
-            {(isOwner || isAdmin) && (
+                retrait de `!locked` ici (la modale propose le bon gabarit).
+                Rien à annoncer, en revanche, tant que la décision n'est pas soumise. */}
+            {(isOwner || isAdmin) && !enPreparation && (
               <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
                 {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
               </Button>
@@ -301,7 +381,7 @@ export default function DecisionDetail() {
             <Button variant="secondary" onClick={() => downloadDecisionPDF(decision, { members, votes: decision.votes.filter((v) => compIds.includes(v.membre_id)), qa: decision.qa, contexte: { projetNom: projet?.nom } })}>
               Export PDF
             </Button>
-            {isOwner && !locked && !isMobile && (
+            {isOwner && !locked && !annulee && !isMobile && (
               <Link to={`/registre/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
             )}
             {canDelete && (
@@ -332,6 +412,42 @@ export default function DecisionDetail() {
       {locked && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           Décision enregistrée le {formatDate(decision.date_enregistrement)} — verrouillée (non modifiable).
+          {decision.ratifiee_en_reunion_le && <> Ratifiée en réunion du CS le {formatDate(decision.ratifiee_en_reunion_le)}.</>}
+        </div>
+      )}
+
+      {/* Le bandeau le plus important de la page pour une décision non soumise :
+          il dit, en une phrase, que PERSONNE n'est encore appelé à voter. Sans
+          lui, un brouillon ressemble à s'y méprendre à une décision en cours. */}
+      {phase === 'brouillon' && (
+        <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <p className="font-semibold">Brouillon — le Conseil Syndical n’est pas saisi.</p>
+          <p className="mt-1 text-xs">
+            Aucun vote n’est possible, aucun délai ne court. Le texte reste modifiable par son rédacteur.
+            Il sera <strong>gelé</strong> — donc non modifiable, y compris par lui — dès l’ouverture du vote.
+          </p>
+        </div>
+      )}
+      {phase === 'planifiee' && (
+        <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <p className="font-semibold">
+            Vote prévu le {formatDateTime(decision.date_soumission_prevue)} — ouverture automatique.
+          </p>
+          <p className="mt-1 text-xs">
+            À cette date, le texte sera gelé, la décision publiée <strong>ce jour-là</strong> (c’est cette date qui
+            détermine la composition du conseil appelée à voter) et la réponse attendue sous{' '}
+            {decision.delai_vote_jours ?? 7} jours ouvrés. Rien n’est adopté automatiquement : le vote s’ouvre, il ne se conclut pas tout seul.
+          </p>
+          <p className="mt-1 text-xs">
+            ⚠ Personne n’est prévenu automatiquement : à l’ouverture, l’auteur doit encore utiliser « Prévenir le CS ».
+          </p>
+        </div>
+      )}
+      {annulee && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="font-semibold">Décision annulée avant l’ouverture du vote.</p>
+          <p className="mt-1 text-xs">Motif : {decision.motif_annulation || '—'}</p>
+          <p className="mt-1 text-xs">Elle reste au registre — rien ne disparaît — mais n’a jamais été soumise au conseil.</p>
         </div>
       )}
 
@@ -345,7 +461,7 @@ export default function DecisionDetail() {
         <div className="border-b border-navy-100 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <h2 className="min-w-0 text-xl font-semibold text-navy-800">{decision.titre}</h2>
-            <div className="shrink-0"><StatutBadge statut={decision.statut} /></div>
+            <div className="shrink-0"><DecisionEtatBadge decision={decision} /></div>
           </div>
         </div>
 
@@ -420,7 +536,7 @@ export default function DecisionDetail() {
           )}
           {/* Décision enregistrée = registre figé : plus aucune saisie (commentaire,
               question, réponse). Seul le contenu déjà présent reste, en lecture seule. */}
-          {myId && !locked && (
+          {myId && !locked && !enPreparation && !annulee && (
             <div className="mt-2 flex items-start gap-2">
               <Textarea autoGrow rows={2} value={cText} onChange={(e) => setCText(e.target.value)} placeholder="Ajouter un commentaire (suivi de la décision)…" className="min-w-0 flex-1" />
               <Button size="sm" onClick={addCommentaire}>Commenter</Button>
@@ -455,7 +571,7 @@ export default function DecisionDetail() {
       </Card>
 
       {/* Mon vote — bloc proéminent (voter facilement, y compris au mobile). */}
-      {iAmInComposition && !locked && (
+      {iAmInComposition && voteOuvert && (
         <Card className="mb-6 border-navy-200">
           <div className="px-5 py-4">
             <p className="text-sm font-semibold text-navy-800">Votre vote</p>
@@ -499,15 +615,30 @@ export default function DecisionDetail() {
               bloc de lecture, au-dessus du vote. Ne restent ici que les dates. */}
           <Card>
             <CardHeader title="Dates" />
-            <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
-              <Info label="Publication" value={formatDate(decision.date_publication)} />
-              <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />
-              <Info label="Notifié au CS" value={decision.date_notification ? formatDate(decision.date_notification) : '—'} />
-              <Info label="Enregistrement" value={decision.date_enregistrement ? formatDate(decision.date_enregistrement) : '—'} />
-            </div>
+            {/* Une décision non soumise n'a NI publication NI limite de réponse :
+                les deux seront posées au jour de l'ouverture réelle. Afficher
+                celles du brouillon ferait lire des dates qui n'existent pas. */}
+            {enPreparation ? (
+              <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
+                <Info label="Rédigée le" value={formatDate(decision.created_at)} />
+                <Info label="Ouverture prévue" value={decision.date_soumission_prevue ? formatDateTime(decision.date_soumission_prevue) : '— (non planifiée)'} />
+                <Info label="Durée du vote" value={`${decision.delai_vote_jours ?? 7} jours ouvrés`} />
+                <Info label="Version" value={`n° ${decision.version || 1}`} />
+              </div>
+            ) : (
+              <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
+                <Info label="Publication" value={formatDate(decision.date_publication)} />
+                <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />
+                <Info label="Notifié au CS" value={decision.date_notification ? formatDate(decision.date_notification) : '—'} />
+                <Info label="Enregistrement" value={decision.date_enregistrement ? formatDate(decision.date_enregistrement) : '—'} />
+              </div>
+            )}
           </Card>
 
-          {/* Votes */}
+          {/* Votes et Questions/réponses n'ont de sens qu'une fois la décision
+              SOUMISE : avant, il n'y a ni vote possible, ni délibération en
+              cours. Une décision annulée n'en a jamais eu. */}
+          {!enPreparation && !annulee && (
           <Card>
             <CardHeader
               title="Vote du Conseil Syndical"
@@ -589,8 +720,10 @@ export default function DecisionDetail() {
               <p className="border-t border-navy-100 px-5 py-2 text-xs text-slate-400">Vous n’étiez pas membre actif du CS à la date de publication : vous ne pouvez pas voter cette décision.</p>
             )}
           </Card>
+          )}
 
-          {/* Q&A */}
+          {/* Q&A — le fil précède le vote (le commentaire, lui, vient après). */}
+          {!enPreparation && !annulee && (
           <Card>
             <CardHeader title="Questions & réponses" />
             <div className="space-y-4 px-5 py-4">
@@ -624,10 +757,66 @@ export default function DecisionDetail() {
               )}
             </div>
           </Card>
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Empreinte du texte voté (migration 026). Ce qui rend le gel utile :
+              sans elle, « le texte n'a pas changé » ne serait qu'une affirmation.
+              Absente sur les décisions antérieures au gel — le dire plutôt que
+              laisser une carte vide qui laisserait croire à un défaut. */}
+          {!enPreparation && (
+            <Card>
+              <CardHeader title="Texte soumis au vote" />
+              <div className="space-y-2 px-5 py-4 text-sm">
+                {decision.hash_contenu ? (
+                  <>
+                    <p className="text-slate-600">Texte gelé le <strong>{formatDateTime(decision.soumise_le)}</strong> — non modifiable depuis.</p>
+                    <p className="text-xs text-slate-500">Empreinte SHA-256 :</p>
+                    <p className="break-all rounded bg-slate-50 px-2 py-1.5 font-mono text-[11px] leading-snug text-slate-600">{decision.hash_contenu}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Décision antérieure au gel du texte : elle n’a pas d’empreinte. Son verrou reste l’enregistrement par le président.
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Ratification en réunion — art. 15 (spec §4). L'article est écrit pour
+              des RÉUNIONS ; un vote asynchrone dans l'app est une consultation
+              écrite que les statuts ne prévoient pas expressément. Tant que le
+              point n'est pas tranché avec Me Garnier, on enregistre et on affiche
+              la ratification quand elle a lieu. */}
+          {locked && (
+            <RatificationCard
+              key={decision.ratifiee_en_reunion_le || 'sans-ratification'}
+              decision={decision}
+              peutModifier={isAdmin && !isMobile}
+              busy={busy}
+              onSave={doRatifier}
+            />
+          )}
+
+          {/* Versions successives du brouillon : « le texte soumis au vote est
+              bien celui qui a été préparé, et par qui ». */}
+          {decision.historique?.length > 0 && (
+            <Card>
+              <CardHeader title="Versions du brouillon" />
+              <ul className="divide-y divide-navy-50 text-xs">
+                {decision.historique.map((h) => (
+                  <li key={h.id} className="px-5 py-2.5">
+                    <p className="font-medium text-navy-700">Version {h.version} — {nameOf(h.modifie_par)}</p>
+                    <p className="text-slate-400">{formatDateTime(h.modifie_le)}</p>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {!enPreparation && !annulee && (
           <Card>
             <CardHeader title="Résultat" />
             <div className="space-y-3 px-5 py-4 text-sm">
@@ -644,7 +833,7 @@ export default function DecisionDetail() {
                 <p className={t.quorumAtteint ? 'font-medium text-emerald-700' : 'font-medium text-red-700'}>{t.quorumAtteint ? 'Atteint' : 'Non atteint'}</p>
               </div>
               <div className="text-center">
-                {locked ? <StatutBadge statut={decision.statut} /> : (
+                {locked ? <DecisionEtatBadge decision={decision} /> : (
                   <Badge tone={t.quorumAtteint ? (t.adoptee ? 'green' : 'red') : 'gray'}>
                     {t.quorumAtteint ? `Projection : ${t.adoptee ? 'Adoptée' : 'Rejetée'}` : 'En attente de quorum'}
                   </Badge>
@@ -653,6 +842,7 @@ export default function DecisionDetail() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* Le projet et le montant sont dans le bloc « Impact », en haut : ne
               reste ici que ce qu'il n'y a pas — l'origine AG, et l'état du budget
@@ -690,6 +880,8 @@ export default function DecisionDetail() {
           )}
 
 
+          {/* Rien à faire signer tant que la décision n'a pas été délibérée. */}
+          {!enPreparation && !annulee && (
           <Card>
             <CardHeader title="Signature électronique" />
             <div className="space-y-2 px-5 py-4 text-sm">
@@ -710,6 +902,7 @@ export default function DecisionDetail() {
               )}
             </div>
           </Card>
+          )}
 
           {decision.status_history?.length > 0 && (
             <Card>
@@ -736,6 +929,56 @@ export default function DecisionDetail() {
       />
 
       <Modal
+        open={confirmSoumettre}
+        onClose={() => setConfirmSoumettre(false)}
+        title="Soumettre au vote"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmSoumettre(false)}>Annuler</Button>
+            <Button onClick={doSoumettre} disabled={busy}>Ouvrir le vote maintenant</Button>
+          </>
+        }
+      >
+        <div className="space-y-2 text-sm text-slate-600">
+          <p>Le vote s’ouvre <strong>immédiatement</strong> pour la décision <strong>{decision.numero}</strong>.</p>
+          <ul className="list-disc pl-5 text-xs">
+            <li>Le <strong>texte est gelé</strong> : titre et corps ne seront plus modifiables, y compris par vous.</li>
+            <li>La décision est <strong>publiée aujourd’hui</strong> — c’est cette date qui fixe la composition du conseil appelée à voter.</li>
+            <li>La réponse est attendue sous <strong>{decision.delai_vote_jours ?? 7} jours ouvrés</strong>.</li>
+            <li>Personne n’est prévenu automatiquement : pensez à « Prévenir le CS » juste après.</li>
+          </ul>
+        </div>
+      </Modal>
+
+      <Modal
+        open={confirmAnnuler}
+        onClose={() => setConfirmAnnuler(false)}
+        title="Annuler la décision"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmAnnuler(false)}>Revenir</Button>
+            <Button variant="danger" onClick={doAnnuler} disabled={busy || !motifAnnulation.trim()}>Annuler la décision</Button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-slate-600">
+          <p>La décision <strong>{decision.numero}</strong> est retirée avant toute soumission au conseil.</p>
+          <p className="text-xs text-slate-500">
+            Elle <strong>reste au registre</strong> avec son motif — rien ne disparaît — mais ne pourra plus être ni
+            modifiée, ni soumise au vote. Le motif est obligatoire : le registre doit dire pourquoi.
+          </p>
+          <Textarea
+            autoGrow
+            rows={3}
+            label="Motif de l’annulation"
+            value={motifAnnulation}
+            onChange={(e) => setMotifAnnulation(e.target.value)}
+            placeholder="ex : sujet repris dans la décision 2026-012, devis retiré par le prestataire…"
+          />
+        </div>
+      </Modal>
+
+      <Modal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         title="Supprimer la décision"
@@ -748,7 +991,15 @@ export default function DecisionDetail() {
       >
         <div className="space-y-2 text-sm text-slate-600">
           <p>Supprimer définitivement la décision <strong>{decision.numero}</strong> « {decision.titre} » ?</p>
-          <p className="text-xs text-slate-400">Cette action est irréversible. Seules les décisions sans aucun vote peuvent être supprimées.</p>
+          {enPreparation ? (
+            <p className="text-xs text-slate-400">
+              Cette action est irréversible : le texte et l’historique de ses versions disparaissent. Elle n’a jamais été
+              soumise au conseil, il n’en restera donc aucune trace au registre. Si vous voulez au contraire garder la
+              trace du sujet abandonné, utilisez « <strong>Annuler la décision</strong> ».
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400">Cette action est irréversible. Une décision enregistrée n’est jamais supprimable, et une décision votée par plusieurs membres non plus.</p>
+          )}
         </div>
       </Modal>
 
@@ -848,6 +1099,40 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
         </p>
       </div>
     </Modal>
+  )
+}
+
+// Ratification en réunion (spec §4). Composant à part parce qu'il porte un état
+// de saisie propre, initialisé depuis la décision : le monter avec une `key` liée
+// à la valeur enregistrée le resynchronise après sauvegarde, sans effet.
+//
+// Le texte de la carte dit pourquoi ce champ existe — il ne se devine pas, et un
+// champ de date sans explication dans un registre légal invite à l'inventer.
+function RatificationCard({ decision, peutModifier, busy, onSave }) {
+  const [date, setDate] = useState(decision.ratifiee_en_reunion_le || '')
+  const inchangee = (date || '') === (decision.ratifiee_en_reunion_le || '')
+  return (
+    <Card>
+      <CardHeader title="Ratification en réunion" />
+      <div className="space-y-3 px-5 py-4 text-sm">
+        <p className="text-xs text-slate-500">
+          L’article 15 est rédigé pour des <strong>réunions</strong> ; un vote dans l’application est une
+          <strong> consultation écrite</strong>, que les statuts ne prévoient pas expressément. Tant que le point n’est pas
+          tranché, on inscrit ici la réunion du CS qui a ratifié cette décision.
+        </p>
+        {decision.ratifiee_en_reunion_le ? (
+          <p className="text-emerald-700">Ratifiée en réunion du <strong>{formatDate(decision.ratifiee_en_reunion_le)}</strong>.</p>
+        ) : (
+          <p className="text-amber-700">Pas encore ratifiée en réunion.</p>
+        )}
+        {peutModifier && (
+          <div className="flex items-end gap-2">
+            <Input label="Date de la réunion" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-w-0 flex-1" />
+            <Button size="sm" disabled={busy || inchangee} onClick={() => onSave(date || null)}>Enregistrer</Button>
+          </div>
+        )}
+      </div>
+    </Card>
   )
 }
 

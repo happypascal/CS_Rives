@@ -7,9 +7,12 @@
 //   - signature : par LOT de décisions sélectionnées.
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
-import { engagementTTC } from './decisionLogic'
+import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
+import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-const STORAGE_KEY = 'cs_rives_mockdb_v8'
+// v9 : cycle brouillon / planifiée (migration 026). Le numéro de version force le
+// reseed — les décisions de démo gagnent des colonnes que l'ancienne base n'a pas.
+const STORAGE_KEY = 'cs_rives_mockdb_v9'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -20,6 +23,16 @@ const nowISO = () => new Date().toISOString()
 const delay = (ms = 50) => new Promise((r) => setTimeout(r, ms))
 // Data URL UTF-8 (évite btoa qui échoue sur les caractères non-Latin1 : —, €, …).
 const textDataUrl = (s) => 'data:text/plain;charset=utf-8,' + encodeURIComponent(s)
+
+// Empreinte SHA-256 hexadécimale d'une chaîne UTF-8. Doit donner EXACTEMENT le
+// même résultat que `encode(sha256(convert_to(t,'UTF8')),'hex')` côté Postgres
+// (trigger `decisions_cycle_guard`, migration 026) : c'est la même valeur
+// probante, quel que soit le backend.
+async function sha256Hex(texte) {
+  const octets = new TextEncoder().encode(texte)
+  const digest = await crypto.subtle.digest('SHA-256', octets)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
 
 // ---------------------------------------------------------------- seed
 function seed() {
@@ -163,6 +176,74 @@ function seed() {
     },
   ]
 
+  // Colonnes du cycle de vie (migration 026). Les décisions de démo existantes
+  // sont, comme celles déjà en base côté prod, DÉJÀ soumises au vote — d'où
+  // `phase: 'ouverte_au_vote'`. `contenu_gele` reste null : elles précèdent le
+  // gel, et le mock doit reproduire ce cas (une décision non gelée reste
+  // modifiable par son owner jusqu'à l'enregistrement).
+  for (const d of decisions) {
+    d.phase = 'ouverte_au_vote'
+    d.version = 1
+    d.visibilite = 'cs_seul'
+    d.delai_vote_jours = 7
+    d.date_soumission_prevue = null
+    d.soumise_le = null
+    d.contenu_gele = null
+    d.hash_contenu = null
+    d.motif_annulation = null
+    d.ratifiee_en_reunion_le = null
+  }
+
+  // Les deux cas que la migration 026 ouvre : un brouillon en cours de rédaction,
+  // et une décision PLANIFIÉE dont le vote s'ouvrira tout seul.
+  //
+  // ⚠ Texte de DÉMONSTRATION. Le cas d'usage réel (spec §10) est la « Règle de
+  // représentation et de contacts extérieurs », à soumettre au CS après l'AG du
+  // 15 septembre 2026 — mais son texte appartient au conseil, pas à la démo :
+  // les six articles ci-dessous sont une trame, à remplacer par la rédaction
+  // réelle avant de créer la décision en production.
+  const d7 = uid()
+  const d8 = uid()
+  decisions.push(
+    {
+      id: d7, numero: '2026-007',
+      date_publication: '2026-08-25', date_limite_reponse: null, date_enregistrement: null,
+      titre: 'Convention d’entretien du bassin de rétention',
+      description: '<p>Brouillon en cours de rédaction : cadre d’entretien annuel du bassin de rétention (périodicité, prestataire, contrôle).</p>',
+      statut: 'en_cours', enregistree: false, quorum_atteint: null,
+      montant_engage: null, projet_id: null, ag_id: null, resolution_id: null, documents: [],
+      composition_snapshot: null, created_by: mVice, created_at: '2026-08-25T09:00:00Z', updated_at: '2026-08-25T09:00:00Z',
+      phase: 'brouillon', version: 2, visibilite: 'cs_seul', delai_vote_jours: 7,
+      date_soumission_prevue: null, soumise_le: null, contenu_gele: null, hash_contenu: null,
+      motif_annulation: null, ratifiee_en_reunion_le: null,
+    },
+    {
+      id: d8, numero: '2026-008',
+      // Ces deux dates seront REPOSÉES au jour de l'ouverture réelle : c'est tout
+      // l'objet de la planification (le vote doit revenir au conseil désigné par
+      // l'AG du 15 septembre, pas à l'ancien).
+      date_publication: '2026-08-25', date_limite_reponse: null, date_enregistrement: null,
+      titre: 'Règle de représentation et de contacts extérieurs',
+      description:
+        '<p><strong>Article 1 — Objet.</strong> La présente règle fixe qui représente le Conseil Syndical à l’extérieur et dans quelles limites.</p>' +
+        '<p><strong>Article 2 — Représentation.</strong> Le président représente l’ASL auprès des tiers. Il peut donner mandat écrit et ponctuel à un autre membre.</p>' +
+        '<p><strong>Article 3 — Contacts avec le syndic.</strong> Les échanges avec Foncia passent par le président ou le membre mandaté ; les autres membres sont tenus informés.</p>' +
+        '<p><strong>Article 4 — Devis et prestataires.</strong> Tout contact engageant une dépense fait l’objet d’une décision du CS avant signature.</p>' +
+        '<p><strong>Article 5 — Communication aux colotis.</strong> Toute communication au nom du CS est validée en séance ou par décision inscrite au registre.</p>' +
+        '<p><strong>Article 6 — Entrée en vigueur.</strong> La règle s’applique dès l’enregistrement de la présente décision et jusqu’à décision contraire du CS.</p>',
+      statut: 'en_cours', enregistree: false, quorum_atteint: null,
+      montant_engage: null, projet_id: null, ag_id: null, resolution_id: null, documents: [],
+      composition_snapshot: null, created_by: mPresident, created_at: '2026-08-25T10:00:00Z', updated_at: '2026-08-25T10:00:00Z',
+      phase: 'planifiee', version: 1, visibilite: 'cs_seul', delai_vote_jours: 7,
+      date_soumission_prevue: '2026-09-16T08:00:00Z', soumise_le: null, contenu_gele: null, hash_contenu: null,
+      motif_annulation: null, ratifiee_en_reunion_le: null,
+    },
+  )
+
+  const decisions_historique = [
+    { id: uid(), decision_id: d7, version: 2, titre: 'Convention d’entretien du bassin de rétention', contenu: '<p>Brouillon en cours de rédaction : cadre d’entretien annuel du bassin de rétention (périodicité, prestataire, contrôle).</p>', modifie_par: mVice, modifie_le: '2026-08-25T09:00:00Z' },
+  ]
+
   const activeSnapshot = membres_cs
     .filter((m) => m.actif)
     .map((m) => ({ id: m.id, nom: m.nom, prenom: m.prenom, role: m.role, ag_election: m.ag_election, date_election: m.date_election }))
@@ -230,7 +311,11 @@ function seed() {
   // Approbations de comptes d'AGO (trésorier + président). Vide au départ.
   const comptes_ag = []
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, comptes_ag, audit_log }
+  // Journal des ouvertures automatiques : vide au départ, alimenté seulement
+  // quand une décision planifiée est réellement ouverte (jamais à vide).
+  const cron_runs = []
+
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -262,12 +347,36 @@ function audit(data, entite, entite_id, action, details) {
   data.audit_log.push({ id: uid(), entite, entite_id, action, acteur: getSessionUserId(), details: details || '', created_at: nowISO() })
 }
 
-function getSessionUserId() {
+function getSessionUser() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY))?.user?.membre_id ?? null
+    return JSON.parse(localStorage.getItem(SESSION_KEY))?.user ?? null
   } catch {
     return null
   }
+}
+
+function getSessionUserId() {
+  return getSessionUser()?.membre_id ?? null
+}
+
+// Miroir des policies restrictives `decisions_avant_soumission_privee` /
+// `decisions_brouillon_update_auteur` / `decisions_brouillon_delete_auteur`
+// (migration 026) : un brouillon — ou une décision planifiée, qui est un
+// brouillon daté — n'existe QUE pour son auteur.
+//
+// ⚠ Pas d'exception pour le président (arbitrage Pascal 2026-08-25) : demander
+// une décision au conseil n'est pas un pouvoir présidentiel. Il ne voit, ne
+// modifie, ne soumet ni ne supprime le brouillon d'un autre. Sa prérogative
+// propre est l'ACTE — enregistrer une délibération votée — et la signature.
+//
+// Une décision ANNULÉE, elle, est visible de tous : annuler est l'acte délibéré
+// de laisser une trace au registre.
+//
+// Reproduit ici pour que la démo montre le même registre que la prod. Cela ne
+// PROUVE rien sur la RLS (le mock n'a pas de policies) — seul le staging le peut.
+function aLaMain(d, user) {
+  if (!avantSoumission(d)) return true
+  return Boolean(user) && d.created_by === user.membre_id
 }
 
 // ---------------------------------------------------------------- session/auth
@@ -329,6 +438,18 @@ const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 export const ouvreUnBudget = (r) =>
   r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
 
+// Une décision PÈSE-t-elle sur un budget ? (migration 026)
+//
+// Une décision ANNULÉE n'engage rien, jamais : elle a été retirée avant même
+// d'être soumise. Un BROUILLON ou une décision PLANIFIÉE non plus — le conseil
+// n'en a pas encore été saisi, ce n'est pas même une proposition en cours de
+// vote. Sans ce filtre, un brouillon chiffré à 20 000 € apparaîtrait en
+// « engagé en cours » sur l'enveloppe et ferait croire l'argent réservé.
+//
+// Prédicat unique, lu par computeAGBudgets ET computeProjectBudgets : dupliqué,
+// il divergerait (c'est exactement le piège qu'`ouvreUnBudget` évite côté AG).
+export const peseSurLeBudget = (d) => !avantSoumission(d) && phaseOf(d) !== 'annulee'
+
 // Budgets AG (enveloppe votée par résolution). Le "restant" tient compte à la
 // fois des engagements DIRECTS (décisions sans projet) et de l'enveloppe
 // transférée au projet que la résolution finance.
@@ -340,7 +461,7 @@ export function computeAGBudgets(data) {
     const ag = agById[r.ag_id]
     const alloue = Number(r.budget_alloue)
     // Engagements directs (décisions rattachées à la résolution, sans projet).
-    const direct = data.decisions.filter((d) => d.resolution_id === r.id && !d.projet_id && d.montant_engage != null)
+    const direct = data.decisions.filter((d) => d.resolution_id === r.id && !d.projet_id && d.montant_engage != null && peseSurLeBudget(d))
     const engageDirect = direct.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + engagementTTC(d), 0)
     const directEnCours = direct.filter((d) => !d.enregistree).reduce((s, d) => s + engagementTTC(d), 0)
     // L'enveloppe est indivisible : si la résolution finance un projet, elle y
@@ -376,7 +497,7 @@ export function computeProjectBudgets(data) {
   const agById = Object.fromEntries(data.assemblees_generales.map((a) => [a.id, a]))
   const memById = Object.fromEntries(data.membres_cs.map((m) => [m.id, m]))
   return (data.projets || []).map((p) => {
-    const liees = data.decisions.filter((d) => d.projet_id === p.id && d.montant_engage != null)
+    const liees = data.decisions.filter((d) => d.projet_id === p.id && d.montant_engage != null && peseSurLeBudget(d))
     const engage = liees.filter((d) => d.enregistree && d.statut === 'adoptee').reduce((s, d) => s + engagementTTC(d), 0)
     const engageEnCours = liees.filter((d) => !d.enregistree).reduce((s, d) => s + engagementTTC(d), 0)
 
@@ -448,6 +569,82 @@ export function computeProjectBudgets(data) {
       engagements: liees.map((d) => ({ id: d.id, numero: d.numero, titre: d.titre, montant: Number(d.montant_engage || 0), statut: d.statut, enregistree: d.enregistree })),
     }
   })
+}
+
+// Miroir du trigger `decisions_cycle_guard` (migration 026). Le mock est plus
+// permissif que Supabase par nature (`Object.assign` avale tout) — ici il ne peut
+// pas se le permettre : le gel du texte et son empreinte sont la valeur probante
+// de la délibération. Toute règle changée ici doit l'être dans le trigger SQL.
+//
+// ⚠ Ce que le mock ne prouve toujours PAS : les policies (un membre peut-il
+// vraiment voter sur un brouillon ?) et l'atomicité. Cela se vérifie en staging.
+async function appliquerCycle(data, d, patch) {
+  const avant = {
+    phase: phaseOf(d),
+    titre: d.titre,
+    description: d.description,
+    contenu_gele: d.contenu_gele ?? null,
+    version: d.version || 1,
+  }
+  const apres = patch.phase ?? avant.phase
+  const titre = patch.titre ?? d.titre
+  const description = patch.description ?? d.description
+
+  // 1. Transitions autorisées (spec §3). Une délibération soumise ne se
+  //    dé-soumet pas ; une décision annulée reste au registre avec son motif.
+  const TRANSITIONS = {
+    brouillon: ['planifiee', 'ouverte_au_vote', 'annulee'],
+    planifiee: ['brouillon', 'ouverte_au_vote', 'annulee'],
+    ouverte_au_vote: [],
+    annulee: [],
+  }
+  if (apres !== avant.phase && !TRANSITIONS[avant.phase].includes(apres)) {
+    // Repli sur la valeur brute : une phase inconnue (faute de frappe, valeur
+    // d'un autre axe comme 'adoptee') doit s'afficher telle quelle, pas
+    // « undefined » — c'est justement le cas où le message doit aider.
+    const nom = (p) => PHASE_LABELS[p] || p
+    throw new Error(`Transition interdite : une décision « ${nom(avant.phase)} » ne peut pas passer en « ${nom(apres)} ».`)
+  }
+
+  // 2. Annulation : motif obligatoire.
+  if (apres === 'annulee' && !String(patch.motif_annulation ?? d.motif_annulation ?? '').trim()) {
+    throw new Error('Annulation impossible sans motif : le registre doit dire pourquoi la décision a été retirée.')
+  }
+
+  // 3. Gel du texte : une fois le vote ouvert, on ne réécrit plus ce sur quoi
+  //    les membres votent. La garde porte sur `contenu_gele`, pas sur la phase —
+  //    les décisions antérieures au gel gardent leur comportement d'avant.
+  if (avant.contenu_gele != null && (titre !== avant.titre || description !== avant.description)) {
+    throw new Error(`Texte gelé depuis le ${formatDateTime(d.soumise_le)} : la délibération soumise au vote n’est plus modifiable.`)
+  }
+
+  Object.assign(d, patch, { updated_at: nowISO() })
+
+  // 4. Historique + version, tant que la décision est un brouillon (planifiée
+  //    incluse : c'est un brouillon daté).
+  const texteChange = titre !== avant.titre || description !== avant.description
+  if ((avant.phase === 'brouillon' || avant.phase === 'planifiee') && texteChange) {
+    d.version = avant.version + 1
+    data.decisions_historique.push({
+      id: uid(), decision_id: d.id, version: d.version,
+      titre, contenu: description || '', modifie_par: getSessionUserId(), modifie_le: nowISO(),
+    })
+  }
+
+  // 5. Ouverture du vote : gel, empreinte, et RECALAGE DES DATES.
+  //    `date_publication` détermine la composition du CS appelée à voter et le
+  //    dénominateur du quorum : une décision rédigée en août et ouverte le
+  //    16 septembre doit revenir au conseil désigné le 15, pas à l'ancien.
+  if (phaseOf(d) === 'ouverte_au_vote' && d.contenu_gele == null) {
+    d.soumise_le = d.soumise_le || nowISO()
+    d.contenu_gele = contenuAGeler(d)
+    d.hash_contenu = await sha256Hex(d.contenu_gele)
+    if (avant.phase === 'brouillon' || avant.phase === 'planifiee') {
+      d.date_publication = todayISO()
+      d.date_limite_reponse = addBusinessDaysISO(d.date_publication, d.delai_vote_jours || 7)
+    }
+  }
+  return d
 }
 
 export const mockRepo = {
@@ -685,15 +882,26 @@ export const mockRepo = {
   // lirait `documents` : il marcherait en démo, pas en production.
   async listDecisions() {
     await delay()
+    const user = getSessionUser()
     return clone(load().decisions)
+      .filter((d) => aLaMain(d, user)) // brouillons d'autrui : invisibles (migration 026)
       .map(({ documents, ...d }) => d) // eslint-disable-line no-unused-vars
       .sort(byDateDesc('date_publication'))
+  },
+  // Numéro AAAA-NNN suivant, calculé sur TOUTES les décisions — y compris les
+  // brouillons qu'on ne voit pas. Sans ça, deux membres qui rédigent en même
+  // temps tireraient le même numéro (côté Supabase, l'unique le refuserait).
+  async prochainNumeroDecision(annee) {
+    await delay(20)
+    return nextNumero(annee, load().decisions)
   },
   async getDecision(id) {
     await delay()
     const data = load()
     const d = data.decisions.find((x) => x.id === id)
-    if (!d) return null
+    // Introuvable pour qui n'a pas le droit de la voir : exactement ce que
+    // renverrait PostgREST sous la policy restrictive.
+    if (!d || !aLaMain(d, getSessionUser())) return null
     const batch = data.signature_batches.find((b) => b.decision_ids.includes(id)) || null
     return {
       ...clone(d),
@@ -701,6 +909,9 @@ export const mockRepo = {
       qa: clone(data.questions_reponses.filter((q) => q.decision_id === id).sort((a, b) => (a.created_at < b.created_at ? -1 : 1))),
       signature_batch: clone(batch),
       status_history: clone(data.decision_status_history.filter((h) => h.decision_id === id)),
+      // Versions successives du brouillon (migration 026) : « le texte soumis au
+      // vote est bien celui qui a été préparé, et par qui ».
+      historique: clone((data.decisions_historique || []).filter((h) => h.decision_id === id).sort((a, b) => a.version - b.version)),
     }
   },
   async createDecision(input) {
@@ -709,10 +920,24 @@ export const mockRepo = {
     const d = {
       id: uid(), statut: 'en_cours', enregistree: false, quorum_atteint: null, composition_snapshot: null,
       montant_engage: null, projet_id: null, ag_id: null, resolution_id: null, documents: [], date_enregistrement: null,
+      // Cycle de vie (migration 026). Défaut 'ouverte_au_vote' : une décision
+      // créée sans préciser la phase est soumise au vote sur-le-champ, comme
+      // avant. Le formulaire, lui, envoie toujours la phase explicitement.
+      phase: 'ouverte_au_vote', version: 1, visibilite: 'cs_seul', delai_vote_jours: 7,
+      date_soumission_prevue: null, soumise_le: null, contenu_gele: null, hash_contenu: null,
+      motif_annulation: null, ratifiee_en_reunion_le: null,
       created_by: getSessionUserId(), created_at: nowISO(), updated_at: nowISO(), ...input,
     }
+    // Créée directement ouverte (« Soumettre maintenant ») : le texte est gelé
+    // tout de suite. Les dates, elles, restent celles saisies au formulaire —
+    // seule une décision qui ÉTAIT un brouillon voit sa publication recalée.
+    if (phaseOf(d) === 'ouverte_au_vote') {
+      d.soumise_le = nowISO()
+      d.contenu_gele = contenuAGeler(d)
+      d.hash_contenu = await sha256Hex(d.contenu_gele)
+    }
     data.decisions.push(d)
-    audit(data, 'decisions', d.id, 'create', `Création décision ${d.numero}`)
+    audit(data, 'decisions', d.id, 'create', `Création décision ${d.numero} (${PHASE_LABELS[phaseOf(d)]})`)
     save(data)
     return clone(d)
   },
@@ -722,8 +947,74 @@ export const mockRepo = {
     const d = data.decisions.find((x) => x.id === id)
     if (!d) throw new Error('Décision introuvable')
     if (d.enregistree) throw new Error('Décision enregistrée : non modifiable.')
-    Object.assign(d, patch, { updated_at: nowISO() })
+    // Miroir de `decisions_brouillon_update_auteur` : le brouillon d'un autre
+    // membre ne se modifie pas — ni son texte, ni sa soumission au vote. Le
+    // président non plus : soumettre au conseil la décision d'un autre, à sa
+    // place, n'est pas dans ses prérogatives.
+    if (!aLaMain(d, getSessionUser())) throw new Error('Décision introuvable')
+    await appliquerCycle(data, d, patch)
     audit(data, 'decisions', id, 'update', `Modification décision ${d.numero}`)
+    save(data)
+    return clone(d)
+  },
+
+  // ---- Cycle de vie : brouillon → planifiée → ouverte au vote (migration 026) ----
+  //
+  // Quatre méthodes nommées plutôt qu'un `updateDecision({ phase })` générique :
+  // au point d'appel, « soumettre au vote » et « annuler » ne sont pas des
+  // modifications de champ, ce sont des actes — et chacun a ses conditions.
+  async planifierDecision(id, { date_soumission_prevue, delai_vote_jours }) {
+    return this.updateDecision(id, {
+      phase: 'planifiee',
+      date_soumission_prevue,
+      delai_vote_jours: delai_vote_jours ?? 7,
+    })
+  },
+  async soumettreDecision(id) {
+    return this.updateDecision(id, { phase: 'ouverte_au_vote' })
+  },
+  async remettreEnBrouillon(id) {
+    return this.updateDecision(id, { phase: 'brouillon' })
+  },
+  async annulerDecision(id, motif) {
+    return this.updateDecision(id, { phase: 'annulee', motif_annulation: motif })
+  },
+
+  // Ouvre les décisions planifiées dont l'échéance est passée. Idempotent : une
+  // décision déjà ouverte n'est jamais retraitée (`phase === 'planifiee'`).
+  //
+  // Côté Supabase c'est pg_cron qui déclenche ; ici il n'y a pas de planificateur
+  // du tout, donc SEUL le filet applicatif existe — le mode démo ne prouve rien
+  // sur le cron réel, il montre juste le comportement.
+  async ouvrirDecisionsDues() {
+    const data = load()
+    const maintenant = nowISO()
+    const dues = data.decisions.filter(
+      (d) => phaseOf(d) === 'planifiee' && d.date_soumission_prevue && d.date_soumission_prevue <= maintenant,
+    )
+    if (dues.length === 0) return { traitees: 0 }
+    for (const d of dues) await appliquerCycle(data, d, { phase: 'ouverte_au_vote' })
+    data.cron_runs.push({
+      id: uid(), tache: 'ouvrir_decisions_planifiees', source: 'app',
+      traitees: dues.length, detail: dues.map((d) => d.numero).join(', '), execute_le: nowISO(),
+    })
+    audit(data, 'decisions', null, 'ouverture', `Ouverture automatique : ${dues.map((d) => d.numero).join(', ')}`)
+    save(data)
+    return { traitees: dues.length }
+  },
+
+  // La ratification en réunion est un fait POSTÉRIEUR à la délibération, pas une
+  // modification de celle-ci : elle passe donc volontairement à côté du verrou
+  // d'enregistrement (comme `markDecisionNotified`), et n'est possible que sur
+  // une décision justement enregistrée.
+  async ratifierDecision(id, dateISO) {
+    await delay()
+    const data = load()
+    const d = data.decisions.find((x) => x.id === id)
+    if (!d) throw new Error('Décision introuvable')
+    if (!d.enregistree) throw new Error('Seule une décision enregistrée peut être ratifiée en réunion.')
+    d.ratifiee_en_reunion_le = dateISO || null
+    audit(data, 'decisions', id, 'ratify', dateISO ? `Ratifiée en réunion le ${dateISO}` : 'Ratification retirée')
     save(data)
     return clone(d)
   },
@@ -732,11 +1023,24 @@ export const mockRepo = {
     const data = load()
     const d = data.decisions.find((x) => x.id === id)
     if (d?.enregistree) throw new Error('Décision enregistrée : non supprimable.')
+    // Miroir des policies (migration 026), deux régimes qui ne se recouvrent pas :
+    //  - décision PAS ENCORE SOUMISE → son AUTEUR seul, président compris (il n'a
+    //    aucun droit sur le brouillon d'un autre : `decisions_brouillon_delete_auteur`) ;
+    //  - décision soumise, non enregistrée → le PRÉSIDENT seul (`write_admin`),
+    //    avec le garde-fou « au plus 1 vote » ci-dessous.
+    const user = getSessionUser()
+    if (d && avantSoumission(d)) {
+      if (d.created_by !== user?.membre_id) throw new Error('Décision introuvable')
+    } else if (d && user?.role !== 'admin') {
+      throw new Error('Suppression réservée au président une fois la décision soumise au vote.')
+    }
     // Au plus UN vote : garde-fou de saisie, pas une règle statutaire (cf. DecisionDetail).
     if (data.votes.filter((v) => v.decision_id === id).length > 1) throw new Error('Décision déjà votée par plusieurs membres : non supprimable.')
     data.decisions = data.decisions.filter((x) => x.id !== id)
     data.votes = data.votes.filter((v) => v.decision_id !== id)
     data.questions_reponses = data.questions_reponses.filter((q) => q.decision_id !== id)
+    // Miroir du `on delete cascade` : l'historique des versions part avec elle.
+    data.decisions_historique = (data.decisions_historique || []).filter((h) => h.decision_id !== id)
     save(data)
     return { ok: true }
   },
@@ -803,6 +1107,11 @@ export const mockRepo = {
     const data = load()
     const d = data.decisions.find((x) => x.id === decision_id)
     if (d?.enregistree) throw new Error('Vote clos : décision enregistrée.')
+    // Miroir des policies restrictives `votes_open_only_*` (migration 026) : on
+    // ne vote pas sur un brouillon, une décision planifiée ou annulée.
+    if (d && phaseOf(d) !== 'ouverte_au_vote') {
+      throw new Error(`Vote impossible : la décision est « ${PHASE_LABELS[phaseOf(d)]} », elle n’a pas été soumise au vote.`)
+    }
     let v = data.votes.find((x) => x.decision_id === decision_id && x.membre_id === membre_id)
     if (v) {
       v.vote = vote

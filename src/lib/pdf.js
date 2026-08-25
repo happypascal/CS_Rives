@@ -6,7 +6,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatDate, eur, htmlToText } from './format'
-import { tally, tallySummary, engagementApprouve, VOTE_LABELS } from './decisionLogic'
+import { tally, tallySummary, engagementApprouve, VOTE_LABELS, phaseOf } from './decisionLogic'
 import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
@@ -165,8 +165,13 @@ function decisionBlock(doc, decision, opts = {}) {
   //
   // « Non enregistrée » est un troisième état, distinct de rejetée : la décision
   // n'a pas encore été actée par le président, son verdict n'est pas définitif.
-  const verdict = !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'ADOPTÉE' : 'REJETÉE'
-  const verdictColor = !decision.enregistree ? GREY : adoptee ? GREEN : RED
+  //
+  // « ANNULÉE » est un quatrième état (migration 026) : la décision a été
+  // retirée AVANT toute soumission au conseil. Elle reste au registre — rien ne
+  // disparaît — mais elle n'a jamais été délibérée, donc ni adoptée ni rejetée.
+  const annulee = phaseOf(decision) === 'annulee'
+  const verdict = annulee ? 'ANNULÉE' : !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'ADOPTÉE' : 'REJETÉE'
+  const verdictColor = annulee ? RED : !decision.enregistree ? GREY : adoptee ? GREEN : RED
   font(doc, 'bold', 11, verdictColor)
   text(doc, verdict, PAGE_W - M, y + 6.2, { align: 'right' })
   y += 9 + 5
@@ -178,13 +183,35 @@ function decisionBlock(doc, decision, opts = {}) {
   font(doc, 'normal', 8, GREY)
   text(
     doc,
-    decision.date_enregistrement
-      ? `Décidée le ${formatDate(decision.date_enregistrement)}`
-      : `Publiée le ${formatDate(decision.date_publication)} — pas encore enregistrée`,
+    annulee
+      ? `Annulée avant soumission au conseil${decision.motif_annulation ? ` — ${decision.motif_annulation}` : ''}`
+      : decision.date_enregistrement
+        ? `Décidée le ${formatDate(decision.date_enregistrement)}`
+        : `Publiée le ${formatDate(decision.date_publication)} — pas encore enregistrée`,
     M,
     y,
   )
-  y += 6
+  y += 4
+
+  // Deux mentions de valeur probante, ajoutées par la migration 026 et affichées
+  // seulement quand elles existent (les décisions antérieures n'en ont pas) :
+  //   - l'empreinte du texte gelé à l'ouverture du vote, qui prouve que le texte
+  //     imprimé ici est bien celui sur lequel les membres ont voté ;
+  //   - la réunion du CS qui a ratifié la consultation écrite (art. 15 — point
+  //     laissé ouvert, cf. la spec « brouillon / planifiée » §4).
+  const mentions = [
+    decision.hash_contenu ? `Empreinte SHA-256 du texte voté : ${decision.hash_contenu}` : null,
+    decision.ratifiee_en_reunion_le ? `Ratifiée en réunion du CS le ${formatDate(decision.ratifiee_en_reunion_le)}` : null,
+  ].filter(Boolean)
+  for (const mention of mentions) {
+    font(doc, 'normal', 7, GREY)
+    for (const line of lines(doc, mention, CONTENT_W)) {
+      y = ensure(doc, y, 3.5)
+      doc.text(line, M, y)
+      y += 3.5
+    }
+  }
+  y += mentions.length ? 3 : 2
 
   // L'objet, sans titre de section : gras bleu, il se lit comme un titre — c'en
   // est un. « OBJET » au-dessus ne disait rien que la mise en forme ne dise.
@@ -396,7 +423,9 @@ function buildRegistre(decisions, opts, tocPages) {
       d.numero,
       formatDate(d.date_enregistrement || d.date_publication),
       pdfText(decisionResumeTexte(d, getContexte ? getContexte(d) : {}, { max: 180 })),
-      { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
+      // Annulée = phase, pas statut : une décision retirée avant soumission n'est
+      // ni « en cours », ni adoptée, ni rejetée (migration 026).
+      phaseOf(d) === 'annulee' ? 'Annulée' : { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
       // Placeholder au 1er passage : même largeur de colonne, donc mêmes hauteurs
       // de ligne qu'au 2e — c'est ce qui rend la pagination stable.
       tocPages ? String(tocPages[i]) : '—',

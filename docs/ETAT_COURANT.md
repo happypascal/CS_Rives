@@ -1,7 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-08-05**. Pièces jointes sur les résolutions d'AG (migration 025).
-> Précédemment : chantier AG (heures, cycle de statut, quorum/m², clôture) + TVA (022-024).
+> Dernière session : **2026-08-25**. Décisions en **brouillon** avec **soumission planifiée**
+> (migration 026, **appliquée en prod**). ⚠ **Code pas encore poussé** — voir la section.
+> Précédemment : PJ sur les résolutions d'AG (025) ; chantier AG + TVA (022-024).
 > ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
 >
 > Fichier à lire en premier pour reprendre (après le `CLAUDE.md` du dépôt et `PASSATION.md`).
@@ -24,6 +25,139 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-08-25 — décisions en brouillon + soumission planifiée (migration 026)
+
+Implémentation de `Spec_Decisions_Brouillon_Planifie.md` (dossier parent, hors dépôt).
+Besoin déclencheur : la **règle de représentation et de contacts extérieurs** doit être soumise au
+vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvellement désigné.
+
+> ✅ **Migration 026 appliquée en prod le 2026-08-25**, bloc par bloc, avec vérification à chaque
+> étape : colonnes (5 décisions toutes restées `ouverte_au_vote`), les 2 tables, les 2 fonctions +
+> le trigger, les 8 policies, et **pg_cron 1.6.4 activé** avec la tâche horaire
+> `ouvrir-decisions-planifiees` (jobid 1, active).
+> ⚠ **RESTE À FAIRE : pousser le code.** Il envoie `phase` dans tous les `select`/`update` de
+> décisions — la base est prête, l'app ne l'est pas encore.
+
+- **✅ `phase` ≠ `statut`** — nouvelle colonne `decisions.phase` (`brouillon` / `planifiee` /
+  `ouverte_au_vote` / `annulee`). `statut` reste le RÉSULTAT de la délibération. **Écart assumé vs
+  la spec**, qui fusionnait tout dans `statut` : les budgets, le CSV Foncia et le PDF lisent
+  `statut` — y injecter des états de cycle aurait cassé la dérivation des budgets en silence.
+- **✅ Gel du texte + empreinte** : à l'ouverture du vote, `contenu_gele` (titre + `\n\n` +
+  description) et `hash_contenu` (SHA-256 hex UTF-8). Titre et corps **non modifiables ensuite,
+  y compris par l'auteur** — c'est un **changement de comportement** : aujourd'hui l'owner corrige
+  une décision ouverte jusqu'à l'enregistrement. Pas de gel rétroactif (la garde porte sur
+  `contenu_gele is not null`) ; montant, rattachement et **pièces jointes restent modifiables**.
+- **✅ Recalage des dates à l'ouverture** — le point qui fait marcher le cas d'usage :
+  `date_publication` est reposée au jour d'ouverture RÉELLE, donc c'est le **conseil désigné le
+  15 septembre** qui vote, pas l'ancien (`date_publication` pilote `activeMembersAt` et le quorum).
+  `date_limite_reponse` = + `delai_vote_jours` jours **ouvrés**.
+- **✅ Un seul point d'application** : trigger `decisions_cycle_guard` (transitions du graphe §3,
+  motif d'annulation obligatoire, gel, `version` + `decisions_historique`, recalage). Le repo
+  Supabase ne fait que des `update` ; le mock a un miroir explicite (`appliquerCycle`).
+- **✅ Ouverture automatique — pg_cron horaire + filet applicatif.** **Écart assumé vs la spec**
+  (Vercel Cron + route API) : le projet n'a **aucun code serveur**, et une route de cron exigerait
+  la `SERVICE_ROLE_KEY` (qui contourne TOUTE la RLS) dans Vercel, pour un registre légal. Le filet
+  (`useOuvertureAutomatique`, dans `Layout`) appelle la même fonction au chargement de l'app :
+  sans lui, un pg_cron non activé ferait qu'une décision planifiée ne s'ouvre **jamais**, en
+  silence. Idempotent. `cron_runs` ne journalise que les exécutions non vides.
+  Cadence horaire et non « 07:00 quotidien » : `date_soumission_prevue` porte une heure.
+- **✅ Un brouillon n'appartient QU'À SON AUTEUR** (arbitrage Pascal 2026-08-25). Tant qu'une
+  décision est en brouillon — *planifiée* comprise — seul son auteur la voit, la modifie, la
+  soumet et la supprime. **Le président n'y a aucun droit de plus qu'un autre membre** : demander
+  une décision au conseil n'est pas un pouvoir présidentiel ; sa prérogative propre est l'acte
+  (enregistrer une délibération votée) et la signature. Exception assumée à « tout membre connecté
+  lit tout ».
+  - **Trois** policies restrictives, une par verbe (`decisions_avant_soumission_privee`,
+    `…_brouillon_update_auteur`, `…_brouillon_delete_auteur`). Il en faut trois : **un SELECT
+    fermé n'empêche ni l'UPDATE ni le DELETE** d'une ligne ciblée par son id — sans la policy
+    d'UPDATE, le président pouvait réécrire un brouillon qu'il ne voit pas, ou le **soumettre au
+    vote à la place de son auteur**.
+  - `decisions_historique` **et** les pièces jointes suivent la visibilité de leur décision —
+    sinon le texte et les devis cachés fuyaient par là. Côté Storage, la garde est **additive**
+    (`documents_brouillon_prive`, restrictive, à côté de `documents_read_auth` laissée intacte) :
+    réécrire la policy de lecture aurait pu, en cas d'échec, laisser le bucket sans lecture.
+  - Une décision **annulée reste visible de tous** : annuler = laisser une trace au registre
+    (motif obligatoire) ; qui n'en veut pas **supprime**.
+  - ⚠ Effet de bord assumé : le brouillon d'un membre devenu inactif n'est plus accessible à
+    personne.
+- **✅ Suppression, deux régimes disjoints** : décision **non soumise** → son auteur seul
+  (`decisions_owner_delete`) ; **soumise et non enregistrée** → le président seul (≤ 1 vote).
+  Avant, une simple erreur de saisie obligeait à déranger le président ou à « annuler » — ce qui
+  garait pour toujours une décision annulée au registre.
+- **⚠ Effet de bord traité — la NUMÉROTATION passe en base.** `prochain_numero_decision(annee)`
+  (`security definer`) remplace le `nextNumero` calculé côté client : les brouillons des autres
+  étant invisibles, un « max + 1 » sur `listDecisions()` retombait sur un numéro déjà pris →
+  violation de l'unique, avec une erreur Postgres illisible. C'est le piège le moins évident de
+  toute la session. Le numéro n'est toujours pas *réservé* (collision possible entre deux
+  créations simultanées, comme avant).
+- **✅ On ne vote que sur une décision ouverte** : policies **restrictives**
+  `votes_open_only_insert/update` (permissives = OU, donc `votes_admin` aurait laissé le président
+  voter un brouillon). Contrainte `enregistree ⇒ phase = 'ouverte_au_vote'`.
+- **✅ Écrans** : registre (filtre par état en 2 groupes, brouillons/planifiées **en tête** avec
+  leur date d'ouverture, badge unique `DecisionEtatBadge`, « à voter »/« à notifier » désormais
+  réservés aux décisions soumises) ; formulaire (3 actes : *Enregistrer le brouillon* /
+  *Planifier la soumission* / *Soumettre au vote maintenant*, durée du vote, visibilité, version +
+  dernier auteur, texte en lecture seule si gelé) ; fiche (bandeaux par phase, empreinte SHA-256,
+  versions du brouillon, ratification, annulation avec motif obligatoire).
+- **✅ Budgets** : un brouillon ou une décision annulée ne pèse plus sur une enveloppe
+  (`peseSurLeBudget`). ⚠ `phase` ajoutée aux 3 `select` de décisions de `supabaseDb.js` — sans
+  elle, un brouillon chiffré serait compté « engagé en cours » **en prod seulement**.
+- **✅ PDF** : brouillons et planifiées **exclus** du registre (ce ne sont pas des délibérations) ;
+  annulées conservées, verdict « ANNULÉE » + motif ; empreinte et ratification imprimées.
+
+**NON fait, et pourquoi** (le dire vaut mieux que le laisser croire) :
+- **Aucune notification** (spec §6 : mail à l'ouverture, relance J+3, mail de clôture) ni table
+  `notifications_decision`. Il n'existe **aucun envoyeur** — c'est le point « e-mail automatique »
+  du backlog, bloqué sur le domaine vérifié + une Edge Function. **Conséquence concrète : le
+  16 septembre, le vote s'ouvrira sans que personne soit prévenu.** L'auteur doit passer par
+  « Prévenir le CS » (les bandeaux de l'app le rappellent).
+- **Aucune clôture automatique du vote** ni `cloturee_le` (spec §2.1/§6) : clôturer = calculer et
+  figer le résultat, c'est l'acte du président. La spec elle-même interdit qu'une échéance emporte
+  une décision.
+- **`visibilite`** est stockée et saisissable mais **n'a aucun lecteur** : le registre consultable
+  par les colotis est hors périmètre v1 (spec §9).
+- **`ratifiee_en_reunion_le`** (spec §4) : champ + affichage + PDF. Le **point juridique reste
+  ouvert** — l'art. 15 est écrit pour des réunions, un vote asynchrone est une consultation écrite
+  que les statuts ne prévoient pas expressément. À trancher avec Me Garnier.
+- **La décision « Règle de représentation et de contacts extérieurs » (spec §10) n'est PAS créée
+  en prod.** Le mode démo en contient une **trame de six articles**, à remplacer par la rédaction
+  réelle du conseil : inventer le texte d'une règle qui sera votée n'appartient pas à l'outil.
+
+### ⚠ Piège majeur — l'éditeur SQL de Supabase (5 échecs avant de comprendre)
+
+Son analyseur maison refuse le script **avant même de l'envoyer à Postgres**, avec des messages
+d'erreur qui se déplacent à chaque tentative (« mismatched parentheses », « syntax error at or
+near DD/UPDATE/check_violation »). Trois constructions pourtant parfaitement valides le font
+décrocher — à bannir de toute migration future :
+
+1. **Toute chaîne vide `''`** — il la prend pour une apostrophe échappée, se croit resté dans la
+   chaîne, et déraille sur tout ce qui suit. D'où `coalesce(length(btrim(x)), 0) = 0` au lieu de
+   `btrim(x) = ''`, et `concat(x)` au lieu de `coalesce(x, '')`. Idem pour une apostrophe échappée
+   dans un message (`n''est`). **Y compris dans les commentaires `--`.**
+2. **Tout argument de formatage de `raise`** — `raise ... '%…', to_char(x, 'DD/MM/YYYY HH24:MI')`
+   le fait tomber. Les messages du trigger sont donc **nus**, sans `%` ni argument.
+3. **Un `$job$` imbriqué dans un `$pgcron$`** (bloc `do`) — d'où deux instructions nues pour le
+   cron. Cousin du piège des balises `$$` déjà documenté pour la migration 018.
+
+Méthode qui a fini par marcher, à réutiliser : **un objet par exécution**, en commençant par le
+plus petit, et la vérification dans le même bloc pour éviter de recopier du texte par erreur.
+Autre garde-fou appris en route : ne jamais `drop` une policy de lecture pour la recréer — la
+nouvelle policy des pièces jointes est **additive** (`documents_brouillon_prive` restrictive à côté
+de `documents_read_auth`), pour qu'un échec ne puisse pas laisser le bucket sans lecture.
+
+**Vérifié** : mock passé au crible (refus de vote sur brouillon, version + historique, transitions
+interdites, annulation sans motif, gel/hash/recalage, idempotence de l'ouverture automatique,
+exclusion budgétaire ; puis, sur la confidentialité : l'auteure voit son brouillon, un autre membre
+ne le voit ni en liste ni en fiche, **le président non plus** — et il ne peut ni le modifier, ni le
+soumettre, ni le supprimer ; le numéro suivant reste juste malgré les brouillons cachés ; l'auteure
+supprime son brouillon mais plus une fois soumis) + parcours
+navigateur (registre, fiche brouillon, soumission, formulaire). `npm run lint` / `npm run build`
+propres.
+**Non vérifié** : la migration SQL n'a **jamais été exécutée** (ni prod ni staging) — trigger,
+policies restrictives, pg_cron et `sha256()` côté Postgres restent à éprouver. La recette du hash
+a été confrontée à `shasum -a 256` : c'est bien le SHA-256 standard de la chaîne UTF-8, celui que
+produit `encode(sha256(convert_to(t,'UTF8')),'hex')`.
 
 ## Session 2026-08-05 — pièces jointes sur les résolutions d'AG
 
@@ -217,8 +351,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `026` (001-025 appliquées en **prod**). Récentes : 022 (heures
-  d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur décisions), 025 (PJ sur résolutions).
+- **Prochaine migration SQL libre** : `027` (001-026 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+  décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.
 - **Sauvegarde prod = MANUELLE et non planifiée** : `scripts/backup.mjs` ne tourne que si on le

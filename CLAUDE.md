@@ -134,6 +134,76 @@ Président seul, quorum atteint, desktop seul. Fige `statut`, `quorum_atteint` e
 `enregistree = true` → **verrou définitif** : ni édition, ni vote, ni suppression. Écrit une
 ligne dans `decision_status_history`.
 
+### Cycle de vie d'une décision (migration 026) — `phase` ≠ `statut`
+> **`phase`** = où en est la décision : `brouillon` → `planifiee` → `ouverte_au_vote`, +
+> `annulee` (retirée AVANT ouverture du vote). **`statut`** = résultat de la délibération
+> (`en_cours` → `adoptee`/`rejetee`). **Ne jamais fusionner les deux** : les budgets, le CSV
+> Foncia et le PDF lisent `statut` et ignorent le cycle. La spec les fusionnait ; la
+> décomposition est l'écart assumé, documenté en tête de la migration 026.
+
+- **UN BROUILLON N'APPARTIENT QU'À SON AUTEUR** (arbitrage Pascal 2026-08-25). Tant qu'une
+  décision est en `brouillon` — `planifiee` comprise, c'est un brouillon daté — **seul son auteur
+  la voit, la modifie, la soumet ou la supprime. Le président n'y a AUCUN droit de plus qu'un
+  autre membre.** Demander une décision au conseil n'est pas un pouvoir présidentiel : tout membre
+  actif rédige et soumet les siennes (modèle de propriété, 006) ; la prérogative propre du
+  président est l'**acte** (enregistrer une délibération votée) et la signature. **Ne pas
+  réintroduire d'exception `is_admin()` ici.**
+  - **Exception assumée** à « tout membre connecté lit tout », qui vaut partout ailleurs.
+  - **TROIS policies restrictives**, une par verbe : `decisions_avant_soumission_privee` (select),
+    `decisions_brouillon_update_auteur`, `decisions_brouillon_delete_auteur`. Il en faut trois —
+    **un SELECT fermé n'empêche ni l'UPDATE ni le DELETE** d'une ligne ciblée par son id, et
+    `write_admin` est un `for all` permissif (les permissives se cumulent en OU).
+  - Dès qu'elle quitte le brouillon, la décision est visible de **tous**, `annulee` comprise :
+    annuler est l'acte délibéré de laisser une trace ; qui n'en veut pas **supprime**.
+  - `decisions_historique` **et** les pièces jointes suivent la visibilité de leur décision
+    (`historique_suit_la_decision`, `documents_read_auth` révisée) — sinon le texte et les devis
+    cachés fuiraient par là.
+  - ⚠ Les sous-requêtes des autres policies qui lisent `decisions` subissent cette RLS.
+  - ⚠ Effet de bord assumé : le brouillon d'un membre devenu inactif n'est plus accessible à
+    personne.
+- **Conséquence directe : la numérotation passe en base.** `prochain_numero_decision(annee)`,
+  `security definer`. Un « max + 1 » côté client sur `listDecisions()` retomberait sur un numéro
+  déjà pris, puisqu'il ne voit plus les brouillons des autres → violation de l'unique. Le numéro
+  n'est toujours pas *réservé* (deux créations simultanées peuvent collisionner, comme avant).
+- **Suppression, deux régimes qui ne se recouvrent pas** : décision **non soumise** → son auteur
+  seul (`decisions_owner_delete`) ; décision **soumise et non enregistrée** → le président seul
+  (`write_admin`, ≤ 1 vote). **`Annuler` ≠ `Supprimer`** : annuler garde la trace au registre avec
+  motif obligatoire, supprimer n'en laisse aucune.
+- **On ne vote que sur `ouverte_au_vote`** (policies RESTRICTIVES `votes_open_only_insert/update` —
+  restrictives parce que `votes_admin` est un `for all using(is_admin())` et que les permissives se
+  cumulent en OU). Ni quorum, ni enregistrement, ni « à voter » avant la soumission.
+- **Enregistrée ⇒ `phase = 'ouverte_au_vote'`** : contrainte `decisions_enregistree_phase_check`.
+- **Gel du texte à l'ouverture** : `contenu_gele` = `titre + "\n\n" + description`, `hash_contenu` =
+  SHA-256 hex UTF-8. Titre et description ne sont **plus modifiables**, y compris par l'auteur.
+  La garde porte sur `contenu_gele is not null`, **pas** sur la phase → les décisions antérieures
+  à 026 gardent leur comportement (pas de gel rétroactif). Montant, rattachement et **pièces
+  jointes restent modifiables** jusqu'à l'enregistrement (un devis arrive souvent après).
+  ⚠ Même recette exactement en SQL (`decisions_cycle_guard`) et en JS (`contenuAGeler` + `sha256Hex`
+  du mock) — modifier l'une oblige à modifier l'autre.
+- **À l'ouverture, `date_publication` est REPOSÉE au jour réel** et `date_limite_reponse` à
+  + `delai_vote_jours` jours **ouvrés**. Ce n'est pas cosmétique : `date_publication` détermine la
+  **composition du CS appelée à voter** (`activeMembersAt`) et le dénominateur du quorum — c'est
+  tout l'objet du besoin (voter après l'AG, avec le NOUVEAU conseil).
+- **Un seul point d'application** : le trigger `decisions_cycle_guard` (transitions, motif
+  d'annulation obligatoire, gel, version + `decisions_historique`, recalage des dates). Le repo
+  Supabase ne fait que des `update` ; le mock a un miroir explicite (`appliquerCycle`).
+- **Ouverture automatique : pg_cron horaire** (`ouvrir_decisions_planifiees`), **plus** un filet
+  applicatif (`useOuvertureAutomatique`, monté dans `Layout`) qui appelle la même fonction au
+  chargement. Redondance voulue : un pg_cron non activé ferait qu'une décision planifiée ne
+  s'ouvrirait **jamais**, en silence. **Pas** de Vercel Cron / route API : le projet n'a aucun code
+  serveur et une route de cron exigerait la `SERVICE_ROLE_KEY` (qui contourne toute la RLS) dans
+  Vercel. Idempotent ; `cron_runs` ne journalise que les exécutions non vides.
+- **Rien ne s'adopte tout seul.** Pas de clôture automatique du vote, pas de `cloturee_le` :
+  clôturer = calculer et figer le résultat, c'est-à-dire l'**acte du président**
+  (`enregistree`/`date_enregistrement`). La planification ouvre le vote, elle ne l'emporte jamais.
+- **Non implémenté, assumé** : `notifications_decision` et les relances e-mail (§6 de la spec) —
+  aucun envoyeur n'existe (cf. backlog e-mail). **Personne n'est prévenu à l'ouverture** : l'auteur
+  doit toujours cliquer « Prévenir le CS ». `visibilite` (`cs_seul`/`colotis`) est stockée mais
+  **n'a aucun lecteur** (registre colotis hors périmètre) ; `ratifiee_en_reunion_le` est saisie par
+  le président et affichée (art. 15 écrit pour des réunions, point à trancher avec Me Garnier).
+- Le **PDF du registre exclut** brouillons et décisions planifiées (ce ne sont pas des
+  délibérations) ; les **annulées y restent**, verdict « ANNULÉE ».
+
 ### Modèle de propriété (migration 006)
 > Tout membre actif crée et devient owner ; l'owner seul modifie et notifie ; le président
 > garde l'acte (enregistrement) et la signature.
@@ -252,7 +322,8 @@ groupe CS. Owner-only, bascule en « Notifier à nouveau ».
 l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 
 Tables : `membres_cs`, `assemblees_generales`, `resolutions_ag`, `projets`, `decisions`, `votes`,
-`questions_reponses`, `signature_batches`, `decision_status_history`, `audit_log`.
+`questions_reponses`, `signature_batches`, `decision_status_history`, `decisions_historique`,
+`cron_runs`, `comptes_ag`, `audit_log`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`
@@ -277,6 +348,15 @@ n'ait besoin d'aucune migration → toute migration doit être répercutée dans
 
 Région : **eu-west-3 (Paris)**. 003 a ajouté `telephone`/`whatsapp_apikey`, **004 les supprime**
 (piste CallMeBot abandonnée) — ne pas les ressusciter.
+
+**026 est la première migration à installer un PLANIFICATEUR** (`pg_cron`, tâche horaire
+`ouvrir-decisions-planifiees`). L'activation de l'extension est *best-effort* : si le SQL Editor
+n'a pas les droits, la migration émet un **NOTICE** au lieu d'échouer, et seul le filet applicatif
+reste. **Le lire** — sinon on croit le cron en place. Vérification :
+`select * from cron.job where jobname = 'ouvrir-decisions-planifiees';`
+Elle ajoute aussi deux tables en **lecture seule côté client** (`decisions_historique`,
+`cron_runs`) : aucune policy d'écriture, elles ne sont alimentées que par des fonctions
+`security definer`.
 
 ---
 

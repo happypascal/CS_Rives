@@ -33,6 +33,64 @@ export const STATUT_LABELS = {
   rejetee: 'Rejetée',
 }
 
+// ---------------------------------------------------------------- cycle de vie
+//
+// `phase` (migration 026) est un axe DISTINCT de `statut`, et les confondre est
+// l'erreur à éviter :
+//   - `phase`  = où en est la décision dans son cycle — brouillon, planifiée,
+//                ouverte au vote, annulée avant ouverture.
+//   - `statut` = RÉSULTAT de la délibération — en_cours, puis adoptee/rejetee
+//                à l'enregistrement (art. 15, `tally` ci-dessous).
+// Les budgets, le CSV Foncia et le PDF lisent `statut` et ne connaissent pas le
+// cycle. La spec « brouillon / planifiée » fusionnait les deux dans une seule
+// colonne ; les séparer évite qu'un brouillon devienne un statut inconnu de
+// toutes ces dérivations.
+export const PHASE_VALUES = ['brouillon', 'planifiee', 'ouverte_au_vote', 'annulee']
+
+export const PHASE_LABELS = {
+  brouillon: 'Brouillon',
+  planifiee: 'Planifiée',
+  ouverte_au_vote: 'Ouverte au vote',
+  annulee: 'Annulée',
+}
+
+export const PHASE_TONES = {
+  brouillon: 'gray',
+  planifiee: 'blue',
+  ouverte_au_vote: 'amber',
+  annulee: 'red',
+}
+
+// Les décisions antérieures à la migration 026 n'ont pas de `phase` : elles sont,
+// par définition, déjà soumises au vote. Lire la phase TOUJOURS par ici — un
+// `d.phase === 'ouverte_au_vote'` écrit en dur renverrait faux sur ces lignes
+// tant qu'elles ne sont pas relues depuis une base migrée.
+export function phaseOf(decision) {
+  return decision?.phase || 'ouverte_au_vote'
+}
+
+// Le vote est-il ouvert ? Deux conditions, pas une : la décision doit avoir été
+// soumise ET ne pas être déjà enregistrée (le verrou de l'art. 15).
+export function voteOuvert(decision) {
+  return phaseOf(decision) === 'ouverte_au_vote' && !decision?.enregistree
+}
+
+// Pas encore soumise au vote : brouillon ou planifiée. Ni vote, ni quorum, ni
+// enregistrement, ni « à voter » dans le registre — rien n'a encore été demandé
+// au conseil.
+export function avantSoumission(decision) {
+  const p = phaseOf(decision)
+  return p === 'brouillon' || p === 'planifiee'
+}
+
+// Texte gelé à l'ouverture du vote : titre + ligne vide + description, tel quel.
+// Recette volontairement triviale, et DUPLIQUÉE à l'identique dans le trigger
+// `decisions_cycle_guard` (SQL) : on doit pouvoir refaire l'empreinte à la main
+// dans dix ans, sans l'app. Toute modification ici doit l'être aussi là-bas.
+export function contenuAGeler(decision) {
+  return `${decision.titre}\n\n${decision.description || ''}`
+}
+
 // Coût TTC d'un engagement de décision (migration 024). Le devis est saisi HT ou
 // TTC ; l'enveloppe d'AG étant TTC, la CONSOMMATION de budget se calcule toujours
 // en TTC. `tva_incluse === false` ⇒ HT ⇒ on ajoute la TVA ; sinon (true/null/

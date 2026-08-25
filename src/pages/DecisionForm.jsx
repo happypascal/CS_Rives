@@ -4,8 +4,8 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, eur, DesktopOnly, UploadProgress } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
-import { nextNumero, engagementTTC } from '../lib/decisionLogic'
-import { todayISO, addBusinessDaysISO, parseMontant } from '../lib/format'
+import { engagementTTC, phaseOf, avantSoumission, PHASE_LABELS } from '../lib/decisionLogic'
+import { todayISO, addBusinessDaysISO, parseMontant, formatDateTime, toDateTimeLocal, fromDateTimeLocal } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { PROJET_ACTION_VALUES, PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
@@ -43,6 +43,18 @@ export default function DecisionForm() {
   const [agBudgets, setAgBudgets] = useState([])
   const [error, setError] = useState('')
 
+  // ---- Cycle de vie (migration 026) ----
+  // `phase` = la phase ACTUELLE de la décision éditée ; une création part
+  // toujours de 'brouillon' (c'est le bouton cliqué qui décide de la suite).
+  const [phase, setPhase] = useState('brouillon')
+  const [dateSoumission, setDateSoumission] = useState('') // valeur d'un <input datetime-local>
+  const [delaiVote, setDelaiVote] = useState('7')
+  const [visibilite, setVisibilite] = useState('cs_seul')
+  const [version, setVersion] = useState(1)
+  const [gele, setGele] = useState(false) // le texte a été figé à l'ouverture du vote
+  const [soumiseLe, setSoumiseLe] = useState(null)
+  const [dernierAuteur, setDernierAuteur] = useState('')
+
   // L'id de la décision est tiré ICI, pas par Postgres, parce qu'une pièce
   // jointe est téléversée AVANT que la ligne existe et que son chemin dans le
   // bucket doit porter cet id (`decisions/<id>/…`, migration 012). `useState`
@@ -53,17 +65,22 @@ export default function DecisionForm() {
 
   useEffect(() => {
     async function init() {
-      const [all, projs, budgets] = await Promise.all([
-        repo.listDecisions().catch(() => []),
+      const [projs, budgets, membres] = await Promise.all([
         repo.listProjets().catch(() => []),
         repo.listAGBudgets().catch(() => []),
+        repo.listMembres().catch(() => []),
       ])
       setProjets(projs)
       setAgBudgets(budgets)
       if (editing) {
         const d = await repo.getDecision(id)
+        // `null` = inexistante, OU brouillon d'un autre membre (invisible depuis
+        // la migration 026). Le distinguer serait précisément révéler ce qu'on
+        // cache — on répond « introuvable », comme la base.
+        if (!d) setBlocked('introuvable')
         if (d) {
           if (d.enregistree) setBlocked('locked')
+          else if (phaseOf(d) === 'annulee') setBlocked('annulee')
           else if (d.created_by && d.created_by !== user?.membre_id) setBlocked('notowner')
           setNumero(d.numero)
           setDatePublication(d.date_publication)
@@ -78,9 +95,29 @@ export default function DecisionForm() {
           if (d.projet_id) setTarget(`projet:${d.projet_id}`)
           else if (d.resolution_id) setTarget(`resolution:${d.resolution_id}`)
           setProjetAction(d.projet_action || '')
+          setPhase(phaseOf(d))
+          setDateSoumission(toDateTimeLocal(d.date_soumission_prevue))
+          setDelaiVote(String(d.delai_vote_jours ?? 7))
+          setVisibilite(d.visibilite || 'cs_seul')
+          setVersion(d.version || 1)
+          setGele(d.contenu_gele != null)
+          setSoumiseLe(d.soumise_le || null)
+          // « Dernier auteur » (spec §7) : celui de la dernière version du
+          // brouillon si le texte a été repris, le créateur sinon.
+          const derniere = (d.historique || [])[d.historique.length - 1]
+          const auteurId = derniere?.modifie_par || d.created_by
+          const m = membres.find((x) => x.id === auteurId)
+          setDernierAuteur(m ? `${m.prenom} ${m.nom}` : '')
         }
       } else {
-        setNumero(nextNumero(new Date().getFullYear(), all))
+        // Le numéro se demande au REPO, il ne se calcule plus ici : les
+        // brouillons des autres membres sont invisibles (migration 026), donc un
+        // « max + 1 » sur les décisions visibles retomberait sur un numéro déjà
+        // pris. Côté Supabase, c'est une fonction `security definer` qui voit
+        // toutes les lignes sans les exposer.
+        setNumero(await repo.prochainNumeroDecision(new Date().getFullYear()))
+        const m = membres.find((x) => x.id === user?.membre_id)
+        setDernierAuteur(m ? `${m.prenom} ${m.nom}` : '')
       }
       setLoading(false)
     }
@@ -112,6 +149,12 @@ export default function DecisionForm() {
     return src.restant + own
   }, [selProjet, selRes, editing, id])
 
+  // Une décision pas encore soumise (brouillon ou planifiée) : ses dates de
+  // publication et de limite de réponse n'ont pas de sens tant que le vote n'est
+  // pas ouvert — elles sont REPOSÉES au jour de l'ouverture réelle. On ne les
+  // montre donc pas : les faire saisir reviendrait à faire écrire une date fausse.
+  const enPreparation = avantSoumission({ phase })
+
   if (isMobile) {
     return (
       <div>
@@ -126,6 +169,22 @@ export default function DecisionForm() {
       <div>
         <PageHeader title="Décision enregistrée" />
         <Card className="p-6 text-sm text-slate-600">Cette décision est enregistrée : elle n’est plus modifiable. <button className="text-navy-600 underline" onClick={() => navigate(`/registre/${id}`)}>Retour au détail</button></Card>
+      </div>
+    )
+  }
+  if (blocked === 'annulee') {
+    return (
+      <div>
+        <PageHeader title="Décision annulée" />
+        <Card className="p-6 text-sm text-slate-600">Cette décision a été annulée avant l’ouverture du vote : elle reste au registre avec son motif, mais n’est plus modifiable. <button className="text-navy-600 underline" onClick={() => navigate(`/registre/${id}`)}>Retour au détail</button></Card>
+      </div>
+    )
+  }
+  if (blocked === 'introuvable') {
+    return (
+      <div>
+        <PageHeader title="Décision introuvable" />
+        <Card className="p-6 text-sm text-slate-600">Cette décision n’existe pas, ou n’est pas accessible depuis votre compte. <button className="text-navy-600 underline" onClick={() => navigate('/registre')}>Retour au registre</button></Card>
       </div>
     )
   }
@@ -169,10 +228,26 @@ export default function DecisionForm() {
     }
   }
 
-  const submit = async (e) => {
+  // `action` (migration 026) : ce n'est pas « enregistrer un formulaire », c'est
+  // un ACTE, et l'acte détermine la phase visée.
+  //   'garder'    — je continue à rédiger : la phase actuelle est conservée
+  //                 (brouillon, ou planifiée si une date était déjà fixée — sauver
+  //                 une correction ne doit pas déplanifier au passage)
+  //   'planifier' — je fixe la date à laquelle le vote s'ouvrira tout seul
+  //   'soumettre' — j'ouvre le vote maintenant (le texte est alors GELÉ)
+  //   null        — décision déjà ouverte : simple mise à jour, phase inchangée
+  const submit = async (e, action) => {
     e.preventDefault()
     setError('')
     if (!titre.trim()) return setError('Le titre est obligatoire.')
+    const soumissionISO = fromDateTimeLocal(dateSoumission)
+    const phaseVisee = action === 'soumettre' ? 'ouverte_au_vote' : action === 'planifier' ? 'planifiee' : phase
+    if (phaseVisee === 'planifiee') {
+      if (!soumissionISO) return setError('Indiquez la date et l’heure d’ouverture du vote.')
+      if (new Date(soumissionISO) <= new Date()) {
+        return setError('La date d’ouverture doit être dans le futur. Pour ouvrir le vote tout de suite, utilisez « Soumettre au vote maintenant ».')
+      }
+    }
     const engage = parseMontant(montantEngage)
     // Le budget (enveloppe AG) est TTC : la consommation se compare en TTC.
     const engageTTC = engage == null ? null : engagementTTC({ montant_engage: engage, tva_taux: Number(tvaTaux), tva_incluse: tvaIncluse })
@@ -195,8 +270,6 @@ export default function DecisionForm() {
     setSaving(true)
     try {
       const payload = {
-        date_publication: datePublication,
-        date_limite_reponse: dateLimite || null,
         titre,
         description: description && description !== '<br>' ? description : '',
         projet_id,
@@ -210,7 +283,26 @@ export default function DecisionForm() {
         // ou à rien ne peut pas suspendre quoi que ce soit.
         projet_action: kind === 'projet' && projetAction ? projetAction : null,
         documents,
+        visibilite,
       }
+
+      if (action) {
+        // Décision pas encore soumise : la phase visée part avec le contenu, en
+        // UNE écriture. C'est le trigger `decisions_cycle_guard` (et son miroir
+        // dans le mock) qui gèle le texte, calcule l'empreinte, incrémente la
+        // version et RECALE les dates au jour de l'ouverture réelle.
+        payload.phase = phaseVisee
+        payload.date_soumission_prevue = soumissionISO
+        payload.delai_vote_jours = Number(delaiVote) || 7
+        // Le brouillon n'a pas de date de publication réelle : on pose celle du
+        // jour pour satisfaire la colonne, elle sera reposée à l'ouverture.
+        payload.date_publication = editing ? datePublication : todayISO()
+        payload.date_limite_reponse = null
+      } else {
+        payload.date_publication = datePublication
+        payload.date_limite_reponse = dateLimite || null
+      }
+
       if (editing) {
         await repo.updateDecision(id, payload)
         navigate(`/registre/${id}`)
@@ -227,22 +319,80 @@ export default function DecisionForm() {
     }
   }
 
+  const titreEcran = editing ? 'Modifier la décision' : 'Nouvelle décision'
+
   return (
     <div>
-      <PageHeader title={editing ? 'Modifier la décision' : 'Nouvelle décision'} />
+      <PageHeader
+        title={titreEcran}
+        subtitle={
+          editing
+            ? `${PHASE_LABELS[phase]} · version ${version}${dernierAuteur ? ` · dernière main : ${dernierAuteur}` : ''}`
+            : 'La décision part en brouillon : rien n’est soumis au conseil tant que vous ne l’avez pas décidé.'
+        }
+      />
       <Card className="p-6">
-        <form onSubmit={submit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Input label="Numéro" value={numero} readOnly className="bg-slate-50" />
-            <Input label="Date de publication" type="date" value={datePublication} onChange={(e) => setDatePublication(e.target.value)} required />
-            <Input label="Date limite de réponse" type="date" value={dateLimite} onChange={(e) => { setDateLimite(e.target.value); setLimiteEdited(true) }} />
-          </div>
-          <p className="-mt-2 text-xs text-slate-400">Date limite par défaut : publication + 7 jours ouvrables (modifiable).</p>
+        <form onSubmit={(e) => submit(e, enPreparation ? 'garder' : null)} className="space-y-4">
+          {enPreparation ? (
+            /* Pas encore soumise au vote : on saisit QUAND le vote s'ouvrira et
+               COMBIEN DE TEMPS il restera ouvert — pas des dates de publication,
+               qui n'existeront qu'à l'ouverture. */
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Input label="Numéro" value={numero} readOnly className="bg-slate-50" />
+                <Input
+                  label="Ouverture du vote prévue le"
+                  type="datetime-local"
+                  value={dateSoumission}
+                  onChange={(e) => setDateSoumission(e.target.value)}
+                />
+                <Input
+                  label="Durée du vote (jours ouvrés)"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={delaiVote}
+                  onChange={(e) => setDelaiVote(e.target.value)}
+                />
+              </div>
+              <p className="-mt-2 text-xs text-slate-400">
+                À l’ouverture, la décision est <strong>publiée à cette date-là</strong> — c’est elle qui détermine la
+                composition du conseil appelée à voter — et la date limite de réponse est posée à + {Number(delaiVote) || 7} jours ouvrés.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Input label="Numéro" value={numero} readOnly className="bg-slate-50" />
+                <Input label="Date de publication" type="date" value={datePublication} onChange={(e) => setDatePublication(e.target.value)} required />
+                <Input label="Date limite de réponse" type="date" value={dateLimite} onChange={(e) => { setDateLimite(e.target.value); setLimiteEdited(true) }} />
+              </div>
+              <p className="-mt-2 text-xs text-slate-400">Date limite par défaut : publication + 7 jours ouvrables (modifiable).</p>
+            </>
+          )}
 
-          <Input label="Titre" value={titre} onChange={(e) => setTitre(e.target.value)} required placeholder="Objet de la décision" />
+          {/* Texte GELÉ (migration 026) : une fois le vote ouvert, on ne réécrit
+              plus ce sur quoi les membres votent. Les champs deviennent des
+              champs de lecture — le refus viendrait de toute façon de la base,
+              autant ne pas laisser croire que c'est modifiable. */}
+          {gele && (
+            <div className="rounded-md border border-navy-200 bg-navy-50/60 px-4 py-3 text-xs text-navy-800">
+              <p className="font-semibold">Texte gelé depuis le {formatDateTime(soumiseLe)}</p>
+              <p className="mt-1">
+                Le titre et le corps de la décision ne sont plus modifiables : les membres votent sur ce texte-là, et son
+                empreinte le prouve. Le rattachement, le montant et les pièces jointes restent modifiables jusqu’à l’enregistrement.
+              </p>
+            </div>
+          )}
+
+          <Input label="Titre" value={titre} onChange={(e) => setTitre(e.target.value)} required readOnly={gele} className={gele ? 'bg-slate-50' : undefined} placeholder="Objet de la décision" />
           <div>
             <span className="mb-1 block text-sm font-medium text-slate-700">Description <span className="font-normal text-slate-400">(optionnel)</span></span>
-            <RichTextEditor value={description} onChange={setDescription} placeholder="Corps de la décision…" />
+            {gele ? (
+              <div className="rich-text min-h-[80px] rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: description || '<p class="text-slate-400">—</p>' }} />
+            ) : (
+              <RichTextEditor value={description} onChange={setDescription} placeholder="Corps de la décision…" />
+            )}
           </div>
 
           {/* Engagement budgétaire : projet ou résolution directe */}
@@ -323,6 +473,21 @@ export default function DecisionForm() {
             )}
           </div>
 
+          {/* Visibilité prévue. ⚠ Aucun effet AUJOURD'HUI : le registre
+              consultable par les colotis est hors périmètre (spec §9). Le champ
+              existe pour ne pas avoir à redemander l'intention, décision par
+              décision, le jour où cet accès sera ouvert. */}
+          <div>
+            <Select label="Visibilité prévue" value={visibilite} onChange={(e) => setVisibilite(e.target.value)}>
+              <option value="cs_seul">Conseil Syndical seulement</option>
+              <option value="colotis">Ouverte aux colotis</option>
+            </Select>
+            <p className="mt-1 text-xs text-slate-400">
+              Enregistre l’intention. L’accès des colotis au registre n’existe pas encore : aujourd’hui, toute décision
+              n’est visible que des membres du CS connectés.
+            </p>
+          </div>
+
           {/* Pièces jointes */}
           <div>
             <span className="mb-1 block text-sm font-medium text-slate-700">Pièces jointes (offres, devis…)</span>
@@ -346,10 +511,35 @@ export default function DecisionForm() {
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => navigate(-1)}>Annuler</Button>
-            <Button type="submit" disabled={saving || Boolean(upload)}>{saving ? 'Enregistrement…' : editing ? 'Enregistrer les modifications' : 'Créer la décision'}</Button>
+
+          {/* Trois actes, pas un bouton « Enregistrer » (spec §7). L'acte le plus
+              engageant — ouvrir le vote, donc geler le texte — est le seul en
+              primaire, et il est annoncé comme tel juste en dessous. */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => navigate(-1)}>Annuler</Button>
+            {enPreparation ? (
+              <>
+                <Button type="submit" variant="secondary" disabled={saving || Boolean(upload)}>
+                  {saving ? 'Enregistrement…' : phase === 'planifiee' ? 'Enregistrer (reste planifiée)' : 'Enregistrer le brouillon'}
+                </Button>
+                <Button type="button" variant="secondary" disabled={saving || Boolean(upload)} onClick={(e) => submit(e, 'planifier')}>
+                  Planifier la soumission
+                </Button>
+                <Button type="button" disabled={saving || Boolean(upload)} onClick={(e) => submit(e, 'soumettre')}>
+                  Soumettre au vote maintenant
+                </Button>
+              </>
+            ) : (
+              <Button type="submit" disabled={saving || Boolean(upload)}>
+                {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
+              </Button>
+            )}
           </div>
+          {enPreparation && (
+            <p className="text-right text-xs text-slate-400">
+              Soumettre au vote <strong>gèle le texte</strong> et le rend non modifiable, y compris par vous.
+            </p>
+          )}
         </form>
       </Card>
     </div>

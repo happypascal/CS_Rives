@@ -144,7 +144,12 @@ export const supabaseRepo = {
   async listAGBudgets() {
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('*'))
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage,tva_taux,tva_incluse'))
+    // `phase` alimente `peseSurLeBudget` : sans elle, un BROUILLON chiffré à
+    // 20 000 € remonterait en « engagé en cours » sur l'enveloppe — en prod
+    // seulement (le mock a toujours l'objet complet). Cf. l'avertissement de
+    // `_projectData` juste en dessous : toute colonne lue par les fonctions de
+    // calcul doit figurer dans ces select.
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,resolution_id,projet_id,montant_engage,tva_taux,tva_incluse,phase'))
     const projets = must(await supabase.from('projets').select('id,nom'))
     return computeAGBudgets({ assemblees_generales, resolutions_ag, decisions, projets })
   },
@@ -159,7 +164,7 @@ export const supabaseRepo = {
     const projets = must(await supabase.from('projets').select('*'))
     // `projet_action`, `date_enregistrement` et `created_at` alimentent la dérivation
     // du STATUT (dernière décision enregistrée qui suspend / reprend / termine).
-    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage,tva_taux,tva_incluse,projet_action,date_enregistrement,created_at'))
+    const decisions = must(await supabase.from('decisions').select('id,numero,titre,statut,enregistree,projet_id,montant_engage,tva_taux,tva_incluse,projet_action,date_enregistrement,created_at,phase'))
     const membres_cs = must(await supabase.from('membres_cs').select('id,nom,prenom'))
     const assemblees_generales = must(await supabase.from('assemblees_generales').select('id,numero,date_ag'))
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,ag_id,numero,titre,statut,budget_alloue,projet_id'))
@@ -228,7 +233,7 @@ export const supabaseRepo = {
   // silencieusement absente des listes en prod (le mock, lui, la renverra).
   async listDecisions() {
     return must(await supabase.from('decisions')
-      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,created_by,created_at,updated_at')
+      .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,phase,date_soumission_prevue,soumise_le,version,visibilite,delai_vote_jours,motif_annulation,ratifiee_en_reunion_le,hash_contenu,created_by,created_at,updated_at')
       .order('date_publication', { ascending: false }))
   },
   async getDecision(id) {
@@ -237,14 +242,72 @@ export const supabaseRepo = {
     const votes = must(await supabase.from('votes').select('*').eq('decision_id', id))
     const qa = must(await supabase.from('questions_reponses').select('*').eq('decision_id', id).order('created_at'))
     const status_history = must(await supabase.from('decision_status_history').select('*').eq('decision_id', id).order('changed_at'))
+    // Versions successives du brouillon (migration 026). Secondaire : un échec de
+    // lecture ne doit pas empêcher d'ouvrir la fiche d'une décision.
+    const { data: historique } = await supabase.from('decisions_historique').select('*').eq('decision_id', id).order('version')
     const { data: batches } = await supabase.from('signature_batches').select('*').contains('decision_ids', [id])
-    return { ...d, votes, qa, status_history, signature_batch: batches?.[0] || null }
+    return { ...d, votes, qa, status_history, historique: historique || [], signature_batch: batches?.[0] || null }
+  },
+  // Numéro AAAA-NNN suivant. Calculé EN BASE, pas côté client, depuis que les
+  // brouillons sont privés : `listDecisions()` ne montre plus le brouillon d'un
+  // autre membre, donc un « max + 1 » côté client tirerait un numéro déjà pris
+  // et l'insert échouerait sur l'unique. La fonction est `security definer` :
+  // elle voit toutes les lignes sans les exposer.
+  async prochainNumeroDecision(annee) {
+    const { data, error } = await supabase.rpc('prochain_numero_decision', { p_annee: annee })
+    if (error) throw new Error(error.message)
+    return data
   },
   async createDecision(input) {
     return must(await supabase.from('decisions').insert(input).select())[0]
   },
   async updateDecision(id, patch) {
     return must(await supabase.from('decisions').update(patch).eq('id', id).select())[0]
+  },
+
+  // ---- Cycle de vie : brouillon → planifiée → ouverte au vote (migration 026) ----
+  //
+  // De simples UPDATE, et c'est voulu : tout le cycle (transitions autorisées,
+  // gel du texte, empreinte SHA-256, recalage des dates, historique de version)
+  // est appliqué par le trigger `decisions_cycle_guard`, côté base. Un chemin
+  // applicatif parallèle finirait par diverger — et c'est la valeur probante de
+  // la délibération qui est en jeu. La RLS fait le reste : `decisions_owner_update`
+  // pour l'auteur, `write_admin` pour le président.
+  async planifierDecision(id, { date_soumission_prevue, delai_vote_jours }) {
+    return this.updateDecision(id, {
+      phase: 'planifiee',
+      date_soumission_prevue,
+      delai_vote_jours: delai_vote_jours ?? 7,
+    })
+  },
+  async soumettreDecision(id) {
+    return this.updateDecision(id, { phase: 'ouverte_au_vote' })
+  },
+  async remettreEnBrouillon(id) {
+    return this.updateDecision(id, { phase: 'brouillon' })
+  },
+  async annulerDecision(id, motif) {
+    return this.updateDecision(id, { phase: 'annulee', motif_annulation: motif })
+  },
+
+  // Filet applicatif de l'ouverture automatique. pg_cron déclenche la même
+  // fonction toutes les heures ; cet appel-ci sert à ce qu'un pg_cron non activé
+  // ne fasse pas qu'une décision planifiée ne s'ouvre JAMAIS, en silence.
+  // `security definer` côté base : la décision à ouvrir n'appartient pas
+  // forcément au membre connecté. Idempotent.
+  async ouvrirDecisionsDues() {
+    const { data, error } = await supabase.rpc('ouvrir_decisions_planifiees', { p_source: 'app' })
+    if (error) throw new Error(error.message)
+    return { traitees: data ?? 0 }
+  },
+
+  // Fait POSTÉRIEUR à la délibération (art. 15, point de la consultation écrite
+  // resté ouvert), pas une modification de celle-ci : passe donc à côté du verrou
+  // d'enregistrement, comme `markDecisionNotified`. Réservé au président par la
+  // RLS (`write_admin` — `decisions_owner_update` exige `enregistree = false`).
+  async ratifierDecision(id, dateISO) {
+    return must(await supabase.from('decisions')
+      .update({ ratifiee_en_reunion_le: dateISO || null }).eq('id', id).select())[0]
   },
   // Deux gardes distinctes, à ne pas confondre :
   //  - `enregistree` = verrou légal. Doublé en base par la policy restrictive

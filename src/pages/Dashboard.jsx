@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Spinner, Button, eur } from '../components/ui'
-import { StatutBadge, AGStatutBadge } from '../components/badges'
+import { DecisionEtatBadge, AGStatutBadge } from '../components/badges'
 import { formatDate, formatDateLong, todayISO } from '../lib/format'
 import { effectiveAGStatut } from '../lib/agLogic'
+import { avantSoumission, voteOuvert } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -40,7 +41,11 @@ export default function Dashboard() {
   if (loading) return <Spinner />
 
   const recent = decisions.slice(0, 5)
-  const enCours = decisions.filter((d) => !d.enregistree)
+  // « En cours » = soumise au conseil et pas encore enregistrée. Un brouillon ou
+  // une décision planifiée n'est PAS en cours : rien n'est demandé à personne.
+  // On les compte à part, c'est la file de travail de leurs rédacteurs.
+  const enCours = decisions.filter(voteOuvert)
+  const enPreparation = decisions.filter(avantSoumission)
   // Prochaine AG à venir : ni clôturée ni annulée, et pas encore passée.
   const nextAG = ags.filter((a) => a.statut !== 'cloturee' && a.statut !== 'annulee' && a.date_ag >= todayISO()).sort((x, y) => (x.date_ag < y.date_ag ? -1 : 1))[0]
   const anyBatchDecisionIds = new Set(batches.flatMap((b) => b.decision_ids))
@@ -72,7 +77,11 @@ export default function Dashboard() {
   const totalRestantDispo = totalRestantNonAffecte + totalRestantProjets
 
   const stats = [
-    { label: 'Décisions', value: decisions.length, sub: `${enCours.length} en cours` },
+    {
+      label: 'Décisions',
+      value: decisions.length,
+      sub: `${enCours.length} en cours${enPreparation.length > 0 ? ` · ${enPreparation.length} à soumettre` : ''}`,
+    },
     { label: 'Assemblées Générales', value: ags.length, sub: nextAG ? 'prochaine planifiée' : 'aucune à venir' },
     { label: 'Voté en AG', value: eur(totalVote), sub: `${budgets.length} enveloppe(s) adoptée(s)` },
     { label: 'Alloué aux projets', value: eur(totalProjetsAlloue), sub: `${projets.length} projet(s)` },
@@ -114,9 +123,15 @@ export default function Dashboard() {
                 <Link to={`/registre/${d.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-navy-50/50">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-navy-800"><span className="text-slate-400">{d.numero}</span> · {d.titre}</p>
-                    <p className="text-xs text-slate-500">{formatDate(d.date_publication)}{d.enregistree ? '' : ' · à enregistrer'}</p>
+                    <p className="text-xs text-slate-500">
+                      {avantSoumission(d)
+                        ? d.date_soumission_prevue
+                          ? `vote ouvert le ${formatDate(d.date_soumission_prevue)}`
+                          : 'non soumise au conseil'
+                        : `${formatDate(d.date_publication)}${d.enregistree ? '' : ' · à enregistrer'}`}
+                    </p>
                   </div>
-                  <StatutBadge statut={d.statut} />
+                  <DecisionEtatBadge decision={d} />
                 </Link>
               </li>
             ))}

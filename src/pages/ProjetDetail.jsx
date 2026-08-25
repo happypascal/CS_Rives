@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Spinner, eur } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
-import { ProjetStatutBadge, StatutBadge } from '../components/badges'
+import { ProjetStatutBadge, DecisionEtatBadge } from '../components/badges'
 import { engagementTTC } from '../lib/decisionLogic'
 import { formatDate } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
@@ -203,7 +203,7 @@ export default function ProjetDetail() {
                   {d.montant_engage != null && (
                     <span className="text-sm text-slate-600" title={d.tva_incluse === false ? `${eur(d.montant_engage)} HT + ${Number(d.tva_taux) || 0} % TVA` : `TVA ${Number(d.tva_taux) || 0} % incluse`}>{eur(engagementTTC(d))} TTC</span>
                   )}
-                  <StatutBadge statut={d.statut} />
+                  <DecisionEtatBadge decision={d} />
                 </div>
               </li>
             ))}

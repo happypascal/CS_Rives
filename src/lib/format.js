@@ -91,6 +91,25 @@ export function moisCourant() {
   return format(new Date(), 'MMMM yyyy', { locale: fr })
 }
 
+// Horodatage ISO (UTC, tel qu'il est stocké) ⇄ valeur d'un <input
+// type="datetime-local">, qui est TOUJOURS exprimée dans le fuseau du
+// navigateur. Les deux fonctions se répondent, et il faut les deux : afficher
+// l'UTC brut dans le champ décalerait l'heure de soumission de 1 ou 2 heures
+// selon la saison — pour une décision « ouverte au vote le 16 à 08:00 », ce
+// n'est pas un détail.
+export function toDateTimeLocal(iso) {
+  if (!iso) return ''
+  const d = typeof iso === 'string' ? parseISO(iso) : iso
+  if (!isValid(d)) return ''
+  return format(d, "yyyy-MM-dd'T'HH:mm")
+}
+
+export function fromDateTimeLocal(value) {
+  if (!value) return null
+  const d = new Date(value)
+  return isValid(d) ? d.toISOString() : null
+}
+
 // Ajoute N jours ouvrables (lun-ven) à une date ISO et renvoie une date ISO.
 export function addBusinessDaysISO(dateISO, n) {
   const base = dateISO ? parseISO(dateISO) : new Date()

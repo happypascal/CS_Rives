@@ -108,15 +108,34 @@ alter table resolutions_ag
 create index if not exists resolutions_ag_projet_id_idx on resolutions_ag (projet_id);
 
 -- ------------------------------------------------------------ decisions (CS)
+--
+-- DEUX axes distincts, à ne jamais confondre (migration 026) :
+--   - `phase`  = où en est la décision dans son CYCLE : brouillon → planifiee →
+--                ouverte_au_vote (+ annulee, avant ouverture du vote).
+--   - `statut` = RÉSULTAT de la délibération : 'en_cours' puis, à
+--                l'enregistrement, 'adoptee' | 'rejetee' (art. 15, `tally`).
+-- Les budgets, le CSV Foncia et le PDF lisent `statut` ; ils ne connaissent pas
+-- le cycle de vie. C'est pour cela que la spec « brouillon / planifiée », qui
+-- fusionnait les deux dans une seule colonne, a été décomposée en deux ici.
 create table if not exists decisions (
   id                   uuid primary key default gen_random_uuid(),
   numero               text not null unique,             -- AAAA-NNN
   titre                text not null,
   description          text not null,
-  date_publication     date not null,                    -- postée le
-  date_limite_reponse  date,                              -- défaut = +7 jours ouvrables
+  date_publication     date not null,                    -- postée le ; REPOSÉE au jour de l'ouverture réelle si la décision était planifiée
+  date_limite_reponse  date,                              -- défaut = + delai_vote_jours jours ouvrables
   date_enregistrement  date,                              -- actée par le président
   date_notification    timestamptz,                       -- dernier partage au CS (null = jamais notifiée)
+  phase                text not null default 'ouverte_au_vote' check (phase in ('brouillon','planifiee','ouverte_au_vote','annulee')),
+  date_soumission_prevue timestamptz,                     -- ouverture PRÉVUE du vote (planification)
+  soumise_le           timestamptz,                       -- ouverture RÉELLE du vote
+  version              integer not null default 1,        -- incrémenté à chaque modification du brouillon
+  contenu_gele         text,                              -- titre + "\n\n" + description, figé à l'ouverture du vote
+  hash_contenu         text,                              -- SHA-256 hex de contenu_gele (UTF-8) — valeur probante
+  visibilite           text not null default 'cs_seul' check (visibilite in ('cs_seul','colotis')),  -- ⚠ aucun lecteur : registre colotis hors périmètre v1
+  delai_vote_jours     integer not null default 7,        -- durée d'ouverture du vote, en jours OUVRÉS
+  motif_annulation     text,                              -- obligatoire si phase = 'annulee'
+  ratifiee_en_reunion_le date,                            -- consultation écrite ratifiée en réunion (art. 15, point ouvert)
   statut               text not null default 'en_cours' check (statut in ('en_cours','adoptee','rejetee')),
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
@@ -129,9 +148,46 @@ create table if not exists decisions (
   resolution_id        uuid references resolutions_ag(id) on delete set null,        -- engagement direct résolution
   projet_action        text check (projet_action in ('suspendre','reprendre','terminer')),  -- effet sur le statut du projet, appliqué une fois enregistrée ET adoptée
   documents            jsonb not null default '[]',      -- pièces jointes [{id,name,type,size,dataUrl}]
-  created_by           uuid references membres_cs(id),   -- owner = membre créateur (id membres_cs)
+  created_by           uuid references membres_cs(id),   -- owner = membre créateur (id membres_cs) ; « auteur » du brouillon au sens de la spec
   created_at           timestamptz not null default now(),
-  updated_at           timestamptz not null default now()
+  updated_at           timestamptz not null default now(),
+  -- Une décision ENREGISTRÉE a forcément été soumise au vote : on n'acte au
+  -- registre ni un brouillon, ni une décision planifiée, ni une annulée.
+  constraint decisions_enregistree_phase_check check (enregistree = false or phase = 'ouverte_au_vote')
+);
+
+create index if not exists decisions_phase_idx on decisions (phase);
+create index if not exists decisions_soumission_prevue_idx
+  on decisions (date_soumission_prevue) where phase = 'planifiee';
+
+-- --------------------------------------------------- decisions_historique (026)
+-- Une ligne par modification du texte d'un BROUILLON : montre que le texte soumis
+-- au vote est bien celui qui a été préparé, et par qui. Écrite uniquement par le
+-- trigger `decisions_cycle_guard` (security definer) — aucune policy d'écriture,
+-- donc un historique non réécrivable depuis le client.
+create table if not exists decisions_historique (
+  id          uuid primary key default gen_random_uuid(),
+  decision_id uuid not null references decisions(id) on delete cascade,
+  version     integer not null,
+  titre       text not null,
+  contenu     text not null,
+  modifie_par uuid references membres_cs(id),
+  modifie_le  timestamptz not null default now(),
+  unique (decision_id, version)
+);
+
+-- ------------------------------------------------------------- cron_runs (026)
+-- Journal des exécutions de l'ouverture automatique des décisions planifiées.
+-- `source` : 'cron' (pg_cron) ou 'app' (filet applicatif). Seules les exécutions
+-- ayant réellement ouvert quelque chose sont journalisées — le filet tourne à
+-- chaque chargement de l'app, tracer les passages à vide noierait le journal.
+create table if not exists cron_runs (
+  id         uuid primary key default gen_random_uuid(),
+  tache      text not null,
+  source     text not null,
+  traitees   integer not null default 0,
+  detail     text,
+  execute_le timestamptz not null default now()
 );
 
 -- Un projet portant une décision ENREGISTRÉE n'est plus supprimable (couvre la
@@ -279,6 +335,182 @@ create trigger trg_membres_cs_normalize_email
   for each row execute function membres_cs_normalize_email();
 
 -- =============================================================================
+-- Cycle de vie des décisions : brouillon → planifiée → ouverte au vote
+-- (migration 026 — voir ce fichier pour le raisonnement complet)
+-- =============================================================================
+
+-- N jours OUVRÉS après une date (samedi/dimanche sautés). Réplique exacte de
+-- `addBusinessDaysISO` côté app : la date limite de réponse doit tomber le même
+-- jour, que ce soit le formulaire ou l'ouverture automatique qui la calcule.
+create or replace function jours_ouvres_apres(p_date date, p_n integer)
+returns date language plpgsql immutable set search_path = public as $$
+declare
+  d date := p_date;
+  i integer := 0;
+begin
+  while i < p_n loop
+    d := d + 1;
+    while extract(isodow from d) >= 6 loop
+      d := d + 1;
+    end loop;
+    i := i + 1;
+  end loop;
+  return d;
+end $$;
+
+-- LE point unique où le cycle est appliqué : formulaire, ouverture automatique
+-- ou correction à la main passent tous par ici. Le gel du texte et son empreinte
+-- sont la valeur probante de la délibération — ils ne peuvent pas dépendre du
+-- chemin emprunté pour écrire la ligne.
+create or replace function decisions_cycle_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_maj    boolean;
+  v_change boolean := false;
+  v_texte  text;
+begin
+  -- ⚠ FORME CONTRAINTE PAR L'ÉDITEUR SQL DE SUPABASE, pas par le goût.
+  -- Son analyseur maison a refusé cinq variantes de cette fonction avant
+  -- celle-ci (2026-08-25). Interdits, sous peine de rejet AVANT Postgres :
+  --   - toute chaine vide, qu'il prend pour une apostrophe échappée
+  --     (d'ou `coalesce(length(btrim(x)), 0) = 0` et `concat(x)`) ;
+  --   - toute apostrophe échappée dans un message ;
+  --   - tout argument de formatage de `raise` — `to_char(x, 'DD/MM/YYYY')`
+  --     et les `%` l'ont fait décrocher. Les messages sont donc NUS.
+  -- Cousin du piège des balises `$$` de la migration 018. Ne pas « simplifier ».
+  v_maj := tg_op = 'UPDATE';
+
+  if v_maj then
+    v_change := new.titre is distinct from old.titre or new.description is distinct from old.description;
+  end if;
+
+  -- 1. Transitions autorisées : une délibération soumise ne se dé-soumet pas,
+  --    et une décision annulée reste au registre avec son motif.
+  if v_maj and new.phase is distinct from old.phase then
+    if not (
+      (old.phase = 'brouillon' and new.phase in ('planifiee','ouverte_au_vote','annulee'))
+      or (old.phase = 'planifiee' and new.phase in ('brouillon','ouverte_au_vote','annulee'))
+    ) then
+      raise exception 'Transition de phase interdite : une délibération déjà soumise au vote, ou annulée, ne revient pas en arrière.';
+    end if;
+  end if;
+
+  -- 2. Annulation : motif OBLIGATOIRE. Rien ne disparaît du registre, donc une
+  --    décision retirée doit dire pourquoi.
+  if new.phase = 'annulee' and coalesce(length(btrim(new.motif_annulation)), 0) = 0 then
+    raise exception 'Annulation impossible sans motif : le registre doit dire pourquoi la décision a été retirée.';
+  end if;
+
+  -- 3. GEL DU TEXTE. Une fois le vote ouvert, on ne réécrit plus ce sur quoi les
+  --    membres votent. La garde porte sur `contenu_gele is not null` et NON sur
+  --    la phase, pour ne pas geler rétroactivement les décisions antérieures à
+  --    la 026. Pièces jointes, montant et rattachement restent modifiables
+  --    jusqu'à l'enregistrement : ce n'est pas « le texte » (un devis arrive
+  --    souvent après l'ouverture du vote).
+  if v_maj and v_change and old.contenu_gele is not null then
+    raise exception 'Texte gelé : la délibération soumise au vote ne peut plus être modifiée.';
+  end if;
+
+  -- 4. Historique + version, tant que la décision est un brouillon (planifiée
+  --    incluse : c'est un brouillon daté).
+  if v_maj and v_change and old.phase in ('brouillon','planifiee') then
+    new.version := old.version + 1;
+    insert into decisions_historique (decision_id, version, titre, contenu, modifie_par)
+      values (new.id, new.version, new.titre, concat(new.description), current_membre_id());
+  end if;
+
+  -- 5. OUVERTURE DU VOTE : gel, empreinte, RECALAGE DES DATES.
+  --    `date_publication` détermine la COMPOSITION du CS appelée à voter
+  --    (`activeMembersAt`) et le dénominateur du quorum : une décision rédigée en
+  --    août et ouverte le 16 septembre doit revenir au conseil désigné le 15, pas
+  --    à l'ancien. D'où le recalage au jour d'ouverture RÉELLE (heure de Paris —
+  --    `now()` est en UTC), + délai en jours ouvrés.
+  if new.phase = 'ouverte_au_vote' and new.contenu_gele is null then
+    new.soumise_le := coalesce(new.soumise_le, now());
+    v_texte := concat(new.titre, chr(10), chr(10), new.description);
+    new.contenu_gele := v_texte;
+    new.hash_contenu := encode(sha256(convert_to(v_texte, 'UTF8')), 'hex');
+    if v_maj and old.phase in ('brouillon','planifiee') then
+      new.date_publication := (new.soumise_le at time zone 'Europe/Paris')::date;
+      new.date_limite_reponse := jours_ouvres_apres(new.date_publication, new.delai_vote_jours);
+    end if;
+  end if;
+
+  return new;
+end $$;
+
+drop trigger if exists trg_decisions_cycle_guard on decisions;
+create trigger trg_decisions_cycle_guard
+  before insert or update on decisions
+  for each row execute function decisions_cycle_guard();
+
+-- Ouverture automatique des décisions planifiées échues. STRICTEMENT idempotente
+-- (`where phase = 'planifiee'`). Deux déclencheurs, même fonction :
+--   1. pg_cron, toutes les heures (voir la migration 026 pour la planification) ;
+--   2. filet applicatif : l'app l'appelle au chargement (`useOuvertureAutomatique`),
+--      pour qu'un pg_cron non activé ne fasse pas qu'une décision planifiée ne
+--      s'ouvre JAMAIS, en silence.
+-- `security definer` : le cron n'a pas de JWT, et le filet peut être déclenché
+-- par un membre qui n'est pas l'auteur. La fonction n'applique qu'une échéance
+-- déjà fixée par l'auteur — elle n'ouvre rien qui ne soit ni planifié, ni échu.
+create or replace function ouvrir_decisions_planifiees(p_source text default 'app')
+returns integer language plpgsql security definer set search_path = public as $ouvrir_dues$
+declare
+  v_numeros text[];
+  v_n       integer;
+begin
+  with dues as (
+    update decisions
+       set phase = 'ouverte_au_vote'
+     where phase = 'planifiee'
+       and date_soumission_prevue is not null
+       and date_soumission_prevue <= now()
+    returning numero
+  )
+  select array_agg(numero), count(*) into v_numeros, v_n from dues;
+
+  v_n := coalesce(v_n, 0);
+  if v_n > 0 then
+    insert into cron_runs (tache, source, traitees, detail)
+      values ('ouvrir_decisions_planifiees', p_source, v_n, array_to_string(v_numeros, ', '));
+  end if;
+  return v_n;
+end;
+$ouvrir_dues$;
+
+revoke all on function ouvrir_decisions_planifiees(text) from public;
+grant execute on function ouvrir_decisions_planifiees(text) to authenticated;
+
+-- Numéro AAAA-NNN suivant. `security definer`, et c'est OBLIGATOIRE : le calcul
+-- « max + 1 de l'année » se faisait côté client sur `listDecisions()`, ce qui ne
+-- marche que si tout le monde voit tout. Les brouillons étant privés (policy
+-- `decisions_avant_soumission_privee`), un membre ne voit plus le brouillon
+-- 2026-007 d'un autre — il tirerait le même numéro et l'insert échouerait sur
+-- l'unique, avec une erreur Postgres illisible.
+--
+-- Le numéro n'est pas « réservé » pour autant : deux créations simultanées
+-- peuvent encore tomber sur le même (c'était déjà le cas). L'unique en base
+-- reste le garde-fou.
+create or replace function prochain_numero_decision(p_annee integer)
+returns text language sql stable security definer set search_path = public as $numero$
+  select p_annee || '-' || lpad((coalesce(max(seq), 0) + 1)::text, 3, '0')
+  from (
+    select case when substring(numero from 6) ~ '^[0-9]+$' then substring(numero from 6)::integer end as seq
+      from decisions
+     where numero like p_annee || '-%'
+  ) t;
+$numero$;
+
+revoke all on function prochain_numero_decision(integer) from public;
+grant execute on function prochain_numero_decision(integer) to authenticated;
+
+-- ⚠ Le PLANIFICATEUR n'est pas ici. Sur une base neuve, il faut encore poser la
+-- tâche pg_cron qui appelle `ouvrir_decisions_planifiees` toutes les heures —
+-- voir la fin de la migration 026. Sans elle, une décision planifiée ne s'ouvre
+-- qu'au prochain chargement de l'app par un membre (filet applicatif), pas à
+-- l'heure dite. C'est silencieux : rien dans l'app ne signale son absence.
+
+-- =============================================================================
 -- Row Level Security
 -- =============================================================================
 alter table comptes_ag              enable row level security;
@@ -291,6 +523,8 @@ alter table votes                   enable row level security;
 alter table questions_reponses      enable row level security;
 alter table signature_batches       enable row level security;
 alter table decision_status_history enable row level security;
+alter table decisions_historique    enable row level security;
+alter table cron_runs               enable row level security;
 alter table audit_log               enable row level security;
 
 -- Lecture générale (authentifiés)
@@ -299,7 +533,13 @@ declare t text;
 begin
   foreach t in array array[
     'membres_cs','assemblees_generales','resolutions_ag','projets','decisions','votes',
-    'questions_reponses','signature_batches','decision_status_history','audit_log'
+    'questions_reponses','signature_batches','decision_status_history','audit_log',
+    -- decisions_historique / cron_runs : lecture seule pour tous les membres, et
+    -- AUCUNE policy d'écriture — elles ne sont écrites que par les fonctions
+    -- `security definer` de la migration 026. Un historique de brouillon
+    -- réécrivable depuis le client ne prouverait rien. (L'historique est ensuite
+    -- restreint à la visibilité de SA décision, cf. `historique_suit_la_decision`.)
+    'decisions_historique','cron_runs'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -347,6 +587,73 @@ create policy "decisions_no_delete_enregistree" on decisions
   as restrictive for delete to authenticated
   using (enregistree = false);
 
+-- UN BROUILLON N'APPARTIENT QU'À SON AUTEUR (migration 026, arbitrage Pascal
+-- 2026-08-25). Tant qu'une décision est en brouillon — planifiée comprise, c'est
+-- un brouillon daté — elle n'existe que pour son auteur : **le président n'y a
+-- aucun droit de plus qu'un autre membre**. Il ne la voit pas, ne la modifie
+-- pas, ne la soumet pas au vote, ne la supprime pas.
+--
+-- Pourquoi le président n'y échappe pas : demander une décision au conseil n'est
+-- pas un pouvoir présidentiel. Tout membre actif rédige et soumet les siennes
+-- (modèle de propriété, migration 006) ; le président n'a de prérogative propre
+-- que sur l'ACTE — enregistrer une délibération votée — et sur la signature. Lui
+-- donner la vue et la main sur les brouillons des autres serait un droit de
+-- regard, voire de soumission forcée, sur ce qu'un membre a le droit de proposer.
+--
+-- Dès que la décision quitte le brouillon, elle est visible de TOUS, annulée
+-- comprise : annuler est l'acte délibéré de laisser une trace au registre (motif
+-- obligatoire). Qui ne veut pas de trace SUPPRIME.
+--
+-- TROIS policies restrictives, et il en faut bien trois : `read_auth` et
+-- `write_admin` sont des `using (true)` / `using (is_admin())`, les permissives
+-- se cumulent en OU. Surtout, chaque verbe se ferme séparément — un SELECT fermé
+-- n'empêche NI l'UPDATE NI le DELETE d'une ligne qu'on ne voit pas (PostgreSQL
+-- n'exige aucun droit de lecture pour écrire une ligne ciblée par son id).
+--
+-- ⚠ Les sous-requêtes des autres policies qui lisent `decisions`
+-- (votes_self_write, qa_self_insert, documents_*) subissent cette RLS et ne
+-- verront rien pour le brouillon d'autrui. Sans effet aujourd'hui, mais toute
+-- nouvelle policy interrogeant `decisions` doit en tenir compte.
+-- ⚠ Effet de bord assumé : le brouillon d'un membre devenu inactif n'est plus
+-- accessible à personne.
+drop policy if exists "decisions_avant_soumission_privee" on decisions;
+create policy "decisions_avant_soumission_privee" on decisions
+  as restrictive for select to authenticated
+  using (phase not in ('brouillon','planifiee') or created_by = current_membre_id());
+
+-- Sans celle-ci, `write_admin` laissait le président réécrire le texte d'un
+-- brouillon qu'il ne voit pas, ou le passer en `ouverte_au_vote` — soumettre au
+-- conseil la décision d'un autre, à sa place. Le `with check` autorise la sortie
+-- de brouillon par son auteur : la ligne NEW n'est alors plus un brouillon.
+drop policy if exists "decisions_brouillon_update_auteur" on decisions;
+-- `with check` OMIS volontairement : pour une policy UPDATE, PostgreSQL réutilise
+-- l'expression `using` comme `with check` quand celle-ci est absente. Les deux
+-- étaient identiques ici — et l'éditeur SQL de Supabase a refusé la forme longue.
+create policy "decisions_brouillon_update_auteur" on decisions
+  as restrictive for update to authenticated
+  using (phase not in ('brouillon','planifiee') or created_by = current_membre_id());
+
+drop policy if exists "decisions_brouillon_delete_auteur" on decisions;
+create policy "decisions_brouillon_delete_auteur" on decisions
+  as restrictive for delete to authenticated
+  using (phase not in ('brouillon','planifiee') or created_by = current_membre_id());
+
+-- L'AUTEUR SUPPRIME SON PROPRE BROUILLON (permissive : elle ouvre le droit).
+-- Une décision jamais soumise n'est pas une délibération : rien ne s'est passé
+-- juridiquement, rien n'a à rester. Le principe « rien ne disparaît du registre »
+-- protège les délibérations, pas les brouillons. Sans elle, l'auteur devait
+-- demander au président ou « annuler » — ce qui gare pour toujours au registre
+-- une décision annulée, motif à l'appui, pour une erreur de saisie. Bornée à
+-- `brouillon` / `planifiee` : dès que le vote est ouvert, l'auteur ne supprime
+-- plus (le président le peut encore tant que ce n'est pas enregistré).
+drop policy if exists "decisions_owner_delete" on decisions;
+create policy "decisions_owner_delete" on decisions for delete to authenticated
+  using (
+    created_by = current_membre_id()
+    and enregistree = false
+    and phase in ('brouillon','planifiee')
+  );
+
 -- Projets : le chef de projet modifie son projet (migration 013). Un membre crée
 -- un projet dont il est le chef ; le chef modifie. Le président (write_admin)
 -- crée/assigne/supprime. La permission s'ancre sur chef_projet_id — un created_by
@@ -378,6 +685,34 @@ create policy "votes_self_write" on votes for all to authenticated
     membre_id = current_membre_id()
     and exists (select 1 from decisions d where d.id = decision_id and d.enregistree = false)
   );
+
+-- On ne vote QUE sur une décision ouverte au vote — jamais sur un brouillon, une
+-- décision planifiée ou annulée (migration 026). Policies RESTRICTIVES (combinées
+-- en ET) : `votes_admin` étant un `for all using (is_admin())` et les policies
+-- permissives se cumulant en OU, une garde permissive de plus laisserait le
+-- président voter sur un brouillon.
+--
+-- Portée INSERT + UPDATE seulement : un `for all` aurait aussi filtré le SELECT,
+-- donc masqué les votes de toutes les décisions enregistrées — c'est-à-dire tout
+-- le registre. Le DELETE reste ouvert (retirer un vote = rendre le membre
+-- absent), déjà borné par `votes_self_write` (décision non enregistrée).
+drop policy if exists "votes_open_only_insert" on votes;
+create policy "votes_open_only_insert" on votes as restrictive for insert to authenticated
+  with check (exists (select 1 from decisions d where d.id = decision_id and d.phase = 'ouverte_au_vote'));
+
+drop policy if exists "votes_open_only_update" on votes;
+create policy "votes_open_only_update" on votes as restrictive for update to authenticated
+  using (exists (select 1 from decisions d where d.id = decision_id and d.phase = 'ouverte_au_vote'));
+
+-- L'historique d'un brouillon SUIT la visibilité de sa décision : sans ça, le
+-- texte d'un brouillon privé serait lisible de tous dans `decisions_historique`
+-- — exactement ce que la policy ci-dessus vient de cacher. La sous-requête est
+-- soumise à la RLS de `decisions`, donc elle ne renvoie rien pour le brouillon
+-- d'autrui, et l'historique disparaît avec lui.
+drop policy if exists "historique_suit_la_decision" on decisions_historique;
+create policy "historique_suit_la_decision" on decisions_historique
+  as restrictive for select to authenticated
+  using (exists (select 1 from decisions d where d.id = decision_id));
 
 -- Q&A : admin tout ; membre peut ajouter (auteur = lui-même).
 drop policy if exists "qa_admin" on questions_reponses;
@@ -465,22 +800,27 @@ create policy "documents_read_auth" on storage.objects
   for select to authenticated
   using (bucket_id = 'documents');
 
--- Membre actif, jamais sur une décision enregistrée. `d.id::text` comparé au
--- segment de chemin, et pas l'inverse : caster un chemin quelconque en uuid
--- lèverait une erreur au lieu de renvoyer faux.
-drop policy if exists "documents_insert_membre" on storage.objects;
-create policy "documents_insert_membre" on storage.objects
-  for insert to authenticated
-  with check (
-    bucket_id = 'documents'
-    and exists (
-      select 1 from public.membres_cs m
-      where m.id = public.current_membre_id() and m.actif
-    )
-    and not exists (
+-- …AVEC la même exception que les tables : les pièces jointes d'un brouillon
+-- suivent la visibilité de leur décision (migration 026). Sans cette garde, le
+-- devis attaché à un brouillon privé restait lisible de tous — pas exploitable
+-- en pratique (le chemin se lit sur la ligne, justement cachée), mais une
+-- confidentialité qui repose sur « il ne connaît pas l'URL » n'en est pas une.
+--
+-- RESTRICTIVE et ADDITIVE : on ne réécrit pas `documents_read_auth` ci-dessus,
+-- pour qu'un échec de déploiement ne puisse jamais laisser le bucket sans
+-- policy de lecture. La convention `decisions/<id>/…` porte l'id ; la
+-- sous-requête subit la RLS de `decisions` et ne renvoie rien pour le brouillon
+-- d'autrui. Le premier segment est testé d'abord : un chemin `projets/…`,
+-- `resolutions/…` ou hérité n'est pas concerné (ce qui couvre au passage les
+-- autres buckets éventuels — une restrictive sur storage.objects vaut pour tous).
+drop policy if exists "documents_brouillon_prive" on storage.objects;
+create policy "documents_brouillon_prive" on storage.objects
+  as restrictive for select to authenticated
+  using (
+    (storage.foldername(name))[1] is distinct from 'decisions'
+    or exists (
       select 1 from public.decisions d
       where d.id::text = (storage.foldername(name))[2]
-        and d.enregistree
     )
   );
 
