@@ -1,7 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
 > Dernière session : **2026-08-25**. Décisions en **brouillon** avec **soumission planifiée**
-> (migrations 026 et 027, **appliquées en prod**), **code déployé**. Puis : statuts en révision,
+> (migrations 026 et 027, **appliquées en prod**), **code déployé** ; puis **adjoint de projet +
+> fil d'échanges** (migration 028, ⚠ **à appliquer**) et la **spéc d'onboarding des colotis**. Puis : statuts en révision,
 > l'AG du 15/09 les adapte au fonctionnement de l'app — voir le backlog.
 > Précédemment : PJ sur les résolutions d'AG (025) ; chantier AG + TVA (022-024).
 > ⚠ Toujours une **maquette de validation**, pas encore un registre de production (voir « En bref »).
@@ -26,6 +27,29 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-08-25 (suite) — adjoint de projet + fil d'échanges (migration 028)
+
+- **✅ ADJOINT au chef de projet** — `projets.adjoint_projet_id`, facultatif, forcément un **autre**
+  membre du CS (FK vers `membres_cs` + contrainte `is distinct from` le chef). **Exactement les
+  mêmes droits que le chef** : la policy `projets_chef_update` accepte désormais l'un ou l'autre.
+  Motif (Pascal) : « vu l'emploi du temps des uns et des autres », un projet ne peut pas reposer
+  sur une seule personne. La **suppression** reste au président, comme avant. À noter : la lecture
+  étant déjà ouverte à tout membre connecté, ce que l'adjoint gagne réellement, c'est le droit
+  d'**écrire** sur le projet.
+- **✅ FIL D'ÉCHANGES par projet** — table `questions_reponses_projet`, même forme que le fil des
+  décisions (questions + réponses + commentaires de suivi). **Différence tenue** : une décision se
+  fige à l'enregistrement et son fil se ferme (migration 021) ; un projet ne se fige jamais, donc
+  aucune garde de verrouillage. Ouvert à **tout membre du CS actif**, pas au seul binôme
+  chef/adjoint : le conseil doit pouvoir poser une question sans convoquer une réunion.
+- **✅ Rôle « membre d'équipe » VISIBLE mais non assignable** — une carte « Équipe projet » sur la
+  fiche montre les trois rôles ; le troisième affiche « — à venir — » et dit pourquoi. Choix
+  explicite de Pascal : rendre le rôle visible sans coder le mécanisme tant que l'onboarding des
+  colotis n'est pas spécifié. **Aucun bouton** — le CS doit pouvoir se projeter sans croire que
+  c'est déjà possible.
+- ⚠ `questions_reponses_projet.auteur_id` pointe `membres_cs` : le fil est donc réservé au CS.
+  C'est exactement la ligne que devra franchir le chantier colotis, sans quoi un membre d'équipe ne
+  pourra pas écrire dans le fil — sa raison d'être.
 
 ## Session 2026-08-25 — décisions en brouillon + soumission planifiée (migration 026)
 
@@ -321,6 +345,21 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 
 ## Backlog — à reprendre ensuite
 
+- **⚠ CONNEXION DES COLOTIS — spéc écrite, RIEN de codé.** Voir
+  **`docs/SPEC_ONBOARDING_COLOTIS.md`**, rédigée à la demande de Pascal *avant* tout code. Le
+  besoin « membre de l'équipe projet ouvert aux colotis » n'ajoute pas un rôle : il ouvre l'app à
+  des non-membres, donc oblige à **refermer et réécrire `read_auth` sur toutes les tables** (un
+  compte coloti créé aujourd'hui lirait tout le registre, votes nominatifs compris).
+  - **Deux préalables qui ne coûtent rien et débloquent tout** : (0) obtenir de **Foncia le rôle
+    des colotis** — sans liste exploitable, aucun mécanisme d'inscription ne tient ; (0 bis)
+    **trancher en CS** ce que voient un coloti et un membre d'équipe (§5.1 de la spéc) : les votes
+    nominatifs ? les décisions rattachées au projet ?
+  - **Ne pas verser les colotis dans `membres_cs`** : ils compteraient dans le quorum et parmi les
+    signataires de l'art. 15 (`activeMembersAt`). Modèle recommandé : table `colotis`, et
+    `membres_cs` la référence — tout membre du CS est aussi un coloti, et le redevient en fin de
+    mandat (renouvellement du 15/09).
+  - Dépend aussi du **domaine vérifié** (invitations par e-mail) et d'un **staging remis à niveau**
+    — le mock ne prouve rien sur la RLS.
 - **⚠ STATUTS EN COURS DE RÉVISION — AG du 15/09/2026.** L'AG vote un **projet de nouveaux
   statuts** ; **Me Garnier en adaptera la rédaction finale pour que le mode de fonctionnement de
   l'application soit conforme**. C'est ce qui ferme le point resté ouvert depuis la spec (l'art. 15
@@ -387,7 +426,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `028` (001-027 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `029`. ⚠ **028 est ÉCRITE mais PAS APPLIQUÉE** (001-027 le
+  sont en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.

@@ -177,7 +177,17 @@ export const supabaseRepo = {
     const computed = (await this.listProjets()).find((x) => x.id === id)
     if (!computed) return null
     const decisions = must(await supabase.from('decisions').select('*').eq('projet_id', id))
-    return { ...computed, decisions }
+    // Fil d'échanges (migration 028). Secondaire : un échec de lecture ne doit
+    // pas empêcher d'ouvrir la fiche du projet.
+    const { data: qa } = await supabase.from('questions_reponses_projet')
+      .select('*').eq('projet_id', id).order('created_at')
+    return { ...computed, decisions, qa: qa || [] }
+  },
+
+  // Fil d'échanges des projets. Pas de garde de verrouillage, contrairement aux
+  // décisions : un projet ne se fige jamais.
+  async addQAProjet(input) {
+    return must(await supabase.from('questions_reponses_projet').insert(input).select())[0]
   },
   // `resolution_ids` est un champ VIRTUEL (le rattachement vit sur la résolution),
   // à retirer du payload : PostgREST rejette toute colonne inconnue.

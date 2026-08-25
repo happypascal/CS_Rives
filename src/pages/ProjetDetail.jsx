@@ -2,11 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Spinner, eur } from '../components/ui'
+import { Card, CardHeader, Button, Spinner, Textarea, eur } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { ProjetStatutBadge, DecisionEtatBadge } from '../components/badges'
 import { engagementTTC } from '../lib/decisionLogic'
-import { formatDate } from '../lib/format'
+import { formatDate, formatDateTime } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDocument } from '../lib/documents'
@@ -18,8 +18,13 @@ export default function ProjetDetail() {
   const isMobile = useIsMobile()
   const canManage = isAdmin && !isMobile
   const [projet, setProjet] = useState(null)
+  const [membres, setMembres] = useState([])
   const [loading, setLoading] = useState(true)
   const [docError, setDocError] = useState('')
+  const [qText, setQText] = useState('')
+  const [replyTo, setReplyTo] = useState(null)
+  const [replyText, setReplyText] = useState('')
+  const [cText, setCText] = useState('')
   const [confirm, confirmModal] = useConfirm()
 
   // Bucket privé : l'URL est signée au clic, un échec doit se voir.
@@ -34,8 +39,14 @@ export default function ProjetDetail() {
 
   const reload = useCallback(async () => {
     try {
-      const p = await repo.getProjet(id)
+      // Les membres servent à nommer les auteurs du fil d'échanges. Secondaire :
+      // un échec dégrade les noms, il ne doit pas vider la fiche du projet.
+      const [p, mem] = await Promise.all([
+        repo.getProjet(id),
+        repo.listMembres().catch(() => []),
+      ])
       setProjet(p)
+      setMembres(mem)
     } catch {
       setProjet(null)
     } finally {
@@ -63,10 +74,13 @@ export default function ProjetDetail() {
   // null), ce qui MODIFIERAIT une délibération figée au registre légal.
   const decisionsEnregistrees = projet.decisions.filter((d) => d.enregistree)
   const canDelete = canManage && decisionsEnregistrees.length === 0
-  // Modification : le chef de projet ou le président (desktop). Suppression :
-  // président seul (canManage), et projet non engagé — le chef ne supprime pas
-  // (migration 013).
-  const canEdit = !isMobile && (isAdmin || projet.chef_projet_id === user?.membre_id)
+  // Modification : le chef de projet, son ADJOINT (migration 028) ou le
+  // président (desktop). L'adjoint a exactement les mêmes droits que le chef —
+  // c'est tout l'objet du rôle : qu'un projet ne s'arrête pas parce qu'une seule
+  // personne est indisponible. Suppression : président seul (canManage), et
+  // projet non engagé — ni le chef ni l'adjoint ne suppriment (migration 013).
+  const estPilote = projet.chef_projet_id === user?.membre_id || projet.adjoint_projet_id === user?.membre_id
+  const canEdit = !isMobile && (isAdmin || estPilote)
 
   const del = async () => {
     if (!(await confirm({ title: `Supprimer le projet « ${projet.nom} » ?`, message: 'Les décisions et les résolutions rattachées seront détachées (elles ne sont pas supprimées).', confirmLabel: 'Supprimer', danger: true }))) return
@@ -79,6 +93,37 @@ export default function ProjetDetail() {
   }
 
   const pct = projet.alloue > 0 ? Math.min(100, Math.round((projet.engage / projet.alloue) * 100)) : 0
+
+  // ---- Fil d'échanges (migration 028) ----
+  const qa = projet.qa || []
+  const questions = qa.filter((q) => q.type === 'question')
+  const reponsesByParent = qa
+    .filter((q) => q.type === 'reponse' && q.parent_id)
+    .reduce((acc, r) => { (acc[r.parent_id] ||= []).push(r); return acc }, {})
+  const commentaires = qa.filter((q) => q.type === 'commentaire')
+  const nameOf = (mid) => {
+    const m = membres.find((x) => x.id === mid)
+    return m ? `${m.prenom} ${m.nom}` : 'Membre du CS'
+  }
+
+  // Tout membre du CS connecté participe au fil : le projet est une affaire
+  // collective, et restreindre l'échange au seul binôme chef/adjoint priverait
+  // le conseil du moyen de poser une question sans convoquer une réunion.
+  const peutEchanger = Boolean(user?.membre_id)
+
+  const addQA = async (type, texte, parentId = null) => {
+    if (!texte.trim()) return
+    try {
+      await repo.addQAProjet({ projet_id: id, auteur_id: user.membre_id, type, parent_id: parentId, texte: texte.trim() })
+      // Vidé APRÈS succès seulement : sur rejet RLS, la saisie n'est pas perdue.
+      if (type === 'question') setQText('')
+      if (type === 'commentaire') setCText('')
+      if (type === 'reponse') { setReplyText(''); setReplyTo(null) }
+      await reload()
+    } catch (e) {
+      alert('Le message n’a pas pu être publié : ' + e.message)
+    }
+  }
 
   return (
     <div>
@@ -109,7 +154,7 @@ export default function ProjetDetail() {
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-3">
+      <div className="mb-6 grid gap-4 lg:grid-cols-4">
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Statut</p>
           <div className="mt-1"><ProjetStatutBadge statut={projet.statut} /></div>
@@ -127,9 +172,30 @@ export default function ProjetDetail() {
               {projet.engage > 0 ? 'Des décisions y engagent de l’argent' : 'Rien d’engagé à ce jour'}
             </p>
           )}
-          <p className="mt-3 text-xs uppercase tracking-wide text-slate-500">Chef de projet</p>
+          {projet.date_ouverture && <p className="mt-3 text-xs text-slate-500">Ouvert le {formatDate(projet.date_ouverture)}</p>}
+        </Card>
+
+        {/* ÉQUIPE PROJET — trois rôles, dont un seul n'est pas encore ouvert.
+            Le chef et l'adjoint (migration 028) pilotent le projet et ont
+            exactement les mêmes droits. Le troisième, « membre de l'équipe »,
+            est destiné à des COLOTIS extérieurs au CS : il est annoncé ici mais
+            pas assignable, parce qu'il suppose que des non-membres puissent se
+            connecter à l'application — ce qui n'existe pas et se spécifie à part
+            (docs/SPEC_ONBOARDING_COLOTIS.md). Afficher le rôle sans le rendre
+            actif est un choix : le CS doit pouvoir se projeter, sans croire que
+            c'est déjà possible. D'où l'absence de tout bouton. */}
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Équipe projet</p>
+          <p className="mt-1 text-xs text-slate-400">Chef de projet</p>
           <p className="text-sm font-medium text-navy-800">{projet.chef_nom || '— à définir —'}</p>
-          {projet.date_ouverture && <p className="mt-2 text-xs text-slate-500">Ouvert le {formatDate(projet.date_ouverture)}</p>}
+          <p className="mt-2 text-xs text-slate-400">Adjoint <span className="font-normal">(facultatif)</span></p>
+          <p className="text-sm font-medium text-navy-800">{projet.adjoint_nom || '— aucun —'}</p>
+          <p className="mt-2 text-xs text-slate-400">Membres de l’équipe</p>
+          <p className="text-sm text-slate-400">— à venir —</p>
+          <p className="mt-1 text-xs leading-snug text-slate-400">
+            Ce rôle, ouvert aux colotis hors CS, suppose qu’ils puissent se connecter à l’application. Le mécanisme
+            est en cours de spécification : aucun membre d’équipe n’est assignable pour l’instant.
+          </p>
         </Card>
 
         <Card className="p-4 lg:col-span-2">
@@ -233,6 +299,82 @@ export default function ProjetDetail() {
           </div>
         </Card>
       </div>
+
+      {/* Fil d'échanges de l'équipe (migration 028). Même distinction que sur une
+          décision : une QUESTION attend une réponse, un COMMENTAIRE est une note
+          de suivi qui n'en attend pas. Différence tenue avec les décisions : le
+          fil ne se ferme jamais — un projet ne se fige pas, son suivi court tant
+          qu'il vit. C'est ce qui rend l'échange TRAÇABLE : ce qui se disait par
+          téléphone ou en aparté reste ici, attaché au projet. */}
+      <Card className="mt-6">
+        <CardHeader
+          title="Échanges de l’équipe"
+          subtitle="Trace écrite des questions et du suivi, attachée au projet."
+        />
+        <div className="space-y-4 px-5 py-4">
+          {questions.length === 0 && commentaires.length === 0 && (
+            <p className="text-sm text-slate-500">Aucun échange pour l’instant.</p>
+          )}
+
+          {questions.map((question) => (
+            <div key={question.id} className="rounded-md border border-navy-100 bg-navy-50/30 p-3">
+              <p className="text-sm text-slate-800">
+                <span className="font-medium text-navy-700">{nameOf(question.auteur_id)}</span>
+                <span className="ml-2 text-xs text-slate-400">{formatDateTime(question.created_at)}</span>
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{question.texte}</p>
+              {(reponsesByParent[question.id] || []).map((r) => (
+                <div key={r.id} className="mt-2 ml-4 border-l-2 border-navy-200 pl-3">
+                  <p className="text-xs">
+                    <span className="font-medium text-navy-700">{nameOf(r.auteur_id)}</span>
+                    <span className="ml-2 text-slate-400">{formatDateTime(r.created_at)}</span>
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm text-slate-700">{r.texte}</p>
+                </div>
+              ))}
+              {peutEchanger && (replyTo === question.id ? (
+                <div className="mt-2 ml-4 flex flex-wrap items-start gap-2">
+                  <Textarea autoGrow rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Votre réponse…" className="min-w-0 flex-1" />
+                  <Button size="sm" onClick={() => addQA('reponse', replyText, question.id)}>Répondre</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setReplyTo(null); setReplyText('') }}>Annuler</Button>
+                </div>
+              ) : (
+                <button onClick={() => setReplyTo(question.id)} className="mt-2 ml-4 text-xs text-navy-600 underline">Répondre</button>
+              ))}
+            </div>
+          ))}
+
+          {commentaires.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Notes de suivi</p>
+              <ul className="mt-2 space-y-2">
+                {commentaires.map((c) => (
+                  <li key={c.id} className="rounded-md border border-slate-200 bg-slate-50/60 p-3">
+                    <p className="text-sm">
+                      <span className="font-medium text-navy-700">{nameOf(c.auteur_id)}</span>
+                      <span className="ml-2 text-xs text-slate-400">{formatDateTime(c.created_at)}</span>
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{c.texte}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {peutEchanger && (
+            <div className="space-y-2 border-t border-navy-100 pt-3">
+              <div className="flex items-start gap-2">
+                <Textarea autoGrow rows={2} value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question à l’équipe…" className="min-w-0 flex-1" />
+                <Button onClick={() => addQA('question', qText)}>Publier</Button>
+              </div>
+              <div className="flex items-start gap-2">
+                <Textarea autoGrow rows={2} value={cText} onChange={(e) => setCText(e.target.value)} placeholder="Ajouter une note de suivi (n’attend pas de réponse)…" className="min-w-0 flex-1" />
+                <Button size="sm" variant="secondary" onClick={() => addQA('commentaire', cText)}>Noter</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
       {confirmModal}
     </div>
   )

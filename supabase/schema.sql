@@ -91,12 +91,44 @@ create table if not exists projets (
   nom            text not null,
   description    text,
   chef_projet_id uuid references membres_cs(id),           -- chef = rôle fonctionnel ET ancre de permission (le chef modifie)
+  adjoint_projet_id uuid references membres_cs(id),        -- adjoint FACULTATIF, autre membre du CS, MÊMES droits que le chef (migration 028)
   documents      jsonb not null default '[]',
   date_ouverture date,
   date_cloture   date,
   created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now()
+  updated_at     timestamptz not null default now(),
+  -- L'adjoint est un AUTRE membre : `is distinct from` et non `<>`, sinon deux
+  -- valeurs nulles donneraient NULL et la contrainte passerait par accident.
+  constraint projets_adjoint_distinct_chef
+    check (adjoint_projet_id is null or adjoint_projet_id is distinct from chef_projet_id)
 );
+
+create index if not exists projets_adjoint_idx on projets (adjoint_projet_id);
+
+-- ------------------------------------------- questions_reponses_projet (028)
+-- Fil d'échanges de l'équipe projet : questions + réponses + commentaires, même
+-- forme que `questions_reponses` côté décisions (deux modèles d'échange dans la
+-- même app finiraient par diverger).
+--
+-- Différence tenue : une décision est FIGÉE à l'enregistrement, donc son fil se
+-- ferme (migration 021). Un projet ne se fige jamais — aucune garde ici, et
+-- c'est voulu : le suivi continue tant que le projet vit.
+--
+-- ⚠ `auteur_id` pointe `membres_cs` : le fil est donc réservé au CS. C'est la
+-- ligne que devra franchir le chantier « équipe projet ouverte aux colotis ».
+-- Ne pas contourner en versant des colotis dans `membres_cs` — ils compteraient
+-- dans le quorum des décisions (cf. `activeMembersAt`).
+create table if not exists questions_reponses_projet (
+  id         uuid primary key default gen_random_uuid(),
+  projet_id  uuid not null references projets(id) on delete cascade,
+  auteur_id  uuid not null references membres_cs(id) on delete cascade,
+  type       text not null check (type in ('question','reponse','commentaire')),
+  parent_id  uuid references questions_reponses_projet(id) on delete cascade,
+  texte      text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists qa_projet_projet_idx on questions_reponses_projet (projet_id);
 
 -- resolutions_ag → projets : posé après coup, les deux tables se référençant
 -- mutuellement (projets n'existe pas encore au create de resolutions_ag).
@@ -552,6 +584,7 @@ alter table questions_reponses      enable row level security;
 alter table signature_batches       enable row level security;
 alter table decision_status_history enable row level security;
 alter table decisions_historique    enable row level security;
+alter table questions_reponses_projet enable row level security;
 alter table cron_runs               enable row level security;
 alter table audit_log               enable row level security;
 
@@ -567,7 +600,7 @@ begin
     -- `security definer` de la migration 026. Un historique de brouillon
     -- réécrivable depuis le client ne prouverait rien. (L'historique est ensuite
     -- restreint à la visibilité de SA décision, cf. `historique_suit_la_decision`.)
-    'decisions_historique','cron_runs'
+    'decisions_historique','cron_runs','questions_reponses_projet'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -693,10 +726,14 @@ create policy "projets_chef_insert" on projets for insert to authenticated
     and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
   );
 
+-- Le chef OU son ADJOINT (migration 028) : mêmes droits, sans exception. La
+-- LECTURE est déjà ouverte à tout membre connecté, donc ce que l'adjoint gagne
+-- ici, c'est le droit d'ÉCRIRE. L'INSERT n'est pas touché — créer un projet,
+-- c'est en devenir le chef. La SUPPRESSION reste au président.
 drop policy if exists "projets_chef_update" on projets;
 create policy "projets_chef_update" on projets for update to authenticated
-  using (chef_projet_id = current_membre_id())
-  with check (chef_projet_id = current_membre_id());
+  using (chef_projet_id = current_membre_id() or adjoint_projet_id = current_membre_id())
+  with check (chef_projet_id = current_membre_id() or adjoint_projet_id = current_membre_id());
 
 -- Votes : admin tout ; membre gère uniquement SON vote, et seulement tant que
 -- la décision n'est pas enregistrée.
@@ -753,6 +790,21 @@ create policy "qa_self_insert" on questions_reponses for insert to authenticated
   with check (
     auteur_id = current_membre_id()
     and exists (select 1 from decisions d where d.id = decision_id and d.enregistree = false)
+  );
+
+-- Fil d'échanges des projets (migration 028) : on écrit sous SON nom, et
+-- seulement si l'on est membre ACTIF — un mandat terminé ne poste plus. Pas de
+-- garde de verrouillage, contrairement aux décisions : un projet ne se fige pas.
+drop policy if exists "qa_projet_admin" on questions_reponses_projet;
+create policy "qa_projet_admin" on questions_reponses_projet
+  for all to authenticated using (is_admin()) with check (is_admin());
+
+drop policy if exists "qa_projet_self_insert" on questions_reponses_projet;
+create policy "qa_projet_self_insert" on questions_reponses_projet
+  for insert to authenticated
+  with check (
+    auteur_id = current_membre_id()
+    and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
   );
 
 -- Signatures : le secrétaire peut faire signer, comme le président (migration

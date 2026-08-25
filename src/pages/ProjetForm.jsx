@@ -17,7 +17,7 @@ import { MAX_DOC_BYTES, BACKEND } from '../lib/config'
 // pas une case de formulaire (cf. projetLogic + migration 011). Le statut se
 // dérive des engagements et des décisions portant un `projet_action`.
 const EMPTY = {
-  nom: '', description: '', chef_projet_id: '',
+  nom: '', description: '', chef_projet_id: '', adjoint_projet_id: '',
   date_ouverture: todayISO(), date_cloture: '', documents: [],
 }
 
@@ -64,6 +64,7 @@ export default function ProjetForm() {
           setChefId(p.chef_projet_id || null)
           setForm({
             nom: p.nom, description: p.description || '', chef_projet_id: p.chef_projet_id || '',
+            adjoint_projet_id: p.adjoint_projet_id || '',
             date_ouverture: p.date_ouverture || '', date_cloture: p.date_cloture || '',
             documents: p.documents || [],
           })
@@ -141,6 +142,7 @@ export default function ProjetForm() {
         nom: form.nom,
         description: form.description || null,
         chef_projet_id: form.chef_projet_id || null,
+        adjoint_projet_id: form.adjoint_projet_id || null,
         date_ouverture: form.date_ouverture || null,
         date_cloture: form.date_cloture || null,
         documents: form.documents,
@@ -204,6 +206,23 @@ export default function ProjetForm() {
           ) : (
             <Input label="Chef de projet" value={membres.find((m) => m.id === form.chef_projet_id) ? `${membres.find((m) => m.id === form.chef_projet_id).prenom} ${membres.find((m) => m.id === form.chef_projet_id).nom} (vous)` : 'Vous'} readOnly className="bg-slate-50" />
           )}
+
+          {/* Adjoint (migration 028) : facultatif, forcément un AUTRE membre du
+              CS — d'où le filtre sur le chef —, et aux MÊMES droits que lui. Le
+              chef comme le président peuvent le désigner : c'est le chef qui
+              sait à qui il peut confier son projet quand il est indisponible. */}
+          <div>
+            <Select label="Adjoint au chef de projet" value={form.adjoint_projet_id} onChange={set('adjoint_projet_id')}>
+              <option value="">— Aucun —</option>
+              {membres
+                .filter((m) => m.actif && m.id !== form.chef_projet_id)
+                .map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
+            </Select>
+            <p className="mt-1 text-xs text-slate-400">
+              Facultatif. L’adjoint a <strong>exactement les mêmes droits</strong> que le chef sur ce projet : il peut le
+              modifier, y joindre des documents et participer au fil d’échanges. La suppression reste au président.
+            </p>
+          </div>
 
           <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
             Le <strong>statut</strong> ne se saisit pas : un projet est « ouvert » tant que rien n’y est engagé, « en cours »

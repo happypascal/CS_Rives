@@ -10,9 +10,10 @@ import { PROJET_ACTION_STATUT } from './projetLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-// v9 : cycle brouillon / planifiée (migration 026). Le numéro de version force le
-// reseed — les décisions de démo gagnent des colonnes que l'ancienne base n'a pas.
-const STORAGE_KEY = 'cs_rives_mockdb_v9'
+// v10 : adjoint de projet + fil d'échanges (migration 028). Le numéro de version
+// force le reseed — la base de démo gagne des colonnes et une table que
+// l'ancienne n'a pas. (v9 : cycle brouillon / planifiée, migration 026.)
+const STORAGE_KEY = 'cs_rives_mockdb_v10'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -111,6 +112,8 @@ function seed() {
       nom: 'Réfection de la voirie principale',
       description: 'Exécution des travaux de voirie votés en AGO 2025, complétés en AGO 2026.',
       chef_projet_id: m3,
+      // Adjoint (migration 028) : facultatif, autre membre du CS, mêmes droits.
+      adjoint_projet_id: mVice,
       documents: [{ id: uid(), name: 'Cahier_des_charges_voirie.txt', type: 'text/plain', size: 40, dataUrl: textDataUrl('Cahier des charges — réfection voirie principale'), uploaded_at: '2025-07-02T09:00:00Z' }],
       date_ouverture: '2025-07-01',
       date_cloture: null,
@@ -314,7 +317,16 @@ function seed() {
   // quand une décision planifiée est réellement ouverte (jamais à vide).
   const cron_runs = []
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, comptes_ag, audit_log }
+  // Fil d'échanges du projet voirie : montre le cas d'usage — deux membres qui
+  // se répondent par écrit entre deux réunions.
+  const qProjet = uid()
+  const questions_reponses_projet = [
+    { id: qProjet, projet_id: p1, auteur_id: mVice, type: 'question', parent_id: null, texte: 'RoutesPlus a-t-il confirmé la date de démarrage du tronçon nord ?', created_at: '2026-04-02T09:00:00Z' },
+    { id: uid(), projet_id: p1, auteur_id: m3, type: 'reponse', parent_id: qProjet, texte: 'Oui, semaine 18, sous réserve météo. Je relance dix jours avant.', created_at: '2026-04-02T14:20:00Z' },
+    { id: uid(), projet_id: p1, auteur_id: m3, type: 'commentaire', parent_id: null, texte: 'Reconnaissance faite sur place le 5 avril : deux regards à reprendre en plus du devis initial.', created_at: '2026-04-05T17:00:00Z' },
+  ]
+
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -508,6 +520,7 @@ export function computeProjectBudgets(data) {
     const sources = data.resolutions_ag.filter((r) => r.projet_id === p.id)
     const alloue = sources.filter(ouvreUnBudget).reduce((s, r) => s + Number(r.budget_alloue), 0)
     const chef = memById[p.chef_projet_id]
+    const adjoint = memById[p.adjoint_projet_id]
 
     // ---- Statut : DÉRIVÉ, jamais saisi ----
     // Deux couches.
@@ -544,6 +557,7 @@ export function computeProjectBudgets(data) {
       engage_en_cours: engageEnCours,
       restant: alloue - engage,
       chef_nom: chef ? `${chef.prenom} ${chef.nom}` : null,
+      adjoint_nom: adjoint ? `${adjoint.prenom} ${adjoint.nom}` : null,
       // Trace lisible : d'où vient le statut, et par quelle délibération.
       statut_decision: derniereAction
         ? { action: derniereAction, decision_id: actions[actions.length - 1].id, numero: actions[actions.length - 1].numero, date: actions[actions.length - 1].date_enregistrement }
@@ -805,7 +819,13 @@ export const mockRepo = {
     if (!p) return null
     const computed = computeProjectBudgets(data).find((x) => x.id === id)
     const decisions = data.decisions.filter((d) => d.projet_id === id)
-    return { ...clone(computed), decisions: clone(decisions) }
+    return {
+      ...clone(computed),
+      decisions: clone(decisions),
+      qa: clone((data.questions_reponses_projet || [])
+        .filter((q) => q.projet_id === id)
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))),
+    }
   },
   // `resolution_ids` est un champ VIRTUEL : le rattachement vit sur la résolution
   // (resolutions_ag.projet_id), pas sur le projet. Il est retiré du row projet.
@@ -1159,6 +1179,19 @@ export const mockRepo = {
     const data = load()
     const q = { id: uid(), decision_id, auteur_id, type, parent_id: parent_id || null, texte, created_at: nowISO() }
     data.questions_reponses.push(q)
+    save(data)
+    return clone(q)
+  },
+
+  // ---- Fil d'échanges des projets (migration 028) ----
+  // Même forme que `addQA` côté décisions. Pas de garde de verrouillage : un
+  // projet ne se fige jamais, contrairement à une décision enregistrée.
+  async addQAProjet({ projet_id, auteur_id, type, parent_id, texte }) {
+    await delay()
+    const data = load()
+    data.questions_reponses_projet ||= []
+    const q = { id: uid(), projet_id, auteur_id, type, parent_id: parent_id || null, texte, created_at: nowISO() }
+    data.questions_reponses_projet.push(q)
     save(data)
     return clone(q)
   },
