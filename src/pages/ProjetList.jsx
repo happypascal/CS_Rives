@@ -29,7 +29,7 @@ export default function ProjetList() {
     <div>
       <PageHeader
         title="Projets"
-        subtitle="Chantiers du lotissement : chef de projet, documents, décisions et budget."
+        subtitle="Chantiers du lotissement : équipe, documents, décisions et budget."
         actions={canCreate && <Link to="/projets/nouveau"><Button>+ Nouveau projet</Button></Link>}
       />
       {projets.length === 0 ? (
@@ -45,7 +45,7 @@ export default function ProjetList() {
               <thead>
                 <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-2.5 font-medium">Projet</th>
-                  <th className="px-4 py-2.5 font-medium">Chef de projet</th>
+                  <th className="px-4 py-2.5 font-medium">Chef et adjoint</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
                   <th className="px-4 py-2.5 text-right font-medium">Alloué</th>
                   <th className="px-4 py-2.5 text-right font-medium">Engagé</th>
@@ -61,7 +61,18 @@ export default function ProjetList() {
                           pluriannuel en affiche plusieurs. */}
                       {p.ags?.length > 0 && <span className="block text-xs text-slate-400">{p.ags.map((a) => a.numero).join(' · ')}</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{p.chef_nom || '—'}</td>
+                    {/* L'adjoint (migration 028) sous le chef plutôt qu'en
+                        colonne à part : il a les mêmes droits mais reste
+                        facultatif, et une 7e colonne vide sur la plupart des
+                        lignes coûterait de la largeur pour rien. Affiché
+                        seulement s'il existe — le cas normal est un projet mené
+                        seul, « — aucun — » sur chaque ligne serait du bruit. */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {p.chef_nom || '—'}
+                      {p.adjoint_nom && (
+                        <span className="block text-xs text-slate-400">adjoint : {p.adjoint_nom}</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3"><ProjetStatutBadge statut={p.statut} /></td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">{eur(p.alloue)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-amber-700">{eur(p.engage)}</td>
