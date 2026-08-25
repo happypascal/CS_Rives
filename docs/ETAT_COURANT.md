@@ -134,7 +134,7 @@ vote **après l'AG du 15 septembre 2026**, comme premier acte du conseil nouvell
 - **`visibilite`** est stockée, saisissable, affichée et tracée, mais **n'a toujours aucun
   lecteur** : le registre consultable par les colotis est hors périmètre v1 (spec §9).
 - **La ratification en réunion du §4 a été RETIRÉE** le lendemain de sa pose (migration 027) — voir
-  la ligne dédiée plus haut. Le point juridique, lui, reste ouvert : à trancher avec Me Garnier.
+  la ligne dédiée plus haut. Le point juridique se règle par la révision des statuts (AG du 15/09).
 - **La décision « Règle de représentation et de contacts extérieurs » (spec §10) n'est PAS créée
   en prod.** Le mode démo en contient une **trame de six articles**, à remplacer par la rédaction
   réelle du conseil : inventer le texte d'une règle qui sera votée n'appartient pas à l'outil.
@@ -319,6 +319,26 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
   `Production` seulement, sinon le staging taperait dans la prod).
 
 ## Backlog — à reprendre ensuite
+
+- **⚠ STATUTS EN COURS DE RÉVISION — AG du 15/09/2026.** L'AG vote un **projet de nouveaux
+  statuts** ; **Me Garnier en adaptera la rédaction finale pour que le mode de fonctionnement de
+  l'application soit conforme**. C'est ce qui ferme le point resté ouvert depuis la spec (l'art. 15
+  est rédigé pour des réunions, un vote dans l'app est une consultation écrite) — et par le bon
+  bout : on ne tord pas l'outil pour entrer dans un texte, on écrit le texte qui décrit l'outil.
+  - **À FOURNIR à Me Garnier** : la description exacte de ce que fait l'app. Sans elle, la
+    rédaction se fera sur une idée approximative et l'app sera non conforme sur un détail. Les
+    points qui doivent y figurer, tous vérifiables dans `decisionLogic.js` : consultation écrite
+    asynchrone ; **vote self-only**, aucune représentation ; adoption à la majorité des membres
+    AYANT VOTÉ, **abstention au dénominateur** ; voix prépondérante du président en cas de partage ;
+    **quorum interne > 50 %** (l'art. 15 actuel n'en impose aucun) ; **garde d'engagement**
+    (trésorier OU président doit voter pour) ; l'**acte** = enregistrement par le président, qui
+    fige composition et vote ; signature par tous les membres ayant pris part, y compris « contre ».
+  - **⚠ Deux de ces règles sont des choix INTERNES plus stricts que l'art. 15** (quorum, garde
+    d'engagement). Les inscrire dans les statuts les rend statutaires — donc bien plus lourdes à
+    assouplir plus tard. À arbitrer avant la rédaction finale, pas après.
+  - **Après l'AG** : relire `CLAUDE.md` §Statuts en cours de révision et §ARTICLE 15, et les mettre
+    à jour avec le texte réellement adopté. Tant qu'il n'est pas connu, **l'art. 15 actuel reste la
+    règle en vigueur** — ne rien anticiper d'une rédaction qu'on n'a pas lue.
 
 - **Budget de fonctionnement à soumettre à l'AG** (arbitrage CS 2026-07-20). Le CS demande à l'AG
   une **enveloppe annuelle de 720 €/an** (Supabase 22 + signature 9 + domaine 1 + Claude 18 =

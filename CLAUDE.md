@@ -102,6 +102,31 @@ public/favicon.svg    seul asset public
 
 ---
 
+## ⚠ Statuts en cours de révision (2026-09-15)
+
+L'AG du 15 septembre 2026 vote un **projet de nouveaux statuts**, dont **Me Garnier adaptera la
+rédaction finale pour que le mode de fonctionnement de l'application soit conforme**. Le sens de la
+dépendance s'inverse donc : jusqu'ici l'app suivait l'art. 15, désormais les statuts décrivent ce
+que l'app fait.
+
+Trois conséquences, à garder en tête avant toute modification du vote ou de l'adoption :
+
+1. **Ce que fait l'app devient la référence rédactionnelle.** Les règles ci-dessous ne sont plus
+   seulement une lecture de l'art. 15 : elles sont ce que les statuts vont décrire. Les changer
+   après l'AG, c'est risquer de sortir des statuts.
+2. **Plusieurs règles sont INTERNES et plus strictes que l'art. 15 actuel** — le quorum > 50 %,
+   la garde d'engagement (trésorier OU président doit voter pour). Si elles passent dans les
+   statuts, elles deviennent statutaires, donc bien plus lourdes à assouplir ensuite.
+3. **Ce que l'app ne fait PAS doit être décrit aussi** : pas de représentation (« ou représentés »),
+   vote self-only, pas de clôture automatique du vote. Un silence des statuts sur ces points
+   rouvrirait la question.
+
+⚠ **Tant que les nouveaux statuts ne sont pas adoptés ET connus, l'art. 15 ci-dessous reste la
+règle en vigueur.** Ne pas anticiper une rédaction qu'on n'a pas lue. Relire ce paragraphe après
+l'AG et mettre à jour la section suivante.
+
+---
+
 ## ARTICLE 15 des statuts — la règle qui gouverne tout
 
 > « Ses décisions sont prises à la majorité des membres présents ou représentés. […] En cas de
@@ -126,7 +151,8 @@ montre des règles convenues le 14/07 et invalidées le 15/07.
 - **Signataires = tous les membres présents, y compris « Contre »**. Les absents n'ont pas de
   ligne de signature.
 - **Non couvert, documenté, assumé** : la **représentation** (« ou représentés »). Un membre
-  sans vote est absent, jamais représenté.
+  sans vote est absent, jamais représenté. ⚠ À signaler pour la rédaction des nouveaux statuts :
+  c'est l'écart le plus visible entre l'art. 15 et ce que fait l'application.
 
 ### Enregistrement (l'« acte »)
 Président seul, quorum atteint, desktop seul. Fige `statut`, `quorum_atteint` et un
@@ -205,9 +231,10 @@ ligne dans `decision_status_history`.
 - **PAS de ratification en réunion** (migration 027, arbitrage Pascal 2026-08-26). Le §4 de la spec
   proposait un champ `ratifiee_en_reunion_le` ; il a été posé par la 026 puis **retiré** :
   « le but de cette app est de ne PAS avoir à ratifier ces décisions en réunion ». Organiser la
-  ratification dans l'outil, c'était installer la pratique qu'il existe pour éviter. ⚠ La question
-  de fond reste entière — l'art. 15 couvre-t-il la consultation écrite ? — et se tranche avec
-  Me Garnier, pas dans le schéma. **Ne pas réintroduire ce champ sans cet arbitrage.**
+  ratification dans l'outil, c'était installer la pratique qu'il existe pour éviter.
+  **Ne pas le réintroduire.** Le point juridique se règle par l'autre bout : de NOUVEAUX STATUTS
+  sont soumis au vote de l'AG du 15 septembre 2026, et Me Garnier en adaptera la rédaction finale
+  pour que le fonctionnement de l'application soit conforme — cf. §Statuts en cours de révision.
 - **Non implémenté, assumé** : `notifications_decision` et les relances e-mail (§6 de la spec) —
   aucun envoyeur n'existe (cf. backlog e-mail). **Personne n'est prévenu à l'ouverture** : l'auteur
   doit toujours cliquer « Prévenir le CS ».
