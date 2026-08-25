@@ -345,7 +345,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 
 ## Backlog — à reprendre ensuite
 
-- **⚠ CONNEXION DES COLOTIS — spéc écrite, RIEN de codé.** Voir
+- **⛔ CONNEXION DES COLOTIS — GELÉ, ne rien coder** (décision Pascal 2026-08-25). Reprise **quand
+  le mécanisme d'onboarding automatique sera clair** ; la spéc sera alors **réécrite**. Voir
   **`docs/SPEC_ONBOARDING_COLOTIS.md`**, rédigée à la demande de Pascal *avant* tout code. Le
   besoin « membre de l'équipe projet ouvert aux colotis » n'ajoute pas un rôle : il ouvre l'app à
   des non-membres, donc oblige à **refermer et réécrire `read_auth` sur toutes les tables** (un
@@ -360,6 +361,9 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
     mandat (renouvellement du 15/09).
   - Dépend aussi du **domaine vérifié** (invitations par e-mail) et d'un **staging remis à niveau**
     — le mock ne prouve rien sur la RLS.
+  - ⚠ Le rôle visé est **étroit** (un projet, en lecture, sans droit de délibérer). Ce n'est pas son
+    étendue qui coûte, c'est que l'app **n'a aucun moyen de restreindre qui que ce soit** aujourd'hui.
+    Un rôle « très limité » ne peut pas être limité tant que la plomberie n'existe pas.
 - **⚠ STATUTS EN COURS DE RÉVISION — AG du 15/09/2026.** L'AG vote un **projet de nouveaux
   statuts** ; **Me Garnier en adaptera la rédaction finale pour que le mode de fonctionnement de
   l'application soit conforme**. C'est ce qui ferme le point resté ouvert depuis la spec (l'art. 15

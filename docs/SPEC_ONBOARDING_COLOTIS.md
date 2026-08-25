@@ -1,12 +1,25 @@
 # Spécification — Connexion des colotis à l'application
 
-> **Statut : projet de spécification, rien n'est codé.** Rédigée le 2026-08-25 à la demande de
-> Pascal, avant tout développement, parce que le besoin « membre de l'équipe projet ouvert aux
-> colotis » ne s'ajoute pas : il ouvre l'application à des personnes qui ne sont pas membres du
-> Conseil Syndical, ce qui change le modèle de lecture de **toutes** les tables.
+> **⛔ CHANTIER GELÉ — NE RIEN CODER (décision Pascal, 2026-08-25).**
+> « On ne fait rien pour donner accès aux colotis à l'app pour l'instant. » L'accès des colotis
+> reprendra **quand le mécanisme d'onboarding automatique sera clair**, et cette spécification sera
+> alors **réécrite** à partir de ce qui aura été décidé — notamment de la nature du rôle des
+> colotis effectivement disponible (§4.2).
 >
-> Ce document décrit ce qu'il faudrait faire, pose les questions à trancher, et **ne décide pas à
-> la place du CS** sur les points de gouvernance. À lire avec `CLAUDE.md` (§Supabase, §ARTICLE 15).
+> **Ce document n'est donc PAS un feu vert.** C'est une note de cadrage : elle sert à savoir ce
+> qu'il faudra regarder le jour venu, et surtout à ne pas sous-estimer le sujet. Rien de ce qui y
+> figure n'est arrêté.
+>
+> **Le rôle visé est étroit** — un projet, en lecture, sans droit de délibérer. Ce n'est pas son
+> étendue qui coûte : c'est que l'application n'a aujourd'hui **aucun moyen de restreindre qui que
+> ce soit** (`read_auth` est ouvert à tout compte authentifié, §2). Un rôle « très limité » ne peut
+> pas être limité tant que cette plomberie n'existe pas. D'où l'ordre : onboarding d'abord, rôle
+> ensuite.
+>
+> État actuel dans l'app : le rôle est **visible** sur la fiche projet (carte « Équipe projet »,
+> mention « à venir ») et **non assignable**. C'est volontaire.
+>
+> À lire avec `CLAUDE.md` (§Supabase, §ARTICLE 15).
 
 ---
 
