@@ -249,7 +249,9 @@ ligne dans `decision_status_history`.
 - **DEUX DATES à dessein** : `date_action` (quand ça s'est passé — **modifiable**, c'est la demande)
   et `created_at` (quand ça a été saisi — **jamais** modifié). Les confondre daterait les faits du
   jour où on a pensé à les écrire. Le journal se **trie sur `date_action`** : une visite du 12 notée
-  le 20 se range au 12. L'écran n'affiche la date de saisie que si elle diffère.
+  le 20 se range au 12. ⚠ `created_at` est **stocké mais plus affiché** (Pascal, 2026-08-26) : seule
+  la date de l'action intéresse le lecteur. Une entrée tient sur **une ligne** — date, sujet,
+  boutons, auteur — le sujet prenant la place restante et repassant seul à la ligne s'il est long.
 - **L'AUTEUR seul corrige et supprime sa ligne** (`journal_projet_self_update/delete`) — le chef et
   l'adjoint pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Le président garde
   tout. **Aucun verrou de temps** : ce n'est pas une délibération, elle n'entre pas au registre.

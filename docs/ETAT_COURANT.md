@@ -36,8 +36,9 @@ du budget demandé à l'AG et du backlog ci-dessous.
   et immuable ; celui-ci est saisi à la main, métier, et **corrigeable**.
 - **✅ Deux dates, et c'est tout l'objet de la demande** : `date_action` (**modifiable**) et
   `created_at` (jamais modifié). Tri sur la date de l'**action** : une visite du 12 notée le 20 se
-  range au 12, sinon le journal mentirait sur la chronologie. La date de saisie ne s'affiche que
-  lorsqu'elle diffère.
+  range au 12, sinon le journal mentirait sur la chronologie. ⚠ La date de saisie est **stockée mais
+  plus affichée** (Pascal, 2026-08-26) : une entrée tient sur **une ligne** — date, sujet, boutons,
+  auteur.
 - **✅ L'auteur seul corrige et supprime sa ligne.** Volontairement borné : le chef et l'adjoint
   pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Le président garde tout.
   Aucun verrou de temps — ce n'est pas une délibération.
