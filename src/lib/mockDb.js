@@ -10,10 +10,10 @@ import { PROJET_ACTION_STATUT } from './projetLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-// v10 : adjoint de projet + fil d'échanges (migration 028). Le numéro de version
-// force le reseed — la base de démo gagne des colonnes et une table que
-// l'ancienne n'a pas. (v9 : cycle brouillon / planifiée, migration 026.)
-const STORAGE_KEY = 'cs_rives_mockdb_v10'
+// v11 : journal de bord des projets (migration 029). Le numéro de version force
+// le reseed — la base de démo gagne une table que l'ancienne n'a pas.
+// (v10 : adjoint + fil d'échanges, 028. v9 : brouillon / planifiée, 026.)
+const STORAGE_KEY = 'cs_rives_mockdb_v11'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -319,6 +319,14 @@ function seed() {
 
   // Fil d'échanges du projet voirie : montre le cas d'usage — deux membres qui
   // se répondent par écrit entre deux réunions.
+  // Journal de bord du projet voirie. La 2e ligne montre le cas qui justifie la
+  // date modifiable : action du 12/05, saisie le 20 (created_at plus tardif).
+  const journal_projet = [
+    { id: uid(), projet_id: p1, date_action: '2026-04-08', texte: 'Réunion de lancement avec RoutesPlus sur site. Tracé validé, base vie côté parking visiteurs.', auteur_id: m3, created_at: '2026-04-08T18:00:00Z', updated_at: '2026-04-08T18:00:00Z' },
+    { id: uid(), projet_id: p1, date_action: '2026-05-12', texte: 'Visite de chantier : décaissement du tronçon nord terminé, deux regards à reprendre (hors devis initial).', auteur_id: m3, created_at: '2026-05-20T09:30:00Z', updated_at: '2026-05-20T09:30:00Z' },
+    { id: uid(), projet_id: p1, date_action: '2026-06-03', texte: 'Relance de RoutesPlus sur le planning de reprise des regards. Sans réponse à ce jour.', auteur_id: mVice, created_at: '2026-06-03T11:00:00Z', updated_at: '2026-06-03T11:00:00Z' },
+  ]
+
   const qProjet = uid()
   const questions_reponses_projet = [
     { id: qProjet, projet_id: p1, auteur_id: mVice, type: 'question', parent_id: null, texte: 'RoutesPlus a-t-il confirmé la date de démarrage du tronçon nord ?', created_at: '2026-04-02T09:00:00Z' },
@@ -326,7 +334,7 @@ function seed() {
     { id: uid(), projet_id: p1, auteur_id: m3, type: 'commentaire', parent_id: null, texte: 'Reconnaissance faite sur place le 5 avril : deux regards à reprendre en plus du devis initial.', created_at: '2026-04-05T17:00:00Z' },
   ]
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, comptes_ag, audit_log }
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -836,6 +844,12 @@ export const mockRepo = {
       qa: clone((data.questions_reponses_projet || [])
         .filter((q) => q.projet_id === id)
         .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))),
+      // Journal de bord : trié sur la date de l'ACTION, décroissante — le plus
+      // récent en tête. Surtout PAS sur `created_at` : une visite du 12 notée le
+      // 20 doit se ranger au 12, sinon le journal ment sur la chronologie.
+      journal: clone((data.journal_projet || [])
+        .filter((j) => j.projet_id === id)
+        .sort((a, b) => (a.date_action > b.date_action ? -1 : a.date_action < b.date_action ? 1 : 0))),
     }
   },
   // `resolution_ids` est un champ VIRTUEL : le rattachement vit sur la résolution
@@ -1205,6 +1219,50 @@ export const mockRepo = {
     data.questions_reponses_projet.push(q)
     save(data)
     return clone(q)
+  },
+
+  // ---- Journal de bord des projets (migration 029) ----
+  //
+  // ⚠ Rien à voir avec `audit()` : celui-ci est automatique et immuable, le
+  // journal est saisi à la main et corrigeable. Deux journaux, deux usages.
+  async addJournalProjet({ projet_id, date_action, texte, auteur_id }) {
+    await delay()
+    const data = load()
+    data.journal_projet ||= []
+    const j = { id: uid(), projet_id, date_action, texte, auteur_id, created_at: nowISO(), updated_at: nowISO() }
+    data.journal_projet.push(j)
+    save(data)
+    return clone(j)
+  },
+  // `created_at` n'est JAMAIS touché : c'est la date de saisie, elle fait foi
+  // sur le moment où la ligne a été écrite. Seuls la date de l'action et le
+  // texte se corrigent.
+  async updateJournalProjet(id, { date_action, texte }) {
+    await delay()
+    const data = load()
+    const j = (data.journal_projet || []).find((x) => x.id === id)
+    if (!j) throw new Error('Entrée de journal introuvable')
+    const user = getSessionUser()
+    if (j.auteur_id !== user?.membre_id && user?.role !== 'admin') {
+      throw new Error('Seul l’auteur de cette entrée peut la corriger.')
+    }
+    if (date_action !== undefined) j.date_action = date_action
+    if (texte !== undefined) j.texte = texte
+    j.updated_at = nowISO()
+    save(data)
+    return clone(j)
+  },
+  async deleteJournalProjet(id) {
+    await delay()
+    const data = load()
+    const j = (data.journal_projet || []).find((x) => x.id === id)
+    const user = getSessionUser()
+    if (j && j.auteur_id !== user?.membre_id && user?.role !== 'admin') {
+      throw new Error('Seul l’auteur de cette entrée peut la supprimer.')
+    }
+    data.journal_projet = (data.journal_projet || []).filter((x) => x.id !== id)
+    save(data)
+    return { ok: true }
   },
 
   // ---- Signature par lot ----

@@ -241,6 +241,19 @@ ligne dans `decision_status_history`.
 - Le **PDF du registre exclut** brouillons et décisions planifiées (ce ne sont pas des
   délibérations) ; les **annulées y restent**, verdict « ANNULÉE ».
 
+### Journal de bord des projets (migration 029) ≠ `audit_log`
+> Deux journaux, deux usages — **ne pas les confondre ni les fusionner**.
+> `audit_log` : **automatique, technique, immuable** (qui a changé quoi dans l'app).
+> `journal_projet` : **saisi à la main, métier, corrigeable** (ce que l'équipe a FAIT).
+
+- **DEUX DATES à dessein** : `date_action` (quand ça s'est passé — **modifiable**, c'est la demande)
+  et `created_at` (quand ça a été saisi — **jamais** modifié). Les confondre daterait les faits du
+  jour où on a pensé à les écrire. Le journal se **trie sur `date_action`** : une visite du 12 notée
+  le 20 se range au 12. L'écran n'affiche la date de saisie que si elle diffère.
+- **L'AUTEUR seul corrige et supprime sa ligne** (`journal_projet_self_update/delete`) — le chef et
+  l'adjoint pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Le président garde
+  tout. **Aucun verrou de temps** : ce n'est pas une délibération, elle n'entre pas au registre.
+
 ### Modèle de propriété (migration 006)
 > Tout membre actif crée et devient owner ; l'owner seul modifie et notifie ; le président
 > garde l'acte (enregistrement) et la signature.

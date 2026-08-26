@@ -2,11 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Spinner, Textarea, eur } from '../components/ui'
+import { Card, CardHeader, Button, Spinner, Textarea, Input, eur } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { ProjetStatutBadge, DecisionEtatBadge } from '../components/badges'
 import { engagementTTC } from '../lib/decisionLogic'
-import { formatDate, formatDateTime } from '../lib/format'
+import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDocument } from '../lib/documents'
@@ -25,6 +25,11 @@ export default function ProjetDetail() {
   const [replyTo, setReplyTo] = useState(null)
   const [replyText, setReplyText] = useState('')
   const [cText, setCText] = useState('')
+  // Journal de bord : la date par défaut est aujourd'hui, mais elle se change —
+  // c'est le point de la demande, on note souvent après coup.
+  const [jDate, setJDate] = useState(todayISO())
+  const [jTexte, setJTexte] = useState('')
+  const [jEdit, setJEdit] = useState(null) // { id, date_action, texte } en cours de correction
   const [confirm, confirmModal] = useConfirm()
 
   // Bucket privé : l'URL est signée au clic, un échec doit se voir.
@@ -110,6 +115,39 @@ export default function ProjetDetail() {
   // collective, et restreindre l'échange au seul binôme chef/adjoint priverait
   // le conseil du moyen de poser une question sans convoquer une réunion.
   const peutEchanger = Boolean(user?.membre_id)
+
+  // ---- Journal de bord (migration 029) ----
+  const journal = projet.journal || []
+  const addJournal = async () => {
+    if (!jTexte.trim() || !jDate) return
+    try {
+      await repo.addJournalProjet({ projet_id: id, date_action: jDate, texte: jTexte.trim(), auteur_id: user.membre_id })
+      setJTexte('')
+      setJDate(todayISO())
+      await reload()
+    } catch (e) {
+      alert('L’entrée n’a pas pu être enregistrée : ' + e.message)
+    }
+  }
+  const saveJournal = async () => {
+    if (!jEdit?.texte.trim() || !jEdit?.date_action) return
+    try {
+      await repo.updateJournalProjet(jEdit.id, { date_action: jEdit.date_action, texte: jEdit.texte.trim() })
+      setJEdit(null)
+      await reload()
+    } catch (e) {
+      alert('La correction n’a pas pu être enregistrée : ' + e.message)
+    }
+  }
+  const delJournal = async (entree) => {
+    if (!(await confirm({ title: 'Supprimer cette entrée du journal ?', message: `« ${entree.texte.slice(0, 80)}… » du ${formatDate(entree.date_action)}.`, confirmLabel: 'Supprimer', danger: true }))) return
+    try {
+      await repo.deleteJournalProjet(entree.id)
+      await reload()
+    } catch (e) {
+      alert(e.message)
+    }
+  }
 
   const addQA = async (type, texte, parentId = null) => {
     if (!texte.trim()) return
@@ -307,6 +345,78 @@ export default function ProjetDetail() {
           </div>
         </Card>
       </div>
+
+      {/* JOURNAL DE BORD (migration 029) — ce que l'équipe a FAIT, daté du jour
+          où ça s'est passé.
+          ⚠ Rien à voir avec le journal d'audit (Paramètres), qui est automatique
+          et immuable. Celui-ci est saisi à la main et CORRIGEABLE par son
+          auteur : ce n'est pas une délibération, il n'entre pas au registre.
+          La date de l'action et la date de saisie sont distinctes et toutes deux
+          affichées quand elles diffèrent — c'est exactement le cas d'usage :
+          consigner le 20 une visite du 12. */}
+      <Card className="mt-6">
+        <CardHeader
+          title="Journal du projet"
+          subtitle="Ce qui a été fait, à la date où cela s’est passé. Corrigeable par son auteur."
+        />
+        <div className="px-5 py-4">
+          {peutEchanger && (
+            <div className="mb-4 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <Input label="Date de l’action" type="date" value={jDate} onChange={(e) => setJDate(e.target.value)} className="w-44" />
+                <Textarea autoGrow rows={2} value={jTexte} onChange={(e) => setJTexte(e.target.value)} placeholder="ex : visite de chantier, relance du prestataire, rendez-vous en mairie…" className="min-w-0 flex-1" />
+                <Button onClick={addJournal} disabled={!jTexte.trim() || !jDate}>Consigner</Button>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                La date est celle de <strong>l’action</strong>, pas de la saisie : notez aujourd’hui ce qui s’est passé la
+                semaine dernière, en reculant la date.
+              </p>
+            </div>
+          )}
+
+          {journal.length === 0 ? (
+            <p className="text-sm text-slate-500">Aucune entrée pour l’instant.</p>
+          ) : (
+            <ul className="space-y-2">
+              {journal.map((j) => {
+                const mien = j.auteur_id === user?.membre_id || isAdmin
+                // La date de saisie n'est montrée que si elle diffère du jour de
+                // l'action : sinon c'est une redite, et le journal se surcharge.
+                const saisieDecalee = (j.created_at || '').slice(0, 10) !== j.date_action
+                return (
+                  <li key={j.id} className="rounded-md border border-slate-200 px-3 py-2.5">
+                    {jEdit?.id === j.id ? (
+                      <div className="flex flex-wrap items-end gap-2">
+                        <Input label="Date de l’action" type="date" value={jEdit.date_action} onChange={(e) => setJEdit({ ...jEdit, date_action: e.target.value })} className="w-44" />
+                        <Textarea autoGrow rows={2} value={jEdit.texte} onChange={(e) => setJEdit({ ...jEdit, texte: e.target.value })} className="min-w-0 flex-1" />
+                        <Button size="sm" onClick={saveJournal}>Enregistrer</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setJEdit(null)}>Annuler</Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-sm font-semibold text-navy-800">{formatDate(j.date_action)}</p>
+                          <p className="text-xs text-slate-400">
+                            {nameOf(j.auteur_id)}
+                            {saisieDecalee && <> · saisi le {formatDate(j.created_at)}</>}
+                          </p>
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{j.texte}</p>
+                        {mien && (
+                          <div className="mt-1 flex gap-3">
+                            <button onClick={() => setJEdit({ id: j.id, date_action: j.date_action, texte: j.texte })} className="text-xs text-navy-600 underline">Corriger</button>
+                            <button onClick={() => delJournal(j)} className="text-xs text-red-600 underline">Supprimer</button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </Card>
 
       {/* Fil d'échanges de l'équipe (migration 028). Même distinction que sur une
           décision : une QUESTION attend une réponse, un COMMENTAIRE est une note

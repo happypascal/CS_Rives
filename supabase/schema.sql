@@ -130,6 +130,32 @@ create table if not exists questions_reponses_projet (
 
 create index if not exists qa_projet_projet_idx on questions_reponses_projet (projet_id);
 
+-- ---------------------------------------------------- journal_projet (029)
+-- Journal de bord : ce que l'équipe a FAIT, daté du jour où ça s'est passé.
+--
+-- ⚠ À ne pas confondre avec `audit_log` : celui-là est automatique, technique et
+-- immuable ; celui-ci est saisi à la main, métier, et corrigeable. Deux
+-- journaux, deux usages.
+--
+-- DEUX DATES à dessein : `date_action` (quand ça s'est passé, MODIFIABLE — on
+-- note souvent après coup) et `created_at` (quand ça a été saisi, jamais
+-- modifié). Les confondre daterait les faits du jour où on a pensé à les écrire.
+--
+-- Le journal n'est PAS une délibération : il n'entre pas au registre, ne se fige
+-- pas, et ses lignes restent corrigeables par leur auteur.
+create table if not exists journal_projet (
+  id          uuid primary key default gen_random_uuid(),
+  projet_id   uuid not null references projets(id) on delete cascade,
+  date_action date not null,
+  texte       text not null,
+  auteur_id   uuid not null references membres_cs(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- Le journal se lit par projet et se trie sur la date de l'ACTION.
+create index if not exists journal_projet_idx on journal_projet (projet_id, date_action desc);
+
 -- resolutions_ag → projets : posé après coup, les deux tables se référençant
 -- mutuellement (projets n'existe pas encore au create de resolutions_ag).
 -- `on delete set null` : supprimer un projet DÉTACHE ses résolutions, il ne les
@@ -585,6 +611,7 @@ alter table signature_batches       enable row level security;
 alter table decision_status_history enable row level security;
 alter table decisions_historique    enable row level security;
 alter table questions_reponses_projet enable row level security;
+alter table journal_projet          enable row level security;
 alter table cron_runs               enable row level security;
 alter table audit_log               enable row level security;
 
@@ -600,7 +627,7 @@ begin
     -- `security definer` de la migration 026. Un historique de brouillon
     -- réécrivable depuis le client ne prouverait rien. (L'historique est ensuite
     -- restreint à la visibilité de SA décision, cf. `historique_suit_la_decision`.)
-    'decisions_historique','cron_runs','questions_reponses_projet'
+    'decisions_historique','cron_runs','questions_reponses_projet','journal_projet'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -806,6 +833,33 @@ create policy "qa_projet_self_insert" on questions_reponses_projet
     auteur_id = current_membre_id()
     and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
   );
+
+-- Journal de bord des projets (migration 029). On écrit sous SON nom si l'on est
+-- membre actif ; l'AUTEUR corrige et supprime SA ligne — c'est ce que « date
+-- modifiable » demande. Volontairement borné à l'auteur : le chef et l'adjoint
+-- pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Aucun
+-- verrou de temps : ce n'est pas un registre légal, une erreur se corrige.
+drop policy if exists "journal_projet_admin" on journal_projet;
+create policy "journal_projet_admin" on journal_projet
+  for all to authenticated using (is_admin()) with check (is_admin());
+
+drop policy if exists "journal_projet_self_insert" on journal_projet;
+create policy "journal_projet_self_insert" on journal_projet
+  for insert to authenticated
+  with check (
+    auteur_id = current_membre_id()
+    and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
+  );
+
+drop policy if exists "journal_projet_self_update" on journal_projet;
+create policy "journal_projet_self_update" on journal_projet
+  for update to authenticated
+  using (auteur_id = current_membre_id());
+
+drop policy if exists "journal_projet_self_delete" on journal_projet;
+create policy "journal_projet_self_delete" on journal_projet
+  for delete to authenticated
+  using (auteur_id = current_membre_id());
 
 -- Signatures : le secrétaire peut faire signer, comme le président (migration
 -- 015). INSERT (créer un lot) + UPDATE (marquer signé) ; pas de DELETE. Le

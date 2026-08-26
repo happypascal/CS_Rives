@@ -181,13 +181,34 @@ export const supabaseRepo = {
     // pas empêcher d'ouvrir la fiche du projet.
     const { data: qa } = await supabase.from('questions_reponses_projet')
       .select('*').eq('projet_id', id).order('created_at')
-    return { ...computed, decisions, qa: qa || [] }
+    // Journal de bord (migration 029) : trié sur la date de l'ACTION, pas sur
+    // celle de la saisie — une visite du 12 notée le 20 se range au 12.
+    const { data: journal } = await supabase.from('journal_projet')
+      .select('*').eq('projet_id', id).order('date_action', { ascending: false })
+    return { ...computed, decisions, qa: qa || [], journal: journal || [] }
   },
 
   // Fil d'échanges des projets. Pas de garde de verrouillage, contrairement aux
   // décisions : un projet ne se fige jamais.
   async addQAProjet(input) {
     return must(await supabase.from('questions_reponses_projet').insert(input).select())[0]
+  },
+
+  // ---- Journal de bord des projets (migration 029) ----
+  // ⚠ Rien à voir avec `audit_log` : celui-là est automatique et immuable, le
+  // journal est saisi à la main et corrigeable par son auteur.
+  async addJournalProjet(input) {
+    return must(await supabase.from('journal_projet').insert(input).select())[0]
+  },
+  // `created_at` n'est jamais touché : c'est la date de SAISIE. Seuls la date de
+  // l'action et le texte se corrigent. La RLS borne à l'auteur (et au président).
+  async updateJournalProjet(id, patch) {
+    return must(await supabase.from('journal_projet')
+      .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
+  },
+  async deleteJournalProjet(id) {
+    must(await supabase.from('journal_projet').delete().eq('id', id))
+    return { ok: true }
   },
   // `resolution_ids` est un champ VIRTUEL (le rattachement vit sur la résolution),
   // à retirer du payload : PostgREST rejette toute colonne inconnue.
