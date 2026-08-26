@@ -10,10 +10,10 @@ import { PROJET_ACTION_STATUT } from './projetLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-// v11 : journal de bord des projets (migration 029). Le numéro de version force
-// le reseed — la base de démo gagne une table que l'ancienne n'a pas.
-// (v10 : adjoint + fil d'échanges, 028. v9 : brouillon / planifiée, 026.)
-const STORAGE_KEY = 'cs_rives_mockdb_v11'
+// v12 : pièces jointes sur l'AG (migration 031). Le numéro de version force le
+// reseed — la base de démo gagne colonnes et tables que l'ancienne n'a pas.
+// (v11 : journal de bord, 029. v10 : adjoint + fil, 028. v9 : brouillon, 026.)
+const STORAGE_KEY = 'cs_rives_mockdb_v12'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -65,11 +65,11 @@ function seed() {
   const agAGO2026 = uid()
   const agAGE = uid()
   const assemblees_generales = [
-    { id: agAGO, numero: 'AGO-2025-01', type: 'AGO', date_ag: '2025-06-19', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Approbation des statuts ASL\n2. Élection du Conseil Syndical\n3. Budget travaux voirie 2025', statut: 'cloturee', pv_url: null, created_at: '2025-06-19T18:00:00Z', updated_at: '2025-06-20T09:00:00Z' },
+    { id: agAGO, numero: 'AGO-2025-01', type: 'AGO', date_ag: '2025-06-19', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Approbation des statuts ASL\n2. Élection du Conseil Syndical\n3. Budget travaux voirie 2025', statut: 'cloturee', pv_url: null, documents: [], created_at: '2025-06-19T18:00:00Z', updated_at: '2025-06-20T09:00:00Z' },
     // AG tenue : c'est elle qui vote la rallonge du projet voirie ouvert en 2025.
-    { id: agAGO2026, numero: 'AGO-2026-01', type: 'AGO', date_ag: '2026-03-20', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Comptes 2025\n2. Complément de budget voirie', statut: 'cloturee', pv_url: null, created_at: '2026-03-20T18:00:00Z', updated_at: '2026-03-21T09:00:00Z' },
+    { id: agAGO2026, numero: 'AGO-2026-01', type: 'AGO', date_ag: '2026-03-20', lieu: 'Salle des fêtes de Nernier', president_seance: 'Pascal Favre', ordre_du_jour: '1. Comptes 2025\n2. Complément de budget voirie', statut: 'cloturee', pv_url: null, documents: [], created_at: '2026-03-20T18:00:00Z', updated_at: '2026-03-21T09:00:00Z' },
     // AG à venir : président de séance non désigné, résolutions encore à voter.
-    { id: agAGE, numero: 'AGE-2026-01', type: 'AGE', date_ag: '2026-09-12', lieu: 'Mairie de Nernier', president_seance: null, ordre_du_jour: '1. Travaux réfection réseau eaux pluviales\n2. Appel de fonds exceptionnel', statut: 'convoquee', pv_url: null, created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z' },
+    { id: agAGE, numero: 'AGE-2026-01', type: 'AGE', date_ag: '2026-09-12', lieu: 'Mairie de Nernier', president_seance: null, ordre_du_jour: '1. Travaux réfection réseau eaux pluviales\n2. Appel de fonds exceptionnel', statut: 'convoquee', pv_url: null, documents: [], created_at: '2026-07-01T10:00:00Z', updated_at: '2026-07-01T10:00:00Z' },
   ]
 
   // p1 est déclaré AVANT resolutions_ag : ce sont les résolutions qui pointent le
@@ -729,7 +729,7 @@ export const mockRepo = {
   async createAG(input) {
     await delay()
     const data = load()
-    const ag = { id: uid(), statut: 'preparation', created_at: nowISO(), updated_at: nowISO(), ...input }
+    const ag = { id: uid(), statut: 'preparation', documents: [], created_at: nowISO(), updated_at: nowISO(), ...input }
     data.assemblees_generales.push(ag)
     audit(data, 'assemblees_generales', ag.id, 'create', `Création AG ${ag.numero}`)
     save(data)

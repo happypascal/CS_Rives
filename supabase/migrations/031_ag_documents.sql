@@ -1,0 +1,41 @@
+-- =============================================================================
+-- Migration 031 — PIÈCES JOINTES sur l'assemblée générale elle-même
+--
+-- Demande (Pascal, 2026-08-26) : « il faut pouvoir attacher des documents
+-- (convocation, PV, autre) ». Jusqu'ici seules les RÉSOLUTIONS pouvaient porter
+-- des pièces (migration 025) ; l'AG, elle, n'avait qu'un champ texte `pv_url`
+-- où coller un lien vers un PV hébergé ailleurs.
+--
+-- Or les deux pièces les plus importantes d'une AG ne se rattachent à aucune
+-- résolution en particulier :
+--   - la CONVOCATION, qui prouve que l'assemblée a été régulièrement convoquée ;
+--   - le PROCÈS-VERBAL, qui est le compte rendu de la séance entière.
+-- Elles appartiennent à l'AG. D'où cette colonne.
+--
+-- Même infrastructure que partout (migrations 012 et 025) : le fichier vit dans
+-- le bucket privé `documents`, la ligne ne garde que {path,name,type,size} — et
+-- ici, en plus, une `categorie` (convocation / pv / autre) pour que le PV se
+-- distingue d'un devis au premier coup d'œil. La `categorie` vit dans le jsonb :
+-- aucune contrainte à écrire, aucune migration le jour où une 4e catégorie
+-- apparaîtra.
+--
+-- ⚠ AUCUNE POLICY DE STORAGE À AJOUTER, et il faut comprendre pourquoi avant de
+-- s'en réjouir : `documents_insert_membre` (012) exige un membre actif, et son
+-- NOT EXISTS ne porte que sur les DÉCISIONS enregistrées — un chemin
+-- `ag/<id>/…` le traverse sans encombre, comme `projets/…` et `resolutions/…`.
+-- La restrictive `documents_brouillon_prive` (026) ne vise, elle, que le premier
+-- segment `decisions`. Le nouveau préfixe est donc couvert par construction.
+--
+-- ⚠ RAPPEL DE FORME (éditeur SQL de Supabase, incidents du 2026-08-25) : aucune
+-- chaine vide, aucun argument de formatage de `raise`, aucun guillemet dollar
+-- imbriqué, aucun deux-points dans une chaine.
+-- =============================================================================
+
+alter table assemblees_generales
+  add column if not exists documents jsonb not null default '[]';
+
+-- ⚠ `pv_url` (colonne d'origine) n'est PAS supprimée. Elle porte peut-être
+-- encore un lien saisi à la main, et la perdre effacerait la seule trace d'un PV
+-- hébergé ailleurs. Elle reste dans le formulaire d'AG comme lien externe ; le
+-- PV DÉPOSÉ dans l'application passe désormais par `documents`, en catégorie
+-- `pv`. À supprimer un jour, une fois qu'aucune AG ne s'en sert.

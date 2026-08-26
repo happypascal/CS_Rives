@@ -29,6 +29,22 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-26 (suite) — numérotation des résolutions + PJ sur l'AG (031)
+
+- **✅ Numéro de résolution SAISISSABLE.** Il doit reprendre celui de la **convocation**, que
+  l'ordre de saisie ne reproduit pas. `nextResolutionNumero` n'est plus qu'un défaut à la création.
+  Unicité `(ag_id, numero)` validée **à l'écran** avant l'envoi (le message Postgres serait
+  illisible). Le tri par numéro, lui, était **déjà en place** des deux côtés — rien à changer.
+  ⚠ Le verrou de `updateResolution` empêche de renuméroter une résolution déjà engagée par une
+  décision ou un projet : numéroter juste dès la saisie.
+- **✅ Pièces jointes sur l'AG** (migration 031) : `assemblees_generales.documents` + une
+  `categorie` (convocation / PV / autre) dans le jsonb. La convocation et le PV ne se rattachent à
+  aucune résolution. **Aucune policy de Storage à ajouter** — le préfixe `ag/…` est couvert par
+  construction (012 n'exclut que les décisions enregistrées, 026 ne vise que `decisions`).
+  ⚠ **Attachable même sur une AG clôturée** : le PV arrive après la clôture. Même exception, et
+  même raison, que le rattachement des enveloppes aux projets.
+  `pv_url` (lien externe hérité) est conservée — à supprimer un jour, si plus aucune AG ne s'en sert.
+
 ## Session 2026-08-26 — journal de bord des projets (migration 029)
 
 - **✅ JOURNAL DE BORD par projet** (`journal_projet`) : ce que l'équipe a FAIT, daté du jour où
@@ -466,7 +482,9 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `030` (001-029 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `032`. ⚠ **031 est ÉCRITE mais PAS APPLIQUÉE** (001-029 le
+  sont en **prod**). Le numéro **030 n'existe pas** : il avait été attribué à la suspension par
+  bouton, écartée avant livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.

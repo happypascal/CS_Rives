@@ -12,6 +12,18 @@ import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
 
+// Catégories de pièces jointes d'une AG. Vivent dans le jsonb, sans contrainte
+// en base : ajouter une 4e catégorie un jour ne demandera aucune migration.
+const DOC_CATEGORIES = {
+  convocation: 'Convocation',
+  pv: 'Procès-verbal',
+  autre: 'Autre',
+}
+
+// Ordre d'affichage : convocation, PV, puis le reste — celui dans lequel on les
+// cherche, et l'ordre chronologique de la vie d'une AG.
+const DOC_ORDRE = { convocation: 0, pv: 1, autre: 2 }
+
 export default function AGDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -27,6 +39,11 @@ export default function AGDetail() {
   const [loading, setLoading] = useState(true)
   const [resModal, setResModal] = useState(null)
   const [rattachModal, setRattachModal] = useState(null)
+  // Pièces jointes de l'AG (migration 031) : catégorie choisie AVANT l'envoi,
+  // c'est ce qui distingue un PV d'un devis dans la liste.
+  const [docCategorie, setDocCategorie] = useState('convocation')
+  const [docUpload, setDocUpload] = useState(null)
+  const [docError, setDocError] = useState('')
   const [confirm, confirmModal] = useConfirm()
 
   const reload = useCallback(async () => {
@@ -101,6 +118,51 @@ export default function AGDetail() {
   const unapproveComptes = async (role) => {
     await repo.unapproveComptes(id, role)
     await reload()
+  }
+
+  // ---- Pièces jointes de l'AG (migration 031) ----
+  //
+  // Le fichier part dans le bucket dès qu'il est choisi, puis la ligne est mise
+  // à jour — même schéma que partout ailleurs. Chemin `ag/<id>/…` : couvert par
+  // les policies de Storage existantes, aucune n'a eu à être ajoutée.
+  const ouvrirDoc = async (doc) => {
+    setDocError('')
+    try {
+      await downloadDocument(doc)
+    } catch (err) {
+      setDocError(`« ${doc.name} » n’a pas pu être ouvert : ${err.message}`)
+    }
+  }
+  const ajouterDoc = async (e) => {
+    setDocError('')
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > MAX_DOC_BYTES) {
+      const mo = Math.round(MAX_DOC_BYTES / 1024 / 1024)
+      return setDocError(`Fichier trop volumineux (max ${mo} Mo${BACKEND === 'mock' ? ' en mode démo' : ''}).`)
+    }
+    setDocUpload({ name: file.name, value: 0 })
+    try {
+      const record = await repo.uploadDocument('ag', id, file, (value) => setDocUpload((u) => (u ? { ...u, value } : u)))
+      await repo.updateAG(id, { documents: [...(ag.documents || []), { ...record, categorie: docCategorie }] })
+      await reload()
+    } catch (err) {
+      setDocError(`Envoi du fichier impossible : ${err.message}`)
+    } finally {
+      setDocUpload(null)
+    }
+  }
+  // « Retirer » ne supprime PAS l'objet du bucket — orphelins assumés, comme
+  // pour les décisions : quelques Mo perdus valent mieux qu'un PV introuvable.
+  const retirerDoc = async (doc) => {
+    if (!(await confirm({ title: 'Retirer ce document ?', message: `« ${doc.name} » ne sera plus rattaché à l’AG.`, confirmLabel: 'Retirer', danger: true }))) return
+    try {
+      await repo.updateAG(id, { documents: (ag.documents || []).filter((x) => (x.id || x.path) !== (doc.id || doc.path)) })
+      await reload()
+    } catch (err) {
+      setDocError(err.message)
+    }
   }
 
   return (
@@ -180,6 +242,62 @@ export default function AGDetail() {
           </div>
         </Card>
       )}
+
+      {/* DOCUMENTS DE L'AG (migration 031). La convocation et le PV ne se
+          rattachent à AUCUNE résolution : la première prouve la régularité de
+          l'appel, le second couvre la séance entière. Ils appartiennent à l'AG.
+          ⚠ Reste possible sur une AG CLÔTURÉE — et c'est voulu : le PV arrive
+          presque toujours APRÈS la clôture. Même exception que le rattachement
+          des enveloppes aux projets, pour la même raison — un fait postérieur à
+          la séance n'est pas une modification de la séance. */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Documents de l’assemblée"
+          subtitle="Convocation, procès-verbal, pièces annexes. Téléchargeables par tout membre du CS."
+        />
+        <div className="px-5 py-4">
+          {(ag.documents || []).length === 0 ? (
+            <p className="text-sm text-slate-500">Aucun document.</p>
+          ) : (
+            <ul className="space-y-2">
+              {[...(ag.documents || [])]
+                // Convocation d'abord, PV ensuite, le reste après : l'ordre dans
+                // lequel on les cherche, et l'ordre chronologique de la vie d'une AG.
+                .sort((a, b) => (DOC_ORDRE[a.categorie] ?? 9) - (DOC_ORDRE[b.categorie] ?? 9))
+                .map((doc) => (
+                  <li key={doc.id || doc.path} className="flex items-center gap-2">
+                    <Badge tone={doc.categorie === 'pv' ? 'green' : doc.categorie === 'convocation' ? 'blue' : 'gray'}>
+                      {DOC_CATEGORIES[doc.categorie] || 'Autre'}
+                    </Badge>
+                    <button type="button" onClick={() => ouvrirDoc(doc)} className="flex min-w-0 flex-1 cursor-pointer items-center justify-between rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-navy-50/50">
+                      <span className="truncate text-navy-700">{doc.name}</span>
+                      <span className="ml-2 shrink-0 text-xs text-slate-400">{Math.round((doc.size || 0) / 1024)} Ko</span>
+                    </button>
+                    {canManage && (
+                      <button type="button" onClick={() => retirerDoc(doc)} className="shrink-0 text-xs text-red-600 underline">Retirer</button>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          )}
+          {docUpload && <div className="mt-2"><UploadProgress value={docUpload.value} name={docUpload.name} /></div>}
+          {canManage && (
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <Select label="Type de document" value={docCategorie} onChange={(e) => setDocCategorie(e.target.value)} className="w-56">
+                {Object.entries(DOC_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </Select>
+              <label className={`inline-flex items-center gap-2 rounded-md border border-navy-200 bg-navy-50 px-3 py-2 text-sm text-navy-700 ${docUpload ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-navy-100'}`}>
+                + Ajouter un fichier
+                <input type="file" className="hidden" disabled={Boolean(docUpload)} onChange={ajouterDoc} />
+              </label>
+              <p className="text-xs text-slate-400">
+                {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
+              </p>
+            </div>
+          )}
+          {docError && <p className="mt-2 text-xs text-red-600">{docError}</p>}
+        </div>
+      </Card>
 
       <Card>
         <CardHeader
@@ -352,10 +470,23 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   }
 
   const save = async () => {
+    setError('')
+    // Le numéro se SAISIT (2026-08-26) : il doit reprendre celui de la
+    // convocation, pas la position d'entrée dans l'app. On valide ici plutôt que
+    // de laisser remonter la violation de `unique (ag_id, numero)` — le message
+    // de Postgres serait illisible pour un membre du CS.
+    const num = Number(form.numero)
+    if (!Number.isInteger(num) || num < 1) {
+      return setError('Le numéro de résolution doit être un entier positif.')
+    }
+    const occupe = (ag.resolutions || []).find((r) => r.numero === num && r.id !== resolution?.id)
+    if (occupe) {
+      return setError(`Le numéro ${num} est déjà pris par « ${occupe.titre} ». Deux résolutions d’une même AG ne peuvent pas porter le même numéro.`)
+    }
     setSaving(true)
     const payload = {
       ag_id: ag.id,
-      numero: Number(form.numero),
+      numero: num,
       titre: form.titre,
       description: form.description,
       majorite_requise: form.majorite_requise,
@@ -394,10 +525,19 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
     <Modal
       open onClose={onClose} wide
       title={editing ? `Résolution n° ${form.numero}` : 'Nouvelle résolution'}
-      footer={<>{editing && <Button variant="danger" onClick={del} className="mr-auto">Supprimer</Button>}<Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving || Boolean(upload) || !form.titre}>{saving ? '…' : 'Enregistrer'}</Button></>}
+      footer={<>{editing && <Button variant="danger" onClick={del} className="mr-auto">Supprimer</Button>}<Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving || Boolean(upload) || !form.titre || !form.numero}>{saving ? '…' : 'Enregistrer'}</Button></>}
     >
       <div className="space-y-3">
-        <Input label="Titre" value={form.titre} onChange={set('titre')} required />
+        {/* Numéro SAISISSABLE : il doit reprendre celui de la convocation, que
+            l'ordre de saisie dans l'app ne reproduit pas forcément (on entre
+            souvent les résolutions dans le désordre, ou on en insère une après
+            coup). Pré-rempli avec « le suivant » à la création, par commodité.
+            Les résolutions sont affichées triées par numéro — c'est déjà le cas
+            des deux côtés (mock et Supabase). */}
+        <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+          <Input label="N°" type="number" min="1" step="1" value={form.numero ?? ''} onChange={set('numero')} required />
+          <Input label="Titre" value={form.titre} onChange={set('titre')} required />
+        </div>
         <Textarea label="Description" value={form.description} onChange={set('description')} rows={3} />
         <div className="grid gap-3 sm:grid-cols-2">
           <Select label="Majorité requise" value={form.majorite_requise} onChange={set('majorite_requise')}>

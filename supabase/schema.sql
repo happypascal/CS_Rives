@@ -39,7 +39,13 @@ create table if not exists assemblees_generales (
   -- A posteriori (une fois l'AG tenue) : résultat de quorum + m² présents/représentés (migration 023).
   quorum_statut    text check (quorum_statut in ('quorum_atteint','sans_quorum_accepte','sans_quorum_rejete')),
   m2_presents      numeric(10,2),
-  pv_url           text,
+  pv_url           text,                                  -- lien EXTERNE vers un PV hébergé ailleurs (hérité) ; le PV déposé dans l'app va dans `documents`
+  -- Pièces jointes de l'AG elle-même (migration 031) : convocation, PV, autre.
+  -- Les deux plus importantes ne se rattachent à AUCUNE résolution — la
+  -- convocation prouve la régularité de l'appel, le PV couvre la séance entière.
+  -- Même infra que partout : {path,name,type,size} + une `categorie` libre dans
+  -- le jsonb (aucune contrainte à écrire pour une 4e catégorie un jour).
+  documents        jsonb not null default '[]',
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );

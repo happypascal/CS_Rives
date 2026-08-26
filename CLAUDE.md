@@ -338,6 +338,21 @@ et **zéro vote**.
   est supprimé si le rattachement échoue, pour ne pas laisser de projet à 0 €.
 - **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app stocke
   **uniquement le résultat**, ne compte jamais de voix d'AG (`agLogic.js`).
+- **Numéro de résolution SAISISSABLE** (2026-08-26) : il doit reprendre celui de la **convocation**,
+  que l'ordre de saisie ne reproduit pas (on entre souvent dans le désordre, ou on insère après
+  coup). `nextResolutionNumero` ne sert plus que de valeur par défaut à la création. L'unicité
+  `(ag_id, numero)` est validée **côté écran** avant l'envoi — le message de Postgres serait
+  illisible. Les résolutions s'affichent **triées par numéro** (déjà le cas des deux côtés).
+  ⚠ Le verrou de `updateResolution` (décision ou projet rattaché) empêche aussi de **renuméroter**
+  une résolution déjà engagée : numéroter juste dès la saisie.
+- **Pièces jointes sur l'AG elle-même** (migration 031) : `assemblees_generales.documents`, avec une
+  **`categorie`** (`convocation` / `pv` / `autre`) rangée dans le jsonb — aucune contrainte, donc
+  aucune migration pour une 4e catégorie. La convocation et le PV ne se rattachent à AUCUNE
+  résolution : la première prouve la régularité de l'appel, le second couvre la séance entière.
+  Chemin `ag/<id>/…` — **aucune policy de Storage à ajouter** : `documents_insert_membre` n'exclut
+  que les décisions enregistrées, et `documents_brouillon_prive` ne vise que le préfixe `decisions`.
+  ⚠ **Reste possible sur une AG CLÔTURÉE**, et c'est voulu : le PV arrive après la clôture — même
+  exception que le rattachement des enveloppes. `pv_url` (lien externe hérité) n'est pas supprimée.
 - **Pièces jointes : bucket privé `documents`** (migration 012). La ligne ne garde que
   `{path,name,type,size}` ; le fichier vit dans le Storage. Plafond **25 Mo/fichier** en prod
   (`MAX_DOC_BYTES` dans `config.js` **et** `file_size_limit` du bucket — les deux ensemble).
