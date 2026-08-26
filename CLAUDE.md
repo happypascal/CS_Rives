@@ -343,8 +343,17 @@ et **zéro vote**.
   coup). `nextResolutionNumero` ne sert plus que de valeur par défaut à la création. L'unicité
   `(ag_id, numero)` est validée **côté écran** avant l'envoi — le message de Postgres serait
   illisible. Les résolutions s'affichent **triées par numéro** (déjà le cas des deux côtés).
-  ⚠ Le verrou de `updateResolution` (décision ou projet rattaché) empêche aussi de **renuméroter**
-  une résolution déjà engagée : numéroter juste dès la saisie.
+  - **ZONE DE GARAGE ≥ 101** (`NUMERO_GARAGE`, `agLogic.js`) : imposer un numéro déjà pris ne bloque
+    plus, l'**occupante est déplacée** au premier numéro libre à partir de 101, après confirmation
+    qui nomme les deux résolutions. Elle part en fin de liste avec un badge « à renuméroter ».
+    Sans ça, renuméroter selon la convocation obligeait à libérer le numéro d'abord — un blocage en
+    chaîne pour une simple frappe. `nextResolutionNumero` **ignore la zone de garage**, sinon une
+    garée au 101 ferait proposer 102 à la suivante.
+    ⚠ Choix retenu **contre l'ÉCHANGE** de numéros : l'échange donne silencieusement à l'occupante
+    un numéro d'allure normale mais probablement faux lui aussi ; 101 signale qu'il reste à faire.
+  - ⚠ Le verrou de `updateResolution` (décision ou projet rattaché) empêche de **renuméroter** une
+    résolution déjà engagée — et donc aussi de la garer : dans ce cas l'écran refuse et demande un
+    autre numéro. Numéroter juste dès la saisie.
 - **Pièces jointes sur l'AG elle-même** (migration 031) : `assemblees_generales.documents`, avec une
   **`categorie`** (`convocation` / `pv` / `autre`) rangée dans le jsonb — aucune contrainte, donc
   aucune migration pour une 4e catégorie. La convocation et le PV ne se rattachent à AUCUNE

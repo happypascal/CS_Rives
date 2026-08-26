@@ -10,7 +10,7 @@ import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
+import { nextResolutionNumero, numeroGarageLibre, estGaree, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
 
 // Catégories de pièces jointes d'une AG. Vivent dans le jsonb, sans contrainte
 // en base : ajouter une 4e catégorie un jour ne demandera aucune migration.
@@ -311,7 +311,15 @@ export default function AGDetail() {
             <div key={r.id} className="px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-navy-800">Résolution n° {r.numero} — {r.titre}</p>
+                  <p className="text-sm font-semibold text-navy-800">
+                    Résolution n° {r.numero} — {r.titre}
+                    {/* Numéro de garage : la résolution a été déplacée pour
+                        libérer son numéro. Elle est en fin de liste ; sans cette
+                        mention, personne ne saurait pourquoi elle porte un 101. */}
+                    {estGaree(r.numero) && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">à renuméroter</span>
+                    )}
+                  </p>
                   <p className="mt-1 text-sm text-slate-600">{r.description}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
@@ -479,9 +487,30 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
     if (!Number.isInteger(num) || num < 1) {
       return setError('Le numéro de résolution doit être un entier positif.')
     }
+    // Numéro déjà pris : plutôt que de bloquer, on GARE l'occupante au-dessus de
+    // 100 (cf. agLogic). Sans ça, renuméroter selon la convocation obligeait à
+    // libérer le numéro d'abord, donc à renuméroter l'autre, qui butait à son
+    // tour — un blocage en chaîne pour une simple frappe.
+    //
+    // Jamais en silence : le déplacement touche une AUTRE résolution que celle
+    // qu'on édite, on demande donc confirmation en nommant les deux.
     const occupe = (ag.resolutions || []).find((r) => r.numero === num && r.id !== resolution?.id)
     if (occupe) {
-      return setError(`Le numéro ${num} est déjà pris par « ${occupe.titre} ». Deux résolutions d’une même AG ne peuvent pas porter le même numéro.`)
+      const garage = numeroGarageLibre(ag.resolutions || [])
+      const suite = await confirm({
+        title: `Le numéro ${num} est déjà pris`,
+        message: `« ${occupe.titre} » porte déjà le n° ${num}. En continuant, elle passe au n° ${garage} et part en fin de liste, marquée « à renuméroter » — à vous de lui donner son vrai numéro ensuite.`,
+        confirmLabel: `Continuer et déplacer au n° ${garage}`,
+      })
+      if (!suite) return
+      try {
+        // Libérer AVANT d'enregistrer : dans l'autre sens, l'unicité refuserait.
+        await repo.updateResolution(occupe.id, { numero: garage })
+      } catch (e) {
+        // Cas réel : l'occupante est verrouillée (décision ou projet rattaché).
+        // On ne peut alors ni la déplacer, ni prendre son numéro — le dire.
+        return setError(`Le n° ${num} ne peut pas être libéré : « ${occupe.titre} » n’est plus modifiable (${e.message}) Choisissez un autre numéro.`)
+      }
     }
     setSaving(true)
     const payload = {

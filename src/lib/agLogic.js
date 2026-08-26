@@ -82,8 +82,44 @@ export const RESOLUTION_STATUT_LABELS = {
   retiree: 'Retirée',
 }
 
+// ---------------------------------------------------- numérotation des résolutions
+//
+// Le numéro reprend celui de la CONVOCATION, il se saisit donc à la main. Or
+// `unique (ag_id, numero)` rend toute renumérotation pénible : pour donner le
+// n° 3 à une résolution, il faut d'abord libérer le 3, donc renuméroter l'autre,
+// qui butera peut-être à son tour. Un blocage en chaîne pour une simple frappe.
+//
+// D'où une ZONE DE GARAGE au-dessus de 100 : quand on impose un numéro déjà pris,
+// l'occupante est déplacée au premier numéro libre à partir de 101. Elle n'est
+// pas perdue — elle passe en fin de liste, visiblement anormale, avec une mention
+// « à renuméroter » à l'écran. On débloque la saisie, on ne masque rien.
+//
+// ⚠ Choix retenu contre l'ÉCHANGE de numéros (l'occupante prendrait l'ancien
+// numéro de l'autre) : l'échange donne silencieusement à l'occupante un numéro
+// qui a l'air normal mais qui est probablement faux lui aussi, alors que 101
+// signale qu'il reste quelque chose à faire.
+export const NUMERO_GARAGE = 101
+
+// Numéro par défaut d'une NOUVELLE résolution : max + 1 en IGNORANT la zone de
+// garage. Sans ce filtre, une résolution garée au 101 ferait proposer 102 à la
+// suivante — la numérotation réelle partirait à la dérive.
 export function nextResolutionNumero(resolutions) {
   let max = 0
-  for (const r of resolutions) if (r.numero > max) max = r.numero
+  for (const r of resolutions) {
+    if (r.numero < NUMERO_GARAGE && r.numero > max) max = r.numero
+  }
   return max + 1
+}
+
+// Premier numéro libre dans la zone de garage, pour y déplacer une occupante.
+export function numeroGarageLibre(resolutions) {
+  const pris = new Set(resolutions.map((r) => r.numero))
+  let n = NUMERO_GARAGE
+  while (pris.has(n)) n += 1
+  return n
+}
+
+// Une résolution garée attend d'être renumérotée : l'écran doit le dire.
+export function estGaree(numero) {
+  return numero >= NUMERO_GARAGE
 }

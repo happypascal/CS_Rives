@@ -35,8 +35,13 @@ du budget demandé à l'AG et du backlog ci-dessous.
   l'ordre de saisie ne reproduit pas. `nextResolutionNumero` n'est plus qu'un défaut à la création.
   Unicité `(ag_id, numero)` validée **à l'écran** avant l'envoi (le message Postgres serait
   illisible). Le tri par numéro, lui, était **déjà en place** des deux côtés — rien à changer.
-  ⚠ Le verrou de `updateResolution` empêche de renuméroter une résolution déjà engagée par une
-  décision ou un projet : numéroter juste dès la saisie.
+  **Zone de garage ≥ 101** : imposer un numéro déjà pris ne bloque plus — l'occupante est déplacée
+  au premier numéro libre à partir de 101 (confirmation qui nomme les deux), part en fin de liste
+  avec un badge « à renuméroter ». Sans ça, renuméroter selon la convocation obligeait à libérer le
+  numéro d'abord, donc à renuméroter l'autre, qui butait à son tour. `nextResolutionNumero` ignore
+  la zone de garage, sinon la numérotation réelle partirait à la dérive.
+  ⚠ Le verrou de `updateResolution` empêche de renuméroter — donc aussi de garer — une résolution
+  déjà engagée par une décision ou un projet : l'écran refuse alors et demande un autre numéro.
 - **✅ Pièces jointes sur l'AG** (migration 031) : `assemblees_generales.documents` + une
   `categorie` (convocation / PV / autre) dans le jsonb. La convocation et le PV ne se rattachent à
   aucune résolution. **Aucune policy de Storage à ajouter** — le préfixe `ag/…` est couvert par
