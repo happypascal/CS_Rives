@@ -12,10 +12,10 @@ import { compareResolutions, numeroResolution } from './agLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-// v13 : sous-numérotation des résolutions (migration 032). Le numéro de version
-// force le reseed — la base de démo gagne colonnes et tables que l'ancienne n'a
-// pas. (v12 : PJ sur l'AG, 031. v11 : journal, 029. v10 : adjoint + fil, 028.)
-const STORAGE_KEY = 'cs_rives_mockdb_v13'
+// v14 : numéro attribué à la soumission (migration 034) — les brouillons de
+// démo n'ont plus de numéro. Le numéro de version force le reseed.
+// (v13 : sous-numéros de résolutions, 032. v12 : PJ sur l'AG, 031. v11 : 029.)
+const STORAGE_KEY = 'cs_rives_mockdb_v14'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -215,7 +215,7 @@ function seed() {
   const d8 = uid()
   decisions.push(
     {
-      id: d7, numero: '2026-007',
+      id: d7, numero: null,
       date_publication: '2026-08-25', date_limite_reponse: null, date_enregistrement: null,
       titre: 'Convention d’entretien du bassin de rétention',
       description: '<p>Brouillon en cours de rédaction : cadre d’entretien annuel du bassin de rétention (périodicité, prestataire, contrôle).</p>',
@@ -227,7 +227,7 @@ function seed() {
       motif_annulation: null,
     },
     {
-      id: d8, numero: '2026-008',
+      id: d8, numero: null,
       // Ces deux dates seront REPOSÉES au jour de l'ouverture réelle : c'est tout
       // l'objet de la planification (le vote doit revenir au conseil désigné par
       // l'AG du 15 septembre, pas à l'ancien).
@@ -683,6 +683,12 @@ async function appliquerCycle(data, d, patch) {
       d.date_publication = todayISO()
       d.date_limite_reponse = addBusinessDaysISO(d.date_publication, d.delai_vote_jours || 7)
     }
+    // NUMÉRO attribué ICI et nulle part ailleurs (migration 034), miroir du
+    // trigger : un brouillon n'en a pas, donc l'abandonner ne laisse aucun trou
+    // au registre. L'année est celle de l'ouverture.
+    if (!d.numero) {
+      d.numero = nextNumero(Number(d.date_publication.slice(0, 4)), data.decisions)
+    }
   }
   return d
 }
@@ -941,14 +947,13 @@ export const mockRepo = {
     return clone(load().decisions)
       .filter((d) => aLaMain(d, user)) // brouillons d'autrui : invisibles (migration 026)
       .map(({ documents, ...d }) => d) // eslint-disable-line no-unused-vars
-      .sort(byDateDesc('date_publication'))
-  },
-  // Numéro AAAA-NNN suivant, calculé sur TOUTES les décisions — y compris les
-  // brouillons qu'on ne voit pas. Sans ça, deux membres qui rédigent en même
-  // temps tireraient le même numéro (côté Supabase, l'unique le refuserait).
-  async prochainNumeroDecision(annee) {
-    await delay(20)
-    return nextNumero(annee, load().decisions)
+      // Publication décroissante, puis NUMÉRO décroissant. Le second critère
+      // n'est pas cosmétique : plusieurs décisions publiées le même jour
+      // s'ordonnaient au hasard, et les deux backends pouvaient diverger.
+      .sort((a, b) => {
+        if (a.date_publication !== b.date_publication) return a.date_publication < b.date_publication ? 1 : -1
+        return (b.numero || '').localeCompare(a.numero || '')
+      })
   },
   async getDecision(id) {
     await delay()
@@ -984,12 +989,16 @@ export const mockRepo = {
       created_by: getSessionUserId(), created_at: nowISO(), updated_at: nowISO(), ...input,
     }
     // Créée directement ouverte (« Soumettre maintenant ») : le texte est gelé
-    // tout de suite. Les dates, elles, restent celles saisies au formulaire —
-    // seule une décision qui ÉTAIT un brouillon voit sa publication recalée.
+    // et le NUMÉRO attribué tout de suite. Les dates, elles, restent celles
+    // saisies au formulaire — seule une décision qui ÉTAIT un brouillon voit sa
+    // publication recalée.
     if (phaseOf(d) === 'ouverte_au_vote') {
       d.soumise_le = nowISO()
       d.contenu_gele = contenuAGeler(d)
       d.hash_contenu = await sha256Hex(d.contenu_gele)
+      if (!d.numero) d.numero = nextNumero(Number(String(d.date_publication).slice(0, 4)), data.decisions)
+    } else {
+      d.numero = null
     }
     data.decisions.push(d)
     audit(data, 'decisions', d.id, 'create', `Création décision ${d.numero} (${PHASE_LABELS[phaseOf(d)]})`)

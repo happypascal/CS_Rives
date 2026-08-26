@@ -189,7 +189,7 @@ create index if not exists resolutions_ag_projet_id_idx on resolutions_ag (proje
 -- fusionnait les deux dans une seule colonne, a été décomposée en deux ici.
 create table if not exists decisions (
   id                   uuid primary key default gen_random_uuid(),
-  numero               text not null unique,             -- AAAA-NNN
+  numero               text unique,                      -- AAAA-NNN, attribué À LA SOUMISSION (034) : un brouillon n'en a pas, donc aucun trou au registre s'il est abandonné
   titre                text not null,
   description          text not null,
   date_publication     date not null,                    -- postée le ; REPOSÉE au jour de l'ouverture réelle si la décision était planifiée
@@ -437,24 +437,19 @@ declare
   v_maj    boolean;
   v_change boolean := false;
   v_texte  text;
+  v_annee  integer;
+  v_seq    integer;
 begin
   -- ⚠ FORME CONTRAINTE PAR L'ÉDITEUR SQL DE SUPABASE, pas par le goût.
-  -- Son analyseur maison a refusé cinq variantes de cette fonction avant
-  -- celle-ci (2026-08-25). Interdits, sous peine de rejet AVANT Postgres :
-  --   - toute chaine vide, qu'il prend pour une apostrophe échappée
-  --     (d'ou `coalesce(length(btrim(x)), 0) = 0` et `concat(x)`) ;
-  --   - toute apostrophe échappée dans un message ;
-  --   - tout argument de formatage de `raise` — `to_char(x, 'DD/MM/YYYY')`
-  --     et les `%` l'ont fait décrocher. Les messages sont donc NUS.
-  -- Cousin du piège des balises `$$` de la migration 018. Ne pas « simplifier ».
+  -- Interdits, sous peine de rejet AVANT Postgres : toute chaine vide, toute
+  -- apostrophe échappée, tout argument de formatage de `raise`. Messages NUS.
   v_maj := tg_op = 'UPDATE';
 
   if v_maj then
     v_change := new.titre is distinct from old.titre or new.description is distinct from old.description;
   end if;
 
-  -- 1. Transitions autorisées : une délibération soumise ne se dé-soumet pas,
-  --    et une décision annulée reste au registre avec son motif.
+  -- 1. Transitions autorisées : une délibération soumise ne se dé-soumet pas.
   if v_maj and new.phase is distinct from old.phase then
     if not (
       (old.phase = 'brouillon' and new.phase in ('planifiee','ouverte_au_vote','annulee'))
@@ -464,36 +459,25 @@ begin
     end if;
   end if;
 
-  -- 2. Annulation : motif OBLIGATOIRE. Rien ne disparaît du registre, donc une
-  --    décision retirée doit dire pourquoi.
+  -- 2. Annulation : motif OBLIGATOIRE.
   if new.phase = 'annulee' and coalesce(length(btrim(new.motif_annulation)), 0) = 0 then
     raise exception 'Annulation impossible sans motif : le registre doit dire pourquoi la décision a été retirée.';
   end if;
 
-  -- 3. GEL DU TEXTE. Une fois le vote ouvert, on ne réécrit plus ce sur quoi les
-  --    membres votent. La garde porte sur `contenu_gele is not null` et NON sur
-  --    la phase, pour ne pas geler rétroactivement les décisions antérieures à
-  --    la 026. Pièces jointes, montant et rattachement restent modifiables
-  --    jusqu'à l'enregistrement : ce n'est pas « le texte » (un devis arrive
-  --    souvent après l'ouverture du vote).
+  -- 3. GEL DU TEXTE. La garde porte sur `contenu_gele is not null` et NON sur la
+  --    phase, pour ne pas geler rétroactivement les décisions antérieures à 026.
   if v_maj and v_change and old.contenu_gele is not null then
     raise exception 'Texte gelé : la délibération soumise au vote ne peut plus être modifiée.';
   end if;
 
-  -- 4. Historique + version, tant que la décision est un brouillon (planifiée
-  --    incluse : c'est un brouillon daté).
+  -- 4. Historique + version, tant que la décision est un brouillon.
   if v_maj and v_change and old.phase in ('brouillon','planifiee') then
     new.version := old.version + 1;
     insert into decisions_historique (decision_id, version, titre, contenu, modifie_par)
       values (new.id, new.version, new.titre, concat(new.description), current_membre_id());
   end if;
 
-  -- 5. OUVERTURE DU VOTE : gel, empreinte, RECALAGE DES DATES.
-  --    `date_publication` détermine la COMPOSITION du CS appelée à voter
-  --    (`activeMembersAt`) et le dénominateur du quorum : une décision rédigée en
-  --    août et ouverte le 16 septembre doit revenir au conseil désigné le 15, pas
-  --    à l'ancien. D'où le recalage au jour d'ouverture RÉELLE (heure de Paris —
-  --    `now()` est en UTC), + délai en jours ouvrés.
+  -- 5. OUVERTURE DU VOTE : gel, empreinte, recalage des dates, NUMÉRO.
   if new.phase = 'ouverte_au_vote' and new.contenu_gele is null then
     new.soumise_le := coalesce(new.soumise_le, now());
     v_texte := concat(new.titre, chr(10), chr(10), new.description);
@@ -502,6 +486,22 @@ begin
     if v_maj and old.phase in ('brouillon','planifiee') then
       new.date_publication := (new.soumise_le at time zone 'Europe/Paris')::date;
       new.date_limite_reponse := jours_ouvres_apres(new.date_publication, new.delai_vote_jours);
+    end if;
+
+    -- NUMÉRO attribué ICI et nulle part ailleurs (migration 034). Un brouillon
+    -- n'en a pas : abandonné, il ne laisse aucun trou dans le registre. La
+    -- numérotation suit donc l'ordre réel des soumissions, et l'année est celle
+    -- de l'ouverture — la date de publication venant d'être recalée.
+    if new.numero is null then
+      v_annee := extract(year from new.date_publication)::integer;
+      select coalesce(max(seq), 0) + 1 into v_seq
+        from (
+          select case when substring(d.numero from 6) ~ '^[0-9][0-9][0-9]'
+                      then substring(d.numero from 6 for 3)::integer end as seq
+            from decisions d
+           where left(d.numero, 5) = concat(v_annee, '-')
+        ) t;
+      new.numero := concat(v_annee, '-', lpad(v_seq::text, 3, '0'));
     end if;
   end if;
 
@@ -581,55 +581,43 @@ create trigger trg_decisions_audit_rattachement
 -- par un membre qui n'est pas l'auteur. La fonction n'applique qu'une échéance
 -- déjà fixée par l'auteur — elle n'ouvre rien qui ne soit ni planifié, ni échu.
 create or replace function ouvrir_decisions_planifiees(p_source text default 'app')
-returns integer language plpgsql security definer set search_path = public as $ouvrir_dues$
+returns integer language plpgsql security definer set search_path = public as $$
 declare
+  r         record;
   v_numeros text[];
-  v_n       integer;
+  v_n       integer := 0;
 begin
-  with dues as (
-    update decisions
-       set phase = 'ouverte_au_vote'
+  -- ⚠ BOUCLE, et non un update de masse (migration 034). Le numéro se calcule en
+  -- « max + 1 » : deux lignes traitées par la MÊME commande verraient le même
+  -- instantané et tireraient le même numéro, faisant échouer tout le cron sur
+  -- l'unicité. Un update par décision = un instantané neuf à chaque tour.
+  -- Ne pas « optimiser » en revenant à un update unique.
+  for r in
+    select id from decisions
      where phase = 'planifiee'
        and date_soumission_prevue is not null
        and date_soumission_prevue <= now()
-    returning numero
-  )
-  select array_agg(numero), count(*) into v_numeros, v_n from dues;
+     order by date_soumission_prevue, created_at
+  loop
+    update decisions set phase = 'ouverte_au_vote' where id = r.id;
+    v_n := v_n + 1;
+    v_numeros := array_append(v_numeros, (select numero from decisions where id = r.id));
+  end loop;
 
-  v_n := coalesce(v_n, 0);
   if v_n > 0 then
     insert into cron_runs (tache, source, traitees, detail)
       values ('ouvrir_decisions_planifiees', p_source, v_n, array_to_string(v_numeros, ', '));
   end if;
   return v_n;
-end;
-$ouvrir_dues$;
+end $$;
 
 revoke all on function ouvrir_decisions_planifiees(text) from public;
 grant execute on function ouvrir_decisions_planifiees(text) to authenticated;
 
--- Numéro AAAA-NNN suivant. `security definer`, et c'est OBLIGATOIRE : le calcul
--- « max + 1 de l'année » se faisait côté client sur `listDecisions()`, ce qui ne
--- marche que si tout le monde voit tout. Les brouillons étant privés (policy
--- `decisions_avant_soumission_privee`), un membre ne voit plus le brouillon
--- 2026-007 d'un autre — il tirerait le même numéro et l'insert échouerait sur
--- l'unique, avec une erreur Postgres illisible.
---
--- Le numéro n'est pas « réservé » pour autant : deux créations simultanées
--- peuvent encore tomber sur le même (c'était déjà le cas). L'unique en base
--- reste le garde-fou.
-create or replace function prochain_numero_decision(p_annee integer)
-returns text language sql stable security definer set search_path = public as $numero$
-  select p_annee || '-' || lpad((coalesce(max(seq), 0) + 1)::text, 3, '0')
-  from (
-    select case when substring(numero from 6) ~ '^[0-9]+$' then substring(numero from 6)::integer end as seq
-      from decisions
-     where numero like p_annee || '-%'
-  ) t;
-$numero$;
-
-revoke all on function prochain_numero_decision(integer) from public;
-grant execute on function prochain_numero_decision(integer) to authenticated;
+-- ⚠ `prochain_numero_decision` a été SUPPRIMÉE (migration 034). Le numéro n'est
+-- plus proposé à la création : il est attribué par `decisions_cycle_guard` au
+-- moment de la soumission au vote. La fonction n'avait plus d'appelant, et la
+-- laisser aurait exposé un `security definer` inutile.
 
 -- ⚠ Le PLANIFICATEUR n'est pas ici. Sur une base neuve, il faut encore poser la
 -- tâche pg_cron qui appelle `ouvrir_decisions_planifiees` toutes les heures —

@@ -217,6 +217,14 @@ export function engagementApprouve(decision, votes, composition = []) {
   return voteOf('president') === 'pour' || voteOf('tresorier') === 'pour'
 }
 
+// Numéro AFFICHABLE. Un brouillon n'a pas encore de numéro (migration 034) : il
+// n'en reçoit un qu'à la soumission au vote, pour qu'un brouillon abandonné ne
+// laisse aucun trou dans le registre. Passer TOUJOURS par ici — un `d.numero`
+// brut afficherait « null » sur un brouillon.
+export function numeroDecision(decision) {
+  return decision?.numero || 'sans numéro'
+}
+
 // Prochain numéro AAAA-NNN pour une année donnée.
 export function nextNumero(year, existingDecisions) {
   const prefix = `${year}-`

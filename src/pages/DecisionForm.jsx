@@ -110,12 +110,9 @@ export default function DecisionForm() {
           setDernierAuteur(m ? `${m.prenom} ${m.nom}` : '')
         }
       } else {
-        // Le numéro se demande au REPO, il ne se calcule plus ici : les
-        // brouillons des autres membres sont invisibles (migration 026), donc un
-        // « max + 1 » sur les décisions visibles retomberait sur un numéro déjà
-        // pris. Côté Supabase, c'est une fonction `security definer` qui voit
-        // toutes les lignes sans les exposer.
-        setNumero(await repo.prochainNumeroDecision(new Date().getFullYear()))
+        // Aucun numéro à la création (migration 034) : il est attribué à la
+        // SOUMISSION, par le trigger. Un brouillon abandonné ne laisse donc
+        // aucun trou dans la numérotation du registre.
         const m = membres.find((x) => x.id === user?.membre_id)
         setDernierAuteur(m ? `${m.prenom} ${m.nom}` : '')
       }
@@ -315,7 +312,9 @@ export default function DecisionForm() {
         // `id` explicite : les pièces jointes ont déjà été téléversées sous
         // `decisions/<newId>/…`. Laisser Postgres en générer un autre mettrait
         // les fichiers hors de portée des policies (migration 012).
-        const created = await repo.createDecision({ id: newId, numero, created_by: user?.membre_id ?? null, ...payload })
+        // `numero` volontairement absent : c'est le backend qui l'attribue, et
+        // seulement si la décision naît déjà ouverte au vote (migration 034).
+        const created = await repo.createDecision({ id: newId, created_by: user?.membre_id ?? null, ...payload })
         navigate(`/registre/${created.id}`)
       }
     } catch (err) {
@@ -344,7 +343,7 @@ export default function DecisionForm() {
                qui n'existeront qu'à l'ouverture. */
             <>
               <div className="grid gap-4 sm:grid-cols-3">
-                <Input label="Numéro" value={numero} readOnly className="bg-slate-50" />
+                <Input label="Numéro" value={numero || 'attribué à la soumission'} readOnly className={numero ? 'bg-slate-50' : 'bg-slate-50 italic text-slate-400'} />
                 <Input
                   label="Ouverture du vote prévue le"
                   type="datetime-local"

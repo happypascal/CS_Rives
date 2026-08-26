@@ -270,7 +270,11 @@ export const supabaseRepo = {
   async listDecisions() {
     return must(await supabase.from('decisions')
       .select('id,numero,titre,description,date_publication,date_limite_reponse,date_enregistrement,date_notification,statut,enregistree,quorum_atteint,composition_snapshot,montant_engage,tva_taux,tva_incluse,projet_id,ag_id,resolution_id,projet_action,phase,date_soumission_prevue,soumise_le,version,visibilite,delai_vote_jours,motif_annulation,hash_contenu,created_by,created_at,updated_at')
-      .order('date_publication', { ascending: false }))
+      // Publication décroissante, puis NUMÉRO décroissant — même ordre que le
+      // mock. Sans le second critère, les décisions d'un même jour sortaient
+      // dans un ordre non garanti, et les deux backends divergeaient.
+      .order('date_publication', { ascending: false })
+      .order('numero', { ascending: false, nullsFirst: true }))
   },
   async getDecision(id) {
     const d = must(await supabase.from('decisions').select('*').eq('id', id).maybeSingle())
@@ -283,16 +287,6 @@ export const supabaseRepo = {
     const { data: historique } = await supabase.from('decisions_historique').select('*').eq('decision_id', id).order('version')
     const { data: batches } = await supabase.from('signature_batches').select('*').contains('decision_ids', [id])
     return { ...d, votes, qa, status_history, historique: historique || [], signature_batch: batches?.[0] || null }
-  },
-  // Numéro AAAA-NNN suivant. Calculé EN BASE, pas côté client, depuis que les
-  // brouillons sont privés : `listDecisions()` ne montre plus le brouillon d'un
-  // autre membre, donc un « max + 1 » côté client tirerait un numéro déjà pris
-  // et l'insert échouerait sur l'unique. La fonction est `security definer` :
-  // elle voit toutes les lignes sans les exposer.
-  async prochainNumeroDecision(annee) {
-    const { data, error } = await supabase.rpc('prochain_numero_decision', { p_annee: annee })
-    if (error) throw new Error(error.message)
-    return data
   },
   async createDecision(input) {
     return must(await supabase.from('decisions').insert(input).select())[0]

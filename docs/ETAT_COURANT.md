@@ -29,6 +29,25 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-26 (suite 4) — numéro à la soumission + date limite (migration 034)
+
+- **✅ Le numéro est attribué À LA SOUMISSION, plus à la création.** Défaut réel signalé par
+  Pascal : un brouillon réservait un numéro, et l'abandonner laissait un **trou définitif** dans le
+  registre — or un numéro manquant se lit comme une délibération retirée. `numero` devient
+  nullable ; le trigger `decisions_cycle_guard` l'attribue au moment où la décision entre au
+  registre. Plus de trou, et l'ordre suit les soumissions réelles.
+- **⚠ Le piège traité : la CONCURRENCE.** Le numéro se calcule en « max + 1 ». Deux décisions
+  planifiées ouvertes par la MÊME commande SQL verraient le même instantané et tireraient le même
+  numéro — l'unicité ferait échouer tout le cron. `ouvrir_decisions_planifiees` est donc réécrite
+  **en boucle**, un update par décision. Ne pas « optimiser » en update de masse.
+- `prochain_numero_decision` (RPC de la 026) est **supprimée** : plus d'appelant, et laisser un
+  `security definer` inutile est une surface pour rien.
+- **✅ Date limite masquée dès l'enregistrement** (liste et fiche) : elle ne concerne que le vote en
+  cours. La liste montre à la place « enregistrée le … », seule date qui compte une fois l'acte posé.
+- **✅ Tri du registre rendu déterministe** : publication décroissante, **puis numéro décroissant**.
+  Sans ce second critère, les décisions d'un même jour sortaient dans un ordre non garanti et les
+  deux backends pouvaient diverger (même défaut que celui corrigé sur les projets).
+
 ## Session 2026-08-26 (suite 3) — rattacher une décision ENREGISTRÉE à un projet (033)
 
 - **✅ Une décision enregistrée peut rejoindre un projet ouvert après coup.** Cas courant signalé
@@ -527,7 +546,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `034` (001-029 et 031-033 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `035`. ⚠ **034 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-033 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Select, eur } from '../components/ui'
 import { DecisionEtatBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS, numeroDecision, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -338,7 +338,7 @@ export default function DecisionDetail() {
           ici serait à la fois long (il chasserait les boutons) et séparé de ce
           qu'il annonce. */}
       <PageHeader
-        title={<span className="text-slate-500">Décision {decision.numero}</span>}
+        title={<span className="text-slate-500">Décision {numeroDecision(decision)}</span>}
         subtitle={
           enPreparation
             ? `${PHASE_LABELS[phase]} · version ${decision.version || 1} · rédigée par ${nameOf(decision.created_by)}`
@@ -629,9 +629,12 @@ export default function DecisionDetail() {
                 <Info label="Version" value={`n° ${decision.version || 1}`} />
               </div>
             ) : (
+              /* La limite de réponse ne concerne QUE le vote en cours : une fois
+                 la décision enregistrée, elle n'a plus d'objet — on ne la montre
+                 plus, la date de l'acte la remplace. */
               <div className="grid gap-px border-t border-navy-100 bg-navy-100 sm:grid-cols-2 lg:grid-cols-4">
                 <Info label="Publication" value={formatDate(decision.date_publication)} />
-                <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />
+                {!locked && <Info label="Limite de réponse" value={formatDate(decision.date_limite_reponse)} />}
                 <Info label="Notifié au CS" value={decision.date_notification ? formatDate(decision.date_notification) : '—'} />
                 <Info label="Enregistrement" value={decision.date_enregistrement ? formatDate(decision.date_enregistrement) : '—'} />
               </div>
@@ -962,9 +965,10 @@ export default function DecisionDetail() {
         }
       >
         <div className="space-y-2 text-sm text-slate-600">
-          <p>Le vote s’ouvre <strong>immédiatement</strong> pour la décision <strong>{decision.numero}</strong>.</p>
+          <p>Le vote s’ouvre <strong>immédiatement</strong> pour cette décision.</p>
           <ul className="list-disc pl-5 text-xs">
             <li>Le <strong>texte est gelé</strong> : titre et corps ne seront plus modifiables, y compris par vous.</li>
+            <li>Elle reçoit son <strong>numéro au registre</strong> — un brouillon n’en a pas, pour ne laisser aucun trou s’il est abandonné.</li>
             <li>La décision est <strong>publiée aujourd’hui</strong> — c’est cette date qui fixe la composition du conseil appelée à voter.</li>
             <li>La réponse est attendue sous <strong>{decision.delai_vote_jours ?? 7} jours ouvrés</strong>.</li>
             <li>Personne n’est prévenu automatiquement : pensez à « Prévenir le CS » juste après.</li>
@@ -984,7 +988,7 @@ export default function DecisionDetail() {
         }
       >
         <div className="space-y-3 text-sm text-slate-600">
-          <p>La décision <strong>{decision.numero}</strong> est retirée avant toute soumission au conseil.</p>
+          <p>Cette décision est retirée avant toute soumission au conseil.</p>
           <p className="text-xs text-slate-500">
             Elle <strong>reste au registre</strong> avec son motif — rien ne disparaît — mais ne pourra plus être ni
             modifiée, ni soumise au vote. Le motif est obligatoire : le registre doit dire pourquoi.
@@ -1012,7 +1016,7 @@ export default function DecisionDetail() {
         }
       >
         <div className="space-y-2 text-sm text-slate-600">
-          <p>Supprimer définitivement la décision <strong>{decision.numero}</strong> « {decision.titre} » ?</p>
+          <p>Supprimer définitivement la décision <strong>{numeroDecision(decision)}</strong> « {decision.titre} » ?</p>
           {enPreparation ? (
             <p className="text-xs text-slate-400">
               Cette action est irréversible : le texte et l’historique de ses versions disparaissent. Elle n’a jamais été

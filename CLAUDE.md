@@ -264,9 +264,22 @@ Le président conserve tout via `write_admin`. Suppression : président seul, no
 et **zéro vote**.
 
 ### Autres règles métier figées
-- Numérotation décision **`AAAA-NNN`**, next = max+1 de l'année (`nextNumero`).
-- `date_limite_reponse` = publication **+ 7 jours ouvrés** (`addBusinessDaysISO`), recalculée
-  automatiquement jusqu'à édition manuelle.
+- Numérotation décision **`AAAA-NNN`**, attribuée **À LA SOUMISSION AU VOTE** et nulle part
+  ailleurs (migration 034, trigger `decisions_cycle_guard`). **Un brouillon n'a PAS de numéro**
+  (`numero` est nullable) : abandonné, il ne laisse aucun trou — et devant un registre légal, un
+  numéro manquant se lit comme une délibération retirée. La numérotation suit donc l'ordre réel des
+  soumissions, l'année étant celle de l'ouverture. Afficher via `numeroDecision()`.
+  ⚠ `ouvrir_decisions_planifiees` traite les décisions **une par une, en boucle** : dans un update
+  de masse, toutes les lignes partageraient le même instantané et tireraient le même numéro, ce qui
+  ferait échouer tout le cron sur l'unicité. **Ne pas « optimiser » en update unique.**
+  ⚠ `prochain_numero_decision` (RPC) a été **supprimée** : plus d'appelant.
+- `date_limite_reponse` = publication **+ `delai_vote_jours` jours ouvrés** (`addBusinessDaysISO`),
+  recalculée automatiquement jusqu'à édition manuelle. **Masquée dès que la décision est
+  enregistrée** (liste et fiche) : elle ne concerne que le vote en cours, la date de l'acte la
+  remplace.
+- **Tri du registre** : `date_publication` **décroissante**, puis `numero` **décroissant** — le
+  second critère rend l'ordre déterministe pour les décisions du même jour et aligne les deux
+  backends. L'écran remonte ensuite brouillons et planifiées en tête.
 - Résolution **verrouillée** dès qu'une décision ou un projet la référence. AG non supprimable
   avec décisions attachées.
 - **Projet non supprimable dès qu'une décision ENREGISTRÉE y est rattachée** (règle Pascal : « dès

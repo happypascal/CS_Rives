@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, EmptyState } from '../components/ui'
 import { DecisionEtatBadge, SignatureBadge } from '../components/badges'
 import { decisionResume } from '../lib/decisionResume'
-import { phaseOf, avantSoumission, voteOuvert, visibiliteOf, VISIBILITE_COURT } from '../lib/decisionLogic'
+import { phaseOf, avantSoumission, voteOuvert, visibiliteOf, numeroDecision, VISIBILITE_COURT } from '../lib/decisionLogic'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -182,7 +182,7 @@ export default function RegistreCS() {
           if (onlyToVote && !needsMyVote(d)) return false
           if (year !== 'all' && d.date_publication?.slice(0, 4) !== year) return false
           if (!matchEtat(d)) return false
-          if (q && !`${d.numero} ${d.titre}`.toLowerCase().includes(q.toLowerCase())) return false
+          if (q && !`${d.numero || ''} ${d.titre}`.toLowerCase().includes(q.toLowerCase())) return false
           return true
         })
         // Brouillons et décisions planifiées EN TÊTE (spec §7) : ce sont les
@@ -306,7 +306,7 @@ export default function RegistreCS() {
                   className={`block rounded-lg border p-4 shadow-sm active:bg-navy-50 ${overdue ? 'border-red-200 bg-red-50' : 'border-navy-100 bg-white'}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-slate-500">{d.numero}</span>
+                    <span className={`text-xs font-medium ${d.numero ? 'text-slate-500' : 'italic text-slate-400'}`}>{numeroDecision(d)}</span>
                     <DecisionEtatBadge decision={d} />
                   </div>
                   <p className="mt-1 font-medium text-navy-800">{r.titre}</p>
@@ -333,11 +333,13 @@ export default function RegistreCS() {
                       <>
                         <span>Publiée le {formatDate(d.date_publication)}</span>
                         {renderVotes(d)}
-                        {d.date_limite_reponse && (
+                        {d.enregistree ? (
+                          <span>Enregistrée le {formatDate(d.date_enregistrement)}</span>
+                        ) : d.date_limite_reponse ? (
                           <span className={overdue ? 'font-semibold text-red-700' : undefined}>
                             Réponse avant le {formatDate(d.date_limite_reponse)}
                           </span>
-                        )}
+                        ) : null}
                       </>
                     )}
                     <span className={visibiliteOf(d) === 'colotis' ? 'font-medium text-sky-700' : undefined}>
@@ -371,7 +373,10 @@ export default function RegistreCS() {
                   const enPrep = avantSoumission(d)
                   return (
                   <tr key={d.id} className={overdue ? 'bg-red-50 hover:bg-red-100/60' : enPrep ? 'bg-slate-50/60 hover:bg-navy-50/40' : 'hover:bg-navy-50/40'}>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{d.numero}</td>
+                    {/* Un brouillon n'a pas de numéro (migration 034) : il en reçoit
+                        un à la soumission, pour qu'un brouillon abandonné ne laisse
+                        aucun trou dans le registre. */}
+                    <td className={`whitespace-nowrap px-4 py-3 font-medium ${d.numero ? 'text-slate-500' : 'italic text-slate-400'}`}>{numeroDecision(d)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                       {/* Pas encore soumise : la publication n'a pas eu lieu, on
                           affiche l'échéance d'ouverture — la seule date vraie. */}
@@ -385,8 +390,16 @@ export default function RegistreCS() {
                       ) : (
                         <>
                           <div>{formatDate(d.date_publication)}</div>
+                          {/* La date limite ne concerne QUE le vote en cours : une
+                              fois la décision enregistrée, elle n'a plus d'objet et
+                              devenait du bruit. On montre à la place la date de
+                              l'acte, seule date qui compte au registre. */}
                           <div className={`text-xs ${overdue ? 'font-semibold text-red-700' : 'text-slate-400'}`}>
-                            {d.date_limite_reponse ? <>limite {formatDate(d.date_limite_reponse)}{overdue ? ' ⚠ dépassée' : ''}</> : 'sans limite'}
+                            {d.enregistree
+                              ? <>enregistrée {formatDate(d.date_enregistrement)}</>
+                              : d.date_limite_reponse
+                                ? <>limite {formatDate(d.date_limite_reponse)}{overdue ? ' ⚠ dépassée' : ''}</>
+                                : 'sans limite'}
                           </div>
                         </>
                       )}
