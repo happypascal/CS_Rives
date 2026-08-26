@@ -4,6 +4,7 @@
 import { supabase } from './supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config'
 import { computeAGBudgets, computeProjectBudgets } from './mockDb'
+import { compareProjets } from './projetLogic'
 
 function must(result) {
   if (result.error) throw new Error(result.error.message)
@@ -170,8 +171,11 @@ export const supabaseRepo = {
     const resolutions_ag = must(await supabase.from('resolutions_ag').select('id,ag_id,numero,titre,statut,budget_alloue,projet_id'))
     return { projets, decisions, membres_cs, assemblees_generales, resolutions_ag }
   },
+  // Même comparateur que le mock (`compareProjets`) : les deux backends ne
+  // triaient pas pareil — le mock sur `created_at`, celui-ci pas du tout. Une
+  // divergence invisible en démo, corrigée en un seul point.
   async listProjets() {
-    return computeProjectBudgets(await this._projectData())
+    return computeProjectBudgets(await this._projectData()).sort(compareProjets)
   },
   async getProjet(id) {
     const computed = (await this.listProjets()).find((x) => x.id === id)

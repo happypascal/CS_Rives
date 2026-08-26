@@ -7,6 +7,7 @@
 //   - signature : par LOT de décisions sélectionnées.
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
+import { compareProjets } from './projetLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
@@ -830,7 +831,7 @@ export const mockRepo = {
   // ---- Projets ----
   async listProjets() {
     await delay()
-    return computeProjectBudgets(load()).sort(byDateDesc('created_at'))
+    return computeProjectBudgets(load()).sort(compareProjets)
   },
   async getProjet(id) {
     await delay()

@@ -44,6 +44,12 @@ du budget demandé à l'AG et du backlog ci-dessous.
   ⚠ **Attachable même sur une AG clôturée** : le PV arrive après la clôture. Même exception, et
   même raison, que le rattachement des enveloppes aux projets.
   `pv_url` (lien externe hérité) est conservée — à supprimer un jour, si plus aucune AG ne s'en sert.
+- **✅ Tri des projets : date de début DÉCROISSANTE, puis titre.** Au passage, correction d'une
+  **divergence entre backends** que le mode démo masquait : le mock triait sur `created_at`
+  décroissant, Supabase ne triait **pas du tout** (ordre rendu par Postgres). Un comparateur unique
+  `compareProjets` (`projetLogic.js`) est désormais appelé par les deux `listProjets` — donc aussi
+  par la page Budgets, qui lit la même méthode. Un projet **sans date de début part en fin de
+  liste** : il n'a pas commencé. `localeCompare` en français pour les accents.
 
 ## Session 2026-08-26 — journal de bord des projets (migration 029)
 
@@ -482,9 +488,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `032`. ⚠ **031 est ÉCRITE mais PAS APPLIQUÉE** (001-029 le
-  sont en **prod**). Le numéro **030 n'existe pas** : il avait été attribué à la suspension par
-  bouton, écartée avant livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `032` (001-029 et 031 appliquées en **prod**). Le numéro
+  **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.

@@ -81,3 +81,25 @@ export const PROJET_ACTION_STATUT = {
   terminer: 'termine',
   reprendre: null,
 }
+
+// Ordre d'affichage des projets (2026-08-26) : date de début DÉCROISSANTE, puis
+// titre. Le chantier le plus récent en tête — c'est celui dont on parle.
+//
+// Défini ICI et appelé par les DEUX backends : ils ne triaient pas pareil (le
+// mock sur `created_at` décroissant, Supabase pas du tout, donc à l'ordre rendu
+// par Postgres). L'écart ne se voyait pas en démo — exactement le genre de
+// divergence que le mode mock masque. Un comparateur unique le ferme.
+//
+// Un projet SANS date d'ouverture part en fin de liste : il n'a pas commencé, il
+// n'a pas sa place parmi les chantiers datés. `localeCompare` en français pour
+// que les accents se rangent correctement.
+export function compareProjets(a, b) {
+  const da = a.date_ouverture || ''
+  const db = b.date_ouverture || ''
+  if (da !== db) {
+    if (!da) return 1
+    if (!db) return -1
+    return da < db ? 1 : -1
+  }
+  return (a.nom || '').localeCompare(b.nom || '', 'fr')
+}
