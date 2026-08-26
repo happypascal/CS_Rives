@@ -351,6 +351,14 @@ et **zéro vote**.
     garée au 101 ferait proposer 102 à la suivante.
     ⚠ Choix retenu **contre l'ÉCHANGE** de numéros : l'échange donne silencieusement à l'occupante
     un numéro d'allure normale mais probablement faux lui aussi ; 101 signale qu'il reste à faire.
+  - **SOUS-NUMÉROTATION « 10-1 / 10-2 »** (migration 032) : `sous_numero integer not null
+    default 0`, unicité sur `(ag_id, numero, sous_numero)`. Une résolution du PV donne parfois
+    **plusieurs lignes** ici — `resolutions_ag.projet_id` étant scalaire et l'enveloppe
+    indivisible, ventiler un budget voté sur trois projets impose trois lignes. Sans sous-numéro,
+    il fallait inventer des numéros absents du PV : un registre légal ne ment pas sur ça.
+    **Deux entiers et non un texte** : « 10-1 » en texte se range avant « 2 ». L'affichage est
+    reconstruit par `numeroResolution`, la saisie relue par `parseNumeroResolution` (`agLogic.js`),
+    et le tri partagé par les deux backends via `compareResolutions`.
   - ⚠ Le verrou de `updateResolution` (décision ou projet rattaché) empêche de **renuméroter** une
     résolution déjà engagée — et donc aussi de la garer : dans ce cas l'écran refuse et demande un
     autre numéro. Numéroter juste dès la saisie.

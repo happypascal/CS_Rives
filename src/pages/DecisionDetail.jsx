@@ -11,6 +11,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
 import { decisionShareText, decisionUpdateText, decisionRecordedText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
 import { PROJET_ACTION_LABELS, PROJET_ACTION_STATUT, PROJET_STATUT_LABELS } from '../lib/projetLogic'
+import { numeroResolution } from '../lib/agLogic'
 import { TEST_VOTES } from '../lib/config'
 import { downloadDocument } from '../lib/documents'
 
@@ -315,7 +316,7 @@ export default function DecisionDetail() {
   const cibleLabel = projet
     ? `le projet « ${projet.nom} »`
     : resolution
-      ? `la résolution n° ${resolution.numero} — ${resolution.titre}`
+      ? `la résolution n° ${numeroResolution(resolution)} — ${resolution.titre}`
       : null
   const statutVise = decision.projet_action
     ? (PROJET_ACTION_STATUT[decision.projet_action]
@@ -860,7 +861,7 @@ export default function DecisionDetail() {
                 {resolution && (
                   <div className="flex items-center justify-between gap-3 px-5 py-3">
                     <dt className="text-slate-500">Résolution</dt>
-                    <dd className="text-right text-slate-700">N° {resolution.numero} — {resolution.titre}</dd>
+                    <dd className="text-right text-slate-700">N° {numeroResolution(resolution)} — {resolution.titre}</dd>
                   </div>
                 )}
               </dl>

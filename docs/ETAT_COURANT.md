@@ -29,6 +29,22 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-26 (suite 2) — sous-numérotation des résolutions (migration 032)
+
+- **✅ « 10-1 / 10-2 / 10-3 »** — problème de MODÈLE signalé par Pascal, pas de confort : une
+  résolution du PV (revalidation du budget de 3 projets) doit donner **3 lignes** dans l'app,
+  parce que `resolutions_ag.projet_id` est scalaire et qu'une enveloppe passe en ENTIER dans un
+  projet. Sans sous-numéro, il fallait inventer 3 numéros absents du PV.
+- **Deux entiers, pas un texte** : `sous_numero integer not null default 0`, unicité sur
+  `(ag_id, numero, sous_numero)`. En texte, « 10-1 » se rangerait avant « 2 » — il aurait fallu
+  une clé de tri séparée, donc deux colonnes de toute façon, avec un format libre invalidable.
+  `0` plutôt que `NULL` : l'unicité fonctionne sans dépendre de `nulls not distinct` (PG 15+).
+- Affichage `numeroResolution`, saisie relue par `parseNumeroResolution` (champ texte « 10 » ou
+  « 10-1 »), tri `compareResolutions` **partagé par les deux backends**. Le libellé sous-numéroté
+  remonte jusqu'au **CSV Foncia** et aux écrans de budget.
+- `nextResolutionNumero` et la zone de garage ignorent les sous-rangs : proposer « 11 » après une
+  10-3, et garer en résolution simple.
+
 ## Session 2026-08-26 (suite) — numérotation des résolutions + PJ sur l'AG (031)
 
 - **✅ Numéro de résolution SAISISSABLE.** Il doit reprendre celui de la **convocation**, que
@@ -493,8 +509,9 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `032` (001-029 et 031 appliquées en **prod**). Le numéro
-  **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `033`. ⚠ **032 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031 le sont en **prod**). Le numéro **030 n'existe pas** : il avait été attribué à la suspension
+  par bouton, écartée avant livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.

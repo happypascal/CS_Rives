@@ -8,13 +8,14 @@
 
 import { PROJET_ACTION_STATUT } from './projetLogic'
 import { compareProjets } from './projetLogic'
+import { compareResolutions, numeroResolution } from './agLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
-// v12 : pièces jointes sur l'AG (migration 031). Le numéro de version force le
-// reseed — la base de démo gagne colonnes et tables que l'ancienne n'a pas.
-// (v11 : journal de bord, 029. v10 : adjoint + fil, 028. v9 : brouillon, 026.)
-const STORAGE_KEY = 'cs_rives_mockdb_v12'
+// v13 : sous-numérotation des résolutions (migration 032). Le numéro de version
+// force le reseed — la base de démo gagne colonnes et tables que l'ancienne n'a
+// pas. (v12 : PJ sur l'AG, 031. v11 : journal, 029. v10 : adjoint + fil, 028.)
+const STORAGE_KEY = 'cs_rives_mockdb_v13'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -96,6 +97,11 @@ function seed() {
     // proposition — il n'est pas alloué et n'est pas engageable tant que l'AG n'a pas eu lieu.
     { id: rEauxPluviales, ag_id: agAGE, numero: 1, titre: 'Travaux de réfection du réseau d’eaux pluviales', description: 'Reprise du collecteur principal et des regards, suite au diagnostic de mars 2026.', majorite_requise: 'double_qualifiee', statut: 'a_voter', budget_alloue: 47000, budget_intitule: 'Réfection réseau eaux pluviales', observations: '', projet_id: null, created_at: '2026-07-01T10:15:00Z' },
   ]
+
+  // Sous-numérotation (migration 032) : les résolutions de démo sont toutes
+  // simples, donc rang 0. Posé en boucle plutôt qu'à la main sur chaque ligne —
+  // en oublier une donnerait un `undefined` que le tri classerait au hasard.
+  for (const r of resolutions_ag) r.sous_numero = 0
 
   const d1 = uid()
   const d2 = uid()
@@ -496,7 +502,7 @@ export function computeAGBudgets(data) {
       ag_id: r.ag_id,
       ag_numero: ag?.numero || 'AG',
       ag_date: ag?.date_ag || null,
-      resolution_numero: r.numero,
+      resolution_numero: numeroResolution(r),
       intitule: r.budget_intitule || r.titre,
       alloue,
       engage,
@@ -590,7 +596,7 @@ export function computeProjectBudgets(data) {
       resolutions: sources
         .map((r) => ({
           id: r.id,
-          numero: r.numero,
+          numero: numeroResolution(r),
           titre: r.titre,
           statut: r.statut,
           budget_alloue: r.budget_alloue == null || r.budget_alloue === '' ? null : Number(r.budget_alloue),
@@ -723,7 +729,7 @@ export const mockRepo = {
     if (!ag) return null
     return {
       ...clone(ag),
-      resolutions: clone(data.resolutions_ag.filter((r) => r.ag_id === id).sort((a, b) => a.numero - b.numero)),
+      resolutions: clone(data.resolutions_ag.filter((r) => r.ag_id === id).sort(compareResolutions)),
       comptes: clone((data.comptes_ag || []).filter((c) => c.ag_id === id)),
     }
   },
@@ -787,9 +793,9 @@ export const mockRepo = {
   async createResolution(input) {
     await delay()
     const data = load()
-    const r = { id: uid(), created_at: nowISO(), observations: '', budget_alloue: null, budget_intitule: '', ...input }
+    const r = { id: uid(), created_at: nowISO(), observations: '', budget_alloue: null, budget_intitule: '', sous_numero: 0, ...input }
     data.resolutions_ag.push(r)
-    audit(data, 'resolutions_ag', r.id, 'create', `Résolution ${r.numero} — ${r.titre}`)
+    audit(data, 'resolutions_ag', r.id, 'create', `Résolution ${numeroResolution(r)} — ${r.titre}`)
     save(data)
     return clone(r)
   },
@@ -919,7 +925,7 @@ export const mockRepo = {
     }
     r.projet_id = projetId || null
     const p = projetId ? data.projets.find((x) => x.id === projetId) : null
-    audit(data, 'resolutions_ag', resolutionId, 'update', projetId ? `Résolution ${r.numero} rattachée au projet ${p?.nom || ''}` : `Résolution ${r.numero} détachée de son projet`)
+    audit(data, 'resolutions_ag', resolutionId, 'update', projetId ? `Résolution ${numeroResolution(r)} rattachée au projet ${p?.nom || ''}` : `Résolution ${numeroResolution(r)} détachée de son projet`)
     save(data)
     return clone(r)
   },

@@ -92,7 +92,8 @@ export const supabaseRepo = {
   async getAG(id) {
     const ag = must(await supabase.from('assemblees_generales').select('*').eq('id', id).maybeSingle())
     if (!ag) return null
-    const resolutions = must(await supabase.from('resolutions_ag').select('*').eq('ag_id', id).order('numero'))
+    // Tri sur le COUPLE (migration 032) : 10 avant 10-1 avant 10-2, puis 11.
+    const resolutions = must(await supabase.from('resolutions_ag').select('*').eq('ag_id', id).order('numero').order('sous_numero'))
     const comptes = must(await supabase.from('comptes_ag').select('*').eq('ag_id', id))
     return { ...ag, resolutions, comptes }
   },

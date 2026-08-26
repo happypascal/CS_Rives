@@ -10,7 +10,7 @@ import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, numeroGarageLibre, estGaree, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
+import { nextResolutionNumero, numeroGarageLibre, estGaree, numeroResolution, parseNumeroResolution, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
 
 // Catégories de pièces jointes d'une AG. Vivent dans le jsonb, sans contrainte
 // en base : ajouter une 4e catégorie un jour ne demandera aucune migration.
@@ -303,7 +303,7 @@ export default function AGDetail() {
         <CardHeader
           title="Résolutions"
           subtitle="À voter tant que l’AG ne s’est pas tenue, puis résultat du vote (au prorata des superficies — détail au PV)."
-          actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: nextResolutionNumero(ag.resolutions), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
+          actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: String(nextResolutionNumero(ag.resolutions)), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
         />
         <div className="divide-y divide-navy-50">
           {ag.resolutions.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">Aucune résolution.</p>}
@@ -312,7 +312,7 @@ export default function AGDetail() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-navy-800">
-                    Résolution n° {r.numero} — {r.titre}
+                    Résolution n° {numeroResolution(r)} — {r.titre}
                     {/* Numéro de garage : la résolution a été déplacée pour
                         libérer son numéro. Elle est en fin de liste ; sans cette
                         mention, personne ne saurait pourquoi elle porte un 101. */}
@@ -412,7 +412,7 @@ function RattachementModal({ resolution, projets, onClose, onSaved }) {
     <Modal
       open
       onClose={onClose}
-      title={`Résolution n° ${resolution.numero} — rattachement`}
+      title={`Résolution n° ${numeroResolution(resolution)} — rattachement`}
       footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button></>}
     >
       <div className="space-y-4">
@@ -443,7 +443,10 @@ function RattachementModal({ resolution, projets, onClose, onSaved }) {
 
 function ResolutionModal({ ag, resolution, onClose, onSaved }) {
   const editing = Boolean(resolution.id)
-  const [form, setForm] = useState(resolution)
+  // Le champ N° porte la forme AFFICHÉE (« 10 » ou « 10-1 »), pas les deux
+  // entiers stockés : c'est ce que l'utilisateur lit dans le PV, et ce qu'il
+  // retape. `parseNumeroResolution` refait la conversion à l'enregistrement.
+  const [form, setForm] = useState({ ...resolution, numero: numeroResolution(resolution) })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [upload, setUpload] = useState(null)
@@ -483,10 +486,14 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
     // convocation, pas la position d'entrée dans l'app. On valide ici plutôt que
     // de laisser remonter la violation de `unique (ag_id, numero)` — le message
     // de Postgres serait illisible pour un membre du CS.
-    const num = Number(form.numero)
-    if (!Number.isInteger(num) || num < 1) {
-      return setError('Le numéro de résolution doit être un entier positif.')
+    // « 10 » ou « 10-1 » — le second cas quand UNE résolution du PV donne
+    // plusieurs lignes ici, faute de pouvoir ventiler un budget sur plusieurs
+    // projets depuis une seule (migration 032).
+    const parsed = parseNumeroResolution(form.numero)
+    if (!parsed) {
+      return setError('Numéro attendu sous la forme « 10 », ou « 10-1 » quand une résolution du PV se ventile sur plusieurs projets.')
     }
+    const { numero: num, sous_numero: sous } = parsed
     // Numéro déjà pris : plutôt que de bloquer, on GARE l'occupante au-dessus de
     // 100 (cf. agLogic). Sans ça, renuméroter selon la convocation obligeait à
     // libérer le numéro d'abord, donc à renuméroter l'autre, qui butait à son
@@ -494,28 +501,29 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
     //
     // Jamais en silence : le déplacement touche une AUTRE résolution que celle
     // qu'on édite, on demande donc confirmation en nommant les deux.
-    const occupe = (ag.resolutions || []).find((r) => r.numero === num && r.id !== resolution?.id)
+    const occupe = (ag.resolutions || []).find((r) => r.numero === num && (r.sous_numero || 0) === sous && r.id !== resolution?.id)
     if (occupe) {
       const garage = numeroGarageLibre(ag.resolutions || [])
       const suite = await confirm({
-        title: `Le numéro ${num} est déjà pris`,
-        message: `« ${occupe.titre} » porte déjà le n° ${num}. En continuant, elle passe au n° ${garage} et part en fin de liste, marquée « à renuméroter » — à vous de lui donner son vrai numéro ensuite.`,
+        title: `Le numéro ${numeroResolution(occupe)} est déjà pris`,
+        message: `« ${occupe.titre} » porte déjà le n° ${numeroResolution(occupe)}. En continuant, elle passe au n° ${garage} et part en fin de liste, marquée « à renuméroter » — à vous de lui donner son vrai numéro ensuite.`,
         confirmLabel: `Continuer et déplacer au n° ${garage}`,
       })
       if (!suite) return
       try {
         // Libérer AVANT d'enregistrer : dans l'autre sens, l'unicité refuserait.
-        await repo.updateResolution(occupe.id, { numero: garage })
+        await repo.updateResolution(occupe.id, { numero: garage, sous_numero: 0 })
       } catch (e) {
         // Cas réel : l'occupante est verrouillée (décision ou projet rattaché).
         // On ne peut alors ni la déplacer, ni prendre son numéro — le dire.
-        return setError(`Le n° ${num} ne peut pas être libéré : « ${occupe.titre} » n’est plus modifiable (${e.message}) Choisissez un autre numéro.`)
+        return setError(`Le n° ${numeroResolution(occupe)} ne peut pas être libéré : « ${occupe.titre} » n’est plus modifiable (${e.message}) Choisissez un autre numéro.`)
       }
     }
     setSaving(true)
     const payload = {
       ag_id: ag.id,
       numero: num,
+      sous_numero: sous,
       titre: form.titre,
       description: form.description,
       majorite_requise: form.majorite_requise,
@@ -564,7 +572,7 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
             Les résolutions sont affichées triées par numéro — c'est déjà le cas
             des deux côtés (mock et Supabase). */}
         <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
-          <Input label="N°" type="number" min="1" step="1" value={form.numero ?? ''} onChange={set('numero')} required />
+          <Input label="N°" value={form.numero ?? ''} onChange={set('numero')} required placeholder="10 ou 10-1" />
           <Input label="Titre" value={form.titre} onChange={set('titre')} required />
         </div>
         <Textarea label="Description" value={form.description} onChange={set('description')} rows={3} />

@@ -111,9 +111,44 @@ export function nextResolutionNumero(resolutions) {
   return max + 1
 }
 
+// ------------------------------------------------- sous-numérotation (032)
+//
+// Une résolution du PV peut donner PLUSIEURS lignes dans l'app : `resolutions_ag`
+// ne porte qu'un `projet_id`, donc ventiler un budget voté sur trois projets
+// impose trois lignes, là où le PV n'en connaît qu'une. D'où « 10-1 / 10-2 /
+// 10-3 » — le numéro du PV, plus un rang.
+//
+// Stocké en DEUX entiers (`numero`, `sous_numero`) et non en texte : « 10-1 »
+// en texte se rangerait avant « 2 » en ordre lexicographique. `sous_numero = 0`
+// signifie « pas de sous-numérotation », le cas normal.
+export function numeroResolution(r) {
+  return r?.sous_numero ? `${r.numero}-${r.sous_numero}` : `${r?.numero ?? ''}`
+}
+
+// « 10 » ou « 10-1 » → { numero, sous_numero }. `null` si la saisie ne suit pas
+// la forme : on refuse plutôt que de deviner, un numéro de PV ne s'invente pas.
+export function parseNumeroResolution(saisie) {
+  const m = String(saisie ?? '').trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/)
+  if (!m) return null
+  const numero = Number(m[1])
+  const sous = m[2] === undefined ? 0 : Number(m[2])
+  if (numero < 1 || sous < 0) return null
+  return { numero, sous_numero: sous }
+}
+
+// Tri des résolutions : numéro, puis rang. 10 vient avant 10-1, qui vient avant
+// 10-2, puis 11. Partagé par les DEUX backends — sans quoi ils divergeraient,
+// comme cela s'est déjà produit pour les projets.
+export function compareResolutions(a, b) {
+  if (a.numero !== b.numero) return a.numero - b.numero
+  return (a.sous_numero || 0) - (b.sous_numero || 0)
+}
+
 // Premier numéro libre dans la zone de garage, pour y déplacer une occupante.
+// La garée repart en résolution SIMPLE (sous-numéro 0) : elle a perdu sa place,
+// pas seulement son rang.
 export function numeroGarageLibre(resolutions) {
-  const pris = new Set(resolutions.map((r) => r.numero))
+  const pris = new Set(resolutions.filter((r) => !r.sous_numero).map((r) => r.numero))
   let n = NUMERO_GARAGE
   while (pris.has(n)) n += 1
   return n

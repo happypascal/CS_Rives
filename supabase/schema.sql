@@ -66,6 +66,12 @@ create table if not exists resolutions_ag (
   id               uuid primary key default gen_random_uuid(),
   ag_id            uuid not null references assemblees_generales(id) on delete cascade,
   numero           integer not null,
+  -- Sous-numérotation « 10-1 / 10-2 » (migration 032). 0 = pas de sous-numéro.
+  -- Une résolution du PV peut donner PLUSIEURS lignes ici : `projet_id` est
+  -- scalaire, donc ventiler un budget voté sur trois projets impose trois
+  -- lignes, là où le PV n'en connaît qu'une. Deux entiers et non un texte : en
+  -- ordre lexicographique « 10-1 » se rangerait avant « 2 ».
+  sous_numero      integer not null default 0,
   titre            text not null,
   description      text not null,
   majorite_requise text not null default 'simple' check (majorite_requise in ('simple','absolue','double_qualifiee','unanimite')),
@@ -75,7 +81,7 @@ create table if not exists resolutions_ag (
   observations     text,
   documents        jsonb not null default '[]',           -- pièces jointes {path,name,type,size} (migration 025)
   created_at       timestamptz not null default now(),
-  unique (ag_id, numero)
+  unique (ag_id, numero, sous_numero)
 );
 
 -- ------------------------------------------------------------ projets
