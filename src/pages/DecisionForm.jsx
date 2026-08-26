@@ -465,7 +465,7 @@ export default function DecisionForm() {
                 </Select>
                 {projetAction && (
                   <p className="mt-1 text-xs text-slate-500">
-                    « {selProjet.nom} » passera en <strong>{PROJET_ACTION_STATUT[projetAction] ? PROJET_STATUT_LABELS[PROJET_ACTION_STATUT[projetAction]] : 'statut naturel (ouvert / en cours)'}</strong>{' '}
+                    « {selProjet.nom} » passera en <strong>{PROJET_ACTION_STATUT[projetAction] ? PROJET_STATUT_LABELS[PROJET_ACTION_STATUT[projetAction]] : 'statut naturel (en préparation ou en cours, selon la date d’ouverture)'}</strong>{' '}
                     une fois cette décision <strong>adoptée et enregistrée</strong> — pas avant. Une décision ultérieure pourra revenir dessus.
                   </p>
                 )}

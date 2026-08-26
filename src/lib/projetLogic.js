@@ -4,43 +4,56 @@
 // budget NI statut en propre : les deux se dérivent (cf. computeProjectBudgets).
 // Les décisions rattachées engagent sur son budget et peuvent changer son statut.
 
-// Statut : jamais saisi, toujours dérivé.
-//   date d'ouverture à venir                    → en_preparation
-//   ouvert, aucun engagement                    → ouvert
-//   de l'argent engagé                          → en_cours
-//   dernière décision enregistrée 'suspendre'   → suspendu
-//   dernière décision enregistrée 'terminer'    → termine
+// Statut : JAMAIS saisi, toujours dérivé — aucune colonne, aucune migration.
 //
-// `en_preparation` (ajouté le 2026-08-25) corrige un vrai faux : un projet dont
-// la `date_ouverture` est dans le futur — typiquement calé après une AG — était
-// annoncé « Ouvert » dès sa création. Il ne l'est pas : il est préparé.
+// Cycle, resserré le 2026-08-26 à QUATRE états :
 //
-// Même patron que les AG, où « AG a eu lieu » se DÉRIVE de la date passée sans
-// jamais être stocké (`effectiveAGStatut`, migration 023). Rien à saisir, donc
-// rien à tenir à jour : le 16 septembre au matin, le projet devient ouvert tout
-// seul, sans que personne ait à y penser.
-export const PROJET_STATUT_VALUES = ['en_preparation', 'ouvert', 'en_cours', 'termine', 'suspendu']
+//     en_preparation → en_cours → (suspendu ⇄ en_cours) → termine
+//
+// Dérivation, premier cas gagnant :
+//   1. dernière décision enregistrée ET adoptée : 'suspendre' → suspendu,
+//      'terminer' → termine, 'reprendre' → rend la main au naturel ;
+//   2. `date_ouverture` à venir → en_preparation ;
+//   3. sinon → en_cours.
+//
+// ⚠ `ouvert` A DISPARU, fondu dans `en_cours`. Il distinguait « ouvert mais rien
+// d'engagé » de « en cours » ; depuis que `en_preparation` existe (2026-08-25),
+// la nuance ne portait plus rien — une fois la date d'ouverture passée, le
+// projet est en cours, qu'un devis soit signé ou non. Ne pas le réintroduire
+// sans raison neuve.
+//
+// `en_preparation` se dérive de la seule date, sur le patron de « AG a eu lieu »
+// (`effectiveAGStatut`, migration 023) : rien à saisir, rien à tenir à jour, le
+// projet bascule seul le jour dit.
+export const PROJET_STATUT_VALUES = ['en_preparation', 'en_cours', 'suspendu', 'termine']
 
 export const PROJET_STATUT_LABELS = {
   en_preparation: 'En préparation',
-  ouvert: 'Ouvert',
   en_cours: 'En cours',
-  termine: 'Terminé',
   suspendu: 'Suspendu',
+  termine: 'Terminé',
 }
 
 export const PROJET_STATUT_TONES = {
   en_preparation: 'gray',
-  ouvert: 'blue',
   en_cours: 'amber',
+  suspendu: 'red',
   termine: 'green',
-  suspendu: 'gray',
 }
 
 // Effet qu'une décision peut porter sur le statut de SON projet.
-// Suspendre ou terminer un projet est une délibération du CS (arbitrage Pascal
-// 2026-07-16) : ni le chef de projet ni le président ne le font seuls. L'effet ne
-// s'applique qu'une fois la décision ENREGISTRÉE et ADOPTÉE — donc après vote.
+//
+// **Suspendre, reprendre et terminer sont des DÉLIBÉRATIONS du CS** (arbitrage
+// Pascal 2026-07-16, reconfirmé le 2026-08-26) : ni le chef de projet, ni son
+// adjoint, ni le président ne le font seuls, et il n'existe volontairement
+// AUCUN bouton pour ça. L'effet ne s'applique qu'une fois la décision
+// ENREGISTRÉE et ADOPTÉE — donc après quorum et vote.
+//
+// ⚠ Un bouton « suspendre / reprendre » a été envisagé puis écarté le
+// 2026-08-26, avant d'être livré. Conséquence à ne pas perdre de vue si l'idée
+// revient : un bouton obligerait à STOCKER la suspension, donc à rouvrir la
+// porte que la migration 011 avait fermée en supprimant `projets.statut`.
+// Aujourd'hui le statut ne coûte aucune colonne.
 export const PROJET_ACTION_VALUES = ['suspendre', 'reprendre', 'terminer']
 
 export const PROJET_ACTION_LABELS = {
@@ -61,8 +74,8 @@ export const PROJET_ACTION_NOMS = {
 }
 
 // Statut résultant d'une action, une fois la décision enregistrée et adoptée.
-// 'reprendre' ne pose aucun statut : il annule la suspension / la clôture et rend
-// la main au statut naturel (ouvert ou en_cours selon les engagements).
+// 'reprendre' ne pose aucun statut : il lève la suspension ou la clôture et rend
+// la main au statut naturel (en préparation ou en cours, selon la date).
 export const PROJET_ACTION_STATUT = {
   suspendre: 'suspendu',
   terminer: 'termine',

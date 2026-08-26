@@ -277,16 +277,23 @@ et **zéro vote**.
   a été **supprimée** (migration 011). Deux couches : le statut *naturel*, puis, s'il existe,
   l'effet de la **dernière décision enregistrée ET adoptée** portant un `projet_action`
   (`suspendre` → `suspendu`, `terminer` → `termine`, `reprendre` → rend la main au naturel).
-  Le **naturel** se lit dans cet ordre, premier cas gagnant :
-  1. `engage > 0` → `en_cours` — un engagement voté prime sur un calendrier prévisionnel ;
-  2. `date_ouverture` **à venir** → `en_preparation` (2026-08-25) ;
-  3. sinon → `ouvert`.
-  `en_preparation` corrige un vrai faux : un projet calé après une AG était annoncé « Ouvert » dès
-  sa création. **Aucune colonne, aucune migration** — c'est le même patron que « AG a eu lieu »
-  (`effectiveAGStatut`, 023) : dérivé de la date, jamais stocké, donc le projet bascule seul le
-  jour dit sans que personne ait à y penser.
-- **Suspendre ou terminer un projet est une délibération du CS** (arbitrage Pascal 2026-07-16) : ni
-  le chef de projet ni le président ne le font seuls. Cela se saisit dans `DecisionForm`
+  Cycle resserré à **QUATRE** états le 2026-08-26 :
+  `en_preparation` → `en_cours` → (`suspendu` ⇄ `en_cours`) → `termine`.
+  Le **naturel** (tant qu'aucune délibération n'en décide autrement) : `date_ouverture` **à venir**
+  → `en_preparation`, sinon → `en_cours`.
+  - ⚠ **`ouvert` a été SUPPRIMÉ**, fondu dans `en_cours`. Il distinguait « ouvert mais rien
+    d'engagé » de « en cours » ; depuis que `en_preparation` existe, la nuance ne portait plus
+    rien. C'est pourquoi `engage` n'entre **plus** dans le calcul du statut.
+  - `en_preparation` corrige un vrai faux : un projet calé après une AG était annoncé « Ouvert » dès
+    sa création. **Aucune colonne, aucune migration** — même patron que « AG a eu lieu »
+    (`effectiveAGStatut`, 023) : dérivé de la date, jamais stocké, le projet bascule seul le jour dit.
+- **Suspendre, reprendre ou terminer un projet est une délibération du CS** (arbitrage Pascal
+  2026-07-16, **reconfirmé le 2026-08-26**) : ni le chef de projet, ni son adjoint, ni le président
+  ne le font seuls, et il n'existe volontairement **aucun bouton** pour ça.
+  ⚠ Un bouton « suspendre / reprendre » a été demandé puis **retiré le jour même**, avant livraison.
+  Ce qu'il faut retenir si l'idée revient : un bouton obligerait à **STOCKER** la suspension, donc à
+  rouvrir la porte que la migration 011 avait fermée en supprimant `projets.statut`. Aujourd'hui le
+  statut ne coûte aucune colonne. Cela se saisit dans `DecisionForm`
   (`decisions.projet_action`, visible seulement si la décision cible un projet) et ne prend effet
   **qu'à l'enregistrement, décision adoptée** — donc après quorum et vote. Une décision rejetée ou
   non enregistrée n'a aucun effet.

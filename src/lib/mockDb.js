@@ -543,18 +543,19 @@ export function computeProjectBudgets(data) {
     // La DERNIÈRE décision enregistrée l'emporte : c'est ce qui rend « reprendre »
     // naturel et « terminé » réversible (choix explicite de Pascal). Rouvrir un
     // projet est alors, lui aussi, une délibération tracée au registre.
-    // Trois cas, dans cet ordre — le premier qui matche l'emporte :
-    //  - de l'argent est engagé → « en cours », quelle que soit la date. Un
-    //    engagement voté prime sur un calendrier prévisionnel : si le CS a déjà
-    //    dépensé, le projet a commencé, point.
+    // Statut NATUREL — celui qui vaut tant qu'aucune délibération n'en décide
+    // autrement. Deux cas seulement depuis le resserrage du 2026-08-26 :
     //  - date d'ouverture À VENIR → « en préparation ». Corrige un vrai faux :
     //    un projet calé après l'AG (ouverture au 16/09) était annoncé « Ouvert »
-    //    dès sa création, alors qu'il n'a pas commencé. Dérivé de la date et
+    //    dès sa création alors qu'il n'a pas commencé. Dérivé de la date et
     //    jamais stocké, comme « AG a eu lieu » (effectiveAGStatut) : le jour dit,
-    //    le projet devient ouvert seul, sans que personne ait à y penser.
-    //  - sinon → « ouvert ».
+    //    le projet bascule seul, sans que personne ait à y penser.
+    //  - sinon → « en cours ».
+    // ⚠ `ouvert` a disparu : il distinguait « ouvert mais rien d'engagé » de
+    // « en cours », nuance vidée de son sens depuis que `en_preparation` existe.
+    // C'est pourquoi `engage` n'entre plus dans le calcul du statut.
     const ouvertureAVenir = Boolean(p.date_ouverture) && p.date_ouverture > todayISO()
-    const statutNaturel = engage > 0 ? 'en_cours' : ouvertureAVenir ? 'en_preparation' : 'ouvert'
+    const statutNaturel = ouvertureAVenir ? 'en_preparation' : 'en_cours'
     const actions = data.decisions
       .filter((d) => d.projet_id === p.id && d.enregistree && d.statut === 'adoptee' && d.projet_action)
       // date_enregistrement est une DATE (pas un timestamp) : deux décisions
@@ -859,7 +860,10 @@ export const mockRepo = {
     const data = load()
     // La permission s'ancre sur chef_projet_id (le chef modifie), posé par le
     // formulaire — pas de created_by. Cf. migration 013.
-    const p = { id: uid(), statut: 'ouvert', documents: [], date_cloture: null, created_at: nowISO(), updated_at: nowISO(), ...input }
+    // Pas de `statut` : il est intégralement dérivé et la colonne n'existe plus
+    // (migration 011). En poser un ici était un champ fantôme, écrasé au calcul
+    // — et il portait « ouvert », statut supprimé depuis.
+    const p = { id: uid(), documents: [], date_cloture: null, created_at: nowISO(), updated_at: nowISO(), ...input }
     data.projets.push(p)
     data.resolutions_ag.forEach((r) => { if (resolution_ids.includes(r.id)) r.projet_id = p.id })
     audit(data, 'projets', p.id, 'create', `Ouverture projet ${p.nom}`)

@@ -320,7 +320,7 @@ export default function DecisionDetail() {
   const statutVise = decision.projet_action
     ? (PROJET_ACTION_STATUT[decision.projet_action]
         ? PROJET_STATUT_LABELS[PROJET_ACTION_STATUT[decision.projet_action]]
-        : 'son statut naturel (ouvert / en cours)')
+        : 'son statut naturel (en préparation ou en cours, selon la date d’ouverture)')
     : null
 
   const questions = decision.qa.filter((q) => q.type === 'question')

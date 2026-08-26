@@ -4,6 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Spinner, EmptyState, eur } from '../components/ui'
 import { ProjetStatutBadge } from '../components/badges'
+import { formatDate } from '../lib/format'
 import { useIsMobile } from '../lib/useIsMobile'
 
 export default function ProjetList() {
@@ -46,6 +47,8 @@ export default function ProjetList() {
                 <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-2.5 font-medium">Projet</th>
                   <th className="px-4 py-2.5 font-medium">Chef et adjoint</th>
+                  <th className="px-4 py-2.5 font-medium">Début</th>
+                  <th className="px-4 py-2.5 font-medium">Fin</th>
                   <th className="px-4 py-2.5 font-medium">Statut</th>
                   <th className="px-4 py-2.5 text-right font-medium">Alloué</th>
                   <th className="px-4 py-2.5 text-right font-medium">Engagé</th>
@@ -73,6 +76,11 @@ export default function ProjetList() {
                         <span className="block text-xs text-slate-400">adjoint : {p.adjoint_nom}</span>
                       )}
                     </td>
+                    {/* `formatDate` rend « — » sur une valeur absente : une date
+                        de fin vide est le cas NORMAL d'un projet en cours, pas
+                        une donnée manquante. */}
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(p.date_ouverture)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(p.date_cloture)}</td>
                     <td className="px-4 py-3"><ProjetStatutBadge statut={p.statut} /></td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">{eur(p.alloue)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-amber-700">{eur(p.engage)}</td>

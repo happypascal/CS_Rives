@@ -42,6 +42,19 @@ du budget demandé à l'AG et du backlog ci-dessous.
   pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Le président garde tout.
   Aucun verrou de temps — ce n'est pas une délibération.
 - **✅ Statut projet « En préparation »** (signalé par Pascal, voir la session précédente).
+- **✅ Cycle de projet resserré à QUATRE états** : `en_preparation` → `en_cours` →
+  (`suspendu` ⇄ `en_cours`) → `termine`. **`ouvert` supprimé**, fondu dans `en_cours` : il
+  distinguait « ouvert mais rien d'engagé » de « en cours », nuance vidée de son sens depuis que
+  `en_preparation` existe. `engage` n'entre donc plus dans le calcul du statut. **Aucune migration**
+  — tout reste dérivé.
+- **✅ Dates de début et de fin dans la liste des projets.** Une date de fin vide est le cas normal
+  d'un projet en cours, pas une donnée manquante : `formatDate` affiche « — ».
+- **⛔ Bouton « suspendre / reprendre » : demandé puis RETIRÉ le jour même**, avant livraison
+  (Pascal : « la suspension et la reprise et la fin se font par une décision donc pas de bouton »).
+  Ce qu'il faut retenir si l'idée revient : un bouton obligerait à **stocker** la suspension
+  (colonne `suspendu_le`), donc à rouvrir la porte que la migration 011 avait fermée en supprimant
+  `projets.statut`. La migration 030 correspondante a été écrite puis **supprimée sans jamais être
+  appliquée** — la base n'a pas bougé.
 
 ## Session 2026-08-25 (suite) — adjoint de projet + fil d'échanges (migration 028)
 
