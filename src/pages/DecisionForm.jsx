@@ -168,7 +168,12 @@ export default function DecisionForm() {
     return (
       <div>
         <PageHeader title="Décision enregistrée" />
-        <Card className="p-6 text-sm text-slate-600">Cette décision est enregistrée : elle n’est plus modifiable. <button className="text-navy-600 underline" onClick={() => navigate(`/registre/${id}`)}>Retour au détail</button></Card>
+        <Card className="p-6 text-sm text-slate-600">
+          Cette décision est enregistrée : la délibération est figée, elle n’est plus modifiable.
+          {' '}Son <strong>rattachement à un projet</strong> et sa <strong>visibilité</strong> restent, eux, ajustables par le
+          président depuis la fiche — ce ne sont pas des éléments de la délibération.
+          {' '}<button className="text-navy-600 underline" onClick={() => navigate(`/registre/${id}`)}>Retour au détail</button>
+        </Card>
       </div>
     )
   }

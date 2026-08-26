@@ -1058,6 +1058,24 @@ export const mockRepo = {
     return { traitees: dues.length }
   },
 
+  // RATTACHEMENT d'une décision ENREGISTRÉE à un projet (migration 033).
+  // L'acte fige la DÉLIBÉRATION, pas le classement : un projet ouvert après le
+  // vote doit pouvoir récupérer ses décisions. Ne touche QUE `projet_id` —
+  // `resolution_id` et `ag_id` restent, on ne détruit rien sur une ligne figée.
+  async rattacherDecisionProjet(id, projetId) {
+    await delay()
+    const data = load()
+    const d = data.decisions.find((x) => x.id === id)
+    if (!d) throw new Error('Décision introuvable')
+    const avant = d.projet_id ? data.projets.find((p) => p.id === d.projet_id)?.nom : null
+    d.projet_id = projetId || null
+    d.updated_at = nowISO()
+    const apres = projetId ? data.projets.find((p) => p.id === projetId)?.nom : null
+    audit(data, 'decisions', id, 'rattachement', `Décision ${d.numero} — rattachement ${avant || 'aucun projet'} vers ${apres || 'aucun projet'}`)
+    save(data)
+    return clone(d)
+  },
+
   // Visibilité PRÉVUE : décision de PUBLICATION, extérieure à la délibération —
   // donc modifiable même sur une décision ENREGISTRÉE, contrairement à son
   // texte. Le verrou de l'art. 15 protège la délibération, pas la décision de

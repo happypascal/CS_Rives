@@ -542,6 +542,35 @@ create trigger trg_decisions_audit_visibilite
   after update on decisions
   for each row execute function decisions_audit_visibilite();
 
+-- Trace du RATTACHEMENT d'une décision ENREGISTRÉE à un projet (migration 033).
+-- L'enregistrement fige la délibération — texte, votes, composition, montant —
+-- mais `projet_id` est un CLASSEMENT, pas ce que le conseil a voté : un projet
+-- ouvert après coup doit pouvoir récupérer ses décisions. Rien n'était d'ailleurs
+-- verrouillé en base (write_admin y suffit), le blocage était dans l'écran.
+-- Ce qui manquait, c'est la trace : on ne modifie pas une ligne du registre légal
+-- sans laisser d'empreinte.
+create or replace function decisions_audit_rattachement()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_avant text;
+  v_apres text;
+begin
+  if new.enregistree and new.projet_id is distinct from old.projet_id then
+    select p.nom into v_avant from projets p where p.id = old.projet_id;
+    select p.nom into v_apres from projets p where p.id = new.projet_id;
+    insert into audit_log (entite, entite_id, action, acteur, details)
+      values ('decisions', new.id, 'rattachement', current_membre_id(),
+        concat('Décision ', new.numero, ' — rattachement ',
+               coalesce(v_avant, 'aucun projet'), ' vers ', coalesce(v_apres, 'aucun projet')));
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists trg_decisions_audit_rattachement on decisions;
+create trigger trg_decisions_audit_rattachement
+  after update on decisions
+  for each row execute function decisions_audit_rattachement();
+
 -- Ouverture automatique des décisions planifiées échues. STRICTEMENT idempotente
 -- (`where phase = 'planifiee'`). Deux déclencheurs, même fonction :
 --   1. pg_cron, toutes les heures (voir la migration 026 pour la planification) ;

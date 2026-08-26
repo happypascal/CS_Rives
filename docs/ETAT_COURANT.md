@@ -29,6 +29,24 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-26 (suite 3) — rattacher une décision ENREGISTRÉE à un projet (033)
+
+- **✅ Une décision enregistrée peut rejoindre un projet ouvert après coup.** Cas courant signalé
+  par Pascal : le CS vote l'attribution d'un marché, le chantier ne s'ouvre qu'ensuite.
+- **Le verrou fige la DÉLIBÉRATION, pas le classement** — texte, votes, composition, montant
+  restent intouchables ; `projet_id` est un rangement. **Rien n'était verrouillé en base**
+  (`write_admin` suffisait) : le blocage était dans l'ÉCRAN, qui refuse toujours d'ouvrir le
+  formulaire d'une décision enregistrée. Chemin **étroit** (`rattacherDecisionProjet`), réservé au
+  président, **tracé** dans `audit_log` — modifier une ligne du registre sans empreinte serait le
+  vrai problème.
+- ⚠ Ne touche QUE `projet_id` : `resolution_id` et `ag_id` sont **conservés**, contrairement au
+  formulaire de création qui les efface. Sur une ligne figée on ne détruit rien. Sans double compte
+  — `computeAGBudgets` ne compte en direct que les décisions sans projet (vérifié : l'engagement
+  bascule de l'enveloppe vers le projet, 5 800 € dans les deux sens).
+- La carte annonce le **restant du projet après rattachement** et signale un dépassement, sans
+  l'interdire : l'argent est déjà engagé, refuser ne le ferait pas disparaître — cela laisserait
+  seulement la décision rangée nulle part.
+
 ## Session 2026-08-26 (suite 2) — sous-numérotation des résolutions (migration 032)
 
 - **✅ « 10-1 / 10-2 / 10-3 »** — problème de MODÈLE signalé par Pascal, pas de confort : une
@@ -509,7 +527,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `033` (001-029, 031 et 032 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `034`. ⚠ **033 est ÉCRITE mais PAS APPLIQUÉE** (001-029, 031
+  et 032 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

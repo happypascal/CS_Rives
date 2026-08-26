@@ -275,6 +275,9 @@ export default function DecisionDetail() {
   // modifiable même une fois la décision enregistrée, contrairement à son texte.
   const doVisibilite = (valeur) =>
     actePhase(() => repo.changerVisibilite(id, valeur), 'Le changement de visibilité a échoué')
+  // Rattachement d'une décision ENREGISTRÉE : classement, pas délibération.
+  const doRattacher = (projetId) =>
+    actePhase(() => repo.rattacherDecisionProjet(id, projetId), 'Le rattachement a échoué')
 
   // Le texte n'est vidé qu'APRÈS succès : sur rejet RLS, l'utilisateur ne perd
   // pas sa saisie et voit pourquoi (avant le 19/07, l'échec était muet).
@@ -785,6 +788,24 @@ export default function DecisionDetail() {
             </Card>
           )}
 
+          {/* RATTACHEMENT À UN PROJET, après enregistrement (migration 033).
+              L'acte fige la DÉLIBÉRATION — texte, votes, composition, montant —
+              mais pas le classement : un projet ouvert APRÈS le vote doit
+              pouvoir récupérer ses décisions, c'est le cas courant (le CS vote
+              l'attribution d'un marché, le chantier s'ouvre ensuite).
+              Réservé au président, tracé dans le journal d'audit. Le formulaire,
+              lui, continue de refuser d'ouvrir une décision enregistrée : c'est
+              un chemin étroit, pas un déverrouillage. */}
+          {locked && isAdmin && !isMobile && (
+            <RattachementCard
+              key={decision.projet_id || 'sans-projet'}
+              decision={decision}
+              projets={projets}
+              busy={busy}
+              onSave={doRattacher}
+            />
+          )}
+
           {/* Visibilité prévue. Affichée sur TOUTES les décisions, y compris
               anciennes (elles valent 'cs_seul' par défaut) : sans ça, on posait
               une intention qu'on ne pouvait plus relire sans rouvrir le
@@ -1100,6 +1121,49 @@ function ShareModal({ open, onClose, decision, onShared, contexte }) {
         </p>
       </div>
     </Modal>
+  )
+}
+
+// Rattachement d'une décision ENREGISTRÉE à un projet.
+//
+// La carte annonce l'effet sur le budget du projet visé AVANT d'enregistrer :
+// une décision déjà votée peut faire passer un projet en dépassement, et il vaut
+// mieux le voir que le découvrir. On n'INTERDIT pas pour autant — l'argent est
+// déjà engagé, le refuser ne le ferait pas disparaître, cela laisserait juste la
+// décision rangée nulle part.
+function RattachementCard({ decision, projets, busy, onSave }) {
+  const [projetId, setProjetId] = useState(decision.projet_id || '')
+  const inchange = (projetId || '') === (decision.projet_id || '')
+  const cible = projets.find((p) => p.id === projetId)
+  const montant = engagementTTC(decision)
+  // L'engagement ne pèse sur le projet que si la décision est adoptée : une
+  // décision rejetée peut être rangée sous un projet sans rien y consommer.
+  const pese = decision.statut === 'adoptee' && decision.montant_engage != null
+  const restantApres = cible && pese && cible.id !== decision.projet_id ? cible.restant - montant : cible?.restant
+  return (
+    <Card>
+      <CardHeader title="Rattachement à un projet" />
+      <div className="space-y-3 px-5 py-4 text-sm">
+        <p className="text-xs text-slate-500">
+          L’enregistrement fige la <strong>délibération</strong> — texte, votes, composition, montant. Le projet sous
+          lequel elle est rangée reste modifiable : un chantier ouvert après le vote doit pouvoir récupérer ses
+          décisions. Le changement est inscrit au journal d’audit.
+        </p>
+        <Select label="Projet" value={projetId} onChange={(e) => setProjetId(e.target.value)}>
+          <option value="">— Aucun projet —</option>
+          {projets.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+        </Select>
+        {cible && pese && cible.id !== decision.projet_id && (
+          <p className={`text-xs ${restantApres < 0 ? 'font-medium text-red-600' : 'text-slate-500'}`}>
+            Restant de « {cible.nom} » après rattachement : <strong>{eur(restantApres)}</strong> (aujourd’hui {eur(cible.restant)})
+            {restantApres < 0 && <> — le projet passera en dépassement.</>}
+          </p>
+        )}
+        <div className="flex justify-end">
+          <Button size="sm" disabled={busy || inchange} onClick={() => onSave(projetId || null)}>Enregistrer</Button>
+        </div>
+      </div>
+    </Card>
   )
 }
 

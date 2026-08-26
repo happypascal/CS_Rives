@@ -362,6 +362,25 @@ export const supabaseRepo = {
   // (migration 027), pas ici : il attrape aussi le chemin du formulaire, et
   // `audit_log` n'est écrivable que par le président — un insert côté client
   // aurait perdu la trace en silence pour un rédacteur ordinaire.
+  // RATTACHEMENT d'une décision ENREGISTRÉE à un projet (migration 033).
+  //
+  // Passe volontairement à côté du verrou d'enregistrement, comme
+  // `markDecisionNotified` et `changerVisibilite` : l'acte fige la
+  // DÉLIBÉRATION (texte, votes, composition, montant), pas le classement. Un
+  // projet ouvert après le vote doit pouvoir récupérer ses décisions.
+  //
+  // ⚠ Ne touche QUE `projet_id`. `resolution_id` et `ag_id` sont laissés tels
+  // quels — contrairement au formulaire de création qui les efface : sur une
+  // délibération figée on ne détruit rien, et la résolution sous laquelle la
+  // décision a été votée fait partie de son histoire. Sans effet sur les
+  // budgets : `computeAGBudgets` ne compte en engagement direct que les
+  // décisions SANS projet, donc pas de double compte.
+  //
+  // La trace est posée en base par `trg_decisions_audit_rattachement`.
+  async rattacherDecisionProjet(id, projetId) {
+    return must(await supabase.from('decisions')
+      .update({ projet_id: projetId || null }).eq('id', id).select())[0]
+  },
   async changerVisibilite(id, visibilite) {
     return must(await supabase.from('decisions').update({ visibilite }).eq('id', id).select())[0]
   },
