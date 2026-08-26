@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-08-26** — **journal de bord des projets** (migration 029, ⚠ **à
-> appliquer**). Avant : décisions en **brouillon** avec **soumission planifiée**
+> Dernière session : **2026-08-26** — **journal de bord des projets** (migration 029, appliquée).
+> Avant : décisions en **brouillon** avec **soumission planifiée**
 > (migrations 026 et 027, **appliquées en prod**), **code déployé** ; puis **adjoint de projet +
 > fil d'échanges** (migration 028, appliquée) et la **spéc d'onboarding des colotis**, gelée. Puis : statuts en révision,
 > l'AG du 15/09 les adapte au fonctionnement de l'app — voir le backlog.
@@ -452,8 +452,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `030`. ⚠ **029 est ÉCRITE mais PAS APPLIQUÉE** (001-028 le
-  sont en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
+- **Prochaine migration SQL libre** : `030` (001-029 appliquées en **prod**). Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.
