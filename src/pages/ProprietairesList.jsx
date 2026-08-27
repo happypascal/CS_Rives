@@ -26,6 +26,18 @@ const COLONNES = [
   { cle: 'adresse_communication', libelle: 'Adresse de communication', valeur: (l) => l.proprietaire?.adresse_communication || '' },
   { cle: 'email', libelle: 'Email', valeur: (l) => l.proprietaire?.email || '' },
   { cle: 'telephone', libelle: 'Téléphone', valeur: (l) => l.proprietaire?.telephone || '' },
+  // MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint pas le
+  // propriétaire (colotis étrangers surtout). Il figure dans la liste parce que
+  // sur ces parcelles-là c'est LA seule adresse utilisable : s'en tenir à la
+  // colonne « Email » laisserait croire qu'on n'a aucun moyen de les joindre.
+  // ⚠ Ce n'est pas le gérant — le gérant dirige la société, le mandataire relaie.
+  // Tri sur le NOM quand il existe, sinon sur l'adresse : une fiche sans nom
+  // (0B 240) doit se ranger avec les autres mandataires, pas avec les vides.
+  {
+    cle: 'mandataire',
+    libelle: 'Mandataire',
+    valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '',
+  },
 ]
 
 // Le tri choisi est mémorisé PAR NAVIGATEUR : on consulte ce registre en
@@ -251,6 +263,22 @@ function Contenu() {
                     <td className="px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
                     <td className="px-4 py-3 text-slate-600">{l.proprietaire?.email || '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{l.proprietaire?.telephone || '—'}</td>
+                    {/* Nom, e-mail et téléphone du mandataire ensemble : séparés,
+                        on ne saurait pas à qui appartient l'adresse. Une fiche
+                        peut n'avoir que l'adresse (le nom reste à établir). */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email ? (
+                        <>
+                          {l.proprietaire.mandataire_nom || <span className="italic text-slate-400">nom inconnu</span>}
+                          {l.proprietaire.mandataire_email && (
+                            <span className="block text-xs text-slate-500">{l.proprietaire.mandataire_email}</span>
+                          )}
+                          {l.proprietaire.mandataire_telephone && (
+                            <span className="block text-xs text-slate-500">{l.proprietaire.mandataire_telephone}</span>
+                          )}
+                        </>
+                      ) : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

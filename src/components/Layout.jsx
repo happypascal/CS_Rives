@@ -56,7 +56,13 @@ export default function Layout() {
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="flex flex-col bg-navy-800 md:w-64 md:shrink-0">
+      {/* Barre de navigation FIGÉE au défilement (desktop). `self-start` est
+          indispensable : dans un conteneur flex, un enfant est étiré à la
+          hauteur du conteneur par défaut, et un élément aussi haut que ce qu'il
+          doit suivre ne colle jamais. D'où self-start + h-screen + sticky top-0.
+          `overflow-y-auto` garde le menu atteignable si la fenêtre est courte.
+          Rien de tout cela en mobile : le menu y est un panneau qu'on déplie. */}
+      <aside className="flex flex-col bg-navy-800 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:self-start md:overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-4 md:block">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-navy-200">Registre des décisions</p>
