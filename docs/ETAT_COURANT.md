@@ -29,6 +29,40 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 7) — TÉLÉPHONES : 32 parcelles
+
+Source : `all contacts.vcf` (1 134 fiches, tout le carnet de Pascal). Aucune migration.
+
+- **✅ 32 téléphones de propriétaire**, 1 second indivisaire (0B 244), 1 mandataire (0B 220).
+  Colonne **uniformisée** au format compact international — les 5 numéros déjà en base étaient
+  espacés.
+- **⚠ POURQUOI LES NUMÉROS MANQUAIENT** : ils vivent sur des fiches DIFFÉRENTES de celles qui
+  portent l'e-mail (une fiche « ASL » avec l'adresse, une fiche personnelle avec le mobile). Le
+  rapprochement par e-mail — clé exacte — n'en trouve que **12**. Les 20 autres viennent d'un
+  rapprochement par NOM, qui est précisément la méthode qui produit les faux.
+- **MÉTHODE DE VÉRIFICATION, à reprendre telle quelle** : chaque numéro a été **remonté jusqu'à la
+  fiche qui le porte**, pour vérifier que le nom ET le prénom concordent avec le registre et que
+  l'e-mail de la fiche, quand elle en a un, est bien celui du colotis. C'est ce qui a écarté les
+  homonymes et les proches : Janine Pargoux (**l'ancienne propriétaire**), Ursula Vidal, Amanda
+  Pisigot, Dany Delisle, Jérôme Coluni, Roland et Catherine Perrin. Poser un numéro juste sur la
+  mauvaise parcelle est l'erreur qui ressort un jour dans un appel de fonds.
+- **RÈGLES APPLIQUÉES** quand une personne a deux numéros : on garde le **mobile** (0B 207, 0B 242)
+  — un registre sert à joindre quelqu'un. Quand les deux numéros sont ceux de deux personnes
+  distinctes et que la parcelle a un `nom_2`, ils vont en `telephone` / `telephone_2` (0B 244).
+- **⚠ 0B 201 : le numéro de Marc Pais n'est PAS posé**, alors qu'il était disponible. Le
+  propriétaire est **Pais Tino** ; Marc est associé de la SCI et membre du CS — ses coordonnées
+  sont dans « Membres du CS », pas ici. Même arbitrage que pour son e-mail.
+- **EN ATTENTE, non écrit** :
+  - **0B 689** — le seul numéro trouvé est celui de **Jean-François** Hartwig, alors que la
+    propriétaire est désormais **Estelle**. On ne pose pas le téléphone d'un tiers sur la fiche
+    d'une autre.
+  - **0B 205** — le mobile de Corine Trosselli-Perrin existe en plus de celui de François Perrin,
+    mais on ignore lequel des deux figure en second indivisaire.
+  - **0B 474+263** — Valérie Luscher a son mobile, mais la parcelle appartient à une **SCI**, pas à
+    une indivision : il n'y a qu'une case téléphone, et elle porte celui de Christian.
+  - **0B 202** — les deux numéros d'Antoine Maurice sont des fixes (Genève et France) ; le suisse a
+    été retenu **sans conviction**, à confirmer.
+
 ## Session 2026-08-27 (suite 6) — COORDONNÉES DES COLOTIS : 49 parcelles joignables sur 50
 
 Source : six exports vCard déposés par Pascal dans `_1_lotissement/propriétaires` (105 fiches, très
