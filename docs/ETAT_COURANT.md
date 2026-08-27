@@ -29,7 +29,7 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
-## Session 2026-08-27 (suite 3) — mandataire ≠ gérant (037), totaux, tri mémorisé
+## Session 2026-08-27 (suite 3) — mandataire ≠ gérant (037 ✅ appliquée), totaux, tri mémorisé
 
 - **✅ Le MANDATAIRE est séparé du GÉRANT** (migration 037). Contresens de la 036 corrigé par
   Pascal : « le mandataire n'est pas le gérant, qui est le gérant de la SCI. C'est le cas pour les
@@ -643,8 +643,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `038`. ⚠ **037 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
-  031-036 le sont en **prod**). Le
+- **Prochaine migration SQL libre** : `038` (001-029 et 031-037 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
