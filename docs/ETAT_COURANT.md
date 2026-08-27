@@ -29,6 +29,33 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 5) — liste Foncia importée + n° syndic (039 ✅ appliquée)
+
+- **✅ 48 adresses de communication officielles** importées depuis la liste Foncia (PDF fourni par
+  Pascal). Le registre n'en avait aucune. **Seule `adresse_communication` a été écrite**, et jamais
+  un nom : les libellés Foncia divergent des noms usuels, et le registre avait déjà été corrigé.
+- **✅ `lots.numero_syndic`** (migration 039) — la référence **Foncia**, présente dans tous les
+  appels de fonds. Arbitrage de Pascal : « les numéros Foncia sont les numéros de Foncia ; les
+  numéros de lot sont ceux du cadastre officiel transmis par la Mairie. » D'où une colonne dédiée
+  plutôt qu'un écrasement de `numero`. **Sans unicité** — référence étrangère, tenue par un tiers.
+- ⚠ **LA PARCELLE 263 EST PARTAGÉE À 81 / 19 %** entre deux propriétaires ; elle a été divisée mais
+  est **restée une seule parcelle** au cadastre. C'est l'explication des `nombre_lots` 1,81 et 1,19,
+  et la raison pour laquelle **deux lignes citent la 263** (`0B 247+263`, `0B 474+263`). Repéré
+  parce qu'un numéro de syndic ne trouvait pas sa parcelle — **ce n'est pas un doublon** : en
+  « nettoyer » un effacerait 19 % d'un lot de l'assiette des voix et des charges.
+- **Découverte consignée** : la numérotation Foncia est codée par zone (1xx = A … 5xx = E), continue
+  dans chaque zone, et couvre exactement **51 numéros** — le nombre de lots. Le seul non attribué
+  (503, zone E) est le lot partagé de la parcelle 263. Cela **n'en fait pas** la numérotation
+  officielle du lotissement : seule la Mairie fait foi, et elle transmet des **parcelles**.
+- **✅ 4 indivisions nommées** (second propriétaire renseigné), une correction de titulaire et un
+  numéro de voirie corrigé, tous tranchés par Pascal sur pièces.
+- **RESTE À FAIRE** (arbitré, pas encore saisi) : une parcelle de zone A a changé de propriétaire —
+  **mutation à enregistrer avec sa vraie date** (le champ « Date de la mutation » est libre, c'est
+  lui qui clôt une période et en ouvre une autre). Une autre attend confirmation d'un nom auprès du
+  colotis. Deux adresses non importées : l'une tronquée dans la source, l'autre périmée chez Foncia.
+- ⚠ **Aucun script d'import n'est versionné** — données personnelles. Ils sont reproductibles depuis
+  le PDF Foncia et le classeur des votes.
+
 ## Session 2026-08-27 (suite 4) — nombre de lots + indivision (migration 038 ✅ appliquée)
 
 - **✅ `lots.nombre_lots`, à 1 par défaut.** Le registre compte 50 parcelles mais **51 lots** : deux
@@ -664,7 +691,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `039` (001-029 et 031-038 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `040` (001-029 et 031-039 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

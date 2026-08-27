@@ -38,7 +38,7 @@ function Contenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState(CHAMPS_VIDES)
-  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', observations: '' })
+  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', numero_syndic: '', observations: '' })
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   const [confirm, confirmModal] = useConfirm()
@@ -51,7 +51,7 @@ function Contenu() {
       const l = await repo.getLot(id)
       setLot(l)
       if (l) {
-        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', observations: l.observations || '' })
+        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '' })
         setForm({ ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) })
       }
     } catch (e) {
@@ -107,6 +107,7 @@ function Contenu() {
         adresse_lotissement: lotForm.adresse_lotissement || null,
         superficie,
         nombre_lots: nombreLots,
+        numero_syndic: lotForm.numero_syndic || null,
         observations: lotForm.observations || null,
       })
       await repo.saveProprietaire(id, {
@@ -215,6 +216,17 @@ function Contenu() {
                   dans un registre légal serait pire que de s'en passer. */}
               <Input label="Parcelle cadastrale" value={lotForm.numero} onChange={setLotChamp('numero')} readOnly={!peutSaisir} placeholder="ex : 0B 220" />
               <Input label="Adresse dans le lotissement" value={lotForm.adresse_lotissement} onChange={setLotChamp('adresse_lotissement')} readOnly={!peutSaisir} />
+              {/* Référence du syndic : elle revient dans tous les appels de
+                  fonds. Ce n'est PAS l'identifiant de la parcelle — celui de la
+                  Mairie est au-dessus — mais sans elle, rapprocher une ligne de
+                  charges d'une parcelle se fait de tête. */}
+              <div className="sm:col-span-2">
+                <Input label="N° syndic (Foncia)" value={lotForm.numero_syndic} onChange={setLotChamp('numero_syndic')} readOnly={!peutSaisir} placeholder="ex : 209" />
+                <p className="mt-1 text-xs text-slate-500">
+                  Référence utilisée par le syndic dans ses appels de fonds. Le numéro officiel de la
+                  parcelle est celui du <strong>cadastre transmis par la Mairie</strong>, ci-dessus.
+                </p>
+              </div>
               {/* Nombre de lots : 1 sauf exception, mais deux parcelles du
                   lotissement en portent 1,81 et 1,19 — d'où 51 lots pour 50
                   parcelles. Sans ce champ, le registre ne pouvait pas compter

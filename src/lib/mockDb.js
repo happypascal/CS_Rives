@@ -1403,7 +1403,7 @@ export const mockRepo = {
     }
     // `nombre_lots` à 1 par défaut, comme en base : une parcelle vaut un lot
     // sauf exception, et une valeur absente fausserait le total du registre.
-    const l = { id: uid(), observations: null, nombre_lots: 1, created_at: nowISO(), updated_at: nowISO(), ...input }
+    const l = { id: uid(), observations: null, nombre_lots: 1, numero_syndic: null, created_at: nowISO(), updated_at: nowISO(), ...input }
     data.lots.push(l)
     audit(data, 'lots', l.id, 'create', `Lot ${l.numero} créé`)
     save(data)

@@ -447,6 +447,16 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   relie cette numérotation d'origine aux parcelles actuelles** — l'inventer serait pire que rien.
   La **zone** (A à E) est en observations, faute de colonne dédiée. L'écran dit donc « parcelle »,
   pas « lot ».
+- **`lots.numero_syndic`** (migration 039) : la référence de **Foncia**, qui revient dans tous les
+  appels de fonds. **Ce n'est pas l'identifiant de la parcelle** — celui-là vient du cadastre
+  transmis par la Mairie et vit dans `numero`. **Aucune unicité**, délibérément : c'est une
+  référence étrangère tenue par un tiers, le registre la constate et n'arbitre pas la comptabilité
+  du syndic. ⚠ Ne jamais s'en servir comme clé dans du code.
+- ⚠ **LA PARCELLE 263 EST PARTAGÉE ENTRE DEUX PROPRIÉTAIRES**, à **81 %** et **19 %** — elle a été
+  divisée mais est **restée une seule parcelle** au cadastre. D'où deux lignes qui la citent toutes
+  les deux (`0B 247+263` et `0B 474+263`) et les `nombre_lots` de **1,81** et **1,19**. Ce n'est
+  **pas** un doublon à corriger : « nettoyer » l'un des deux effacerait 19 % d'un lot de l'assiette
+  des voix et des charges.
 - **`lots.nombre_lots`** (migration 038) — **une parcelle n'est pas un lot** : deux d'entre elles
   pèsent **1,81** et **1,19**, soit **51 lots pour 50 parcelles**. Le total des lots se **somme sur
   cette colonne**, jamais sur le nombre de lignes ; compter les lignes annoncerait 50, un chiffre

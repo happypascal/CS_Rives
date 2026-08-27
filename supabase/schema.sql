@@ -369,6 +369,11 @@ create table if not exists lots (
   -- voix et aux charges. `not null default 1` parce que 1 est le cas réel dans
   -- 48 cas sur 50 — nullable, le total varierait selon qui a pensé à remplir.
   nombre_lots         numeric(4,2) not null default 1 check (nombre_lots > 0),
+  -- Référence du SYNDIC (migration 039), pas un identifiant du lotissement :
+  -- elle revient dans tous les appels de fonds. Sans unicité — c'est une
+  -- référence étrangère, tenue par un tiers ; le registre la constate.
+  -- ⚠ Ne jamais s'en servir comme clé : la clé est `numero` (la parcelle).
+  numero_syndic       text,
   adresse_lotissement text,                   -- adresse dans le lotissement
   -- ASSIETTE des voix en AG (vote au prorata des superficies) et des charges.
   -- Une superficie fausse ne produit pas un affichage faux : elle produit un

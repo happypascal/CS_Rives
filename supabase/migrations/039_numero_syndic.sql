@@ -1,0 +1,42 @@
+-- =============================================================================
+-- Migration 039 — `lots.numero_syndic` : la référence du SYNDIC, pas un lot
+--
+-- Demande (Pascal, 2026-08-27) : « les numéros Foncia sont les numéros de
+-- Foncia, donc on pourrait ajouter une colonne n° syndic. Les numéros de lot
+-- sont ceux du cadastre officiel transmis par la Mairie. »
+--
+-- -----------------------------------------------------------------------------
+-- POURQUOI UNE COLONNE, ET PAS UNE LIGNE D'OBSERVATION
+--
+-- La liste Foncia numérote chaque compte (« 209 », « 401 »…). Ces numéros ne
+-- sont PAS les identifiants du lotissement — l'identifiant officiel reste la
+-- parcelle cadastrale transmise par la Mairie, portée par `lots.numero`. Mais
+-- ils reviennent dans tous les appels de fonds et tous les échanges avec le
+-- syndic : sans eux, rapprocher une ligne de charges d'une parcelle se fait de
+-- tête. Une observation en texte libre ne se cherche pas, ne se trie pas et ne
+-- garantit pas l'unicité — d'où une vraie colonne.
+--
+-- ⚠ AUCUNE CONTRAINTE D'UNICITÉ, délibérément : c'est une référence ÉTRANGÈRE,
+-- tenue par un tiers. Si Foncia renumérote, ou attribue deux fois le même
+-- numéro le temps d'une mutation, ce n'est pas au registre de l'ASL de refuser
+-- la saisie — il constate, il n'arbitre pas la comptabilité du syndic.
+--
+-- ⚠ NE PAS s'en servir pour identifier une parcelle dans du code : la clé reste
+-- `numero` (la parcelle). `numero_syndic` est une donnée de rapprochement, pas
+-- une clé.
+--
+-- Observation faite au passage, consignée parce qu'elle explique une bizarrerie
+-- du registre : la numérotation Foncia est codée par zone (1xx = A … 5xx = E),
+-- continue dans chaque zone, et couvre exactement 51 numéros — le nombre de
+-- lots. Le seul non attribué (503, zone E) correspond au lot partagé entre
+-- 0B 247+263 (1,81) et 0B 474 (1,19), qui totalisent 3,00 lots à eux deux.
+-- Cela n'en fait pas pour autant la numérotation officielle du lotissement :
+-- seule la Mairie fait foi, et elle transmet des parcelles.
+--
+-- ⚠ RAPPEL DE FORME (éditeur SQL de Supabase) : aucune chaine vide, aucun
+-- argument de formatage de `raise`, aucun guillemet dollar imbriqué, aucun
+-- deux-points ni barre oblique dans une chaine, et une vérification SIMPLE.
+-- =============================================================================
+
+alter table lots
+  add column if not exists numero_syndic text;
