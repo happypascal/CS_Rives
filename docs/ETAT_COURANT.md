@@ -29,6 +29,26 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite) — superficie des lots + mandataire (migration 036)
+
+- **✅ `lots.superficie`** — c'est une **assiette**, pas une donnée descriptive : poids de vote en
+  AG (prorata des superficies) et répartition des charges. Une superficie fausse produit un vote
+  faux et un appel de fonds faux. `numeric(10,2)`, contrainte « > 0 si renseignée » — un lot dont
+  on n'a pas encore la surface doit rester saisissable.
+- **✅ Tantième DÉRIVÉ, jamais stocké** : part = superficie / somme des superficies renseignées.
+  Le stocker divergerait dès qu'un lot serait ajouté ou corrigé, et les parts continueraient
+  d'avoir l'air justes. La liste affiche le **total et le nombre de lots renseignés**, et signale
+  que les parts sont **provisoires** tant qu'il en manque — un tantième calculé sur un registre
+  incomplet est faux, le taire serait pire que ne rien afficher.
+- **✅ Email et téléphone du mandataire** (`gerant_email`, `gerant_telephone`). Colonnes préfixées
+  `gerant_` comme les trois existantes : « gérant » et « mandataire » désignent la même personne,
+  renommer l'ensemble n'aurait rien gagné. ⚠ Le trigger de normalisation d'e-mail écoute désormais
+  **les deux colonnes** — limité à `email`, une correction de l'adresse du mandataire serait passée
+  à côté.
+- **Piste non faite** : `m2_presents` d'une AG pourrait être rapporté au total des superficies pour
+  afficher un pourcentage de présence. Le registre fournit désormais le dénominateur. Le relevé de
+  présence, lui, reste un constat de séance et doit rester saisi.
+
 ## Session 2026-08-27 — REGISTRE DES PROPRIÉTAIRES (migration 035)
 
 - **✅ Registre des membres de l'ASL**, réservé au **président et au secrétaire** — lecture comme
@@ -577,7 +597,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `036` (001-029 et 031-035 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `037`. ⚠ **036 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-035 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

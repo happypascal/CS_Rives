@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Spinner, EmptyState } from '../components/ui'
+import { Card, Button, Input, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
@@ -18,6 +18,8 @@ const COLONNES = [
   { cle: 'lot', libelle: 'Lot', valeur: (l) => l.numero || '', numerique: true },
   { cle: 'proprietaire', libelle: 'Propriétaire', valeur: (l) => l.proprietaire?.nom || '' },
   { cle: 'adresse_lotissement', libelle: 'Adresse dans le lotissement', valeur: (l) => l.adresse_lotissement || '' },
+  // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
+  { cle: 'superficie', libelle: 'Superficie', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
   { cle: 'adresse_communication', libelle: 'Adresse de communication', valeur: (l) => l.proprietaire?.adresse_communication || '' },
   { cle: 'email', libelle: 'Email', valeur: (l) => l.proprietaire?.email || '' },
   { cle: 'telephone', libelle: 'Téléphone', valeur: (l) => l.proprietaire?.telephone || '' },
@@ -103,6 +105,22 @@ function Contenu() {
         subtitle="Membres de l’ASL : un lot, son propriétaire actuel, et l’historique des mutations."
       />
 
+      {/* Le total des superficies est le DÉNOMINATEUR des voix en AG et des
+          charges. On l'affiche avec le nombre de lots qui y contribuent : tant
+          que le registre est incomplet, les parts affichées sont provisoires, et
+          le taire donnerait des tantièmes faux qui auraient l'air justes. */}
+      {lots.length > 0 && (
+        <Card className="mb-4 px-5 py-3">
+          <p className="text-sm text-slate-700">
+            <strong>{num(lots[0].superficie_totale)} m²</strong> au total sur{' '}
+            <strong>{lots.filter((l) => l.superficie).length}</strong> lot(s) renseigné(s), pour {lots.length} lot(s) au registre.
+            {lots.some((l) => !l.superficie) && (
+              <span className="text-amber-700"> — les parts affichées sont <strong>provisoires</strong> tant que des superficies manquent.</span>
+            )}
+          </p>
+        </Card>
+      )}
+
       {error && (
         <Card className="mb-4 p-4">
           <p className="text-sm font-semibold text-red-700">Impossible de charger le registre.</p>
@@ -164,6 +182,16 @@ function Contenu() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{l.adresse_lotissement || '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right text-slate-700">
+                      {l.superficie != null ? (
+                        <>
+                          {num(l.superficie)} m²
+                          {/* La part n'a de sens que rapportée au total : c'est
+                              elle, pas la surface, qui donne le poids de vote. */}
+                          {l.part != null && <span className="block text-xs text-slate-400">{l.part.toFixed(2)} %</span>}
+                        </>
+                      ) : <span className="italic text-slate-400">à renseigner</span>}
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
                     <td className="px-4 py-3 text-slate-600">{l.proprietaire?.email || '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{l.proprietaire?.telephone || '—'}</td>

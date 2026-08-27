@@ -364,6 +364,14 @@ create table if not exists lots (
   id                  uuid primary key default gen_random_uuid(),
   numero              text not null unique,   -- « 12 », « 12A » : texte, un lot n'est pas toujours un entier
   adresse_lotissement text,                   -- adresse dans le lotissement
+  -- ASSIETTE des voix en AG (vote au prorata des superficies) et des charges.
+  -- Une superficie fausse ne produit pas un affichage faux : elle produit un
+  -- vote faux et un appel de fonds faux. `numeric(10,2)` — les surfaces
+  -- cadastrales ont des décimales, arrondir déplacerait des voix.
+  -- ⚠ Le TANTIÈME (part dans le total) n'est PAS stocké : il se dérive de la
+  -- somme, comme le budget d'un projet. Le stocker divergerait dès qu'un lot
+  -- serait ajouté ou corrigé, sans que les parts cessent d'avoir l'air justes.
+  superficie          numeric(10,2) check (superficie is null or superficie > 0),
   observations        text,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
@@ -382,6 +390,8 @@ create table if not exists proprietaires (
   est_societe           boolean not null default false,
   gerant_nom            text,
   gerant_fonction       text,                 -- gérant, président, associé…
+  gerant_email          text,                 -- « gérant » et « mandataire » désignent ici la même personne
+  gerant_telephone      text,
 
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.
@@ -417,17 +427,22 @@ create index if not exists proprietaires_lot_idx on proprietaires (lot_id, date_
 -- l'appariement d'identité une fois en production. Ce registre étant destiné à
 -- servir d'ancre d'identité aux colotis, on ne refait pas l'erreur.
 create or replace function proprietaires_normalize_email()
-returns trigger language plpgsql set search_path = public as $$
+returns trigger language plpgsql set search_path = public as $normalise_email_prop$
 begin
   if new.email is not null then
     new.email := lower(btrim(new.email));
   end if;
+  if new.gerant_email is not null then
+    new.gerant_email := lower(btrim(new.gerant_email));
+  end if;
   return new;
-end $$;
+end $normalise_email_prop$;
 
 drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
+-- ⚠ Écoute les DEUX colonnes d'e-mail : limité à `email`, une correction de
+-- l'adresse du mandataire passerait à côté de la normalisation.
 create trigger trg_proprietaires_normalize_email
-  before insert or update of email on proprietaires
+  before insert or update of email, gerant_email on proprietaires
   for each row execute function proprietaires_normalize_email();
 
 -- ------------------------------------------- acceptation de la mention RGPD
@@ -440,7 +455,7 @@ alter table membres_cs
 
 -- Trace de l'acceptation dans le journal d'audit.
 create or replace function membres_audit_rgpd()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public as $audit_rgpd$
 begin
   if new.registre_rgpd_accepte_le is not null
      and old.registre_rgpd_accepte_le is null then
@@ -450,7 +465,7 @@ begin
               concat('Mention RGPD du registre des propriétaires acceptée par ', new.prenom, ' ', new.nom));
   end if;
   return null;
-end $$;
+end $audit_rgpd$;
 
 drop trigger if exists trg_membres_audit_rgpd on membres_cs;
 create trigger trg_membres_audit_rgpd

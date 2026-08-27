@@ -1358,6 +1358,13 @@ export const mockRepo = {
     await delay()
     this._gardeBureau()
     const data = load()
+    // TANTIÈME dérivé, jamais stocké : part du lot dans la somme des superficies
+    // connues. C'est l'assiette des voix en AG et des charges — la stocker
+    // divergerait dès qu'un lot serait ajouté ou corrigé, et les parts
+    // continueraient d'avoir l'air justes.
+    // ⚠ Le dénominateur est le total des superficies RENSEIGNÉES : tant que le
+    // registre est incomplet, les parts sont provisoires. L'écran le dit.
+    const total = (data.lots || []).reduce((s2, l) => s2 + (Number(l.superficie) || 0), 0)
     return clone(data.lots || []).map((l) => {
       const periodes = (data.proprietaires || []).filter((p) => p.lot_id === l.id)
       const actuel = periodes.find((p) => !p.date_cession) || null
@@ -1365,6 +1372,8 @@ export const mockRepo = {
         ...l,
         proprietaire: actuel ? clone(actuel) : null,
         anciens: periodes.filter((p) => p.date_cession).length,
+        superficie_totale: total,
+        part: total > 0 && l.superficie ? (Number(l.superficie) / total) * 100 : null,
       }
     })
   },
@@ -1441,6 +1450,7 @@ export const mockRepo = {
     const p = {
       id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
+      gerant_email: null, gerant_telephone: null,
       date_acquisition: null, date_cession: null, observations: null,
       created_at: nowISO(), updated_at: nowISO(), ...patch,
     }
@@ -1471,6 +1481,7 @@ export const mockRepo = {
     const p = {
       id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
+      gerant_email: null, gerant_telephone: null,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
       ...nouveau, date_acquisition: date_mutation,
     }

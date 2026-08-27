@@ -444,6 +444,14 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   cours et en ouvre une nouvelle — les deux dates la portent, **pas de table `mutations`**.
 - **Index partiel `proprietaires_actuel_par_lot`** : un lot n'a jamais deux propriétaires actuels.
   Sans lui, une mutation mal terminée rendrait le registre faux en silence.
+- **`lots.superficie`** (migration 036) est une **ASSIETTE**, pas une donnée descriptive : elle
+  porte le **poids de vote en AG** (vote au prorata des superficies) et la **répartition des
+  charges**. Une superficie fausse ne produit pas un affichage faux, elle produit un vote faux et un
+  appel de fonds faux. `numeric(10,2)` — arrondir déplacerait des voix.
+  ⚠ Le **TANTIÈME n'est PAS stocké** : il se dérive de la somme des superficies, comme le budget
+  d'un projet se dérive de ses résolutions. Le dénominateur est le total des superficies
+  **renseignées** — tant que le registre est incomplet les parts sont provisoires, et l'écran le
+  dit. `assemblees_generales.m2_presents` reste **saisi** : c'est un constat de séance, pas un calcul.
 - **Mention RGPD acceptée une fois par personne** (`membres_cs.registre_rgpd_accepte_le`, tracée par
   `trg_membres_audit_rgpd`). L'écran d'acceptation s'affiche **à la place** du registre, jamais
   par-dessus. Texte dans `src/lib/rgpdRegistre.js`, partagé par l'écran et le rappel permanent —

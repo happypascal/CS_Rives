@@ -535,12 +535,18 @@ export const supabaseRepo = {
   async listLots() {
     const lots = must(await supabase.from('lots').select('*').order('numero'))
     const periodes = must(await supabase.from('proprietaires').select('*'))
+    // TANTIÈME dérivé, jamais stocké — même calcul que le mock. Dénominateur =
+    // total des superficies RENSEIGNÉES : tant que le registre est incomplet,
+    // les parts sont provisoires, et l'écran le dit.
+    const total = lots.reduce((s, l) => s + (Number(l.superficie) || 0), 0)
     return lots.map((l) => {
       const p = periodes.filter((x) => x.lot_id === l.id)
       return {
         ...l,
         proprietaire: p.find((x) => !x.date_cession) || null,
         anciens: p.filter((x) => x.date_cession).length,
+        superficie_totale: total,
+        part: total > 0 && l.superficie ? (Number(l.superficie) / total) * 100 : null,
       }
     })
   },

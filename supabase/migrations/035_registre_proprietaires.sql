@@ -102,13 +102,13 @@ create index if not exists proprietaires_lot_idx on proprietaires (lot_id, date_
 -- l'appariement d'identité une fois en production. Ce registre étant destiné à
 -- servir d'ancre d'identité aux colotis, on ne refait pas l'erreur.
 create or replace function proprietaires_normalize_email()
-returns trigger language plpgsql set search_path = public as $$
+returns trigger language plpgsql set search_path = public as $normalise_email_prop$
 begin
   if new.email is not null then
     new.email := lower(btrim(new.email));
   end if;
   return new;
-end $$;
+end $normalise_email_prop$;
 
 drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
 create trigger trg_proprietaires_normalize_email
@@ -125,7 +125,7 @@ alter table membres_cs
 
 -- Trace de l'acceptation dans le journal d'audit.
 create or replace function membres_audit_rgpd()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public as $audit_rgpd$
 begin
   if new.registre_rgpd_accepte_le is not null
      and old.registre_rgpd_accepte_le is null then
@@ -135,7 +135,7 @@ begin
               concat('Mention RGPD du registre des propriétaires acceptée par ', new.prenom, ' ', new.nom));
   end if;
   return null;
-end $$;
+end $audit_rgpd$;
 
 drop trigger if exists trg_membres_audit_rgpd on membres_cs;
 create trigger trg_membres_audit_rgpd

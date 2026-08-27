@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Textarea, Modal, Spinner, Badge } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { RgpdGate } from '../components/RgpdGate'
-import { formatDate, todayISO } from '../lib/format'
+import { formatDate, todayISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -15,6 +15,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 const CHAMPS_VIDES = {
   nom: '', est_societe: false, gerant_nom: '', gerant_fonction: '',
   adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
+  gerant_email: '', gerant_telephone: '',
   date_acquisition: '', observations: '',
 }
 
@@ -35,7 +36,7 @@ function Contenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState(CHAMPS_VIDES)
-  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', observations: '' })
+  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', observations: '' })
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   const [confirm, confirmModal] = useConfirm()
@@ -48,7 +49,7 @@ function Contenu() {
       const l = await repo.getLot(id)
       setLot(l)
       if (l) {
-        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', observations: l.observations || '' })
+        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', observations: l.observations || '' })
         setForm({ ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) })
       }
     } catch (e) {
@@ -85,9 +86,17 @@ function Contenu() {
     setBusy(true)
     setError('')
     try {
+      // Superficie : `parseMontant` tolère la virgule décimale et les espaces —
+      // une surface se saisit « 612,50 » en français, pas « 612.5 ».
+      const superficie = parseMontant(lotForm.superficie)
+      if (lotForm.superficie !== '' && (superficie == null || superficie <= 0)) {
+        setBusy(false)
+        return setError('La superficie doit être un nombre positif (ex : 612,50).')
+      }
       await repo.updateLot(id, {
         numero: lotForm.numero.trim(),
         adresse_lotissement: lotForm.adresse_lotissement || null,
+        superficie,
         observations: lotForm.observations || null,
       })
       await repo.saveProprietaire(id, {
@@ -96,6 +105,8 @@ function Contenu() {
         date_acquisition: form.date_acquisition || null,
         gerant_nom: form.gerant_nom || null,
         gerant_fonction: form.gerant_fonction || null,
+        gerant_email: form.gerant_email || null,
+        gerant_telephone: form.gerant_telephone || null,
         adresse_communication: form.adresse_communication || null,
         adresse_gerant: form.adresse_gerant || null,
         email: form.email || null,
@@ -121,6 +132,8 @@ function Contenu() {
         nom: nouveau.nom.trim(),
         gerant_nom: nouveau.gerant_nom || null,
         gerant_fonction: nouveau.gerant_fonction || null,
+        gerant_email: nouveau.gerant_email || null,
+        gerant_telephone: nouveau.gerant_telephone || null,
         adresse_communication: nouveau.adresse_communication || null,
         adresse_gerant: nouveau.adresse_gerant || null,
         email: nouveau.email || null,
@@ -177,6 +190,16 @@ function Contenu() {
             <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
               <Input label="Numéro de lot" value={lotForm.numero} onChange={setLotChamp('numero')} readOnly={!peutSaisir} />
               <Input label="Adresse dans le lotissement" value={lotForm.adresse_lotissement} onChange={setLotChamp('adresse_lotissement')} readOnly={!peutSaisir} />
+              {/* type="text" à dessein, comme les montants ailleurs dans l'app :
+                  un input number capte la molette et modifie la valeur sans
+                  qu'on s'en aperçoive — sur l'assiette des voix, c'est exclu. */}
+              <div className="sm:col-span-2">
+                <Input label="Superficie (m²)" type="text" inputMode="decimal" value={lotForm.superficie} onChange={setLotChamp('superficie')} readOnly={!peutSaisir} placeholder="ex : 612,50" />
+                <p className="mt-1 text-xs text-slate-500">
+                  Assiette du <strong>poids de vote en AG</strong> (vote au prorata des superficies) et de la{' '}
+                  <strong>répartition des charges</strong>. Une superficie fausse fausse les deux.
+                </p>
+              </div>
               <div className="sm:col-span-2">
                 <Textarea label="Observations sur le lot" rows={2} value={lotForm.observations} onChange={setLotChamp('observations')} readOnly={!peutSaisir} />
               </div>
@@ -200,11 +223,13 @@ function Contenu() {
                   physique, ces deux champs n'ont pas de sens et encombrent. */}
               {form.est_societe && (
                 <>
-                  <Input label="Nom du gérant" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
-                  <Input label="Fonction du gérant" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
+                  <Input label="Nom du gérant / mandataire" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
+                  <Input label="Fonction" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
                   <div className="sm:col-span-2">
-                    <Input label="Adresse du gérant" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
+                    <Input label="Adresse du mandataire" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
                   </div>
+                  <Input label="Email du mandataire" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone du mandataire" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
                 </>
               )}
               <div className="sm:col-span-2">
@@ -286,11 +311,13 @@ function Contenu() {
               </div>
               {mutation.est_societe && (
                 <>
-                  <Input label="Nom du gérant" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
-                  <Input label="Fonction du gérant" value={mutation.gerant_fonction} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction: e.target.value }))} />
+                  <Input label="Nom du gérant / mandataire" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
+                  <Input label="Fonction" value={mutation.gerant_fonction} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction: e.target.value }))} />
                   <div className="sm:col-span-2">
-                    <Input label="Adresse du gérant" value={mutation.adresse_gerant} onChange={(e) => setMutation((m) => ({ ...m, adresse_gerant: e.target.value }))} />
+                    <Input label="Adresse du mandataire" value={mutation.adresse_gerant} onChange={(e) => setMutation((m) => ({ ...m, adresse_gerant: e.target.value }))} />
                   </div>
+                  <Input label="Email du mandataire" type="email" value={mutation.gerant_email} onChange={(e) => setMutation((m) => ({ ...m, gerant_email: e.target.value }))} />
+                  <Input label="Téléphone du mandataire" value={mutation.gerant_telephone} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone: e.target.value }))} />
                 </>
               )}
               <div className="sm:col-span-2">
