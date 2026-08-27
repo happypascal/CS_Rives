@@ -83,7 +83,9 @@ src/
   components/
     Layout.jsx        sidebar, menu mobile, gate ForcePasswordChange, badge démo
     ProtectedRoute.jsx  gate auth + (curieusement) exporte `PageHeader`
-    ui.jsx            primitives : Button/Card/Badge/Input/Modal/EmptyState/DesktopOnly/Spinner/eur/num/cx
+    ui.jsx            primitives : Button/Card/Badge/Input/Modal/EmptyState/DesktopOnly/Spinner/eur/num
+                      ⚠ `cx` y est PRIVÉ (pas exporté) — composer les classes conditionnelles
+                      avec un template literal, ou l'exporter d'abord
     badges.jsx        badges de statut par entité
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
   pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
@@ -575,7 +577,8 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
   voir cet objet repartir tel quel dans un `update` : construire un payload explicite limité aux
   colonnes réelles. Une modif « qui marche en mock » n'est pas vérifiée.
 - **Styling** : utilitaires Tailwind inline ; palette `navy-*` (`#1F3864`, choisie pour coller au
-  registre Word existant). Composer via `cx()` de `ui.jsx`. Ton : sobre, professionnel,
+  registre Word existant). ⚠ `cx()` n'est **pas exporté** par `ui.jsx` : composer les classes
+  conditionnelles avec un template literal. Ton : sobre, professionnel,
   document juridique.
 - **Mobile** : `useIsMobile()` (<768px) → mobile = **consultation + vote seulement**. Création et
   gestion derrière `!isMobile` et `<DesktopOnly>`.

@@ -7,38 +7,64 @@ import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
-// Colonnes de la liste, et clé de tri de chacune. Déclarées en table plutôt
-// qu'en JSX : l'en-tête, le tri et les cellules se lisent alors au même endroit,
-// et ajouter une colonne ne demande pas de modifier trois blocs séparés.
+// Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
+// tris et les cellules se lisent alors au même endroit.
 //
 // `valeur` renvoie ce sur quoi on TRIE, pas ce qu'on affiche : le propriétaire
-// vit sur une autre ligne que le lot, et un lot vacant doit se ranger sans faire
-// échouer la comparaison — d'où les chaînes vides par défaut.
+// vit sur une autre ligne que la parcelle, et une parcelle vacante doit se
+// ranger sans faire échouer la comparaison — d'où les chaînes vides par défaut.
+//
+// CINQ colonnes, chacune regroupant ce qui se lit ensemble : la parcelle et sa
+// surface, l'adresse du bien, l'adresse où l'on écrit, la personne et ses
+// coordonnées, l'intermédiaire et les siennes. Une colonne par champ obligeait à
+// balayer huit cases pour reconstituer un interlocuteur.
+//
+// Une colonne peut porter DEUX tris (`tris`) : l'empilement fait perdre l'en-tête
+// cliquable de la donnée du dessous, alors qu'ici la superficie est l'assiette
+// des voix et des charges — on doit pouvoir classer dessus. Les deux clés
+// restent donc offertes dans le même en-tête.
 const COLONNES = [
-  // ⚠ « Parcelle » et non « Lot » : la ligne porte la parcelle cadastrale, et
-  // une parcelle n'est pas un lot — deux d'entre elles pèsent 1,81 et 1,19 lot,
-  // soit 51 lots pour 50 parcelles. Le nombre de lots se lit sur la fiche.
-  { cle: 'lot', libelle: 'Parcelle', valeur: (l) => l.numero || '', numerique: true },
-  { cle: 'proprietaire', libelle: 'Propriétaire', valeur: (l) => l.proprietaire?.nom || '' },
-  { cle: 'adresse_lotissement', libelle: 'Adresse dans le lotissement', valeur: (l) => l.adresse_lotissement || '' },
-  // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
-  { cle: 'superficie', libelle: 'Superficie', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
-  { cle: 'adresse_communication', libelle: 'Adresse de communication', valeur: (l) => l.proprietaire?.adresse_communication || '' },
-  { cle: 'email', libelle: 'Email', valeur: (l) => l.proprietaire?.email || '' },
-  { cle: 'telephone', libelle: 'Téléphone', valeur: (l) => l.proprietaire?.telephone || '' },
-  // MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint pas le
-  // propriétaire (colotis étrangers surtout). Il figure dans la liste parce que
-  // sur ces parcelles-là c'est LA seule adresse utilisable : s'en tenir à la
-  // colonne « Email » laisserait croire qu'on n'a aucun moyen de les joindre.
-  // ⚠ Ce n'est pas le gérant — le gérant dirige la société, le mandataire relaie.
-  // Tri sur le NOM quand il existe, sinon sur l'adresse : une fiche sans nom
-  // (0B 240) doit se ranger avec les autres mandataires, pas avec les vides.
   {
-    cle: 'mandataire',
+    // ⚠ « Parcelle » et non « Lot » : la ligne porte la parcelle cadastrale, et
+    // une parcelle n'est pas un lot — deux d'entre elles pèsent 1,81 et 1,19 lot,
+    // soit 51 lots pour 50 parcelles. Le nombre de lots se lit sur la fiche.
+    libelle: 'Parcelle',
+    tris: [
+      { cle: 'lot', libelle: 'parcelle', valeur: (l) => l.numero || '', numerique: true },
+      // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
+      { cle: 'superficie', libelle: 'surface', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
+    ],
+  },
+  {
+    libelle: 'Adresse de la parcelle',
+    tris: [{ cle: 'adresse_lotissement', libelle: 'adresse', valeur: (l) => l.adresse_lotissement || '' }],
+  },
+  {
+    libelle: 'Adresse de communication',
+    tris: [{ cle: 'adresse_communication', libelle: 'adresse', valeur: (l) => l.proprietaire?.adresse_communication || '' }],
+  },
+  {
+    libelle: 'Propriétaire',
+    tris: [
+      { cle: 'proprietaire', libelle: 'nom', valeur: (l) => l.proprietaire?.nom || '' },
+      { cle: 'email', libelle: 'email', valeur: (l) => l.proprietaire?.email || '' },
+    ],
+  },
+  {
+    // MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint pas le
+    // propriétaire (colotis étrangers surtout). Il a sa colonne parce que sur
+    // ces parcelles-là c'est LA seule adresse utilisable : s'en tenir à celle du
+    // propriétaire laisserait croire qu'on n'a aucun moyen de les joindre.
+    // ⚠ Ce n'est pas le gérant — le gérant dirige la société, le mandataire relaie.
     libelle: 'Mandataire',
-    valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '',
+    // Tri sur le NOM quand il existe, sinon sur l'adresse : une fiche sans nom
+    // (0B 240) doit se ranger avec les autres mandataires, pas avec les vides.
+    tris: [{ cle: 'mandataire', libelle: 'nom', valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '' }],
   },
 ]
+
+// Toutes les clés de tri à plat : l'écran range par une CLÉ, pas par une colonne.
+const TRIS = COLONNES.flatMap((c) => c.tris)
 
 // Le tri choisi est mémorisé PAR NAVIGATEUR : on consulte ce registre en
 // allers-retours (liste → fiche → liste), et retrouver la colonne « Superficie »
@@ -54,7 +80,7 @@ function lireTri() {
     const brut = JSON.parse(localStorage.getItem(CLE_TRI) || 'null')
     // Une colonne supprimée depuis, ou un contenu bricolé à la main, ne doit pas
     // casser l'écran : on ne retient que ce qui existe encore.
-    if (brut && COLONNES.some((c) => c.cle === brut.cle) && (brut.sens === 1 || brut.sens === -1)) return brut
+    if (brut && TRIS.some((t) => t.cle === brut.cle) && (brut.sens === 1 || brut.sens === -1)) return brut
   } catch { /* stockage indisponible */ }
   return TRI_DEFAUT
 }
@@ -96,7 +122,7 @@ function Contenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const colonne = COLONNES.find((c) => c.cle === tri.cle) || COLONNES[0]
+  const colonne = TRIS.find((t) => t.cle === tri.cle) || TRIS[0]
   const filtres = useMemo(() => {
     const terme = q.trim().toLowerCase()
     const liste = terme
@@ -218,22 +244,62 @@ function Contenu() {
               <thead>
                 <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
                   {COLONNES.map((c) => (
-                    <th key={c.cle} className="px-4 py-2.5 font-medium">
-                      <button onClick={() => trierPar(c.cle)} className="inline-flex items-center gap-1 hover:text-navy-700">
-                        {c.libelle}
-                        {tri.cle === c.cle && <span className="text-navy-600">{tri.sens === 1 ? '▲' : '▼'}</span>}
-                      </button>
+                    <th key={c.libelle} className="px-4 py-2.5 align-top font-medium">
+                      <span className="block">{c.libelle}</span>
+                      {/* Les clés de tri sous l'intitulé. Une seule clé pour la
+                          plupart des colonnes ; deux quand la cellule empile
+                          deux données qu'on peut vouloir classer. */}
+                      <span className="mt-0.5 flex flex-wrap gap-2 text-[10px] normal-case">
+                        {c.tris.map((t) => (
+                          <button
+                            key={t.cle}
+                            onClick={() => trierPar(t.cle)}
+                            className={`inline-flex items-center gap-0.5 hover:text-navy-700 ${
+                              tri.cle === t.cle ? 'font-semibold text-navy-700' : 'text-slate-400'
+                            }`}
+                          >
+                            {t.libelle}
+                            {tri.cle === t.cle && <span>{tri.sens === 1 ? '▲' : '▼'}</span>}
+                          </button>
+                        ))}
+                      </span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-50">
                 {filtres.map((l) => (
-                  <tr key={l.id} className="hover:bg-navy-50/40">
+                  <tr key={l.id} className="hover:bg-navy-50/40 align-top">
+                    {/* 1 — la parcelle, et sa surface dessous. La surface est
+                        l'assiette des voix et des charges : elle appartient à la
+                        parcelle, pas au propriétaire, d'où le regroupement. */}
                     <td className="whitespace-nowrap px-4 py-3">
                       <Link to={`/proprietaires/${l.id}`} className="font-medium text-navy-700 hover:underline">{l.numero}</Link>
                       {l.anciens > 0 && <span className="ml-2 text-xs text-slate-400">{l.anciens} ancien(s)</span>}
+                      {l.superficie != null ? (
+                        <span className="block text-xs text-slate-500">
+                          {num(l.superficie)} m²
+                          {/* La part n'a de sens que rapportée au total : c'est
+                              elle, pas la surface, qui donne le poids de vote. */}
+                          {l.part != null && <span className="text-slate-400"> · {l.part.toFixed(2)} %</span>}
+                        </span>
+                      ) : <span className="block text-xs italic text-slate-400">surface à renseigner</span>}
+                      {/* Une parcelle vaut un lot, sauf les deux qui pèsent 1,81
+                          et 1,19 : c'est trop structurant pour rester sur la fiche. */}
+                      {Number(l.nombre_lots) !== 1 && (
+                        <span className="block text-xs font-medium text-navy-600">{num(l.nombre_lots)} lots</span>
+                      )}
                     </td>
+
+                    {/* 2 — l'adresse du bien. */}
+                    <td className="px-4 py-3 text-slate-600">{l.adresse_lotissement || '—'}</td>
+
+                    {/* 3 — l'adresse où l'on écrit, souvent très différente. */}
+                    <td className="px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
+
+                    {/* 4 — la personne et ses coordonnées, d'un seul tenant :
+                        éparpillées en trois colonnes, il fallait balayer la ligne
+                        pour reconstituer un interlocuteur. */}
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
                       {/* Le second indivisaire : deux noms, une seule propriété. */}
@@ -245,27 +311,13 @@ function Contenu() {
                           {l.proprietaire.gerant_fonction ? `${l.proprietaire.gerant_fonction} : ` : ''}{l.proprietaire.gerant_nom}
                         </span>
                       )}
+                      {l.proprietaire?.email && <span className="block text-xs text-slate-500">{l.proprietaire.email}</span>}
+                      {l.proprietaire?.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{l.proprietaire.telephone}</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{l.adresse_lotissement || '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-slate-700">
-                      {l.superficie != null ? (
-                        <>
-                          {num(l.superficie)} m²
-                          {/* La part n'a de sens que rapportée au total : c'est
-                              elle, pas la surface, qui donne le poids de vote. */}
-                          {l.part != null && <span className="block text-xs text-slate-400">{l.part.toFixed(2)} %</span>}
-                          {Number(l.nombre_lots) !== 1 && (
-                            <span className="block text-xs font-medium text-navy-600">{num(l.nombre_lots)} lots</span>
-                          )}
-                        </>
-                      ) : <span className="italic text-slate-400">à renseigner</span>}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
-                    <td className="px-4 py-3 text-slate-600">{l.proprietaire?.email || '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{l.proprietaire?.telephone || '—'}</td>
-                    {/* Nom, e-mail et téléphone du mandataire ensemble : séparés,
-                        on ne saurait pas à qui appartient l'adresse. Une fiche
-                        peut n'avoir que l'adresse (le nom reste à établir). */}
+
+                    {/* 5 — le mandataire, nom et adresse ensemble : séparés, on ne
+                        saurait pas à qui appartient l'adresse. Une fiche peut
+                        n'avoir que l'adresse, le nom restant à établir. */}
                     <td className="px-4 py-3 text-slate-600">
                       {l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email ? (
                         <>
@@ -274,7 +326,7 @@ function Contenu() {
                             <span className="block text-xs text-slate-500">{l.proprietaire.mandataire_email}</span>
                           )}
                           {l.proprietaire.mandataire_telephone && (
-                            <span className="block text-xs text-slate-500">{l.proprietaire.mandataire_telephone}</span>
+                            <span className="block whitespace-nowrap text-xs text-slate-500">{l.proprietaire.mandataire_telephone}</span>
                           )}
                         </>
                       ) : '—'}
