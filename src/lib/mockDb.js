@@ -1451,6 +1451,7 @@ export const mockRepo = {
       id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
+      mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       date_acquisition: null, date_cession: null, observations: null,
       created_at: nowISO(), updated_at: nowISO(), ...patch,
     }
@@ -1482,6 +1483,7 @@ export const mockRepo = {
       id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
+      mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
       ...nouveau, date_acquisition: date_mutation,
     }

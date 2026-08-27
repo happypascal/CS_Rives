@@ -29,6 +29,23 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 3) — mandataire ≠ gérant (037), totaux, tri mémorisé
+
+- **✅ Le MANDATAIRE est séparé du GÉRANT** (migration 037). Contresens de la 036 corrigé par
+  Pascal : « le mandataire n'est pas le gérant, qui est le gérant de la SCI. C'est le cas pour les
+  étrangers, on parle avec des intermédiaires. » Le gérant est un **organe de la société** (il
+  n'existe que si le propriétaire en est une, et il l'engage) ; le mandataire est un **relais**
+  (agence, conseil, famille) qui peut exister sur une **personne physique**, et une SCI peut avoir
+  son gérant à l'étranger ET un mandataire sur place. Trois colonnes neuves plutôt qu'un renommage.
+  Les `gerant_*` de la 036 sont **conservées** : seul leur libellé à l'écran était faux.
+  ⚠ Le mandataire suit le PROPRIÉTAIRE : il ne s'hérite **jamais** à la mutation.
+- **✅ Totaux en en-tête** : lots au registre, propriétaires actuels (+ lots vacants), superficie
+  totale. Le compte des propriétaires est **distinct** de celui des lots — un lot vacant n'en a pas.
+- **✅ Tri mémorisé** par navigateur (`localStorage`), avec retour silencieux au tri par défaut si le
+  stockage est indisponible ou si la colonne mémorisée n'existe plus. C'est un confort d'affichage
+  propre à la personne et à son poste : **rien à faire en base**.
+- La recherche couvre désormais aussi le nom du mandataire.
+
 ## Session 2026-08-27 (suite 2) — REGISTRE ALIMENTÉ : 50 lots, 104 646 m²
 
 - **✅ Les 50 lots et leurs propriétaires actuels sont en base**, importés de
@@ -626,7 +643,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `037` (001-029 et 031-036 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `038`. ⚠ **037 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-036 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

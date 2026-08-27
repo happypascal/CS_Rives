@@ -25,6 +25,25 @@ const COLONNES = [
   { cle: 'telephone', libelle: 'Téléphone', valeur: (l) => l.proprietaire?.telephone || '' },
 ]
 
+// Le tri choisi est mémorisé PAR NAVIGATEUR : on consulte ce registre en
+// allers-retours (liste → fiche → liste), et retrouver la colonne « Superficie »
+// ou « Propriétaire » à chaque retour est une corvée. `localStorage` suffit —
+// c'est un confort d'affichage, propre à la personne et à son poste, il n'a rien
+// à faire en base. Toute lecture ou écriture peut lever (navigation privée,
+// site data bloqué) : on retombe alors silencieusement sur le tri par défaut.
+const CLE_TRI = 'cs-rives.registre-proprietaires.tri'
+const TRI_DEFAUT = { cle: 'lot', sens: 1 }
+
+function lireTri() {
+  try {
+    const brut = JSON.parse(localStorage.getItem(CLE_TRI) || 'null')
+    // Une colonne supprimée depuis, ou un contenu bricolé à la main, ne doit pas
+    // casser l'écran : on ne retient que ce qui existe encore.
+    if (brut && COLONNES.some((c) => c.cle === brut.cle) && (brut.sens === 1 || brut.sens === -1)) return brut
+  } catch { /* stockage indisponible */ }
+  return TRI_DEFAUT
+}
+
 export default function ProprietairesList() {
   return (
     <RgpdGate>
@@ -40,7 +59,7 @@ function Contenu() {
   const [error, setError] = useState('')
   const [lots, setLots] = useState([])
   const [q, setQ] = useState('')
-  const [tri, setTri] = useState({ cle: 'lot', sens: 1 })
+  const [tri, setTri] = useState(lireTri)
   const [nouveau, setNouveau] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -67,7 +86,8 @@ function Contenu() {
     const terme = q.trim().toLowerCase()
     const liste = terme
       ? lots.filter((l) =>
-          [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.gerant_nom, l.proprietaire?.email]
+          [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.gerant_nom,
+           l.proprietaire?.mandataire_nom, l.proprietaire?.email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
       : [...lots]
@@ -79,8 +99,16 @@ function Contenu() {
     })
   }, [lots, q, colonne, tri.sens])
 
+  const vacants = lots.filter((l) => !l.proprietaire).length
+
   const trierPar = (cle) =>
-    setTri((t) => (t.cle === cle ? { cle, sens: -t.sens } : { cle, sens: 1 }))
+    setTri((t) => {
+      const suivant = t.cle === cle ? { cle, sens: -t.sens } : { cle, sens: 1 }
+      try {
+        localStorage.setItem(CLE_TRI, JSON.stringify(suivant))
+      } catch { /* stockage indisponible : le tri vaut pour la session */ }
+      return suivant
+    })
 
   const creer = async () => {
     if (!nouveau.trim()) return
@@ -105,19 +133,27 @@ function Contenu() {
         subtitle="Membres de l’ASL : un lot, son propriétaire actuel, et l’historique des mutations."
       />
 
-      {/* Le total des superficies est le DÉNOMINATEUR des voix en AG et des
-          charges. On l'affiche avec le nombre de lots qui y contribuent : tant
-          que le registre est incomplet, les parts affichées sont provisoires, et
-          le taire donnerait des tantièmes faux qui auraient l'air justes. */}
+      {/* Totaux du registre. La superficie totale est le DÉNOMINATEUR des voix
+          en AG et des charges — on l'affiche avec le nombre de lots qui y
+          contribuent : tant que le registre est incomplet, les parts sont
+          provisoires, et le taire donnerait des tantièmes faux qui auraient
+          l'air justes. Le compte des propriétaires est distinct de celui des
+          lots : un lot vacant n'en a pas, et un même propriétaire peut en
+          détenir plusieurs. */}
       {lots.length > 0 && (
-        <Card className="mb-4 px-5 py-3">
-          <p className="text-sm text-slate-700">
-            <strong>{num(lots[0].superficie_totale)} m²</strong> au total sur{' '}
-            <strong>{lots.filter((l) => l.superficie).length}</strong> lot(s) renseigné(s), pour {lots.length} lot(s) au registre.
-            {lots.some((l) => !l.superficie) && (
-              <span className="text-amber-700"> — les parts affichées sont <strong>provisoires</strong> tant que des superficies manquent.</span>
-            )}
-          </p>
+        <Card className="mb-4 grid gap-3 px-5 py-3 sm:grid-cols-3">
+          <Total valeur={lots.length} libelle="lot(s) au registre" />
+          <Total
+            valeur={lots.filter((l) => l.proprietaire).length}
+            libelle="propriétaire(s) actuel(s)"
+            detail={vacants > 0 ? `${vacants} lot(s) sans propriétaire` : null}
+          />
+          <Total
+            valeur={`${num(lots[0].superficie_totale)} m²`}
+            libelle="superficie totale"
+            detail={`sur ${lots.filter((l) => l.superficie).length} lot(s) renseigné(s)`}
+            alerte={lots.some((l) => !l.superficie) ? 'parts provisoires' : null}
+          />
         </Card>
       )}
 
@@ -202,6 +238,18 @@ function Contenu() {
           </div>
         </Card>
       )}
+    </div>
+  )
+}
+
+// Une case de total : le chiffre d'abord, ce qu'il compte ensuite.
+function Total({ valeur, libelle, detail, alerte }) {
+  return (
+    <div>
+      <p className="text-lg font-semibold text-navy-800">{valeur}</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{libelle}</p>
+      {detail && <p className="text-xs text-slate-400">{detail}</p>}
+      {alerte && <p className="text-xs font-medium text-amber-700">{alerte}</p>}
     </div>
   )
 }

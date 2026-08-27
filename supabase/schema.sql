@@ -390,8 +390,16 @@ create table if not exists proprietaires (
   est_societe           boolean not null default false,
   gerant_nom            text,
   gerant_fonction       text,                 -- gérant, président, associé…
-  gerant_email          text,                 -- « gérant » et « mandataire » désignent ici la même personne
+  gerant_email          text,                 -- coordonnées du GÉRANT, organe de la société propriétaire
   gerant_telephone      text,
+
+  -- Le MANDATAIRE n'est PAS le gérant (migration 037) : c'est l'intermédiaire à
+  -- qui l'on parle quand on n'atteint pas le propriétaire — cas courant des
+  -- colotis étrangers. Il peut exister pour une personne physique, et une SCI
+  -- peut avoir un gérant à l'étranger ET un mandataire sur place.
+  mandataire_nom        text,
+  mandataire_email      text,
+  mandataire_telephone  text,
 
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.
@@ -435,6 +443,9 @@ begin
   if new.gerant_email is not null then
     new.gerant_email := lower(btrim(new.gerant_email));
   end if;
+  if new.mandataire_email is not null then
+    new.mandataire_email := lower(btrim(new.mandataire_email));
+  end if;
   return new;
 end $normalise_email_prop$;
 
@@ -442,7 +453,7 @@ drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
 -- ⚠ Écoute les DEUX colonnes d'e-mail : limité à `email`, une correction de
 -- l'adresse du mandataire passerait à côté de la normalisation.
 create trigger trg_proprietaires_normalize_email
-  before insert or update of email, gerant_email on proprietaires
+  before insert or update of email, gerant_email, mandataire_email on proprietaires
   for each row execute function proprietaires_normalize_email();
 
 -- ------------------------------------------- acceptation de la mention RGPD

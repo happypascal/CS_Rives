@@ -16,6 +16,7 @@ const CHAMPS_VIDES = {
   nom: '', est_societe: false, gerant_nom: '', gerant_fonction: '',
   adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
   gerant_email: '', gerant_telephone: '',
+  mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
   date_acquisition: '', observations: '',
 }
 
@@ -107,6 +108,9 @@ function Contenu() {
         gerant_fonction: form.gerant_fonction || null,
         gerant_email: form.gerant_email || null,
         gerant_telephone: form.gerant_telephone || null,
+        mandataire_nom: form.mandataire_nom || null,
+        mandataire_email: form.mandataire_email || null,
+        mandataire_telephone: form.mandataire_telephone || null,
         adresse_communication: form.adresse_communication || null,
         adresse_gerant: form.adresse_gerant || null,
         email: form.email || null,
@@ -134,6 +138,9 @@ function Contenu() {
         gerant_fonction: nouveau.gerant_fonction || null,
         gerant_email: nouveau.gerant_email || null,
         gerant_telephone: nouveau.gerant_telephone || null,
+        mandataire_nom: nouveau.mandataire_nom || null,
+        mandataire_email: nouveau.mandataire_email || null,
+        mandataire_telephone: nouveau.mandataire_telephone || null,
         adresse_communication: nouveau.adresse_communication || null,
         adresse_gerant: nouveau.adresse_gerant || null,
         email: nouveau.email || null,
@@ -219,17 +226,19 @@ function Contenu() {
                   Le propriétaire est une société (SCI, indivision…)
                 </label>
               </div>
-              {/* Gérant : affiché seulement pour une société. Sur une personne
-                  physique, ces deux champs n'ont pas de sens et encombrent. */}
+              {/* GÉRANT : organe de la société propriétaire, affiché seulement
+                  si le propriétaire EST une société. Sur une personne physique
+                  ces champs n'ont aucun sens. ⚠ À ne pas confondre avec le
+                  mandataire ci-dessous : le gérant engage la société. */}
               {form.est_societe && (
                 <>
-                  <Input label="Nom du gérant / mandataire" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
+                  <Input label="Nom du gérant" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
                   <Input label="Fonction" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
                   <div className="sm:col-span-2">
-                    <Input label="Adresse du mandataire" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
+                    <Input label="Adresse du gérant" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
                   </div>
-                  <Input label="Email du mandataire" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone du mandataire" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
+                  <Input label="Email du gérant" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone du gérant" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
                 </>
               )}
               <div className="sm:col-span-2">
@@ -237,6 +246,26 @@ function Contenu() {
               </div>
               <Input label="Email" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
               <Input label="Téléphone" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
+              {/* MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint
+                  pas le propriétaire lui-même (colotis étrangers surtout).
+                  Affiché pour TOUT propriétaire, société ou non : un particulier
+                  résidant à l'étranger passe par un intermédiaire tout autant
+                  qu'une SCI, et une SCI peut avoir son gérant au loin ET un
+                  mandataire sur place. Ce n'est PAS le gérant. */}
+              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Mandataire (intermédiaire)
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  La personne à contacter à la place du propriétaire. Distincte du gérant : le gérant
+                  dirige la société, le mandataire ne fait que relayer.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Input label="Nom du mandataire" value={form.mandataire_nom} onChange={set('mandataire_nom')} readOnly={!peutSaisir} />
+                  <Input label="Email du mandataire" type="email" value={form.mandataire_email} onChange={set('mandataire_email')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone du mandataire" value={form.mandataire_telephone} onChange={set('mandataire_telephone')} readOnly={!peutSaisir} />
+                </div>
+              </div>
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
               <div className="sm:col-span-2">
                 <Textarea label="Observations" rows={2} value={form.observations} onChange={set('observations')} readOnly={!peutSaisir} />
@@ -262,6 +291,7 @@ function Contenu() {
                       {p.est_societe && <Badge tone="gray">société</Badge>}
                     </div>
                     {p.gerant_nom && <p className="text-xs text-slate-500">{p.gerant_fonction ? `${p.gerant_fonction} : ` : ''}{p.gerant_nom}</p>}
+                    {p.mandataire_nom && <p className="text-xs text-slate-500">mandataire : {p.mandataire_nom}</p>}
                     {/* Les deux dates portent la mutation : il n'y a pas de
                         table « mutations » à tenir en plus. */}
                     <p className="mt-1 text-xs text-slate-500">
@@ -311,13 +341,13 @@ function Contenu() {
               </div>
               {mutation.est_societe && (
                 <>
-                  <Input label="Nom du gérant / mandataire" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
+                  <Input label="Nom du gérant" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
                   <Input label="Fonction" value={mutation.gerant_fonction} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction: e.target.value }))} />
                   <div className="sm:col-span-2">
-                    <Input label="Adresse du mandataire" value={mutation.adresse_gerant} onChange={(e) => setMutation((m) => ({ ...m, adresse_gerant: e.target.value }))} />
+                    <Input label="Adresse du gérant" value={mutation.adresse_gerant} onChange={(e) => setMutation((m) => ({ ...m, adresse_gerant: e.target.value }))} />
                   </div>
-                  <Input label="Email du mandataire" type="email" value={mutation.gerant_email} onChange={(e) => setMutation((m) => ({ ...m, gerant_email: e.target.value }))} />
-                  <Input label="Téléphone du mandataire" value={mutation.gerant_telephone} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone: e.target.value }))} />
+                  <Input label="Email du gérant" type="email" value={mutation.gerant_email} onChange={(e) => setMutation((m) => ({ ...m, gerant_email: e.target.value }))} />
+                  <Input label="Téléphone du gérant" value={mutation.gerant_telephone} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone: e.target.value }))} />
                 </>
               )}
               <div className="sm:col-span-2">
@@ -325,6 +355,13 @@ function Contenu() {
               </div>
               <Input label="Email" type="email" value={mutation.email} onChange={(e) => setMutation((m) => ({ ...m, email: e.target.value }))} />
               <Input label="Téléphone" value={mutation.telephone} onChange={(e) => setMutation((m) => ({ ...m, telephone: e.target.value }))} />
+              {/* Le mandataire suit le PROPRIÉTAIRE, pas le lot : le nouveau
+                  venu a le sien, ou n'en a pas. Il ne s'hérite jamais. */}
+              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
+                <Input label="Nom du mandataire" value={mutation.mandataire_nom} onChange={(e) => setMutation((m) => ({ ...m, mandataire_nom: e.target.value }))} />
+                <Input label="Email du mandataire" type="email" value={mutation.mandataire_email} onChange={(e) => setMutation((m) => ({ ...m, mandataire_email: e.target.value }))} />
+                <Input label="Téléphone du mandataire" value={mutation.mandataire_telephone} onChange={(e) => setMutation((m) => ({ ...m, mandataire_telephone: e.target.value }))} />
+              </div>
             </div>
           </div>
         )}

@@ -460,6 +460,15 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   d'un projet se dérive de ses résolutions. Le dénominateur est le total des superficies
   **renseignées** — tant que le registre est incomplet les parts sont provisoires, et l'écran le
   dit. `assemblees_generales.m2_presents` reste **saisi** : c'est un constat de séance, pas un calcul.
+- **LE MANDATAIRE N'EST PAS LE GÉRANT** (migration 037, correction Pascal 2026-08-27). Le **gérant**
+  est un organe de la société propriétaire : il n'existe que si le propriétaire EST une société, et
+  il l'engage. Le **mandataire** est l'intermédiaire à qui l'on parle quand on n'atteint pas le
+  propriétaire — cas courant des colotis étrangers. Il peut exister sur une **personne physique**,
+  et une SCI peut avoir son gérant à l'étranger ET un mandataire sur place. D'où `mandataire_nom`
+  / `_email` / `_telephone` **distincts** des `gerant_*`, et un bloc affiché pour **tout**
+  propriétaire, pas seulement les sociétés. Les fondre écrirait dans un registre légal que
+  l'intermédiaire dirige la société. ⚠ Le mandataire suit le PROPRIÉTAIRE, pas le lot : il ne
+  s'hérite jamais à la mutation.
 - **Mention RGPD acceptée une fois par personne** (`membres_cs.registre_rgpd_accepte_le`, tracée par
   `trg_membres_audit_rgpd`). L'écran d'acceptation s'affiche **à la place** du registre, jamais
   par-dessus. Texte dans `src/lib/rgpdRegistre.js`, partagé par l'écran et le rappel permanent —
