@@ -2,6 +2,12 @@
 // le plan gratuit n'a AUCUNE sauvegarde. À remplacer par les backups automatiques
 // de Supabase Pro (cf. docs/ETAT_COURANT.md, backlog transfert ASL).
 //
+// ⚠ LA SAUVEGARDE CONTIENT DES DONNÉES PERSONNELLES depuis la migration 035
+// (`lots`, `proprietaires` : noms, adresses privées, e-mails, téléphones de
+// propriétaires). C'est exactement le « fichier exporté » contre lequel met en
+// garde la mention RGPD du registre. Le dossier `backup/` doit rester sur une
+// machine de confiance, chiffrée, et n'être transmis à personne.
+//
 // Ce que ça sauvegarde :
 //   - toutes les tables `public` → un .json par table (les DONNÉES ; le schéma/RLS
 //     est déjà versionné dans supabase/schema.sql, inutile de le re-dumper) ;
@@ -35,7 +41,18 @@ if (!url || !key) {
 
 // Liste tenue à jour depuis supabase/schema.sql (create table). Si une table est
 // ajoutée par une migration, l'ajouter ici — sinon elle ne serait pas sauvegardée.
-const TABLES = [
+// ⚠ CETTE LISTE N'EST QU'UN FILET DE SECOURS, pas la source de vérité.
+//
+// Elle était codée en dur et a DÉRIVÉ : figée à 11 tables, elle en ignorait six
+// ajoutées depuis (decisions_historique, cron_runs, questions_reponses_projet,
+// journal_projet, lots, proprietaires) — dont le registre des propriétaires.
+// Une sauvegarde qui oublie une table sans le dire est pire que pas de
+// sauvegarde : on croit être couvert.
+//
+// Les tables sont donc DÉCOUVERTES à chaque exécution (cf. listerTables) et
+// cette liste ne sert que si la découverte échoue. Toute table manquante à la
+// découverte est signalée bruyamment.
+const TABLES_SECOURS = [
   'membres_cs',
   'assemblees_generales',
   'resolutions_ag',
@@ -43,8 +60,14 @@ const TABLES = [
   'decisions',
   'votes',
   'questions_reponses',
+  'questions_reponses_projet',
+  'journal_projet',
   'signature_batches',
   'decision_status_history',
+  'decisions_historique',
+  'cron_runs',
+  'lots',
+  'proprietaires',
   'comptes_ag',
   'audit_log',
 ]
@@ -52,6 +75,32 @@ const BUCKET = 'documents'
 const PAGE = 1000
 
 const supabase = createClient(url, key, { auth: { persistSession: false } })
+
+// Découverte des tables : PostgREST publie à la racine de son API une
+// description OpenAPI dont les `definitions` sont exactement les tables exposées.
+// C'est la seule source qui ne peut pas dériver — elle vient de la base
+// elle-même. Sans elle, il faudrait penser à mettre ce fichier à jour à chaque
+// migration, et on ne le ferait pas (on ne l'a pas fait).
+async function listerTables() {
+  try {
+    const r = await fetch(`${url}/rest/v1/`, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const spec = await r.json()
+    const trouvees = Object.keys(spec.definitions || {}).sort()
+    if (!trouvees.length) throw new Error('aucune table dans la description OpenAPI')
+    // Une table connue mais absente de la découverte = anomalie à voir tout de
+    // suite (droits, table renommée…), pas à laisser passer en silence.
+    const manquantes = TABLES_SECOURS.filter((t) => !trouvees.includes(t))
+    if (manquantes.length) {
+      console.warn(`⚠ Tables attendues mais non découvertes : ${manquantes.join(', ')}`)
+    }
+    return trouvees
+  } catch (e) {
+    console.warn(`⚠ Découverte des tables impossible (${e.message}) — repli sur la liste codée en dur.`)
+    console.warn('⚠ Une table ajoutée depuis la dernière mise à jour de ce fichier NE SERA PAS sauvegardée.')
+    return TABLES_SECOURS
+  }
+}
 
 // Horodatage sûr pour un nom de dossier : 2026-07-20T14-30-05
 const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-')
@@ -107,8 +156,11 @@ async function main() {
   await mkdir(outDir, { recursive: true })
   console.log(`📦 Sauvegarde → ${outDir}`)
 
+  const tables = await listerTables()
+  console.log(`   ${tables.length} table(s) à sauvegarder`)
+
   let totalRows = 0
-  for (const table of TABLES) {
+  for (const table of tables) {
     const n = await dumpTable(table)
     totalRows += n
     console.log(`  ✓ ${table} : ${n} ligne(s)`)
@@ -119,9 +171,11 @@ async function main() {
 
   await writeFile(
     join(outDir, 'manifest.json'),
-    JSON.stringify({ date: new Date().toISOString(), url, tables: TABLES, totalRows, files: nFiles }, null, 2),
+    JSON.stringify({ date: new Date().toISOString(), url, tables, totalRows, files: nFiles }, null, 2),
   )
   console.log(`✅ Terminé : ${totalRows} ligne(s), ${nFiles} fichier(s). Restauration : schéma via supabase/schema.sql, puis réinsertion des .json.`)
+  console.log('⚠ Cette sauvegarde contient des DONNÉES PERSONNELLES (registre des propriétaires).')
+  console.log('  À conserver sur une machine de confiance, chiffrée, et à ne transmettre à personne.')
 }
 
 main().catch((e) => {

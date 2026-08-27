@@ -584,7 +584,16 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
   ⚠ Le **staging** est **en pause** (inactivité, plan gratuit) et n'a que jusqu'à ~017 : à réactiver
   + remettre à niveau (rejouer `schema.sql` ou 018→025) avant tout test.
 - **Sauvegarde prod = MANUELLE et non planifiée** : `scripts/backup.mjs` ne tourne que si on le
-  lance à la main (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` en env). **Donc pas de sauvegarde
+  lance à la main (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` en env).
+  ⚠ **Corrigé le 2026-08-27** : sa liste de tables était codée en dur et avait **dérivé** — figée à
+  11 tables, elle en ignorait **six** ajoutées depuis, dont `lots` et `proprietaires`. Une
+  sauvegarde lancée la veille aurait laissé le registre des propriétaires de côté **en silence**.
+  Les tables sont désormais **découvertes** à chaque exécution via la description OpenAPI de
+  PostgREST (`GET /rest/v1/`) : la seule source qui ne peut pas dériver, puisqu'elle vient de la
+  base. La liste en dur ne sert plus que de filet, et toute table attendue mais non découverte est
+  signalée. ⚠ **La sauvegarde contient désormais des DONNÉES PERSONNELLES** (registre des
+  propriétaires) : machine de confiance, chiffrée, transmise à personne — c'est le « fichier
+  exporté » que la mention RGPD vise expressément. **Donc pas de sauvegarde
   auto aujourd'hui.** Décidé de **ne pas** faire de keep-alive/cron (pansement) — le vrai correctif
   reste **Supabase Pro** (backups auto + jamais de pause). Le mail Supabase du 27/07 (pause du
   staging) rappelle que la prod pourrait aussi se mettre en pause sur une longue période creuse.
