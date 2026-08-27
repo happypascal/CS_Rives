@@ -29,6 +29,47 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 6) — COORDONNÉES DES COLOTIS : 49 parcelles joignables sur 50
+
+Source : six exports vCard déposés par Pascal dans `_1_lotissement/propriétaires` (105 fiches, très
+redondantes). **Aucune migration** — uniquement des `update` sur des colonnes existantes.
+
+- **✅ 46 e-mails de propriétaire, 5 téléphones, 4 mandataires.** Seule **0B 210** (SCI Entre Lac et
+  Montagne) reste sans aucun contact.
+- **Écrit UNIQUEMENT `email`, `telephone` et `mandataire_*`.** Aucun nom du registre n'a été écrasé
+  par celui d'une fiche de contact : les orthographes divergent trop, et le registre avait déjà été
+  corrigé une fois. Même règle que pour l'import Foncia, en sens inverse.
+- **Arbitrages de Pascal** (questions posées AVANT tout écrit, à sa demande) :
+  - **0B 201, SCI Logudoro** : deux adresses. Le propriétaire est **Pais Tino** ; Marc Pais est
+    associé de la SCI **et membre du CS**. Ses coordonnées n'entrent donc **pas** au registre des
+    propriétaires — elles ont leur place dans « Membres du CS ». `gerant_nom` corrigé en Pais Tino.
+  - **Mandataires** : 0B 198 (Nayla Akel), 0B 229 (Mehdi — le gérant nommé est Jassim Al Sulaiti,
+    ce n'est donc pas lui), 0B 240, et 0B 220 (Mme Haumont, sur réponse explicite de Pascal —
+    ⚠ il doit encore le lui confirmer, un retrait éventuel est un simple UPDATE).
+  - **SCI dont le contact EST le gérant nommé** (Le Clapotis, Kitka, Ravoire, Logudoro) : l'adresse
+    va dans l'**e-mail du propriétaire**, `gerant_email` restant vide tant qu'on n'en connaît pas
+    une seconde, distincte.
+  - Les noms de fichiers (« absents », « missing ») ne sont **pas** consignés : si cela désigne des
+    absents à une AG, c'est un constat de séance, pas une donnée de registre.
+- **⚠ TROIS ADRESSES ÉCARTÉES, délibérément** :
+  - `dominique.naz@ipsofacto.notaire.fr` au nom de **M. Gogler**, ANCIEN propriétaire de 0B 210 :
+    c'est une **étude notariale**, ni le propriétaire actuel ni un mandataire établi. C'est
+    pourtant la seule piste connue pour joindre la SCI Entre Lac et Montagne — **piste à exploiter,
+    pas donnée à écrire**.
+  - `juliendecima@gmail.com` (0B 232) : seconde adresse de **Julien** lui-même, alors qu'`email_2`
+    doit porter celle de la **seconde indivisaire**. Laissée vide plutôt que fausse.
+  - `a-holding@orange.fr` (0B 208, Pflieger) : posée en e-mail de la propriétaire puisque c'est ce
+    que porte sa fiche, mais **elle a tout d'une société** — à rebasculer en mandataire si Pascal
+    le confirme.
+- **⚠ PIÈGE RENCONTRÉ, à retenir** : un `update ... from (values ...) join lots on numero` **ne
+  remonte aucune erreur** quand un numéro ne matche plus — il écrit simplement une ligne de moins.
+  L'adresse de Luscher a été perdue en silence parce que la parcelle avait été renommée `0B 474` →
+  `0B 474+263` entre-temps. **Compter les lignes écrites après coup est le seul filet.**
+- Travail mené **en parallèle d'une autre session** sur la même base (import Foncia + migration
+  039). Périmètres disjoints et explicitement convenus : `email` / `telephone` / `mandataire_*`
+  ici, `adresse_communication` / `numero_syndic` là-bas. Les deux dépouillements des vCards ont été
+  faits séparément et **donnent exactement les mêmes chiffres** — 49 parcelles joignables sur 50.
+
 ## Session 2026-08-27 (suite 5) — liste Foncia importée + n° syndic (039 ✅ appliquée)
 
 - **✅ 48 adresses de communication officielles** importées depuis la liste Foncia (PDF fourni par
