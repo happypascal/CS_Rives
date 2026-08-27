@@ -29,6 +29,27 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 4) — nombre de lots + indivision (migration 038)
+
+- **✅ `lots.nombre_lots`, à 1 par défaut.** Le registre compte 50 parcelles mais **51 lots** : deux
+  parcelles pèsent 1,81 et 1,19. L'en-tête annonçait donc « 50 lots », un chiffre faux.
+  ⚠ **Arbitrage de Pascal** : plutôt que de **taire** le total (ma première réponse), porter le
+  nombre de lots **sur chaque parcelle**. Le registre redevient capable de compter juste, et les
+  deux exceptions cessent d'être une note en observations que personne n'additionne. Le total se
+  **somme sur la colonne**, jamais sur le nombre de lignes.
+- **✅ Indivision : deux propriétaires sur UNE ligne** (`nom_2`, `email_2`, `telephone_2`). Une
+  indivision, c'est une part de charges, une voix, une période. Deux **lignes** compteraient la
+  parcelle, la superficie, les voix et les charges **en double** — et l'index partiel
+  `proprietaires_actuel_par_lot` l'interdit à juste titre. Une indivision compte pour **UN**
+  propriétaire dans les totaux, avec un « dont N en indivision » en détail.
+  ⚠ Limite assumée : **deux** indivisaires, pas trois. Un troisième se note en observations en
+  attendant une vraie table — qui coûterait une jointure à chaque lecture pour un cas inexistant.
+- **✅ Vocabulaire remis d'aplomb** : l'écran dit « parcelle » là où il disait « lot » (colonne,
+  titre de fiche, champ, recherche). `lots.numero` porte la parcelle cadastrale ; le **lot**, lui,
+  est désormais un **nombre** porté par `nombre_lots`.
+- ⚠ Le **tantième reste calculé sur la superficie**, pas sur `nombre_lots` : le vote en AG est au
+  prorata des superficies, pas du nombre de lots.
+
 ## Session 2026-08-27 (suite 3) — mandataire ≠ gérant (037 ✅ appliquée), totaux, tri mémorisé
 
 - **✅ Le MANDATAIRE est séparé du GÉRANT** (migration 037). Contresens de la 036 corrigé par
@@ -643,7 +664,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `038` (001-029 et 031-037 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `039`. ⚠ **038 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-037 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

@@ -445,7 +445,21 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   vérifiable au cadastre, et c'est déjà elle qui désigne les colotis dans les listes de vote.
   Le cahier des charges de 1955 parle bien de « lot n°13, zone A », mais **aucun document connu ne
   relie cette numérotation d'origine aux parcelles actuelles** — l'inventer serait pire que rien.
-  La **zone** (A à E) est en observations, faute de colonne dédiée.
+  La **zone** (A à E) est en observations, faute de colonne dédiée. L'écran dit donc « parcelle »,
+  pas « lot ».
+- **`lots.nombre_lots`** (migration 038) — **une parcelle n'est pas un lot** : deux d'entre elles
+  pèsent **1,81** et **1,19**, soit **51 lots pour 50 parcelles**. Le total des lots se **somme sur
+  cette colonne**, jamais sur le nombre de lignes ; compter les lignes annoncerait 50, un chiffre
+  faux dans un registre qui sert d'assiette aux voix et aux charges. `not null default 1` :
+  nullable, le total varierait selon qui a pensé à remplir le champ. `numeric(4,2)` — 1,81 n'est
+  pas un entier. ⚠ Le tantième reste calculé sur la **superficie**, pas sur `nombre_lots` : le vote
+  est au prorata des superficies.
+- **INDIVISION : deux propriétaires, UNE ligne** (`nom_2` / `email_2` / `telephone_2`, migration
+  038). Une indivision, c'est une part de charges, une voix, une période — deux **lignes**
+  compteraient la parcelle, la superficie, les voix et les charges en double, et l'index partiel
+  `proprietaires_actuel_par_lot` l'interdit à juste titre. Une indivision compte donc pour **UN**
+  propriétaire dans les totaux. ⚠ Limite assumée : **deux** indivisaires nommés, pas trois — le
+  registre n'en connaît pas au-delà, un troisième se note en observations.
 - **Le LOT est stable, le propriétaire est une PÉRIODE.** `lots` (numéro, adresse dans le
   lotissement) ; `proprietaires` = une ligne par période de propriété. Propriétaire **actuel** =
   `date_cession is null` ; l'historique, ce sont les autres. Une **mutation** clôt la période en

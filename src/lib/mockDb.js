@@ -1401,7 +1401,9 @@ export const mockRepo = {
     if (data.lots.some((l) => l.numero === input.numero)) {
       throw new Error(`Le lot ${input.numero} existe déjà.`)
     }
-    const l = { id: uid(), observations: null, created_at: nowISO(), updated_at: nowISO(), ...input }
+    // `nombre_lots` à 1 par défaut, comme en base : une parcelle vaut un lot
+    // sauf exception, et une valeur absente fausserait le total du registre.
+    const l = { id: uid(), observations: null, nombre_lots: 1, created_at: nowISO(), updated_at: nowISO(), ...input }
     data.lots.push(l)
     audit(data, 'lots', l.id, 'create', `Lot ${l.numero} créé`)
     save(data)
@@ -1452,6 +1454,7 @@ export const mockRepo = {
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
+      nom_2: null, email_2: null, telephone_2: null,
       date_acquisition: null, date_cession: null, observations: null,
       created_at: nowISO(), updated_at: nowISO(), ...patch,
     }
@@ -1484,6 +1487,7 @@ export const mockRepo = {
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
+      nom_2: null, email_2: null, telephone_2: null,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
       ...nouveau, date_acquisition: date_mutation,
     }

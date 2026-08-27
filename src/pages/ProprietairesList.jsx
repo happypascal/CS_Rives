@@ -15,7 +15,10 @@ import { useIsMobile } from '../lib/useIsMobile'
 // vit sur une autre ligne que le lot, et un lot vacant doit se ranger sans faire
 // échouer la comparaison — d'où les chaînes vides par défaut.
 const COLONNES = [
-  { cle: 'lot', libelle: 'Lot', valeur: (l) => l.numero || '', numerique: true },
+  // ⚠ « Parcelle » et non « Lot » : la ligne porte la parcelle cadastrale, et
+  // une parcelle n'est pas un lot — deux d'entre elles pèsent 1,81 et 1,19 lot,
+  // soit 51 lots pour 50 parcelles. Le nombre de lots se lit sur la fiche.
+  { cle: 'lot', libelle: 'Parcelle', valeur: (l) => l.numero || '', numerique: true },
   { cle: 'proprietaire', libelle: 'Propriétaire', valeur: (l) => l.proprietaire?.nom || '' },
   { cle: 'adresse_lotissement', libelle: 'Adresse dans le lotissement', valeur: (l) => l.adresse_lotissement || '' },
   // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
@@ -99,7 +102,15 @@ function Contenu() {
     })
   }, [lots, q, colonne, tri.sens])
 
+  // Une indivision compte pour UN propriétaire : deux personnes, mais une seule
+  // propriété — une part de charges, une voix. Les compter pour deux gonflerait
+  // le total au-dessus du nombre réel de colotis.
+  const proprietaires = lots.filter((l) => l.proprietaire).length
+  const indivisions = lots.filter((l) => l.proprietaire?.nom_2).length
   const vacants = lots.filter((l) => !l.proprietaire).length
+  // Somme des `nombre_lots`, jamais un compte de lignes — cf. le commentaire des
+  // totaux ci-dessous.
+  const totalLots = lots.reduce((s2, l) => s2 + (Number(l.nombre_lots) || 0), 0)
 
   const trierPar = (cle) =>
     setTri((t) => {
@@ -130,28 +141,32 @@ function Contenu() {
     <div>
       <PageHeader
         title="Registre des propriétaires"
-        subtitle="Membres de l’ASL : un lot, son propriétaire actuel, et l’historique des mutations."
+        subtitle="Membres de l’ASL : une parcelle, son propriétaire actuel, et l’historique des mutations."
       />
 
-      {/* Totaux du registre. La superficie totale est le DÉNOMINATEUR des voix
-          en AG et des charges — on l'affiche avec le nombre de lots qui y
-          contribuent : tant que le registre est incomplet, les parts sont
-          provisoires, et le taire donnerait des tantièmes faux qui auraient
-          l'air justes. Le compte des propriétaires est distinct de celui des
-          lots : un lot vacant n'en a pas, et un même propriétaire peut en
-          détenir plusieurs. */}
+      {/* Totaux du registre. ⚠ Le nombre de lots N'EST PAS le nombre de lignes :
+          une ligne est une PARCELLE, et deux d'entre elles pèsent 1,81 et 1,19
+          lot — 51 lots pour 50 parcelles. Il se somme donc sur `nombre_lots`,
+          jamais sur `lots.length`, dans un registre qui sert d'assiette aux voix
+          et aux charges.
+
+          La superficie totale est le DÉNOMINATEUR des voix en AG et des charges :
+          on l'affiche avec le nombre de superficies qui y contribuent, pour que
+          des parts calculées sur un registre incomplet ne passent pas pour
+          définitives. */}
       {lots.length > 0 && (
         <Card className="mb-4 grid gap-3 px-5 py-3 sm:grid-cols-3">
-          <Total valeur={lots.length} libelle="lot(s) au registre" />
           <Total
-            valeur={lots.filter((l) => l.proprietaire).length}
+            valeur={proprietaires}
             libelle="propriétaire(s) actuel(s)"
-            detail={vacants > 0 ? `${vacants} lot(s) sans propriétaire` : null}
+            detail={indivisions > 0 ? `dont ${indivisions} en indivision` : null}
+            alerte={vacants > 0 ? `${vacants} parcelle(s) sans propriétaire` : null}
           />
+          <Total valeur={num(totalLots)} libelle="lot(s)" detail={`sur ${lots.length} parcelle(s)`} />
           <Total
             valeur={`${num(lots[0].superficie_totale)} m²`}
             libelle="superficie totale"
-            detail={`sur ${lots.filter((l) => l.superficie).length} lot(s) renseigné(s)`}
+            detail={`sur ${lots.filter((l) => l.superficie).length} superficie(s) renseignée(s)`}
             alerte={lots.some((l) => !l.superficie) ? 'parts provisoires' : null}
           />
         </Card>
@@ -166,13 +181,13 @@ function Contenu() {
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input placeholder="Rechercher (lot, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input placeholder="Rechercher (parcelle, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} />
           {/* La création d'un lot se fait ici parce qu'un lot n'est qu'un
               numéro : tout le reste — propriétaire, adresses, coordonnées — se
               saisit sur la fiche, comme demandé. */}
           {isAdmin && !isMobile && (
             <div className="flex items-end gap-2">
-              <Input placeholder="Numéro de lot à créer (ex : 12 ou 12A)" value={nouveau} onChange={(e) => setNouveau(e.target.value)} className="min-w-0 flex-1" />
+              <Input placeholder="Parcelle à créer (ex : 0B 220)" value={nouveau} onChange={(e) => setNouveau(e.target.value)} className="min-w-0 flex-1" />
               <Button onClick={creer} disabled={busy || !nouveau.trim()}>Ajouter</Button>
             </div>
           )}
@@ -182,7 +197,7 @@ function Contenu() {
       {filtres.length === 0 ? (
         <EmptyState
           title="Aucun lot"
-          hint="Le registre sera alimenté depuis les fichiers du syndic. Vous pouvez aussi ajouter un lot à la main."
+          hint="Le registre sera alimenté depuis les fichiers du syndic. Vous pouvez aussi ajouter une parcelle à la main."
         />
       ) : (
         <Card className="overflow-hidden">
@@ -209,6 +224,8 @@ function Contenu() {
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
+                      {/* Le second indivisaire : deux noms, une seule propriété. */}
+                      {l.proprietaire?.nom_2 && <span className="block text-xs text-slate-500">et {l.proprietaire.nom_2}</span>}
                       {/* Le gérant sous la raison sociale : pour une SCI, le nom
                           seul ne dit pas à qui l'on s'adresse. */}
                       {l.proprietaire?.gerant_nom && (
@@ -225,6 +242,9 @@ function Contenu() {
                           {/* La part n'a de sens que rapportée au total : c'est
                               elle, pas la surface, qui donne le poids de vote. */}
                           {l.part != null && <span className="block text-xs text-slate-400">{l.part.toFixed(2)} %</span>}
+                          {Number(l.nombre_lots) !== 1 && (
+                            <span className="block text-xs font-medium text-navy-600">{num(l.nombre_lots)} lots</span>
+                          )}
                         </>
                       ) : <span className="italic text-slate-400">à renseigner</span>}
                     </td>

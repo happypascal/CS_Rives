@@ -362,7 +362,13 @@ create table if not exists audit_log (
 -- --------------------------------------------------------------------- lots
 create table if not exists lots (
   id                  uuid primary key default gen_random_uuid(),
-  numero              text not null unique,   -- « 12 », « 12A » : texte, un lot n'est pas toujours un entier
+  numero              text not null unique,   -- la PARCELLE cadastrale (« 0B 220 ») : le lotissement n'a pas de numérotation utilisable
+  -- ⚠ UNE PARCELLE N'EST PAS UN LOT (migration 038) : deux d'entre elles pèsent
+  -- 1,81 et 1,19 lot, soit 51 lots pour 50 parcelles. Compter les lignes
+  -- annoncerait un nombre de lots faux, dans un registre qui sert d'assiette aux
+  -- voix et aux charges. `not null default 1` parce que 1 est le cas réel dans
+  -- 48 cas sur 50 — nullable, le total varierait selon qui a pensé à remplir.
+  nombre_lots         numeric(4,2) not null default 1 check (nombre_lots > 0),
   adresse_lotissement text,                   -- adresse dans le lotissement
   -- ASSIETTE des voix en AG (vote au prorata des superficies) et des charges.
   -- Une superficie fausse ne produit pas un affichage faux : elle produit un
@@ -400,6 +406,15 @@ create table if not exists proprietaires (
   mandataire_nom        text,
   mandataire_email      text,
   mandataire_telephone  text,
+
+  -- INDIVISION (migration 038) : deux personnes, mais UNE seule propriété — une
+  -- part de charges, une voix, une période. D'où un second jeu de coordonnées
+  -- sur la même ligne et non une seconde ligne : deux lignes compteraient la
+  -- parcelle, la superficie, les voix et les charges en double, et l'index
+  -- partiel `proprietaires_actuel_par_lot` l'interdit à juste titre.
+  nom_2                 text,
+  email_2               text,
+  telephone_2           text,
 
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.
@@ -440,6 +455,9 @@ begin
   if new.email is not null then
     new.email := lower(btrim(new.email));
   end if;
+  if new.email_2 is not null then
+    new.email_2 := lower(btrim(new.email_2));
+  end if;
   if new.gerant_email is not null then
     new.gerant_email := lower(btrim(new.gerant_email));
   end if;
@@ -453,7 +471,7 @@ drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
 -- ⚠ Écoute les DEUX colonnes d'e-mail : limité à `email`, une correction de
 -- l'adresse du mandataire passerait à côté de la normalisation.
 create trigger trg_proprietaires_normalize_email
-  before insert or update of email, gerant_email, mandataire_email on proprietaires
+  before insert or update of email, email_2, gerant_email, mandataire_email on proprietaires
   for each row execute function proprietaires_normalize_email();
 
 -- ------------------------------------------- acceptation de la mention RGPD

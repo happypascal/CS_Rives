@@ -17,6 +17,7 @@ const CHAMPS_VIDES = {
   adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
   gerant_email: '', gerant_telephone: '',
   mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
+  nom_2: '', email_2: '', telephone_2: '',
   date_acquisition: '', observations: '',
 }
 
@@ -37,7 +38,7 @@ function Contenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState(CHAMPS_VIDES)
-  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', observations: '' })
+  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', observations: '' })
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   const [confirm, confirmModal] = useConfirm()
@@ -50,7 +51,7 @@ function Contenu() {
       const l = await repo.getLot(id)
       setLot(l)
       if (l) {
-        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', observations: l.observations || '' })
+        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', observations: l.observations || '' })
         setForm({ ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) })
       }
     } catch (e) {
@@ -94,10 +95,18 @@ function Contenu() {
         setBusy(false)
         return setError('La superficie doit être un nombre positif (ex : 612,50).')
       }
+      // Le nombre de lots ne peut pas être vide : il entre dans le total du
+      // registre, et une valeur absente y ferait un trou silencieux.
+      const nombreLots = parseMontant(lotForm.nombre_lots)
+      if (nombreLots == null || nombreLots <= 0) {
+        setBusy(false)
+        return setError('Le nombre de lots doit être un nombre positif (1 dans la quasi-totalité des cas).')
+      }
       await repo.updateLot(id, {
         numero: lotForm.numero.trim(),
         adresse_lotissement: lotForm.adresse_lotissement || null,
         superficie,
+        nombre_lots: nombreLots,
         observations: lotForm.observations || null,
       })
       await repo.saveProprietaire(id, {
@@ -111,6 +120,9 @@ function Contenu() {
         mandataire_nom: form.mandataire_nom || null,
         mandataire_email: form.mandataire_email || null,
         mandataire_telephone: form.mandataire_telephone || null,
+        nom_2: form.nom_2 || null,
+        email_2: form.email_2 || null,
+        telephone_2: form.telephone_2 || null,
         adresse_communication: form.adresse_communication || null,
         adresse_gerant: form.adresse_gerant || null,
         email: form.email || null,
@@ -141,6 +153,9 @@ function Contenu() {
         mandataire_nom: nouveau.mandataire_nom || null,
         mandataire_email: nouveau.mandataire_email || null,
         mandataire_telephone: nouveau.mandataire_telephone || null,
+        nom_2: nouveau.nom_2 || null,
+        email_2: nouveau.email_2 || null,
+        telephone_2: nouveau.telephone_2 || null,
         adresse_communication: nouveau.adresse_communication || null,
         adresse_gerant: nouveau.adresse_gerant || null,
         email: nouveau.email || null,
@@ -193,10 +208,25 @@ function Contenu() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card>
-            <CardHeader title="Le lot" subtitle="Ce qui ne change pas quand le propriétaire change." />
+            <CardHeader title="La parcelle" subtitle="Ce qui ne change pas quand le propriétaire change." />
             <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
-              <Input label="Numéro de lot" value={lotForm.numero} onChange={setLotChamp('numero')} readOnly={!peutSaisir} />
+              {/* ⚠ `numero` porte la PARCELLE cadastrale : le lotissement n'a pas
+                  de numérotation de lots exploitable aujourd'hui, et l'inventer
+                  dans un registre légal serait pire que de s'en passer. */}
+              <Input label="Parcelle cadastrale" value={lotForm.numero} onChange={setLotChamp('numero')} readOnly={!peutSaisir} placeholder="ex : 0B 220" />
               <Input label="Adresse dans le lotissement" value={lotForm.adresse_lotissement} onChange={setLotChamp('adresse_lotissement')} readOnly={!peutSaisir} />
+              {/* Nombre de lots : 1 sauf exception, mais deux parcelles du
+                  lotissement en portent 1,81 et 1,19 — d'où 51 lots pour 50
+                  parcelles. Sans ce champ, le registre ne pouvait pas compter
+                  les lots sans mentir. */}
+              <div className="sm:col-span-2">
+                <Input label="Nombre de lots" type="text" inputMode="decimal" value={lotForm.nombre_lots} onChange={setLotChamp('nombre_lots')} readOnly={!peutSaisir} placeholder="1" />
+                <p className="mt-1 text-xs text-slate-500">
+                  <strong>1</strong> dans la quasi-totalité des cas. Une parcelle peut en porter une
+                  fraction supplémentaire (1,81 ou 1,19 dans le lotissement) — c’est ce champ, et lui
+                  seul, qui permet au registre d’afficher le vrai total.
+                </p>
+              </div>
               {/* type="text" à dessein, comme les montants ailleurs dans l'app :
                   un input number capte la molette et modifie la valeur sans
                   qu'on s'en aperçoive — sur l'assiette des voix, c'est exclu. */}
@@ -223,8 +253,28 @@ function Contenu() {
                 <Input label="Nom du propriétaire (ou raison sociale)" value={form.nom} onChange={set('nom')} readOnly={!peutSaisir} required />
                 <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
                   <input type="checkbox" checked={form.est_societe} onChange={set('est_societe')} disabled={!peutSaisir} />
-                  Le propriétaire est une société (SCI, indivision…)
+                  Le propriétaire est une société (SCI)
                 </label>
+              </div>
+              {/* INDIVISION — deux personnes, mais UNE propriété : une part de
+                  charges, une voix, une période. C'est pourquoi le second
+                  indivisaire tient sur la MÊME ligne du registre. Le nommer en
+                  ferait une seconde propriété, donc compterait la superficie et
+                  les voix en double. */}
+              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Second propriétaire (indivision)
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  À renseigner si la propriété est détenue en indivision. Elle reste{' '}
+                  <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
+                  d’une seule superficie.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir} />
+                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir} />
+                </div>
               </div>
               {/* GÉRANT : organe de la société propriétaire, affiché seulement
                   si le propriétaire EST une société. Sur une personne physique
@@ -287,7 +337,7 @@ function Contenu() {
                 {lot.historique.map((p) => (
                   <li key={p.id} className="px-5 py-3">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-medium text-navy-800">{p.nom}</p>
+                      <p className="text-sm font-medium text-navy-800">{p.nom}{p.nom_2 ? ` et ${p.nom_2}` : ''}</p>
                       {p.est_societe && <Badge tone="gray">société</Badge>}
                     </div>
                     {p.gerant_nom && <p className="text-xs text-slate-500">{p.gerant_fonction ? `${p.gerant_fonction} : ` : ''}{p.gerant_nom}</p>}
@@ -338,6 +388,11 @@ function Contenu() {
                   <input type="checkbox" checked={mutation.est_societe} onChange={(e) => setMutation((m) => ({ ...m, est_societe: e.target.checked }))} />
                   Le nouveau propriétaire est une société
                 </label>
+              </div>
+              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
+                <Input label="Second propriétaire (indivision)" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
+                <Input label="Email" type="email" value={mutation.email_2} onChange={(e) => setMutation((m) => ({ ...m, email_2: e.target.value }))} />
+                <Input label="Téléphone" value={mutation.telephone_2} onChange={(e) => setMutation((m) => ({ ...m, telephone_2: e.target.value }))} />
               </div>
               {mutation.est_societe && (
                 <>
