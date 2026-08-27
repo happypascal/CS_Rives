@@ -319,6 +319,13 @@ décrocher — à bannir de toute migration future :
    le fait tomber. Les messages du trigger sont donc **nus**, sans `%` ni argument.
 3. **Un `$job$` imbriqué dans un `$pgcron$`** (bloc `do`) — d'où deux instructions nues pour le
    cron. Cousin du piège des balises `$$` déjà documenté pour la migration 018.
+4. **Les requêtes de VÉRIFICATION élaborées** (2026-08-27) : une cascade de `union all`, comme des
+   sous-requêtes scalaires dans la liste du `select`, le font décrocher — et c'est d'autant plus
+   traître que l'erreur pointe la requête de contrôle, pas le DDL, alors que **tout le script est
+   annulé**. Vérifier avec **une requête simple sur une seule source**
+   (`select … from pg_policies where …`), jamais avec un tableau de bord fait maison.
+5. **Deux fonctions `$$` dans le même script** : utiliser des **balises nommées distinctes**
+   (`$normalise_email_prop$`, `$audit_rgpd$`) — c'est le remède déjà appliqué par la migration 018.
 
 Méthode qui a fini par marcher, à réutiliser : **un objet par exécution**, en commençant par le
 plus petit, et la vérification dans le même bloc pour éviter de recopier du texte par erreur.
@@ -570,8 +577,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `036`. ⚠ **034 et 035 sont ÉCRITES mais PAS APPLIQUÉES**
-  (001-029 et 031-033 le sont en **prod**). Le
+- **Prochaine migration SQL libre** : `036` (001-029 et 031-035 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
