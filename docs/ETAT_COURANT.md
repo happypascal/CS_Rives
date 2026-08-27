@@ -29,6 +29,30 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 — REGISTRE DES PROPRIÉTAIRES (migration 035)
+
+- **✅ Registre des membres de l'ASL**, réservé au **président et au secrétaire** — lecture comme
+  écriture. ⚠ **Première table de l'app contenant massivement des données personnelles de tiers.**
+  `lots` et `proprietaires` ne sont **PAS** dans la boucle `read_auth` : aucun accès par défaut,
+  policies dédiées `is_admin() or is_secretaire()`. Un trésorier ne voit rien.
+- **Modèle : le LOT est stable, le propriétaire est une PÉRIODE.** Propriétaire actuel =
+  `date_cession is null`, historique = les autres, mutation = clôture d'une période + ouverture de
+  la suivante. Pas de table `mutations` à tenir en plus. **Index partiel** garantissant un seul
+  propriétaire actuel par lot — sans lui une mutation mal terminée fausserait le registre en silence.
+- **✅ Mention RGPD** acceptée une fois par personne, horodatée et tracée. L'écran s'affiche **à la
+  place** du registre : une mention lisible par-dessus les données qu'elle protège ne protège rien.
+  Un rappel court reste ensuite en tête à chaque consultation. Texte dans `src/lib/rgpdRegistre.js`.
+- **✅ Liste triable** par colonne (lot, propriétaire, adresses, email, téléphone) ; tri du lot en
+  `numeric` pour que le 10 suive le 9. **Saisie sur la fiche**, comme demandé.
+- ⚠ **Ce registre EST le rôle des colotis** attendu par le chantier d'onboarding gelé : il en lève
+  le préalable principal (§4.2 de la spéc). Il n'ouvre pour autant **aucun accès** — le chantier
+  reste gelé, et la spéc devra être relue à la lumière de ce que ce registre contient réellement.
+- **À FAIRE** : alimenter depuis les fichiers du syndic (Pascal les fournira). Le seed de démo est
+  **volontairement vide** — inventer noms et adresses de personnes dans un jeu de démonstration
+  serait exactement ce que la mention interdit.
+- **À FAIRE** : faire relire la mention par Me Garnier si on veut qu'elle ait une valeur opposable.
+  En l'état, c'est une règle de conduite interne clairement énoncée, pas un avis juridique.
+
 ## Session 2026-08-26 (suite 4) — numéro à la soumission + date limite (migration 034)
 
 - **✅ Le numéro est attribué À LA SOUMISSION, plus à la création.** Défaut réel signalé par
@@ -546,8 +570,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `035`. ⚠ **034 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
-  031-033 le sont en **prod**). Le
+- **Prochaine migration SQL libre** : `036`. ⚠ **034 et 035 sont ÉCRITES mais PAS APPLIQUÉES**
+  (001-029 et 031-033 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

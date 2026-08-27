@@ -19,6 +19,9 @@ const NAV = [
   // les autres membres — la page elle-même redouble la garde.
   { to: '/signatures', label: 'Signatures', visible: (a) => a.isAdmin || a.isSecretaire },
   { to: '/membres', label: 'Membres du CS' },
+  // Registre des propriétaires : masqué aux autres membres (données
+  // personnelles de tiers). Le masquage est un confort — la RLS ferme.
+  { to: '/proprietaires', label: 'Propriétaires', visible: (a) => a.isAdmin || a.isSecretaire },
   { to: '/parametres', label: 'Paramètres' },
 ]
 

@@ -18,6 +18,8 @@ import ProjetForm from './pages/ProjetForm'
 import ProjetDetail from './pages/ProjetDetail'
 import BudgetsConsolidated from './pages/BudgetsConsolidated'
 import Membres from './pages/Membres'
+import ProprietairesList from './pages/ProprietairesList'
+import LotDetail from './pages/LotDetail'
 import Parametres from './pages/Parametres'
 
 export default function App() {
@@ -51,6 +53,11 @@ export default function App() {
             <Route path="/projets/:id/modifier" element={<ProjetForm />} />
             <Route path="/budgets" element={<BudgetsConsolidated />} />
             <Route path="/membres" element={<Membres />} />
+            {/* Registre des propriétaires : l'accès est fermé par la RLS et par
+                `RgpdGate` (président et secrétaire), pas par la route — une
+                route protégée côté client ne protège rien. */}
+            <Route path="/proprietaires" element={<ProprietairesList />} />
+            <Route path="/proprietaires/:id" element={<LotDetail />} />
             <Route path="/parametres" element={<Parametres />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

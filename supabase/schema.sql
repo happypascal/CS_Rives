@@ -352,6 +352,134 @@ create table if not exists audit_log (
 );
 
 -- =============================================================================
+-- REGISTRE DES PROPRIÉTAIRES (migration 035) — DONNÉES PERSONNELLES
+--
+-- ⚠ Ces tables ne sont PAS dans la boucle `read_auth` plus bas : aucune lecture
+-- par défaut. L'accès est fermé au président et au secrétaire par des policies
+-- dédiées. C'est l'inverse du reste de l'application, et c'est délibéré — ce
+-- sont des données personnelles de tiers.
+-- =============================================================================
+-- --------------------------------------------------------------------- lots
+create table if not exists lots (
+  id                  uuid primary key default gen_random_uuid(),
+  numero              text not null unique,   -- « 12 », « 12A » : texte, un lot n'est pas toujours un entier
+  adresse_lotissement text,                   -- adresse dans le lotissement
+  observations        text,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------- proprietaires
+-- Une ligne = une PÉRIODE de propriété. `date_cession is null` = propriétaire
+-- actuel ; les autres lignes sont l'historique.
+create table if not exists proprietaires (
+  id                    uuid primary key default gen_random_uuid(),
+  lot_id                uuid not null references lots(id) on delete cascade,
+
+  -- Identité. `nom` porte le nom de la personne OU la raison sociale de la SCI.
+  -- `est_societe` évite d'avoir à deviner à partir du nom du gérant.
+  nom                   text not null,
+  est_societe           boolean not null default false,
+  gerant_nom            text,
+  gerant_fonction       text,                 -- gérant, président, associé…
+
+  -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
+  -- propriétaire) ; ici on garde celles qui suivent la personne.
+  adresse_communication text,                 -- adresse officielle de communication
+  adresse_gerant        text,
+
+  email                 text,
+  telephone             text,
+
+  -- La période, donc la mutation.
+  date_acquisition      date,
+  date_cession          date,                 -- nulle = propriétaire ACTUEL
+
+  observations          text,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+
+  -- Une cession ne peut pas précéder l'acquisition.
+  constraint proprietaires_periode_coherente
+    check (date_cession is null or date_acquisition is null or date_cession >= date_acquisition)
+);
+
+-- UN SEUL propriétaire actuel par lot. Index partiel : les lignes historiques
+-- (date_cession renseignée) n'y participent pas, donc autant d'anciens
+-- propriétaires qu'on veut. Sans lui, une mutation mal terminée laisserait deux
+-- propriétaires en cours et le registre deviendrait faux en silence.
+create unique index if not exists proprietaires_actuel_par_lot
+  on proprietaires (lot_id) where date_cession is null;
+
+create index if not exists proprietaires_lot_idx on proprietaires (lot_id, date_acquisition desc);
+
+-- E-mail canonique, comme `membres_cs` (migration 018) : la casse a déjà cassé
+-- l'appariement d'identité une fois en production. Ce registre étant destiné à
+-- servir d'ancre d'identité aux colotis, on ne refait pas l'erreur.
+create or replace function proprietaires_normalize_email()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.email is not null then
+    new.email := lower(btrim(new.email));
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
+create trigger trg_proprietaires_normalize_email
+  before insert or update of email on proprietaires
+  for each row execute function proprietaires_normalize_email();
+
+-- ------------------------------------------- acceptation de la mention RGPD
+-- Portée par le membre : c'est un fait le concernant, et il n'a à l'accepter
+-- qu'une fois. Horodatée pour pouvoir dire QUAND elle a été acceptée — une
+-- mention d'information dont on ne peut pas prouver la date ne vaut pas grand
+-- chose.
+alter table membres_cs
+  add column if not exists registre_rgpd_accepte_le timestamptz;
+
+-- Trace de l'acceptation dans le journal d'audit.
+create or replace function membres_audit_rgpd()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.registre_rgpd_accepte_le is not null
+     and old.registre_rgpd_accepte_le is null then
+    insert into audit_log (entite, entite_id, action, acteur, details)
+      values ('membres_cs', new.id, 'rgpd',
+              current_membre_id(),
+              concat('Mention RGPD du registre des propriétaires acceptée par ', new.prenom, ' ', new.nom));
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists trg_membres_audit_rgpd on membres_cs;
+create trigger trg_membres_audit_rgpd
+  after update on membres_cs
+  for each row execute function membres_audit_rgpd();
+
+-- =============================================================================
+-- Row Level Security — PRÉSIDENT ET SECRÉTAIRE UNIQUEMENT
+--
+-- ⚠ Ces deux tables ne figurent PAS dans la boucle `read_auth` du schéma : il
+-- n'y a donc AUCUNE lecture par défaut. Un membre ordinaire, un trésorier, ne
+-- voient rien — pas même le nombre de lots. C'est l'inverse du reste de
+-- l'application, et c'est délibéré : ce sont des données personnelles de tiers.
+-- =============================================================================
+alter table lots          enable row level security;
+alter table proprietaires enable row level security;
+
+drop policy if exists "lots_bureau" on lots;
+create policy "lots_bureau" on lots for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+drop policy if exists "proprietaires_bureau" on proprietaires;
+create policy "proprietaires_bureau" on proprietaires for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+
+-- =============================================================================
 -- Helpers
 -- =============================================================================
 create or replace function is_admin()

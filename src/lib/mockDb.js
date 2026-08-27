@@ -15,7 +15,7 @@ import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 // v14 : numéro attribué à la soumission (migration 034) — les brouillons de
 // démo n'ont plus de numéro. Le numéro de version force le reseed.
 // (v13 : sous-numéros de résolutions, 032. v12 : PJ sur l'AG, 031. v11 : 029.)
-const STORAGE_KEY = 'cs_rives_mockdb_v14'
+const STORAGE_KEY = 'cs_rives_mockdb_v15'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -324,6 +324,12 @@ function seed() {
   // quand une décision planifiée est réellement ouverte (jamais à vide).
   const cron_runs = []
 
+  // Registre des propriétaires : vide au départ. Il sera alimenté depuis les
+  // fichiers du syndic — inventer des noms et des adresses de personnes dans un
+  // jeu de démonstration serait exactement ce que la mention RGPD interdit.
+  const lots = []
+  const proprietaires = []
+
   // Fil d'échanges du projet voirie : montre le cas d'usage — deux membres qui
   // se répondent par écrit entre deux réunions.
   // Journal de bord du projet voirie. La 2e ligne montre le cas qui justifie la
@@ -341,7 +347,7 @@ function seed() {
     { id: uid(), projet_id: p1, auteur_id: m3, type: 'commentaire', parent_id: null, texte: 'Reconnaissance faite sur place le 5 avril : deux regards à reprendre en plus du devis initial.', created_at: '2026-04-05T17:00:00Z' },
   ]
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, comptes_ag, audit_log }
+  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -416,7 +422,7 @@ export const mockAuth = {
     // `role` = rôle d'AUTH (admin/membre, pilote isAdmin). `membre_role` = rôle
     // du bureau tel quel (president/tresorier/secretaire/membre), pour
     // isSecretaire / isTresorier. Les deux sont distincts à dessein.
-    const user = { id: acc.id, email: acc.email, role: acc.role, membre_role: membre?.role ?? null, membre_id: acc.membre_id, nom: membre?.nom, prenom: membre?.prenom }
+    const user = { id: acc.id, email: acc.email, role: acc.role, membre_role: membre?.role ?? null, membre_id: acc.membre_id, nom: membre?.nom, prenom: membre?.prenom, registre_rgpd_accepte_le: membre?.registre_rgpd_accepte_le ?? null }
     localStorage.setItem(SESSION_KEY, JSON.stringify({ user }))
     return user
   },
@@ -438,7 +444,9 @@ export const mockAuth = {
       // Rafraîchit membre_role depuis la base : un changement de rôle (ou une
       // session stockée avant l'ajout du champ) se reflète au rechargement.
       const membre = data.membres_cs.find((m) => m.id === user.membre_id)
-      return { ...user, membre_role: membre?.role ?? null }
+      // Relu à chaque chargement : l'acceptation RGPD posée dans une autre
+      // session doit être vue, sinon la mention se redemanderait sans fin.
+      return { ...user, membre_role: membre?.role ?? null, registre_rgpd_accepte_le: membre?.registre_rgpd_accepte_le ?? null }
     } catch {
       return null
     }
@@ -1327,6 +1335,163 @@ export const mockRepo = {
     b.signed_at = nowISO()
     save(data)
     return clone(b)
+  },
+
+
+  // ---- Registre des propriétaires (migration 035) ----
+  //
+  // ⚠ DONNÉES PERSONNELLES, président et secrétaire UNIQUEMENT. Le mock
+  // reproduit la garde pour que la démo montre le même refus que la prod — mais
+  // il ne PROUVE rien : seules les policies `lots_bureau` / `proprietaires_bureau`
+  // ferment réellement l'accès. Vérification sur staging, jamais ici.
+  _gardeBureau() {
+    const user = getSessionUser()
+    const bureau = user?.role === 'admin' || user?.membre_role === 'secretaire'
+    if (!bureau) throw new Error('Registre des propriétaires : réservé au président et au secrétaire.')
+    return user
+  },
+
+  // La liste est construite PAR LOT : un lot, son propriétaire actuel (période
+  // sans date de cession), et le nombre d'anciens. C'est la vue dont le bureau a
+  // besoin — « qui possède quoi aujourd'hui » — l'historique vivant sur la fiche.
+  async listLots() {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    return clone(data.lots || []).map((l) => {
+      const periodes = (data.proprietaires || []).filter((p) => p.lot_id === l.id)
+      const actuel = periodes.find((p) => !p.date_cession) || null
+      return {
+        ...l,
+        proprietaire: actuel ? clone(actuel) : null,
+        anciens: periodes.filter((p) => p.date_cession).length,
+      }
+    })
+  },
+
+  async getLot(id) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    const l = (data.lots || []).find((x) => x.id === id)
+    if (!l) return null
+    const periodes = (data.proprietaires || []).filter((p) => p.lot_id === id)
+    return {
+      ...clone(l),
+      proprietaire: clone(periodes.find((p) => !p.date_cession) || null),
+      // Historique du plus récent au plus ancien : on remonte le temps.
+      historique: clone(periodes.filter((p) => p.date_cession).sort((a, b) => (a.date_cession < b.date_cession ? 1 : -1))),
+    }
+  },
+
+  async createLot(input) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    data.lots ||= []
+    if (data.lots.some((l) => l.numero === input.numero)) {
+      throw new Error(`Le lot ${input.numero} existe déjà.`)
+    }
+    const l = { id: uid(), observations: null, created_at: nowISO(), updated_at: nowISO(), ...input }
+    data.lots.push(l)
+    audit(data, 'lots', l.id, 'create', `Lot ${l.numero} créé`)
+    save(data)
+    return clone(l)
+  },
+
+  async updateLot(id, patch) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    const l = (data.lots || []).find((x) => x.id === id)
+    if (!l) throw new Error('Lot introuvable')
+    Object.assign(l, patch, { updated_at: nowISO() })
+    audit(data, 'lots', id, 'update', `Lot ${l.numero} modifié`)
+    save(data)
+    return clone(l)
+  },
+
+  async deleteLot(id) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    const l = (data.lots || []).find((x) => x.id === id)
+    data.lots = (data.lots || []).filter((x) => x.id !== id)
+    // Miroir du `on delete cascade` : l'historique part avec le lot.
+    data.proprietaires = (data.proprietaires || []).filter((p) => p.lot_id !== id)
+    audit(data, 'lots', id, 'delete', `Lot ${l?.numero || id} supprimé`)
+    save(data)
+    return { ok: true }
+  },
+
+  // Propriétaire ACTUEL : créé s'il n'y en a pas, modifié sinon. Ne touche
+  // jamais l'historique — pour changer de propriétaire, c'est `enregistrerMutation`.
+  async saveProprietaire(lotId, patch) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    data.proprietaires ||= []
+    const actuel = data.proprietaires.find((p) => p.lot_id === lotId && !p.date_cession)
+    if (actuel) {
+      Object.assign(actuel, patch, { updated_at: nowISO() })
+      audit(data, 'proprietaires', actuel.id, 'update', `Propriétaire du lot modifié`)
+      save(data)
+      return clone(actuel)
+    }
+    const p = {
+      id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
+      adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
+      date_acquisition: null, date_cession: null, observations: null,
+      created_at: nowISO(), updated_at: nowISO(), ...patch,
+    }
+    data.proprietaires.push(p)
+    audit(data, 'proprietaires', p.id, 'create', `Propriétaire ${p.nom} enregistré`)
+    save(data)
+    return clone(p)
+  },
+
+  // MUTATION : clôt la période en cours et en ouvre une nouvelle. Les deux dates
+  // portent la mutation — il n'y a pas de table `mutations` à tenir en plus.
+  // L'ordre importe : clore AVANT de créer, sinon l'index partiel « un seul
+  // propriétaire actuel par lot » refuserait la nouvelle ligne.
+  async enregistrerMutation(lotId, { date_mutation, ...nouveau }) {
+    await delay()
+    this._gardeBureau()
+    if (!date_mutation) throw new Error('La date de mutation est obligatoire.')
+    const data = load()
+    data.proprietaires ||= []
+    const actuel = data.proprietaires.find((p) => p.lot_id === lotId && !p.date_cession)
+    if (actuel) {
+      if (actuel.date_acquisition && date_mutation < actuel.date_acquisition) {
+        throw new Error('La mutation ne peut pas précéder l’acquisition du propriétaire actuel.')
+      }
+      actuel.date_cession = date_mutation
+      actuel.updated_at = nowISO()
+    }
+    const p = {
+      id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
+      adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
+      date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
+      ...nouveau, date_acquisition: date_mutation,
+    }
+    data.proprietaires.push(p)
+    audit(data, 'proprietaires', p.id, 'mutation', `Mutation au ${date_mutation} : ${actuel?.nom || 'aucun'} vers ${p.nom}`)
+    save(data)
+    return clone(p)
+  },
+
+  // Acceptation de la mention RGPD : une fois, horodatée, tracée.
+  async accepterRgpdRegistre(membreId) {
+    await delay()
+    const data = load()
+    const m = data.membres_cs.find((x) => x.id === membreId)
+    if (!m) throw new Error('Membre introuvable')
+    if (!m.registre_rgpd_accepte_le) {
+      m.registre_rgpd_accepte_le = nowISO()
+      audit(data, 'membres_cs', membreId, 'rgpd', `Mention RGPD du registre des propriétaires acceptée par ${m.prenom} ${m.nom}`)
+      save(data)
+    }
+    return clone(m)
   },
 
   // ---- Audit ----

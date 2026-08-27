@@ -432,9 +432,32 @@ groupe CS. Owner-only, bascule en « Notifier à nouveau ».
 **Modèle d'identité** : tout est clé sur **`membres_cs.id`**, *pas* `auth.users.id`. Le lien est
 l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 
+### Registre des propriétaires (migration 035) — ⚠ DONNÉES PERSONNELLES
+> **Président et secrétaire UNIQUEMENT**, lecture comme écriture. `lots` et `proprietaires` ne
+> figurent **PAS** dans la boucle `read_auth` : c'est l'inverse de tout le reste de l'app, et c'est
+> délibéré — un trésorier ou un membre ordinaire ne voit rien, pas même le nombre de lots.
+> **Ne pas relâcher sans arbitrage.**
+
+- **Le LOT est stable, le propriétaire est une PÉRIODE.** `lots` (numéro, adresse dans le
+  lotissement) ; `proprietaires` = une ligne par période de propriété. Propriétaire **actuel** =
+  `date_cession is null` ; l'historique, ce sont les autres. Une **mutation** clôt la période en
+  cours et en ouvre une nouvelle — les deux dates la portent, **pas de table `mutations`**.
+- **Index partiel `proprietaires_actuel_par_lot`** : un lot n'a jamais deux propriétaires actuels.
+  Sans lui, une mutation mal terminée rendrait le registre faux en silence.
+- **Mention RGPD acceptée une fois par personne** (`membres_cs.registre_rgpd_accepte_le`, tracée par
+  `trg_membres_audit_rgpd`). L'écran d'acceptation s'affiche **à la place** du registre, jamais
+  par-dessus. Texte dans `src/lib/rgpdRegistre.js`, partagé par l'écran et le rappel permanent —
+  **ne pas l'adoucir sans arbitrage** : il dit ce qui est communicable (nom, adresse dans le
+  lotissement, lot) et que toute autre divulgation engage la responsabilité personnelle.
+- ⚠ Ce registre **EST le rôle des colotis** dont dépendait le chantier d'onboarding gelé
+  (`docs/SPEC_ONBOARDING_COLOTIS.md`). Il est conçu pour pouvoir servir d'ancre d'identité (e-mail
+  normalisé comme `membres_cs`) mais **n'ouvre RIEN** : aucun compte, aucune lecture élargie.
+- Le mock reproduit la garde de rôle pour que la démo montre le même refus — il ne **prouve** rien,
+  seules les policies ferment. À éprouver sur staging.
+
 Tables : `membres_cs`, `assemblees_generales`, `resolutions_ag`, `projets`, `decisions`, `votes`,
 `questions_reponses`, `signature_batches`, `decision_status_history`, `decisions_historique`,
-`cron_runs`, `comptes_ag`, `audit_log`.
+`cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`

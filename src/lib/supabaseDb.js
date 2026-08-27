@@ -67,6 +67,8 @@ export async function resolveUser(authUser) {
     prenom: membre?.prenom,
     // Drapeau "a défini son mot de passe" (posé après le 1er changement).
     password_changed: authUser.user_metadata?.password_changed === true,
+    // Acceptation de la mention RGPD du registre des propriétaires (035).
+    registre_rgpd_accepte_le: membre?.registre_rgpd_accepte_le ?? null,
   }
 }
 
@@ -520,6 +522,78 @@ export const supabaseRepo = {
   },
   async markBatchSigned(batchId, pdf_url) {
     return must(await supabase.from('signature_batches').update({ statut: 'signe', pdf_url: pdf_url || null, signed_at: new Date().toISOString() }).eq('id', batchId).select())[0]
+  },
+
+
+  // ---- Registre des propriétaires (migration 035) ----
+  //
+  // ⚠ DONNÉES PERSONNELLES. Aucune garde applicative ici : ce sont les policies
+  // `lots_bureau` / `proprietaires_bureau` qui ferment l'accès au président et
+  // au secrétaire, en lecture comme en écriture. Ces tables ne figurent PAS dans
+  // la boucle `read_auth` — un membre ordinaire ne voit rien, pas même le
+  // nombre de lots. Une garde côté client ne serait qu'un décor.
+  async listLots() {
+    const lots = must(await supabase.from('lots').select('*').order('numero'))
+    const periodes = must(await supabase.from('proprietaires').select('*'))
+    return lots.map((l) => {
+      const p = periodes.filter((x) => x.lot_id === l.id)
+      return {
+        ...l,
+        proprietaire: p.find((x) => !x.date_cession) || null,
+        anciens: p.filter((x) => x.date_cession).length,
+      }
+    })
+  },
+  async getLot(id) {
+    const l = must(await supabase.from('lots').select('*').eq('id', id).maybeSingle())
+    if (!l) return null
+    const periodes = must(await supabase.from('proprietaires').select('*').eq('lot_id', id))
+    return {
+      ...l,
+      proprietaire: periodes.find((x) => !x.date_cession) || null,
+      historique: periodes.filter((x) => x.date_cession).sort((a, b) => (a.date_cession < b.date_cession ? 1 : -1)),
+    }
+  },
+  async createLot(input) {
+    return must(await supabase.from('lots').insert(input).select())[0]
+  },
+  async updateLot(id, patch) {
+    return must(await supabase.from('lots').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
+  },
+  async deleteLot(id) {
+    // L'historique part avec le lot : `on delete cascade` côté base.
+    must(await supabase.from('lots').delete().eq('id', id))
+    return { ok: true }
+  },
+  async saveProprietaire(lotId, patch) {
+    const actuels = must(await supabase.from('proprietaires').select('id').eq('lot_id', lotId).is('date_cession', null))
+    if (actuels.length) {
+      return must(await supabase.from('proprietaires')
+        .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', actuels[0].id).select())[0]
+    }
+    return must(await supabase.from('proprietaires').insert({ ...patch, lot_id: lotId }).select())[0]
+  },
+  // ⚠ NON ATOMIQUE : clôture de la période en cours, puis insertion de la
+  // nouvelle. L'ordre est imposé par l'index partiel « un seul propriétaire
+  // actuel par lot » — insérer d'abord serait refusé. Si le second appel échoue,
+  // le lot se retrouve SANS propriétaire actuel : c'est visible à l'écran (la
+  // fiche l'affiche comme vacant), donc rattrapable, là où l'inverse laisserait
+  // deux propriétaires en cours sans que personne ne le voie.
+  async enregistrerMutation(lotId, { date_mutation, ...nouveau }) {
+    const actuels = must(await supabase.from('proprietaires').select('id').eq('lot_id', lotId).is('date_cession', null))
+    if (actuels.length) {
+      must(await supabase.from('proprietaires')
+        .update({ date_cession: date_mutation, updated_at: new Date().toISOString() })
+        .eq('id', actuels[0].id).select())
+    }
+    return must(await supabase.from('proprietaires')
+      .insert({ ...nouveau, lot_id: lotId, date_acquisition: date_mutation }).select())[0]
+  },
+  // Acceptation de la mention RGPD. Tracée en base par `trg_membres_audit_rgpd`.
+  async accepterRgpdRegistre(membreId) {
+    return must(await supabase.from('membres_cs')
+      .update({ registre_rgpd_accepte_le: new Date().toISOString() })
+      .eq('id', membreId).select())[0]
   },
 
   // ---- Audit ----
