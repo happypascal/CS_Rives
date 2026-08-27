@@ -53,6 +53,13 @@ du budget demandé à l'AG et du backlog ci-dessous.
   **mutation à enregistrer avec sa vraie date** (le champ « Date de la mutation » est libre, c'est
   lui qui clôt une période et en ouvre une autre). Une autre attend confirmation d'un nom auprès du
   colotis. Deux adresses non importées : l'une tronquée dans la source, l'autre périmée chez Foncia.
+- ⚠ **PIÈGE DES IMPORTS PAR JOINTURE, rencontré deux fois le même jour.** Un
+  `update … from (values …) join lots on l.numero = v.numero` **n'échoue jamais** quand un numéro
+  ne correspond plus : il écrit simplement **une ligne de moins, en silence**. C'est ainsi qu'un
+  renommage de parcelle (`0B 474` → `0B 474+263`) a fait sauter une adresse sans le moindre message.
+  **Toujours terminer un import par un COMPTE**, et le comparer au nombre attendu — c'est le seul
+  filet. Le 49/50 obtenu sur les numéros de syndic est précisément ce qui a permis de découvrir le
+  partage de la parcelle 263.
 - ⚠ **Aucun script d'import n'est versionné** — données personnelles. Ils sont reproductibles depuis
   le PDF Foncia et le classeur des votes.
 
