@@ -438,6 +438,14 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 > délibéré — un trésorier ou un membre ordinaire ne voit rien, pas même le nombre de lots.
 > **Ne pas relâcher sans arbitrage.**
 
+- **`lots.numero` porte la PARCELLE CADASTRALE** (`0B 220`, `0B 247+263`), pas un numéro de lot :
+  le lotissement n'en a pas de numérotation utilisable aujourd'hui. La colonne « N° » des fichiers
+  de l'ASL est le **numéro de voirie** et leur colonne « lot » un **nombre** de lots (1, sauf 1,81
+  et 1,19 — 51 lots pour 50 colotis). La parcelle est le seul identifiant réel, unique et
+  vérifiable au cadastre, et c'est déjà elle qui désigne les colotis dans les listes de vote.
+  Le cahier des charges de 1955 parle bien de « lot n°13, zone A », mais **aucun document connu ne
+  relie cette numérotation d'origine aux parcelles actuelles** — l'inventer serait pire que rien.
+  La **zone** (A à E) est en observations, faute de colonne dédiée.
 - **Le LOT est stable, le propriétaire est une PÉRIODE.** `lots` (numéro, adresse dans le
   lotissement) ; `proprietaires` = une ligne par période de propriété. Propriétaire **actuel** =
   `date_cession is null` ; l'historique, ce sont les autres. Une **mutation** clôt la période en

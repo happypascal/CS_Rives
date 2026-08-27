@@ -29,6 +29,35 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-27 (suite 2) — REGISTRE ALIMENTÉ : 50 lots, 104 646 m²
+
+- **✅ Les 50 lots et leurs propriétaires actuels sont en base**, importés de
+  `4_ASL/_résultats des votes/Résultats des votes.xlsx`, onglet « Colotis & Superficie ». Le total
+  des superficies tombe **exactement** sur celui du classeur (104 646 m²) — c'est le contrôle qui
+  valide la lecture du fichier.
+- ⚠ **`lots.numero` = la PARCELLE CADASTRALE**, pas un numéro de lot. Le fichier source n'en porte
+  aucun : sa colonne « N° » est le numéro de voirie, sa colonne « lot » un **nombre** de lots
+  (1, sauf 1,81 et 1,19 — d'où 51 lots pour 50 colotis). La parcelle est le seul identifiant réel,
+  unique et vérifiable, et c'est déjà elle qui désigne les colotis dans les listes de vote de l'ASL.
+  ⚠ Si la numérotation d'origine du lotissement (le cahier des charges de 1955 parle de « lot n°13,
+  zone A ») refait surface avec sa correspondance aux parcelles, c'est **un simple UPDATE**.
+- **Le libellé exact du syndic est conservé** en observations de chaque propriétaire. Il diverge du
+  nom usuel dans plusieurs cas — « BERJEMO » vs *Bermejo*, « CHAPPUIS LUCIENNE » vs *Chappuis
+  Olivier*, « DELISLE PAUL » vs *Delisle Florian*, « PARGOUX JEAN-CLAUDE » vs *Pargoux Anne*,
+  « TKATCHOUK » vs *Katchouk* : successions ou fautes du fichier Foncia. **Rien n'a été tranché** ;
+  les deux versions sont en base et se corrigent à l'écran.
+- **Ni e-mail ni téléphone** : la source n'en contient pas. L'onglet « source » du même classeur est
+  un carnet d'adresses général, **pas** la liste des colotis — ne pas l'importer sans tri.
+- ⚠ **Le script d'import n'est PAS versionné**, délibérément : 50 noms et adresses de tiers dans un
+  dépôt git, c'est exactement ce que la mention RGPD interdit de diffuser. Il est reproductible à
+  partir du classeur ; l'exemplaire de travail est resté hors dépôt.
+- **Écueil rencontré, à retenir** : l'éditeur SQL de Supabase a rejeté le script complet sur une
+  ligne contenant `/` et `:` dans une chaîne (« invalid binary integer at or near 0B » — le
+  parseur avait perdu le fil des guillemets bien avant la ligne signalée). Remède appliqué, le même
+  qu'aux incidents du 2026-08-25 : **caractères spéciaux bannis des chaînes** (`:`, `/`, `&`,
+  tirets cadratins) et **script découpé en blocs courts**, chacun vérifié. Les accents ont été
+  reposés dans un 3ᵉ bloc — dans un registre légal, « Allee de Rives » n'est pas l'adresse.
+
 ## Session 2026-08-27 (suite) — superficie des lots + mandataire (migration 036 ✅ appliquée)
 
 - **✅ `lots.superficie`** — c'est une **assiette**, pas une donnée descriptive : poids de vote en
