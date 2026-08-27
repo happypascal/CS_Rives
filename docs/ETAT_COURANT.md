@@ -29,7 +29,7 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
-## Session 2026-08-27 (suite) — superficie des lots + mandataire (migration 036)
+## Session 2026-08-27 (suite) — superficie des lots + mandataire (migration 036 ✅ appliquée)
 
 - **✅ `lots.superficie`** — c'est une **assiette**, pas une donnée descriptive : poids de vote en
   AG (prorata des superficies) et répartition des charges. Une superficie fausse produit un vote
@@ -597,8 +597,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `037`. ⚠ **036 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
-  031-035 le sont en **prod**). Le
+- **Prochaine migration SQL libre** : `037` (001-029 et 031-036 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
