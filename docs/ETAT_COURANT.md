@@ -29,6 +29,30 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite 5) — casse des adresses uniformisée
+
+- **✅ 49 adresses de communication réécrites** : elles arrivaient toutes en CAPITALES de l'état
+  Foncia. Minuscules pour les types de voie (« allée de Rives », « route de Messery »), majuscules
+  aux noms propres, **accents rétablis**, et **apostrophes typographiques** (`’`) plutôt qu'ASCII —
+  ce qui suit la convention du projet et supprime au passage tout besoin d'échappement SQL.
+- ⚠ **Réécrites À LA MAIN, pas par `initcap()`.** La fonction Postgres aurait produit « Allee De
+  Rives » : sans accent, avec un « De » majuscule, et « SCI » rendu « Sci ». Dans un registre légal,
+  cela remplace une faute par une autre.
+- **Erreurs de la source redressées au passage** : commune de 0B 244 (Nernier et non Messery),
+  numéro de 0B 246 (46 et non 44), « allée de Rives 11 » remis dans l'ordre (0B 223), « allée
+  Précettes » complété en « allée des Précettes » (0B 234).
+- **Arbitrages, à connaître avant de les défaire** :
+  - **0B 214 et 0B 247+263** n'avaient aucun numéro de rue ; celui de la parcelle a été repris
+    (1 et 42 allée de Rives).
+  - **0B 216** : le « S/C Mme Delucinge » a été remplacé par le **siège officiel** de la SCI
+    Marguerite (7 avenue Alsace-Lorraine) — le champ porte une adresse, pas un intermédiaire ; la
+    gérante, elle, est nommée dans le bloc dirigeants.
+  - **0B 245 reste incomplète** : la source ne donne que « AMIRAL », sans type de voie ni numéro.
+    **Ne pas inventer** — le champ dira la vérité tant qu'on n'aura pas mieux.
+- ⚠ **`observations` est exclu de toute normalisation** : ce champ contient le **libellé exact du
+  syndic**, cité tel quel. Le corriger détruirait la citation qui sert précisément à comparer les
+  deux registres.
+
 ## Session 2026-08-28 (suite 4) — les sociétés vérifiées au REGISTRE OFFICIEL
 
 Source : `recherche-entreprises.api.gouv.fr` (INSEE / RNE). Elle **prime** sur nos listes de vote
