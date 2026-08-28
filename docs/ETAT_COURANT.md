@@ -29,6 +29,46 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite 4) — les sociétés vérifiées au REGISTRE OFFICIEL
+
+Source : `recherche-entreprises.api.gouv.fr` (INSEE / RNE). Elle **prime** sur nos listes de vote
+comme sur l'état du syndic. Aucune migration, uniquement des `update`.
+
+- **✅ Les 13 sociétés du registre sont conformes** au nom officiel, avec leurs dirigeants réels et
+  leurs fonctions.
+- ⚠ **SIX des douze SCI ne portent pas « SCI » dans leur nom** — Logudoro, Le Clapotis, Entre Lac et
+  Montagnes, Kitka, Maison du Lac, Precettes. Nous l'avions ajouté à l'import, sur la seule foi du
+  classeur de l'ASL. « Entre Lac et Montagne**s** » prend en outre un S que personne n'écrivait.
+- ⚠ **TROIS dirigeants étaient faux** : le gérant de Logudoro est **Laurent** Pais (Marc n'est
+  qu'associé), celui de Kitka est **Isabelle Kittler** (Nicolas Kah n'est qu'associé), et
+  `bougarye@mac.com` est **Mona Baker Bougary, associée de Precettes** — nous l'avions rangée en
+  mandataire.
+- ⚠ **DEUX « erreurs » du syndic n'en étaient pas — vérifier avant d'accuser** :
+  - **GABISAM** est une SCI **réellement créée le 2026-05-11** (gérants Sarah et Aurélien Clozel) :
+    la parcelle 0B 208 a changé de mains cette année, Foncia est à jour et c'est **notre** registre
+    qui porte encore Mme Pflieger.
+  - **JEANLU** est le **nom d'une société** (SIREN 504838772) dont Chappuis Olivier est dirigeant.
+    Nous confondions le dirigeant et le propriétaire.
+  - Il ne reste donc **aucune mutation** à reprocher au syndic, et **une seule date à lui demander**
+    (celle de la vente à GABISAM).
+- **0B 208 laissé en l'état, délibérément** : une mutation sans date exacte serait pire que le
+  retard actuel — on perdrait les bornes de la période de l'ancienne propriétaire. À passer dès que
+  Foncia donne la date de l'acte.
+- **Deux arbitrages de Pascal confirmés** par la source officielle : Claude **Terrier** est bien
+  gérant du Clapotis, et Catherine **Delucinge** bien gérante de la SCI Marguerite — le « S/C » du
+  syndic désignait donc bien des dirigeants.
+- ⚠ **« Tino » Pais ne figure nulle part** au registre officiel, qui donne Laurent et Marc. Posé
+  Laurent en gérant, à corriger si Tino est un prénom d'usage.
+- **Conservé malgré un doute** : `mehdi@msconsulting-france.com` reste mandataire de Maison du Lac
+  bien qu'il s'agisse probablement du gérant de Precettes. Si c'est réellement l'intermédiaire des
+  deux familles, le supprimer ferait perdre un contact utile.
+- 🔑 **PISTE MAJEURE — la numérotation d'origine des lots existe.** Le siège de LE CLAPOTIS est
+  déclaré « **LOT 5 DU LOTISSEMENT DE RIVES** » ; cette société occupe `0B 203`, donc **lot 5 =
+  0B 203**. C'est la première correspondance retrouvée entre la numérotation de 1955 et le cadastre.
+  À demander à Me Garnier pour l'ensemble des titres.
+- **Document produit**, hors dépôt : `propriétaires/SOCIETES_REGISTRE_OFFICIEL.md` — les 12 sociétés
+  avec SIREN, siège et dirigeants.
+
 ## Session 2026-08-28 (suite 3) — rapprochement avec l'état Foncia
 
 - **✅ 13 seconds propriétaires ajoutés** : le registre en compte désormais **17 à deux noms, dont 4

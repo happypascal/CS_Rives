@@ -447,6 +447,10 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   vérifiable au cadastre, et c'est déjà elle qui désigne les colotis dans les listes de vote.
   Le cahier des charges de 1955 parle bien de « lot n°13, zone A », mais **aucun document connu ne
   relie cette numérotation d'origine aux parcelles actuelles** — l'inventer serait pire que rien.
+  ⚠ **UNE PREMIÈRE CORRESPONDANCE A ÉTÉ RETROUVÉE** (2026-08-28) : le siège de la société LE CLAPOTIS
+  est déclaré au registre officiel « LOT 5 DU LOTISSEMENT DE RIVES », et cette société occupe la
+  parcelle `0B 203` — donc **lot 5 = 0B 203**. Les titres de propriété que réunit Me Garnier
+  devraient porter cette numérotation pour toutes les parcelles ; la demander explicitement.
   La **zone** (A à E) est en observations, faute de colonne dédiée. L'écran dit donc « parcelle »,
   pas « lot ».
 - **`lots.numero_syndic`** (migration 039) : la référence de **Foncia**, qui revient dans tous les
@@ -507,6 +511,16 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   l'intéressé n'a pas. Colonnes renommées (`dirigeant_nom`, `_fonction`, `_email`, `_telephone`,
   `adresse_dirigeant`, et les mêmes en `_2`) plutôt qu'un simple changement de libellé : une base
   qui dit « gérant » sous un écran qui dit « dirigeant » finit toujours par ressortir dans un export.
+- ⚠ **LES SOCIÉTÉS SE VÉRIFIENT AU REGISTRE OFFICIEL** (`recherche-entreprises.api.gouv.fr`,
+  données INSEE / RNE), qui **prime sur nos listes de vote comme sur l'état du syndic**. La
+  vérification du 2026-08-28 a montré que **six des douze SCI ne portent pas « SCI » dans leur nom**
+  (Logudoro, Le Clapotis, Entre Lac et Montagnes, Kitka, Maison du Lac, Precettes) — nous l'avions
+  ajouté à l'import — et que **trois dirigeants étaient faux** : le gérant de Logudoro est Laurent
+  et non Marc Pais, celui de Kitka est Isabelle Kittler et non Nicolas Kah, et l'« associée » de
+  Precettes avait été prise pour une mandataire. ⚠ Elle a aussi montré que **deux « erreurs » du
+  syndic n'en étaient pas** : GABISAM est une SCI réellement créée le 2026-05-11 (mutation que
+  NOTRE registre ignorait) et JEANLU est le nom d'une société dont Chappuis Olivier est dirigeant.
+  **Vérifier avant d'accuser le syndic.**
 - ⚠ **`dirigeant_fonction` RECOPIE LE REGISTRE OFFICIEL** (annuaire des entreprises, gouv.fr) —
   **« autre » y compris**. Ce n'est pas un champ mal rempli à nettoyer : c'est la qualité telle que
   l'État l'enregistre, et deux dirigeants de la SCI Ravoire la portent réellement. La « corriger »
