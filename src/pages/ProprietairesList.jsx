@@ -327,7 +327,7 @@ function Contenu() {
                     <td className="px-4 py-3 text-slate-600">{l.adresse_lotissement || '—'}</td>
 
                     {/* 3 — l'adresse où l'on écrit, souvent très différente. */}
-                    <td className="px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
+                    <td className="whitespace-pre-line px-4 py-3 text-slate-600">{l.proprietaire?.adresse_communication || '—'}</td>
 
                     {/* 4 — la personne et ses coordonnées, d'un seul tenant :
                         éparpillées en trois colonnes, il fallait balayer la ligne

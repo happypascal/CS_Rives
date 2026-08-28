@@ -328,7 +328,18 @@ function Contenu() {
                 </div>
               )}
               <div className="sm:col-span-2">
-                <Input label="Adresse de communication officielle" value={form.adresse_communication} onChange={set('adresse_communication')} readOnly={!peutSaisir} />
+                {/* Textarea et non Input : l'adresse s'écrit comme sur une
+                    enveloppe — voie, puis code postal et ville, puis le pays
+                    seulement s'il n'est pas la France. Un champ d'une ligne ne
+                    peut ni saisir ni restituer ces retours. */}
+                <Textarea
+                  label="Adresse de communication officielle"
+                  rows={3}
+                  value={form.adresse_communication}
+                  onChange={set('adresse_communication')}
+                  readOnly={!peutSaisir}
+                  placeholder={'12 rte de Messery\n74140 Nernier'}
+                />
               </div>
               <Input label="Email" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
               <Input label="Téléphone" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
@@ -478,7 +489,12 @@ function Contenu() {
                 </>
               )}
               <div className="sm:col-span-2">
-                <Input label="Adresse de communication officielle" value={mutation.adresse_communication} onChange={(e) => setMutation((m) => ({ ...m, adresse_communication: e.target.value }))} />
+                <Textarea
+                  label="Adresse de communication officielle"
+                  rows={3}
+                  value={mutation.adresse_communication}
+                  onChange={(e) => setMutation((m) => ({ ...m, adresse_communication: e.target.value }))}
+                />
               </div>
               <Input label="Email" type="email" value={mutation.email} onChange={(e) => setMutation((m) => ({ ...m, email: e.target.value }))} />
               <Input label="Téléphone" value={mutation.telephone} onChange={(e) => setMutation((m) => ({ ...m, telephone: e.target.value }))} />
