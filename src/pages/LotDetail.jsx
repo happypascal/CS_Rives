@@ -17,7 +17,7 @@ const CHAMPS_VIDES = {
   adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
   gerant_email: '', gerant_telephone: '',
   mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
-  nom_2: '', email_2: '', telephone_2: '',
+  nom_2: '', email_2: '', telephone_2: '', est_indivision: false,
   date_acquisition: '', observations: '',
 }
 
@@ -124,6 +124,7 @@ function Contenu() {
         nom_2: form.nom_2 || null,
         email_2: form.email_2 || null,
         telephone_2: form.telephone_2 || null,
+        est_indivision: Boolean(form.est_indivision),
         adresse_communication: form.adresse_communication || null,
         adresse_gerant: form.adresse_gerant || null,
         email: form.email || null,
@@ -157,6 +158,7 @@ function Contenu() {
         nom_2: nouveau.nom_2 || null,
         email_2: nouveau.email_2 || null,
         telephone_2: nouveau.telephone_2 || null,
+        est_indivision: Boolean(nouveau.est_indivision),
         adresse_communication: nouveau.adresse_communication || null,
         adresse_gerant: nouveau.adresse_gerant || null,
         email: nouveau.email || null,
@@ -299,10 +301,10 @@ function Contenu() {
                   les couper par un second nom faisait douter de qui ils sont. */}
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Second propriétaire (indivision)
+                  Second propriétaire
                 </p>
                 <p className="mb-3 text-xs text-slate-500">
-                  À renseigner si la propriété est détenue en indivision. Elle reste{' '}
+                  À renseigner si le bien est détenu par deux personnes. Il reste{' '}
                   <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
                   d’une seule superficie.
                 </p>
@@ -311,6 +313,14 @@ function Contenu() {
                   <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir} />
                   <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir} />
                 </div>
+                {/* La QUALIFICATION, distincte du fait d'être deux : on peut
+                    détenir à deux sans être en indivision (communauté entre
+                    époux, tontine). Non cochée, la case dit « on ne l'affirme
+                    pas », pas « ce n'en est pas une ». */}
+                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                  <input type="checkbox" checked={form.est_indivision} onChange={set('est_indivision')} disabled={!peutSaisir} />
+                  Le bien est détenu en <strong>indivision</strong>
+                </label>
               </div>
               {/* MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint
                   pas le propriétaire lui-même (colotis étrangers surtout).
@@ -353,7 +363,10 @@ function Contenu() {
                 {lot.historique.map((p) => (
                   <li key={p.id} className="px-5 py-3">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-medium text-navy-800">{p.nom}{p.nom_2 ? ` et ${p.nom_2}` : ''}</p>
+                      <p className="text-sm font-medium text-navy-800">
+                        {p.nom}{p.nom_2 ? ` et ${p.nom_2}` : ''}
+                        {p.est_indivision && <span className="ml-1 text-xs font-normal text-slate-500">(indivision)</span>}
+                      </p>
                       {p.est_societe && <Badge tone="gray">société</Badge>}
                     </div>
                     {p.gerant_nom && <p className="text-xs text-slate-500">{p.gerant_fonction ? `${p.gerant_fonction} : ` : ''}{p.gerant_nom}</p>}
@@ -426,9 +439,13 @@ function Contenu() {
                   entière, les couper par un second nom faisait douter de qui
                   elles sont. */}
               <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
-                <Input label="Second propriétaire (indivision)" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
+                <Input label="Second propriétaire" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
                 <Input label="Email" type="email" value={mutation.email_2} onChange={(e) => setMutation((m) => ({ ...m, email_2: e.target.value }))} />
                 <Input label="Téléphone" value={mutation.telephone_2} onChange={(e) => setMutation((m) => ({ ...m, telephone_2: e.target.value }))} />
+                <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-600 sm:col-span-3">
+                  <input type="checkbox" checked={mutation.est_indivision} onChange={(e) => setMutation((m) => ({ ...m, est_indivision: e.target.checked }))} />
+                  Le bien est détenu en indivision
+                </label>
               </div>
               {/* Le mandataire suit le PROPRIÉTAIRE, pas le lot : le nouveau
                   venu a le sien, ou n'en a pas. Il ne s'hérite jamais. */}

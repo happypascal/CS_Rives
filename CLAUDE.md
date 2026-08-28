@@ -466,8 +466,14 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   nullable, le total varierait selon qui a pensé à remplir le champ. `numeric(4,2)` — 1,81 n'est
   pas un entier. ⚠ Le tantième reste calculé sur la **superficie**, pas sur `nombre_lots` : le vote
   est au prorata des superficies.
-- **INDIVISION : deux propriétaires, UNE ligne** (`nom_2` / `email_2` / `telephone_2`, migration
-  038). Une indivision, c'est une part de charges, une voix, une période — deux **lignes**
+- **DEUX PROPRIÉTAIRES ≠ INDIVISION** (migration 040). `nom_2` / `email_2` / `telephone_2`
+  constatent le **FAIT** qu'un bien est détenu par deux personnes ; `est_indivision` porte la
+  **QUALIFICATION**, cochée seulement quand on la connaît. Détenir à deux n'est pas être en
+  indivision — communauté entre époux, tontine, démembrement. Le registre **constate**, il ne
+  qualifie pas à la place du notaire. `not null default false` : non cochée, la case dit « on ne
+  l'affirme pas », pas « ce n'en est pas une ». ⚠ Les totaux distinguent les deux : « N à deux
+  noms, M en indivision ».
+- **DEUX PROPRIÉTAIRES, UNE LIGNE** (migration 038). Une indivision, c'est une part de charges, une voix, une période — deux **lignes**
   compteraient la parcelle, la superficie, les voix et les charges en double, et l'index partiel
   `proprietaires_actuel_par_lot` l'interdit à juste titre. Une indivision compte donc pour **UN**
   propriétaire dans les totaux. ⚠ Limite assumée : **deux** indivisaires nommés, pas trois — le

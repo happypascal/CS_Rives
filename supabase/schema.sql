@@ -420,6 +420,12 @@ create table if not exists proprietaires (
   nom_2                 text,
   email_2               text,
   telephone_2           text,
+  -- ⚠ Deux propriétaires n'est PAS synonyme d'indivision (migration 040) :
+  -- communauté entre époux, tontine, démembrement. `nom_2` constate le FAIT
+  -- d'un second propriétaire, `est_indivision` porte la QUALIFICATION, cochée
+  -- seulement quand on la connaît. Le registre constate, il ne qualifie pas à la
+  -- place du notaire.
+  est_indivision        boolean not null default false,
 
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.

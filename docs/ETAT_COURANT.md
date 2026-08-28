@@ -29,6 +29,25 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 — deux propriétaires ≠ indivision (migration 040)
+
+- **✅ `proprietaires.est_indivision`.** La 038 avait appelé « indivision » le second propriétaire ;
+  c'était **présumer la forme juridique**. Correction de Pascal : deux personnes peuvent détenir un
+  bien sans être en indivision (communauté entre époux, tontine, démembrement). `nom_2` & co.
+  constatent le **fait**, la case à cocher porte la **qualification**. Le registre constate, il ne
+  qualifie pas à la place du notaire.
+- `not null default false` : non cochée, la case dit « on ne l'affirme pas », pas « ce n'en est pas
+  une ». Un booléen nullable aurait donné trois états pour une information qu'on ne saisit qu'en la
+  sachant. Les 4 indivisions connues sont **rétro-cochées** par la migration, sur les libellés
+  « IND » du syndic — là, la qualification est établie, on ne la devine pas.
+- **Les totaux distinguent désormais les deux** : « dont N à deux noms, M en indivision ».
+- **✅ Le second propriétaire a ses PROPRES coordonnées dans la liste** (e-mail et téléphone), sous
+  un filet de séparation : rien n'oblige deux copropriétaires à partager une adresse, et c'est même
+  l'inverse quand la détention naît d'une succession. La recherche les atteint aussi — affiché mais
+  introuvable, cela n'aurait servi à rien.
+- ⚠ La qualification suit la **période**, comme le reste : elle ne s'hérite jamais à la mutation, et
+  reste attachée à l'ancien propriétaire dans l'historique.
+
 ## Session 2026-08-27 (suite 7) — TÉLÉPHONES : 32 parcelles
 
 Source : `all contacts.vcf` (1 134 fiches, tout le carnet de Pascal). Aucune migration.
@@ -773,7 +792,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `040` (001-029 et 031-039 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `041`. ⚠ **040 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et 031-039 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

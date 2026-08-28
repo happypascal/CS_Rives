@@ -127,8 +127,9 @@ function Contenu() {
     const terme = q.trim().toLowerCase()
     const liste = terme
       ? lots.filter((l) =>
-          [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.gerant_nom,
-           l.proprietaire?.mandataire_nom, l.proprietaire?.email]
+          [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
+           l.proprietaire?.gerant_nom, l.proprietaire?.mandataire_nom,
+           l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
       : [...lots]
@@ -144,7 +145,10 @@ function Contenu() {
   // propriété — une part de charges, une voix. Les compter pour deux gonflerait
   // le total au-dessus du nombre réel de colotis.
   const proprietaires = lots.filter((l) => l.proprietaire).length
-  const indivisions = lots.filter((l) => l.proprietaire?.nom_2).length
+  // ⚠ On compte les indivisions DÉCLARÉES, pas les biens à deux noms : détenir
+  // à deux n'est pas être en indivision (communauté entre époux, tontine).
+  const indivisions = lots.filter((l) => l.proprietaire?.est_indivision).length
+  const aDeuxNoms = lots.filter((l) => l.proprietaire?.nom_2).length
   const vacants = lots.filter((l) => !l.proprietaire).length
   // Somme des `nombre_lots`, jamais un compte de lignes — cf. le commentaire des
   // totaux ci-dessous.
@@ -197,7 +201,7 @@ function Contenu() {
           <Total
             valeur={proprietaires}
             libelle="propriétaire(s) actuel(s)"
-            detail={indivisions > 0 ? `dont ${indivisions} en indivision` : null}
+            detail={aDeuxNoms > 0 ? `dont ${aDeuxNoms} à deux noms${indivisions > 0 ? `, ${indivisions} en indivision` : ''}` : null}
             alerte={vacants > 0 ? `${vacants} parcelle(s) sans propriétaire` : null}
           />
           <Total valeur={num(totalLots)} libelle="lot(s)" detail={`sur ${lots.length} parcelle(s)`} />
@@ -302,8 +306,6 @@ function Contenu() {
                         pour reconstituer un interlocuteur. */}
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
-                      {/* Le second indivisaire : deux noms, une seule propriété. */}
-                      {l.proprietaire?.nom_2 && <span className="block text-xs text-slate-500">et {l.proprietaire.nom_2}</span>}
                       {/* Le gérant sous la raison sociale : pour une SCI, le nom
                           seul ne dit pas à qui l'on s'adresse. */}
                       {l.proprietaire?.gerant_nom && (
@@ -313,6 +315,23 @@ function Contenu() {
                       )}
                       {l.proprietaire?.email && <span className="block text-xs text-slate-500">{l.proprietaire.email}</span>}
                       {l.proprietaire?.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{l.proprietaire.telephone}</span>}
+                      {/* LE SECOND INDIVISAIRE, avec SES propres coordonnées.
+                          Deux noms, une seule propriété — une part de charges,
+                          une voix — mais rien n'oblige les deux personnes à
+                          partager une adresse ou un téléphone, et c'est même
+                          l'inverse quand une indivision naît d'une succession.
+                          Le bloc est visuellement détaché pour qu'on ne prête
+                          pas à l'un les coordonnées de l'autre. */}
+                      {l.proprietaire?.nom_2 && (
+                        <span className="mt-1 block border-t border-navy-50 pt-1">
+                          <span className="block text-xs text-slate-600">
+                            et {l.proprietaire.nom_2}
+                            {l.proprietaire.est_indivision && <span className="text-slate-400"> · indivision</span>}
+                          </span>
+                          {l.proprietaire.email_2 && <span className="block text-xs text-slate-500">{l.proprietaire.email_2}</span>}
+                          {l.proprietaire.telephone_2 && <span className="block whitespace-nowrap text-xs text-slate-500">{l.proprietaire.telephone_2}</span>}
+                        </span>
+                      )}
                     </td>
 
                     {/* 5 — le mandataire, nom et adresse ensemble : séparés, on ne

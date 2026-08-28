@@ -1454,7 +1454,7 @@ export const mockRepo = {
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
-      nom_2: null, email_2: null, telephone_2: null,
+      nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       date_acquisition: null, date_cession: null, observations: null,
       created_at: nowISO(), updated_at: nowISO(), ...patch,
     }
@@ -1487,7 +1487,7 @@ export const mockRepo = {
       adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
       gerant_email: null, gerant_telephone: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
-      nom_2: null, email_2: null, telephone_2: null,
+      nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
       ...nouveau, date_acquisition: date_mutation,
     }
