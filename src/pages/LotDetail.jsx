@@ -13,10 +13,10 @@ import { useIsMobile } from '../lib/useIsMobile'
 // et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
 // mêmes informations. Deux formulaires écrits séparément finiraient par diverger.
 const CHAMPS_VIDES = {
-  nom: '', est_societe: false, gerant_nom: '', gerant_fonction: '',
-  adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
-  gerant_nom_2: '', gerant_fonction_2: '', gerant_email_2: '', gerant_telephone_2: '',
-  gerant_email: '', gerant_telephone: '',
+  nom: '', est_societe: false, dirigeant_nom: '', dirigeant_fonction: '',
+  adresse_communication: '', adresse_dirigeant: '', email: '', telephone: '',
+  dirigeant_nom_2: '', dirigeant_fonction_2: '', dirigeant_email_2: '', dirigeant_telephone_2: '',
+  dirigeant_email: '', dirigeant_telephone: '',
   mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
   nom_2: '', email_2: '', telephone_2: '', est_indivision: false,
   date_acquisition: '', observations: '',
@@ -115,14 +115,14 @@ function Contenu() {
         ...form,
         nom: form.nom.trim(),
         date_acquisition: form.date_acquisition || null,
-        gerant_nom: form.gerant_nom || null,
-        gerant_fonction: form.gerant_fonction || null,
-        gerant_email: form.gerant_email || null,
-        gerant_telephone: form.gerant_telephone || null,
-        gerant_nom_2: form.gerant_nom_2 || null,
-        gerant_fonction_2: form.gerant_fonction_2 || null,
-        gerant_email_2: form.gerant_email_2 || null,
-        gerant_telephone_2: form.gerant_telephone_2 || null,
+        dirigeant_nom: form.dirigeant_nom || null,
+        dirigeant_fonction: form.dirigeant_fonction || null,
+        dirigeant_email: form.dirigeant_email || null,
+        dirigeant_telephone: form.dirigeant_telephone || null,
+        dirigeant_nom_2: form.dirigeant_nom_2 || null,
+        dirigeant_fonction_2: form.dirigeant_fonction_2 || null,
+        dirigeant_email_2: form.dirigeant_email_2 || null,
+        dirigeant_telephone_2: form.dirigeant_telephone_2 || null,
         mandataire_nom: form.mandataire_nom || null,
         mandataire_email: form.mandataire_email || null,
         mandataire_telephone: form.mandataire_telephone || null,
@@ -131,7 +131,7 @@ function Contenu() {
         telephone_2: form.telephone_2 || null,
         est_indivision: Boolean(form.est_indivision),
         adresse_communication: form.adresse_communication || null,
-        adresse_gerant: form.adresse_gerant || null,
+        adresse_dirigeant: form.adresse_dirigeant || null,
         email: form.email || null,
         telephone: form.telephone || null,
         observations: form.observations || null,
@@ -153,14 +153,14 @@ function Contenu() {
         date_mutation,
         ...nouveau,
         nom: nouveau.nom.trim(),
-        gerant_nom: nouveau.gerant_nom || null,
-        gerant_fonction: nouveau.gerant_fonction || null,
-        gerant_email: nouveau.gerant_email || null,
-        gerant_telephone: nouveau.gerant_telephone || null,
-        gerant_nom_2: nouveau.gerant_nom_2 || null,
-        gerant_fonction_2: nouveau.gerant_fonction_2 || null,
-        gerant_email_2: nouveau.gerant_email_2 || null,
-        gerant_telephone_2: nouveau.gerant_telephone_2 || null,
+        dirigeant_nom: nouveau.dirigeant_nom || null,
+        dirigeant_fonction: nouveau.dirigeant_fonction || null,
+        dirigeant_email: nouveau.dirigeant_email || null,
+        dirigeant_telephone: nouveau.dirigeant_telephone || null,
+        dirigeant_nom_2: nouveau.dirigeant_nom_2 || null,
+        dirigeant_fonction_2: nouveau.dirigeant_fonction_2 || null,
+        dirigeant_email_2: nouveau.dirigeant_email_2 || null,
+        dirigeant_telephone_2: nouveau.dirigeant_telephone_2 || null,
         mandataire_nom: nouveau.mandataire_nom || null,
         mandataire_email: nouveau.mandataire_email || null,
         mandataire_telephone: nouveau.mandataire_telephone || null,
@@ -169,7 +169,7 @@ function Contenu() {
         telephone_2: nouveau.telephone_2 || null,
         est_indivision: Boolean(nouveau.est_indivision),
         adresse_communication: nouveau.adresse_communication || null,
-        adresse_gerant: nouveau.adresse_gerant || null,
+        adresse_dirigeant: nouveau.adresse_dirigeant || null,
         email: nouveau.email || null,
         telephone: nouveau.telephone || null,
         observations: nouveau.observations || null,
@@ -279,13 +279,20 @@ function Contenu() {
                   Le propriétaire est une société (SCI)
                 </label>
               </div>
-              {/* GÉRANTS : organes de la société propriétaire, affichés seulement
-                  si le propriétaire EST une société. Sur une personne physique
-                  ces champs n'ont aucun sens. ⚠ À ne pas confondre avec le
-                  mandataire plus bas : le gérant ENGAGE la société, le mandataire
-                  ne fait que relayer.
+              {/* DIRIGEANTS : organes de la société propriétaire, affichés
+                  seulement si le propriétaire EST une société. Sur une personne
+                  physique ces champs n'ont aucun sens.
 
-                  Deux colonnes parce que la CO-GÉRANCE est le cas ordinaire
+                  ⚠ « Dirigeant » est la CATÉGORIE, « gérant » une FONCTION parmi
+                  d'autres (président, associé) — c'est le champ Fonction qui la
+                  porte. Nommer le champ « gérant » puis y ranger un président
+                  écrivait dans un registre légal une qualité que l'intéressé n'a
+                  pas (correction Pascal, migration 042).
+
+                  ⚠ À ne pas confondre avec le mandataire plus bas : le dirigeant
+                  ENGAGE la société, le mandataire ne fait que relayer.
+
+                  Deux colonnes parce que la CO-DIRECTION est le cas ordinaire
                   d'une SCI familiale, et qu'elle a des effets concrets pour
                   l'ASL : l'un comme l'autre peut voter et signer pour la société.
                   N'en nommer qu'un laissait le registre muet sur celui qui se
@@ -293,26 +300,26 @@ function Contenu() {
               {form.est_societe && (
                 <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Gérant(s) de la société
+                    Dirigeant(s) de la société
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <Input label="Nom du gérant" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
-                      <Input label="Email" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
-                      <Input label="Téléphone" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
+                      <Input label="Nom du dirigeant" value={form.dirigeant_nom} onChange={set('dirigeant_nom')} readOnly={!peutSaisir} />
+                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
+                      <Input label="Email" type="email" value={form.dirigeant_email} onChange={set('dirigeant_email')} readOnly={!peutSaisir} />
+                      <Input label="Téléphone" value={form.dirigeant_telephone} onChange={set('dirigeant_telephone')} readOnly={!peutSaisir} />
                     </div>
                     <div className="space-y-3">
-                      <Input label="Nom du second gérant" value={form.gerant_nom_2} onChange={set('gerant_nom_2')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.gerant_fonction_2} onChange={set('gerant_fonction_2')} readOnly={!peutSaisir} placeholder="co-gérant…" />
-                      <Input label="Email" type="email" value={form.gerant_email_2} onChange={set('gerant_email_2')} readOnly={!peutSaisir} />
-                      <Input label="Téléphone" value={form.gerant_telephone_2} onChange={set('gerant_telephone_2')} readOnly={!peutSaisir} />
+                      <Input label="Nom du second dirigeant" value={form.dirigeant_nom_2} onChange={set('dirigeant_nom_2')} readOnly={!peutSaisir} />
+                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir} placeholder="co-gérant, associé…" />
+                      <Input label="Email" type="email" value={form.dirigeant_email_2} onChange={set('dirigeant_email_2')} readOnly={!peutSaisir} />
+                      <Input label="Téléphone" value={form.dirigeant_telephone_2} onChange={set('dirigeant_telephone_2')} readOnly={!peutSaisir} />
                     </div>
                   </div>
-                  {/* Une seule adresse : en pratique deux co-gérants d'une même
+                  {/* Une seule adresse : en pratique deux dirigeants d'une même
                       SCI se joignent au même siège. */}
                   <div className="mt-3">
-                    <Input label="Adresse de la société / du gérant" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
+                    <Input label="Adresse de la société" value={form.adresse_dirigeant} onChange={set('adresse_dirigeant')} readOnly={!peutSaisir} />
                   </div>
                 </div>
               )}
@@ -357,15 +364,15 @@ function Contenu() {
                   pas le propriétaire lui-même (colotis étrangers surtout).
                   Affiché pour TOUT propriétaire, société ou non : un particulier
                   résidant à l'étranger passe par un intermédiaire tout autant
-                  qu'une SCI, et une SCI peut avoir son gérant au loin ET un
-                  mandataire sur place. Ce n'est PAS le gérant. */}
+                  qu'une SCI, et une SCI peut avoir ses dirigeants au loin ET
+                  un mandataire sur place. Ce n'est PAS un dirigeant. */}
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Mandataire (intermédiaire)
                 </p>
                 <p className="mb-3 text-xs text-slate-500">
-                  La personne à contacter à la place du propriétaire. Distincte du gérant : le gérant
-                  dirige la société, le mandataire ne fait que relayer.
+                  La personne à contacter à la place du propriétaire. Distincte d’un dirigeant :
+                  le dirigeant engage la société, le mandataire ne fait que relayer.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <Input label="Nom du mandataire" value={form.mandataire_nom} onChange={set('mandataire_nom')} readOnly={!peutSaisir} />
@@ -400,8 +407,8 @@ function Contenu() {
                       </p>
                       {p.est_societe && <Badge tone="gray">société</Badge>}
                     </div>
-                    {p.gerant_nom && <p className="text-xs text-slate-500">{p.gerant_fonction ? `${p.gerant_fonction} : ` : ''}{p.gerant_nom}</p>}
-                    {p.gerant_nom_2 && <p className="text-xs text-slate-500">{p.gerant_fonction_2 ? `${p.gerant_fonction_2} : ` : ''}{p.gerant_nom_2}</p>}
+                    {p.dirigeant_nom && <p className="text-xs text-slate-500">{p.dirigeant_fonction ? `${p.dirigeant_fonction} : ` : ''}{p.dirigeant_nom}</p>}
+                    {p.dirigeant_nom_2 && <p className="text-xs text-slate-500">{p.dirigeant_fonction_2 ? `${p.dirigeant_fonction_2} : ` : ''}{p.dirigeant_nom_2}</p>}
                     {p.mandataire_nom && <p className="text-xs text-slate-500">mandataire : {p.mandataire_nom}</p>}
                     {/* Les deux dates portent la mutation : il n'y a pas de
                         table « mutations » à tenir en plus. */}
@@ -452,18 +459,18 @@ function Contenu() {
               </div>
               {mutation.est_societe && (
                 <>
-                  <Input label="Nom du gérant" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
-                  <Input label="Fonction" value={mutation.gerant_fonction} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction: e.target.value }))} />
+                  <Input label="Nom du dirigeant" value={mutation.dirigeant_nom} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_nom: e.target.value }))} />
+                  <Input label="Fonction" value={mutation.dirigeant_fonction} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_fonction: e.target.value }))} />
                   <div className="sm:col-span-2">
-                    <Input label="Adresse du gérant" value={mutation.adresse_gerant} onChange={(e) => setMutation((m) => ({ ...m, adresse_gerant: e.target.value }))} />
+                    <Input label="Adresse de la société" value={mutation.adresse_dirigeant} onChange={(e) => setMutation((m) => ({ ...m, adresse_dirigeant: e.target.value }))} />
                   </div>
-                  <Input label="Email du gérant" type="email" value={mutation.gerant_email} onChange={(e) => setMutation((m) => ({ ...m, gerant_email: e.target.value }))} />
-                  <Input label="Téléphone du gérant" value={mutation.gerant_telephone} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone: e.target.value }))} />
-                  {/* Co-gérance : cas ordinaire d'une SCI familiale. */}
-                  <Input label="Nom du second gérant" value={mutation.gerant_nom_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom_2: e.target.value }))} />
-                  <Input label="Fonction" value={mutation.gerant_fonction_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction_2: e.target.value }))} />
-                  <Input label="Email du second gérant" type="email" value={mutation.gerant_email_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_email_2: e.target.value }))} />
-                  <Input label="Téléphone du second gérant" value={mutation.gerant_telephone_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone_2: e.target.value }))} />
+                  <Input label="Email du dirigeant" type="email" value={mutation.dirigeant_email} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_email: e.target.value }))} />
+                  <Input label="Téléphone du dirigeant" value={mutation.dirigeant_telephone} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_telephone: e.target.value }))} />
+                  {/* Co-direction : cas ordinaire d'une SCI familiale. */}
+                  <Input label="Nom du second dirigeant" value={mutation.dirigeant_nom_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_nom_2: e.target.value }))} />
+                  <Input label="Fonction" value={mutation.dirigeant_fonction_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_fonction_2: e.target.value }))} />
+                  <Input label="Email du second dirigeant" type="email" value={mutation.dirigeant_email_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_email_2: e.target.value }))} />
+                  <Input label="Téléphone du second dirigeant" value={mutation.dirigeant_telephone_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_telephone_2: e.target.value }))} />
                 </>
               )}
               <div className="sm:col-span-2">

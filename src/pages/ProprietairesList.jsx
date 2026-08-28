@@ -55,7 +55,7 @@ const COLONNES = [
     // propriétaire (colotis étrangers surtout). Il a sa colonne parce que sur
     // ces parcelles-là c'est LA seule adresse utilisable : s'en tenir à celle du
     // propriétaire laisserait croire qu'on n'a aucun moyen de les joindre.
-    // ⚠ Ce n'est pas le gérant — le gérant dirige la société, le mandataire relaie.
+    // ⚠ Ce n'est pas un dirigeant — le dirigeant engage la société, le mandataire relaie.
     libelle: 'Mandataire',
     // Tri sur le NOM quand il existe, sinon sur l'adresse : une fiche sans nom
     // (0B 240) doit se ranger avec les autres mandataires, pas avec les vides.
@@ -128,7 +128,7 @@ function Contenu() {
     const liste = terme
       ? lots.filter((l) =>
           [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
-           l.proprietaire?.gerant_nom, l.proprietaire?.gerant_nom_2, l.proprietaire?.mandataire_nom,
+           l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
            l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
@@ -306,17 +306,18 @@ function Contenu() {
                         pour reconstituer un interlocuteur. */}
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
-                      {/* Le gérant sous la raison sociale : pour une SCI, le nom
-                          seul ne dit pas à qui l'on s'adresse. */}
-                      {l.proprietaire?.gerant_nom && (
+                      {/* Le dirigeant sous la raison sociale : pour une SCI, le
+                          nom seul ne dit pas à qui l'on s'adresse. */}
+                      {l.proprietaire?.dirigeant_nom && (
                         <span className="block text-xs text-slate-400">
-                          {l.proprietaire.gerant_fonction ? `${l.proprietaire.gerant_fonction} : ` : ''}{l.proprietaire.gerant_nom}
+                          {l.proprietaire.dirigeant_fonction ? `${l.proprietaire.dirigeant_fonction} : ` : ''}{l.proprietaire.dirigeant_nom}
                         </span>
                       )}
-                      {/* Le co-gérant : lui aussi peut voter et signer pour la SCI. */}
-                      {l.proprietaire?.gerant_nom_2 && (
+                      {/* Le second dirigeant : lui aussi engage la SCI, donc vote
+                          et signe pour elle. */}
+                      {l.proprietaire?.dirigeant_nom_2 && (
                         <span className="block text-xs text-slate-400">
-                          {l.proprietaire.gerant_fonction_2 ? `${l.proprietaire.gerant_fonction_2} : ` : ''}{l.proprietaire.gerant_nom_2}
+                          {l.proprietaire.dirigeant_fonction_2 ? `${l.proprietaire.dirigeant_fonction_2} : ` : ''}{l.proprietaire.dirigeant_nom_2}
                         </span>
                       )}
                       {l.proprietaire?.email && <span className="block text-xs text-slate-500">{l.proprietaire.email}</span>}

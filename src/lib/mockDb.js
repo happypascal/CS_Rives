@@ -1450,10 +1450,10 @@ export const mockRepo = {
       return clone(actuel)
     }
     const p = {
-      id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
-      adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
-      gerant_email: null, gerant_telephone: null,
-      gerant_nom_2: null, gerant_fonction_2: null, gerant_email_2: null, gerant_telephone_2: null,
+      id: uid(), lot_id: lotId, est_societe: false, dirigeant_nom: null, dirigeant_fonction: null,
+      adresse_communication: null, adresse_dirigeant: null, email: null, telephone: null,
+      dirigeant_email: null, dirigeant_telephone: null,
+      dirigeant_nom_2: null, dirigeant_fonction_2: null, dirigeant_email_2: null, dirigeant_telephone_2: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       date_acquisition: null, date_cession: null, observations: null,
@@ -1484,10 +1484,10 @@ export const mockRepo = {
       actuel.updated_at = nowISO()
     }
     const p = {
-      id: uid(), lot_id: lotId, est_societe: false, gerant_nom: null, gerant_fonction: null,
-      adresse_communication: null, adresse_gerant: null, email: null, telephone: null,
-      gerant_email: null, gerant_telephone: null,
-      gerant_nom_2: null, gerant_fonction_2: null, gerant_email_2: null, gerant_telephone_2: null,
+      id: uid(), lot_id: lotId, est_societe: false, dirigeant_nom: null, dirigeant_fonction: null,
+      adresse_communication: null, adresse_dirigeant: null, email: null, telephone: null,
+      dirigeant_email: null, dirigeant_telephone: null,
+      dirigeant_nom_2: null, dirigeant_fonction_2: null, dirigeant_email_2: null, dirigeant_telephone_2: null,
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),

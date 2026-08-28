@@ -29,6 +29,24 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite 2) — « dirigeant » remplace « gérant » (migration 042)
+
+- **✅ Renommage `gerant_*` → `dirigeant_*`.** Correction de Pascal : « ce n'est pas gérant le bon
+  terme, c'est dirigeant de la SCI avec des fonctions ». Elle est juste et n'est pas cosmétique :
+  **gérant est une FONCTION, pas une catégorie**. Une SCI a des dirigeants, dont l'un peut être
+  gérant, un autre président, un autre associé — et le champ `dirigeant_fonction` est là pour le
+  dire. Nommer la colonne « gérant » puis y ranger un président écrivait une qualité fausse dans un
+  registre légal.
+- **Renommage des colonnes, pas seulement des libellés** : une base qui dit « gérant » sous un écran
+  qui dit « dirigeant » finit toujours par ressortir dans un export, un CSV Foncia ou une requête
+  d'appel de fonds.
+- ⚠ **Le MANDATAIRE n'est pas renommé** : « mandataire » est bien la catégorie, pas une fonction. La
+  distinction de la 037 reste entière — le dirigeant engage la société, le mandataire relaie.
+- ⚠ **Fenêtre de désynchronisation, à connaître pour les prochains renommages** : le code lit en
+  `select *`, donc l'affichage survit immédiatement à la migration ; c'est l'ÉCRITURE qui casserait
+  tant que le code n'est pas déployé. D'où l'ordre migration puis push, dans la foulée.
+- **0B 202 confirmé** par Pascal : le fixe genevois d'Antoine Maurice est le bon numéro.
+
 ## Session 2026-08-28 (suite) — co-gérance des SCI (041 ✅ appliquée)
 
 - **✅ Second gérant** (`gerant_nom_2`, `_fonction_2`, `_email_2`, `_telephone_2`). Constat de
@@ -814,7 +832,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `042` (001-029 et 031-041 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `043`. ⚠ **042 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-041 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

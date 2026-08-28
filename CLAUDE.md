@@ -492,19 +492,26 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   d'un projet se dérive de ses résolutions. Le dénominateur est le total des superficies
   **renseignées** — tant que le registre est incomplet les parts sont provisoires, et l'écran le
   dit. `assemblees_generales.m2_presents` reste **saisi** : c'est un constat de séance, pas un calcul.
-- **CO-GÉRANCE : deux gérants nommables** (`gerant_nom_2` / `_fonction_2` / `_email_2` /
+- **« DIRIGEANT », PAS « GÉRANT »** (migration 042, correction Pascal 2026-08-28). **Gérant est une
+  FONCTION, pas une catégorie** : une SCI a des *dirigeants*, dont l'un peut être gérant, un autre
+  président, un autre associé — et c'est le champ `dirigeant_fonction` qui le dit. Nommer la colonne
+  `gerant_nom` puis y ranger un président écrivait dans un registre légal une qualité que
+  l'intéressé n'a pas. Colonnes renommées (`dirigeant_nom`, `_fonction`, `_email`, `_telephone`,
+  `adresse_dirigeant`, et les mêmes en `_2`) plutôt qu'un simple changement de libellé : une base
+  qui dit « gérant » sous un écran qui dit « dirigeant » finit toujours par ressortir dans un export.
+- **CO-DIRECTION : deux dirigeants nommables** (`dirigeant_nom_2` / `_fonction_2` / `_email_2` /
   `_telephone_2`, migration 041). C'est le cas ordinaire d'une SCI familiale, et il a des effets
   concrets : **l'un comme l'autre engage la société**, donc vote et signe pour elle. N'en nommer
   qu'un laissait le registre muet sur celui qui se présenterait à l'AG. ⚠ **Pas de seconde
-  adresse** : `adresse_gerant` reste unique, c'est en pratique le siège. Limite assumée, la même
+  adresse** : `adresse_dirigeant` reste unique, c'est en pratique le siège. Limite assumée, la même
   que pour les indivisaires : **deux** nommés, le troisième en observations.
-- **LE MANDATAIRE N'EST PAS LE GÉRANT** (migration 037, correction Pascal 2026-08-27). Le **gérant**
-  est un organe de la société propriétaire : il n'existe que si le propriétaire EST une société, et
-  il l'engage. Le **mandataire** est l'intermédiaire à qui l'on parle quand on n'atteint pas le
-  propriétaire — cas courant des colotis étrangers. Il peut exister sur une **personne physique**,
-  et une SCI peut avoir son gérant à l'étranger ET un mandataire sur place. D'où `mandataire_nom`
-  / `_email` / `_telephone` **distincts** des `gerant_*`, et un bloc affiché pour **tout**
-  propriétaire, pas seulement les sociétés. Les fondre écrirait dans un registre légal que
+- **LE MANDATAIRE N'EST PAS UN DIRIGEANT** (migration 037, correction Pascal 2026-08-27). Le
+  **dirigeant** est un organe de la société propriétaire : il n'existe que si le propriétaire EST une
+  société, et il l'engage. Le **mandataire** est l'intermédiaire à qui l'on parle quand on n'atteint
+  pas le propriétaire — cas courant des colotis étrangers. Il peut exister sur une **personne
+  physique**, et une SCI peut avoir ses dirigeants à l'étranger ET un mandataire sur place. D'où
+  `mandataire_nom` / `_email` / `_telephone` **distincts** des `dirigeant_*`, et un bloc affiché pour
+  **tout** propriétaire, pas seulement les sociétés. Les fondre écrirait dans un registre légal que
   l'intermédiaire dirige la société. ⚠ Le mandataire suit le PROPRIÉTAIRE, pas le lot : il ne
   s'hérite jamais à la mutation.
 - **Mention RGPD acceptée une fois par personne** (`membres_cs.registre_rgpd_accepte_le`, tracée par

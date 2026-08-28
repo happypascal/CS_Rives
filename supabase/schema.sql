@@ -399,19 +399,19 @@ create table if not exists proprietaires (
   -- `est_societe` évite d'avoir à deviner à partir du nom du gérant.
   nom                   text not null,
   est_societe           boolean not null default false,
-  gerant_nom            text,
-  gerant_fonction       text,                 -- gérant, président, associé…
-  gerant_email          text,                 -- coordonnées du GÉRANT, organe de la société propriétaire
-  gerant_telephone      text,
+  dirigeant_nom            text,
+  dirigeant_fonction       text,                 -- gérant, président, associé… (la FONCTION, pas la catégorie)
+  dirigeant_email          text,                 -- coordonnées du DIRIGEANT, organe de la société propriétaire
+  dirigeant_telephone      text,
 
-  -- SECOND GÉRANT (migration 041) : la co-gérance est le cas ordinaire d'une SCI
+  -- SECOND DIRIGEANT (migrations 041 et 042) : la co-gérance est le cas ordinaire d'une SCI
   -- familiale, et elle a des effets concrets — deux personnes peuvent engager la
   -- société, donc voter et signer pour elle. Pas de seconde adresse : en pratique
-  -- deux co-gérants se joignent au même siège.
-  gerant_nom_2          text,
-  gerant_fonction_2     text,
-  gerant_email_2        text,
-  gerant_telephone_2    text,
+  -- deux dirigeants se joignent au même siège.
+  dirigeant_nom_2          text,
+  dirigeant_fonction_2     text,
+  dirigeant_email_2        text,
+  dirigeant_telephone_2    text,
 
   -- Le MANDATAIRE n'est PAS le gérant (migration 037) : c'est l'intermédiaire à
   -- qui l'on parle quand on n'atteint pas le propriétaire — cas courant des
@@ -439,7 +439,7 @@ create table if not exists proprietaires (
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.
   adresse_communication text,                 -- adresse officielle de communication
-  adresse_gerant        text,
+  adresse_dirigeant        text,
 
   email                 text,
   telephone             text,
@@ -478,11 +478,11 @@ begin
   if new.email_2 is not null then
     new.email_2 := lower(btrim(new.email_2));
   end if;
-  if new.gerant_email is not null then
-    new.gerant_email := lower(btrim(new.gerant_email));
+  if new.dirigeant_email is not null then
+    new.dirigeant_email := lower(btrim(new.dirigeant_email));
   end if;
-  if new.gerant_email_2 is not null then
-    new.gerant_email_2 := lower(btrim(new.gerant_email_2));
+  if new.dirigeant_email_2 is not null then
+    new.dirigeant_email_2 := lower(btrim(new.dirigeant_email_2));
   end if;
   if new.mandataire_email is not null then
     new.mandataire_email := lower(btrim(new.mandataire_email));
@@ -494,7 +494,7 @@ drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
 -- ⚠ Écoute les DEUX colonnes d'e-mail : limité à `email`, une correction de
 -- l'adresse du mandataire passerait à côté de la normalisation.
 create trigger trg_proprietaires_normalize_email
-  before insert or update of email, email_2, gerant_email, gerant_email_2, mandataire_email
+  before insert or update of email, email_2, dirigeant_email, dirigeant_email_2, mandataire_email
   on proprietaires
   for each row execute function proprietaires_normalize_email();
 
