@@ -33,6 +33,10 @@ const COLONNES = [
       { cle: 'lot', libelle: 'parcelle', valeur: (l) => l.numero || '', numerique: true },
       // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
       { cle: 'superficie', libelle: 'surface', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
+      // Tri par n° Foncia : c'est l'ordre des appels de fonds, donc celui dans
+      // lequel on rapproche le registre des documents du syndic. Numérique, ces
+      // références étant des nombres codés par zone (1xx = A … 5xx = E).
+      { cle: 'numero_syndic', libelle: 'n° Foncia', valeur: (l) => l.numero_syndic || '', numerique: true },
     ],
   },
   {
@@ -127,7 +131,7 @@ function Contenu() {
     const terme = q.trim().toLowerCase()
     const liste = terme
       ? lots.filter((l) =>
-          [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
+          [l.numero, l.numero_syndic, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
            l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
            l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
@@ -223,7 +227,7 @@ function Contenu() {
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input placeholder="Rechercher (parcelle, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input placeholder="Rechercher (parcelle, n° Foncia, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} />
           {/* La création d'un lot se fait ici parce qu'un lot n'est qu'un
               numéro : tout le reste — propriétaire, adresses, coordonnées — se
               saisit sur la fiche, comme demandé. */}
@@ -292,6 +296,16 @@ function Contenu() {
                           et 1,19 : c'est trop structurant pour rester sur la fiche. */}
                       {Number(l.nombre_lots) !== 1 && (
                         <span className="block text-xs font-medium text-navy-600">{num(l.nombre_lots)} lots</span>
+                      )}
+                      {/* La référence FONCIA, sous l'identifiant cadastral et non
+                          à sa place : c'est celle qui revient dans les appels de
+                          fonds, donc celle qu'on cherche pour rapprocher le
+                          registre des documents du syndic.
+                          ⚠ Ce n'est PAS l'identifiant de la parcelle — il vient du
+                          cadastre et vit dans `numero`. Aucune unicité, c'est une
+                          référence étrangère tenue par un tiers. */}
+                      {l.numero_syndic && (
+                        <span className="block text-xs text-slate-400">Foncia {l.numero_syndic}</span>
                       )}
                     </td>
 
