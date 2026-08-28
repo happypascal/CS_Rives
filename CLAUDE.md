@@ -466,6 +466,14 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   nullable, le total varierait selon qui a pensé à remplir le champ. `numeric(4,2)` — 1,81 n'est
   pas un entier. ⚠ Le tantième reste calculé sur la **superficie**, pas sur `nombre_lots` : le vote
   est au prorata des superficies.
+- ⚠ **« M. OU MME X » CHEZ FONCIA VEUT DIRE QUE LES DEUX SONT PROPRIÉTAIRES** — ce n'est pas une
+  formule de politesse ni un genre inconnu (arbitrage Pascal, 2026-08-28). Quand l'état du syndic
+  porte cette mention et que le registre ne nomme qu'une personne, **c'est le registre qui est
+  incomplet**, pas le syndic qui se trompe. Trois comptes ont d'abord été pris pour des mutations
+  sur ce malentendu (Pargoux, Van Den Berg, Huergo) : dans les trois cas la seconde personne est la
+  **conjointe copropriétaire**. 13 seconds propriétaires ont été ajoutés à ce titre le 2026-08-28.
+  ⚠ **Sans cocher `est_indivision`** : un couple marié n'est pas en indivision — c'est exactement la
+  distinction que porte la case.
 - **DEUX PROPRIÉTAIRES ≠ INDIVISION** (migration 040). `nom_2` / `email_2` / `telephone_2`
   constatent le **FAIT** qu'un bien est détenu par deux personnes ; `est_indivision` porte la
   **QUALIFICATION**, cochée seulement quand on la connaît. Détenir à deux n'est pas être en

@@ -29,6 +29,31 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite 3) — rapprochement avec l'état Foncia
+
+- **✅ 13 seconds propriétaires ajoutés** : le registre en compte désormais **17 à deux noms, dont 4
+  en indivision**. Aucune migration, uniquement des `update`.
+- ⚠ **LA LEÇON, à ne pas réapprendre : « M. ou Mme X » chez Foncia signifie que LES DEUX sont
+  propriétaires.** Je l'avais lu comme une formule de politesse et j'allais demander au syndic de
+  « corriger » une quinzaine de comptes — dont trois que je présentais comme des **mutations**
+  (Pargoux, Gridello/Van Den Berg, Huergo), alors que la seconde personne est la conjointe
+  copropriétaire. Corrigé par Pascal avant envoi.
+- **Il n'y a que DEUX vraies mutations** à faire dater par Foncia : **GABISAM → Pflieger** (0B 208)
+  et **JEANLU → Chappuis** (0B 692).
+- ⚠ **`est_indivision` n'est PAS coché** sur les 13 nouveaux : un couple marié n'est pas en
+  indivision. La case sert précisément à ne pas confondre les deux.
+- **Deux cas laissés ouverts** : 0B 247+263, où l'état dit « MM. et Mmes … GRIDELLO » (donc plus de
+  deux personnes), et 0B 199 (Pargoux), où l'état ne porte pas « ou Mme » — rien n'établit qu'ils
+  soient deux. À trancher sur les titres de propriété que Me Garnier réunit.
+- **Documents produits pour le syndic**, hors dépôt (données personnelles) dans
+  `_1_lotissement/propriétaires/` : `ECARTS_REGISTRE_FONCIA.md` (le détail complet) et
+  `Corrections_registre_Foncia.docx` (A4 paysage, deux tableaux — corrections de saisie d'un côté,
+  mutations à dater de l'autre). ⚠ **Ne jamais publier ces documents en ligne** : ils nomment
+  cinquante propriétaires, c'est exactement la diffusion que la mention RGPD interdit.
+- **Reste à corriger chez nous** (l'état du syndic et le carnet d'adresses concordent contre nos
+  listes de vote) : VOLLBRECHT avec deux L (0B 206), TKATCHOUK (0B 214), ALLEN qui est le nom et
+  Peregrine le prénom (0B 239), Florent et non Florian (0B 246).
+
 ## Session 2026-08-28 (suite 2) — « dirigeant » remplace « gérant » (042 ✅ appliquée)
 
 - **✅ Renommage `gerant_*` → `dirigeant_*`.** Correction de Pascal : « ce n'est pas gérant le bon
