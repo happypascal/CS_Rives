@@ -276,8 +276,22 @@ function Contenu() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-50">
+                {/* Fond jaune pâle sur les SOCIÉTÉS. Ce n'est pas décoratif : une
+                    SCI ne se convoque pas comme une personne — on écrit à la
+                    société, ce sont ses dirigeants qui votent et signent pour
+                    elle, et c'est le premier réflexe à avoir en préparant une AG.
+                    Les repérer d'un coup d'œil évite de les traiter comme les
+                    autres.
+                    ⚠ La couleur ne porte pas seule l'information : le nom commence
+                    par « SCI » et la fiche le dit aussi — un daltonien ou une
+                    impression en noir et blanc n'y perdent rien. */}
                 {filtres.map((l) => (
-                  <tr key={l.id} className="hover:bg-navy-50/40 align-top">
+                  <tr
+                    key={l.id}
+                    className={`align-top ${
+                      l.proprietaire?.est_societe ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-navy-50/40'
+                    }`}
+                  >
                     {/* 1 — la parcelle, et sa surface dessous. La surface est
                         l'assiette des voix et des charges : elle appartient à la
                         parcelle, pas au propriétaire, d'où le regroupement. */}
