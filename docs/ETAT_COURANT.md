@@ -29,6 +29,24 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite 6) — ⏳ EN ATTENTE DE FONCIA
+
+- **📤 Demande de correction ENVOYÉE au syndic le 2026-08-28** (document Word remanié par Pascal
+  lui-même avant envoi ; le générateur qui l'avait produit a été supprimé pour ne plus risquer de
+  l'écraser).
+- **⏳ UNE SEULE CHOSE EN ATTENTE : la date de l'acte de vente à la SCI GABISAM** (SIREN
+  104 869 086, immatriculée le 2026-05-11), pour passer la mutation de **0B 208** — Pflieger sortant,
+  Gabisam entrant. ⚠ **Ne pas relancer la demande**, elle est partie ; et **ne pas passer la
+  mutation sans la date** : on perdrait les bornes de la période de l'ancienne propriétaire.
+- **Sans objet, tranché par Pascal** : la question du « 51ᵉ lot » et du compte Foncia 503 non
+  attribué. **Les charges étant au prorata des superficies**, et la somme des 50 superficies faisant
+  exactement le total cadastral (104 646 m²), la parcelle 263 est intégralement facturée à travers
+  ses deux lignes. Le 51ᵉ lot n'est qu'un artefact de comptage. ⚠ Corollaire : `nombre_lots` ne sert
+  qu'à afficher un total juste — il n'entre **ni dans les voix ni dans les charges**.
+- **Coïncidence relevée, non élucidée** : la SCI GABISAM et la SCI ALJASSER FAMILY COMPANY sont
+  domiciliées à la **même adresse**, 25 rue du Bourg à Messery. Domiciliation commerciale partagée,
+  ou lien entre les deux dossiers.
+
 ## Session 2026-08-28 (suite 5) — casse des adresses uniformisée
 
 - **✅ 49 adresses de communication réécrites** : elles arrivaient toutes en CAPITALES de l'état
