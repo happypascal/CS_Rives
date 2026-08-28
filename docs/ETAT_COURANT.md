@@ -46,6 +46,14 @@ du budget demandé à l'AG et du backlog ci-dessous.
   `select *`, donc l'affichage survit immédiatement à la migration ; c'est l'ÉCRITURE qui casserait
   tant que le code n'est pas déployé. D'où l'ordre migration puis push, dans la foulée.
 - **0B 202 confirmé** par Pascal : le fixe genevois d'Antoine Maurice est le bon numéro.
+- ⚠ **`dirigeant_fonction` recopie le registre officiel (gouv.fr), « autre » compris.** J'avais pris
+  ces « autre » pour un champ bâclé et proposé de les préciser ; Pascal a corrigé : c'est la qualité
+  telle que l'État l'enregistre. **Ne pas les « nettoyer »** — ce serait substituer une hypothèse à
+  une source officielle dans un registre légal.
+- **0B 474+263** : les deux dirigeants de la SCI Ravoire sont complets (Christian Lüscher et Valérie
+  Schwitzgebel Lüscher), avec e-mails et téléphones distincts. ⚠ L'adresse de Valérie vient du
+  carnet d'adresses, **pas** du mailing du 18/08 — l'adresse de convocation de la SCI reste celle de
+  Christian.
 
 ## Session 2026-08-28 (suite) — co-gérance des SCI (041 ✅ appliquée)
 

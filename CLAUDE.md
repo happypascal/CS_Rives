@@ -499,6 +499,11 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   l'intéressé n'a pas. Colonnes renommées (`dirigeant_nom`, `_fonction`, `_email`, `_telephone`,
   `adresse_dirigeant`, et les mêmes en `_2`) plutôt qu'un simple changement de libellé : une base
   qui dit « gérant » sous un écran qui dit « dirigeant » finit toujours par ressortir dans un export.
+- ⚠ **`dirigeant_fonction` RECOPIE LE REGISTRE OFFICIEL** (annuaire des entreprises, gouv.fr) —
+  **« autre » y compris**. Ce n'est pas un champ mal rempli à nettoyer : c'est la qualité telle que
+  l'État l'enregistre, et deux dirigeants de la SCI Ravoire la portent réellement. La « corriger »
+  en devinant « gérant » ou « président » substituerait notre hypothèse à une source officielle,
+  dans un registre légal. **Ne pas y toucher sans pièce à l'appui.**
 - **CO-DIRECTION : deux dirigeants nommables** (`dirigeant_nom_2` / `_fonction_2` / `_email_2` /
   `_telephone_2`, migration 041). C'est le cas ordinaire d'une SCI familiale, et il a des effets
   concrets : **l'un comme l'autre engage la société**, donc vote et signe pour elle. N'en nommer

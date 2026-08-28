@@ -289,6 +289,10 @@ function Contenu() {
                   écrivait dans un registre légal une qualité que l'intéressé n'a
                   pas (correction Pascal, migration 042).
 
+                  ⚠ La Fonction RECOPIE le registre officiel (gouv.fr), « autre »
+                  compris — c'est une transcription, pas un champ à compléter au
+                  jugé. Deux dirigeants du lotissement la portent réellement.
+
                   ⚠ À ne pas confondre avec le mandataire plus bas : le dirigeant
                   ENGAGE la société, le mandataire ne fait que relayer.
 
@@ -305,13 +309,13 @@ function Contenu() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
                       <Input label="Nom du dirigeant" value={form.dirigeant_nom} onChange={set('dirigeant_nom')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
+                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président, autre…" />
                       <Input label="Email" type="email" value={form.dirigeant_email} onChange={set('dirigeant_email')} readOnly={!peutSaisir} />
                       <Input label="Téléphone" value={form.dirigeant_telephone} onChange={set('dirigeant_telephone')} readOnly={!peutSaisir} />
                     </div>
                     <div className="space-y-3">
                       <Input label="Nom du second dirigeant" value={form.dirigeant_nom_2} onChange={set('dirigeant_nom_2')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir} placeholder="co-gérant, associé…" />
+                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir} placeholder="gérant, associé, autre…" />
                       <Input label="Email" type="email" value={form.dirigeant_email_2} onChange={set('dirigeant_email_2')} readOnly={!peutSaisir} />
                       <Input label="Téléphone" value={form.dirigeant_telephone_2} onChange={set('dirigeant_telephone_2')} readOnly={!peutSaisir} />
                     </div>
