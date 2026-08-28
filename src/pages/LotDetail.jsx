@@ -268,26 +268,6 @@ function Contenu() {
                   Le propriétaire est une société (SCI)
                 </label>
               </div>
-              {/* INDIVISION — deux personnes, mais UNE propriété : une part de
-                  charges, une voix, une période. C'est pourquoi le second
-                  indivisaire tient sur la MÊME ligne du registre. Le nommer en
-                  ferait une seconde propriété, donc compterait la superficie et
-                  les voix en double. */}
-              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Second propriétaire (indivision)
-                </p>
-                <p className="mb-3 text-xs text-slate-500">
-                  À renseigner si la propriété est détenue en indivision. Elle reste{' '}
-                  <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
-                  d’une seule superficie.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir} />
-                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir} />
-                </div>
-              </div>
               {/* GÉRANT : organe de la société propriétaire, affiché seulement
                   si le propriétaire EST une société. Sur une personne physique
                   ces champs n'ont aucun sens. ⚠ À ne pas confondre avec le
@@ -308,6 +288,30 @@ function Contenu() {
               </div>
               <Input label="Email" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
               <Input label="Téléphone" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
+              {/* INDIVISION — deux personnes, mais UNE propriété : une part de
+                  charges, une voix, une période. C'est pourquoi le second
+                  indivisaire tient sur la MÊME ligne du registre : le mettre sur
+                  une seconde ligne compterait la parcelle, la superficie et les
+                  voix en double.
+                  ⚠ Placé APRÈS les coordonnées officielles du premier
+                  propriétaire (demande de Pascal) : l'adresse de communication,
+                  l'e-mail et le téléphone valent pour la propriété entière, et
+                  les couper par un second nom faisait douter de qui ils sont. */}
+              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Second propriétaire (indivision)
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  À renseigner si la propriété est détenue en indivision. Elle reste{' '}
+                  <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
+                  d’une seule superficie.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir} />
+                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir} />
+                </div>
+              </div>
               {/* MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint
                   pas le propriétaire lui-même (colotis étrangers surtout).
                   Affiché pour TOUT propriétaire, société ou non : un particulier
@@ -401,11 +405,6 @@ function Contenu() {
                   Le nouveau propriétaire est une société
                 </label>
               </div>
-              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
-                <Input label="Second propriétaire (indivision)" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
-                <Input label="Email" type="email" value={mutation.email_2} onChange={(e) => setMutation((m) => ({ ...m, email_2: e.target.value }))} />
-                <Input label="Téléphone" value={mutation.telephone_2} onChange={(e) => setMutation((m) => ({ ...m, telephone_2: e.target.value }))} />
-              </div>
               {mutation.est_societe && (
                 <>
                   <Input label="Nom du gérant" value={mutation.gerant_nom} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom: e.target.value }))} />
@@ -422,6 +421,15 @@ function Contenu() {
               </div>
               <Input label="Email" type="email" value={mutation.email} onChange={(e) => setMutation((m) => ({ ...m, email: e.target.value }))} />
               <Input label="Téléphone" value={mutation.telephone} onChange={(e) => setMutation((m) => ({ ...m, telephone: e.target.value }))} />
+              {/* Second indivisaire APRÈS les coordonnées officielles, même ordre
+                  que la fiche : celles du dessus valent pour la propriété
+                  entière, les couper par un second nom faisait douter de qui
+                  elles sont. */}
+              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
+                <Input label="Second propriétaire (indivision)" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
+                <Input label="Email" type="email" value={mutation.email_2} onChange={(e) => setMutation((m) => ({ ...m, email_2: e.target.value }))} />
+                <Input label="Téléphone" value={mutation.telephone_2} onChange={(e) => setMutation((m) => ({ ...m, telephone_2: e.target.value }))} />
+              </div>
               {/* Le mandataire suit le PROPRIÉTAIRE, pas le lot : le nouveau
                   venu a le sien, ou n'en a pas. Il ne s'hérite jamais. */}
               <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
