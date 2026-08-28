@@ -404,6 +404,15 @@ create table if not exists proprietaires (
   gerant_email          text,                 -- coordonnées du GÉRANT, organe de la société propriétaire
   gerant_telephone      text,
 
+  -- SECOND GÉRANT (migration 041) : la co-gérance est le cas ordinaire d'une SCI
+  -- familiale, et elle a des effets concrets — deux personnes peuvent engager la
+  -- société, donc voter et signer pour elle. Pas de seconde adresse : en pratique
+  -- deux co-gérants se joignent au même siège.
+  gerant_nom_2          text,
+  gerant_fonction_2     text,
+  gerant_email_2        text,
+  gerant_telephone_2    text,
+
   -- Le MANDATAIRE n'est PAS le gérant (migration 037) : c'est l'intermédiaire à
   -- qui l'on parle quand on n'atteint pas le propriétaire — cas courant des
   -- colotis étrangers. Il peut exister pour une personne physique, et une SCI
@@ -472,6 +481,9 @@ begin
   if new.gerant_email is not null then
     new.gerant_email := lower(btrim(new.gerant_email));
   end if;
+  if new.gerant_email_2 is not null then
+    new.gerant_email_2 := lower(btrim(new.gerant_email_2));
+  end if;
   if new.mandataire_email is not null then
     new.mandataire_email := lower(btrim(new.mandataire_email));
   end if;
@@ -482,7 +494,8 @@ drop trigger if exists trg_proprietaires_normalize_email on proprietaires;
 -- ⚠ Écoute les DEUX colonnes d'e-mail : limité à `email`, une correction de
 -- l'adresse du mandataire passerait à côté de la normalisation.
 create trigger trg_proprietaires_normalize_email
-  before insert or update of email, email_2, gerant_email, mandataire_email on proprietaires
+  before insert or update of email, email_2, gerant_email, gerant_email_2, mandataire_email
+  on proprietaires
   for each row execute function proprietaires_normalize_email();
 
 -- ------------------------------------------- acceptation de la mention RGPD

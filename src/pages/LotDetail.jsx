@@ -15,6 +15,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 const CHAMPS_VIDES = {
   nom: '', est_societe: false, gerant_nom: '', gerant_fonction: '',
   adresse_communication: '', adresse_gerant: '', email: '', telephone: '',
+  gerant_nom_2: '', gerant_fonction_2: '', gerant_email_2: '', gerant_telephone_2: '',
   gerant_email: '', gerant_telephone: '',
   mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
   nom_2: '', email_2: '', telephone_2: '', est_indivision: false,
@@ -74,7 +75,7 @@ function Contenu() {
   if (!lot) {
     return (
       <div>
-        <PageHeader title="Lot introuvable" />
+        <PageHeader title="Parcelle introuvable" />
         <Link to="/proprietaires" className="text-navy-600 underline">← Retour au registre</Link>
       </div>
     )
@@ -118,6 +119,10 @@ function Contenu() {
         gerant_fonction: form.gerant_fonction || null,
         gerant_email: form.gerant_email || null,
         gerant_telephone: form.gerant_telephone || null,
+        gerant_nom_2: form.gerant_nom_2 || null,
+        gerant_fonction_2: form.gerant_fonction_2 || null,
+        gerant_email_2: form.gerant_email_2 || null,
+        gerant_telephone_2: form.gerant_telephone_2 || null,
         mandataire_nom: form.mandataire_nom || null,
         mandataire_email: form.mandataire_email || null,
         mandataire_telephone: form.mandataire_telephone || null,
@@ -152,6 +157,10 @@ function Contenu() {
         gerant_fonction: nouveau.gerant_fonction || null,
         gerant_email: nouveau.gerant_email || null,
         gerant_telephone: nouveau.gerant_telephone || null,
+        gerant_nom_2: nouveau.gerant_nom_2 || null,
+        gerant_fonction_2: nouveau.gerant_fonction_2 || null,
+        gerant_email_2: nouveau.gerant_email_2 || null,
+        gerant_telephone_2: nouveau.gerant_telephone_2 || null,
         mandataire_nom: nouveau.mandataire_nom || null,
         mandataire_email: nouveau.mandataire_email || null,
         mandataire_telephone: nouveau.mandataire_telephone || null,
@@ -270,20 +279,42 @@ function Contenu() {
                   Le propriétaire est une société (SCI)
                 </label>
               </div>
-              {/* GÉRANT : organe de la société propriétaire, affiché seulement
+              {/* GÉRANTS : organes de la société propriétaire, affichés seulement
                   si le propriétaire EST une société. Sur une personne physique
                   ces champs n'ont aucun sens. ⚠ À ne pas confondre avec le
-                  mandataire ci-dessous : le gérant engage la société. */}
+                  mandataire plus bas : le gérant ENGAGE la société, le mandataire
+                  ne fait que relayer.
+
+                  Deux colonnes parce que la CO-GÉRANCE est le cas ordinaire
+                  d'une SCI familiale, et qu'elle a des effets concrets pour
+                  l'ASL : l'un comme l'autre peut voter et signer pour la société.
+                  N'en nommer qu'un laissait le registre muet sur celui qui se
+                  présenterait à l'assemblée. */}
               {form.est_societe && (
-                <>
-                  <Input label="Nom du gérant" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
-                  <Input label="Fonction" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
-                  <div className="sm:col-span-2">
-                    <Input label="Adresse du gérant" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
+                <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Gérant(s) de la société
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <Input label="Nom du gérant" value={form.gerant_nom} onChange={set('gerant_nom')} readOnly={!peutSaisir} />
+                      <Input label="Fonction" value={form.gerant_fonction} onChange={set('gerant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président…" />
+                      <Input label="Email" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
+                      <Input label="Téléphone" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
+                    </div>
+                    <div className="space-y-3">
+                      <Input label="Nom du second gérant" value={form.gerant_nom_2} onChange={set('gerant_nom_2')} readOnly={!peutSaisir} />
+                      <Input label="Fonction" value={form.gerant_fonction_2} onChange={set('gerant_fonction_2')} readOnly={!peutSaisir} placeholder="co-gérant…" />
+                      <Input label="Email" type="email" value={form.gerant_email_2} onChange={set('gerant_email_2')} readOnly={!peutSaisir} />
+                      <Input label="Téléphone" value={form.gerant_telephone_2} onChange={set('gerant_telephone_2')} readOnly={!peutSaisir} />
+                    </div>
                   </div>
-                  <Input label="Email du gérant" type="email" value={form.gerant_email} onChange={set('gerant_email')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone du gérant" value={form.gerant_telephone} onChange={set('gerant_telephone')} readOnly={!peutSaisir} />
-                </>
+                  {/* Une seule adresse : en pratique deux co-gérants d'une même
+                      SCI se joignent au même siège. */}
+                  <div className="mt-3">
+                    <Input label="Adresse de la société / du gérant" value={form.adresse_gerant} onChange={set('adresse_gerant')} readOnly={!peutSaisir} />
+                  </div>
+                </div>
               )}
               <div className="sm:col-span-2">
                 <Input label="Adresse de communication officielle" value={form.adresse_communication} onChange={set('adresse_communication')} readOnly={!peutSaisir} />
@@ -370,6 +401,7 @@ function Contenu() {
                       {p.est_societe && <Badge tone="gray">société</Badge>}
                     </div>
                     {p.gerant_nom && <p className="text-xs text-slate-500">{p.gerant_fonction ? `${p.gerant_fonction} : ` : ''}{p.gerant_nom}</p>}
+                    {p.gerant_nom_2 && <p className="text-xs text-slate-500">{p.gerant_fonction_2 ? `${p.gerant_fonction_2} : ` : ''}{p.gerant_nom_2}</p>}
                     {p.mandataire_nom && <p className="text-xs text-slate-500">mandataire : {p.mandataire_nom}</p>}
                     {/* Les deux dates portent la mutation : il n'y a pas de
                         table « mutations » à tenir en plus. */}
@@ -427,6 +459,11 @@ function Contenu() {
                   </div>
                   <Input label="Email du gérant" type="email" value={mutation.gerant_email} onChange={(e) => setMutation((m) => ({ ...m, gerant_email: e.target.value }))} />
                   <Input label="Téléphone du gérant" value={mutation.gerant_telephone} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone: e.target.value }))} />
+                  {/* Co-gérance : cas ordinaire d'une SCI familiale. */}
+                  <Input label="Nom du second gérant" value={mutation.gerant_nom_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_nom_2: e.target.value }))} />
+                  <Input label="Fonction" value={mutation.gerant_fonction_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_fonction_2: e.target.value }))} />
+                  <Input label="Email du second gérant" type="email" value={mutation.gerant_email_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_email_2: e.target.value }))} />
+                  <Input label="Téléphone du second gérant" value={mutation.gerant_telephone_2} onChange={(e) => setMutation((m) => ({ ...m, gerant_telephone_2: e.target.value }))} />
                 </>
               )}
               <div className="sm:col-span-2">

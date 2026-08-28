@@ -492,6 +492,12 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   d'un projet se dérive de ses résolutions. Le dénominateur est le total des superficies
   **renseignées** — tant que le registre est incomplet les parts sont provisoires, et l'écran le
   dit. `assemblees_generales.m2_presents` reste **saisi** : c'est un constat de séance, pas un calcul.
+- **CO-GÉRANCE : deux gérants nommables** (`gerant_nom_2` / `_fonction_2` / `_email_2` /
+  `_telephone_2`, migration 041). C'est le cas ordinaire d'une SCI familiale, et il a des effets
+  concrets : **l'un comme l'autre engage la société**, donc vote et signe pour elle. N'en nommer
+  qu'un laissait le registre muet sur celui qui se présenterait à l'AG. ⚠ **Pas de seconde
+  adresse** : `adresse_gerant` reste unique, c'est en pratique le siège. Limite assumée, la même
+  que pour les indivisaires : **deux** nommés, le troisième en observations.
 - **LE MANDATAIRE N'EST PAS LE GÉRANT** (migration 037, correction Pascal 2026-08-27). Le **gérant**
   est un organe de la société propriétaire : il n'existe que si le propriétaire EST une société, et
   il l'engage. Le **mandataire** est l'intermédiaire à qui l'on parle quand on n'atteint pas le

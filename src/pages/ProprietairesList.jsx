@@ -128,7 +128,7 @@ function Contenu() {
     const liste = terme
       ? lots.filter((l) =>
           [l.numero, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
-           l.proprietaire?.gerant_nom, l.proprietaire?.mandataire_nom,
+           l.proprietaire?.gerant_nom, l.proprietaire?.gerant_nom_2, l.proprietaire?.mandataire_nom,
            l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
@@ -311,6 +311,12 @@ function Contenu() {
                       {l.proprietaire?.gerant_nom && (
                         <span className="block text-xs text-slate-400">
                           {l.proprietaire.gerant_fonction ? `${l.proprietaire.gerant_fonction} : ` : ''}{l.proprietaire.gerant_nom}
+                        </span>
+                      )}
+                      {/* Le co-gérant : lui aussi peut voter et signer pour la SCI. */}
+                      {l.proprietaire?.gerant_nom_2 && (
+                        <span className="block text-xs text-slate-400">
+                          {l.proprietaire.gerant_fonction_2 ? `${l.proprietaire.gerant_fonction_2} : ` : ''}{l.proprietaire.gerant_nom_2}
                         </span>
                       )}
                       {l.proprietaire?.email && <span className="block text-xs text-slate-500">{l.proprietaire.email}</span>}

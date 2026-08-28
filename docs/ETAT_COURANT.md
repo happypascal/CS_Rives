@@ -29,6 +29,23 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-08-28 (suite) — co-gérance des SCI (migration 041)
+
+- **✅ Second gérant** (`gerant_nom_2`, `_fonction_2`, `_email_2`, `_telephone_2`). Constat de
+  Pascal : « les SCI ont souvent plusieurs dirigeants mais on ne note que le gérant ». Ce n'est pas
+  cosmétique — **l'un comme l'autre engage la société**, donc vote et signe pour elle en AG. Le
+  registre était muet sur celui qui se présenterait.
+- **⚠ Pas de seconde adresse** : `adresse_gerant` reste unique, c'est en pratique le siège. Deux
+  co-gérants d'une même SCI se joignent au même endroit, et une colonne pour un cas jamais
+  rencontré se paierait à chaque lecture.
+- Limite assumée, la même que pour les indivisaires : **deux** gérants nommés, pas trois.
+- ⚠ Ne pas confondre avec le **mandataire** (037) : le gérant est un organe de la société et
+  l'engage, le mandataire ne fait que relayer. Un second gérant reste un dirigeant.
+- Les dirigeants suivent la **société propriétaire** : ils ne s'héritent jamais à la mutation et
+  restent attachés à l'ancien propriétaire dans l'historique.
+- Corrigé au passage : un « Lot introuvable » qui avait survécu au passage au vocabulaire
+  « parcelle ».
+
 ## Session 2026-08-28 — deux propriétaires ≠ indivision (040 ✅ appliquée)
 
 - **✅ `proprietaires.est_indivision`.** La 038 avait appelé « indivision » le second propriétaire ;
@@ -797,7 +814,8 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `041` (001-029 et 031-040 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `042`. ⚠ **041 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et
+  031-040 le sont en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
