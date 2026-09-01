@@ -45,6 +45,14 @@ function Contenu() {
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   const [confirm, confirmModal] = useConfirm()
+  // Les parcelles voisines, pour naviguer sans repasser par la liste. Chargées
+  // une fois et triées ICI : `listLots` ne garantit pas le même ordre selon le
+  // backend, et l'ordre de navigation doit être celui du registre.
+  const [parcelles, setParcelles] = useState([])
+  // Instantané de ce qui a été chargé : c'est lui qui dit si l'on a modifié
+  // quelque chose. Comparer au formulaire vide ne marcherait pas — une fiche
+  // remplie paraîtrait toujours modifiée.
+  const [initial, setInitial] = useState(null)
 
   const peutSaisir = !isMobile
 
@@ -55,7 +63,9 @@ function Contenu() {
       setLot(l)
       if (l) {
         setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '' })
-        setForm({ ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) })
+        const champs = { ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) }
+        setForm(champs)
+        setInitial({ champs, lot: { numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '' } })
       }
     } catch (e) {
       setError(e?.message || 'Chargement impossible.')
@@ -64,6 +74,14 @@ function Contenu() {
     }
   }, [id])
   useEffect(() => { reload() }, [reload])
+
+  useEffect(() => {
+    // `.catch(() => [])` : une liste indisponible doit désactiver la navigation,
+    // pas vider l'écran — idiome de résilience du projet.
+    repo.listLots()
+      .then((l) => setParcelles([...l].sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'fr', { numeric: true }))))
+      .catch(() => setParcelles([]))
+  }, [])
 
   if (loading) return <Spinner />
   if (error) {
@@ -85,11 +103,46 @@ function Contenu() {
 
   const contactAffiche = contactOfficiel(form)
 
+  const rang = parcelles.findIndex((x) => x.id === id)
+  const precedente = rang > 0 ? parcelles[rang - 1] : null
+  const suivante = rang >= 0 && rang < parcelles.length - 1 ? parcelles[rang + 1] : null
+
+  // Modifié ? Comparaison de l'instantané au formulaire courant. JSON suffit :
+  // les valeurs sont des chaînes, des nombres et des booléens, dans le même
+  // ordre de clés puisque les deux objets naissent de CHAMPS_VIDES.
+  const estModifie = initial
+    ? JSON.stringify(initial.champs) !== JSON.stringify(form) || JSON.stringify(initial.lot) !== JSON.stringify(lotForm)
+    : false
+
+  // ⚠ On ne quitte JAMAIS une fiche en abandonnant une saisie sans le dire. Si
+  // des modifications sont en cours, on propose de les enregistrer ; refuser
+  // laisse sur place plutôt que de les perdre — dans un registre légal, une
+  // saisie effacée en silence est pire qu'un clic de plus.
+  const allerVers = async (cible) => {
+    if (!cible) return
+    if (estModifie) {
+      const enregistrerAvant = await confirm({
+        title: 'Modifications non enregistrées',
+        message: `Cette fiche a été modifiée. Enregistrer avant de passer à la parcelle ${cible.numero} ?`,
+        confirmLabel: 'Enregistrer et continuer',
+      })
+      if (!enregistrerAvant) return
+      // Échec de sauvegarde : on reste, le message d'erreur est déjà à l'écran.
+      if (!(await enregistrer())) return
+    }
+    navigate(`/proprietaires/${cible.id}`)
+  }
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setLotChamp = (k) => (e) => setLotForm((f) => ({ ...f, [k]: e.target.value }))
 
+  // Renvoie true si l'enregistrement a abouti. La navigation s'en sert : on ne
+  // quitte pas une fiche dont la sauvegarde vient d'échouer.
   const enregistrer = async () => {
-    if (!form.nom.trim()) return setError('Le nom du propriétaire est obligatoire.')
+    if (!form.nom.trim()) {
+      setError('Le nom du propriétaire est obligatoire.')
+      return false
+    }
     setBusy(true)
     setError('')
     try {
@@ -98,14 +151,16 @@ function Contenu() {
       const superficie = parseMontant(lotForm.superficie)
       if (lotForm.superficie !== '' && (superficie == null || superficie <= 0)) {
         setBusy(false)
-        return setError('La superficie doit être un nombre positif (ex : 612,50).')
+        setError('La superficie doit être un nombre positif (ex : 612,50).')
+        return false
       }
       // Le nombre de lots ne peut pas être vide : il entre dans le total du
       // registre, et une valeur absente y ferait un trou silencieux.
       const nombreLots = parseMontant(lotForm.nombre_lots)
       if (nombreLots == null || nombreLots <= 0) {
         setBusy(false)
-        return setError('Le nombre de lots doit être un nombre positif (1 dans la quasi-totalité des cas).')
+        setError('Le nombre de lots doit être un nombre positif (1 dans la quasi-totalité des cas).')
+        return false
       }
       await repo.updateLot(id, {
         numero: lotForm.numero.trim(),
@@ -142,8 +197,10 @@ function Contenu() {
         observations: form.observations || null,
       })
       await reload()
+      return true
     } catch (e) {
       setError(e.message)
+      return false
     } finally {
       setBusy(false)
     }
@@ -210,6 +267,12 @@ function Contenu() {
         subtitle={lot.proprietaire ? lot.proprietaire.nom : 'Aucun propriétaire enregistré'}
         actions={
           <>
+            <Button variant="ghost" onClick={() => allerVers(precedente)} disabled={!precedente} title={precedente ? `Parcelle ${precedente.numero}` : 'Première parcelle'}>
+              ← Précédente
+            </Button>
+            <Button variant="ghost" onClick={() => allerVers(suivante)} disabled={!suivante} title={suivante ? `Parcelle ${suivante.numero}` : 'Dernière parcelle'}>
+              Suivante →
+            </Button>
             <Link to="/proprietaires"><Button variant="ghost">Retour au registre</Button></Link>
             {peutSaisir && (
               <Button variant="secondary" onClick={() => setMutation({ ...CHAMPS_VIDES, date_mutation: todayISO() })}>
