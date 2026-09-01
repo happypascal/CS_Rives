@@ -68,6 +68,16 @@ export function destinataires(proprietaire) {
   )
 }
 
+/**
+ * Ce qu'une source apporterait si elle était cochée, qu'elle le soit ou non.
+ * Sert à signaler à l'écran les cases sans effet : une case cochée qui ne produit
+ * aucun destinataire laisse croire que la personne est convoquée.
+ */
+export function apportDe(proprietaire, source) {
+  if (!proprietaire || !SOURCES[source]) return []
+  return SOURCES[source](proprietaire).filter((d) => d.email || d.telephone)
+}
+
 /** Les adresses à mettre en destinataires d'un envoi, dédoublonnées. */
 export function emailsOfficiels(proprietaire) {
   return [...new Set(destinataires(proprietaire).map((d) => d.email).filter(Boolean))]

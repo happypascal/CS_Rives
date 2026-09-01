@@ -52,6 +52,14 @@ du budget demandé à l'AG et du backlog ci-dessous.
   seraient restées hors des convocations sans que rien ne le signale.
 - L'écran montre **le résultat tel qu'il partira**, avec la provenance de chaque adresse — et dit
   « injoignable » quand aucune source cochée ne porte de coordonnées.
+- ⚠ **Correction dans la foulée** : la migration cochait le second propriétaire sur les 17 lignes
+  qui en portent un, **sans regarder s'il avait une adresse**. Or la plupart n'ont qu'un nom
+  (« Mme Junod », « Mme Gladkov »…). Une case cochée qui ne produit aucun destinataire **laisse
+  croire que la personne est convoquée** — c'est le genre de faux qu'un registre de convocation ne
+  peut pas se permettre. Les cases sans effet ont été décochées, et chaque case porte désormais la
+  mention **« sans coordonnées »** quand sa source n'apporte rien.
+- **La case reste cochable malgré tout** : on peut vouloir la cocher avant de saisir l'adresse. Ce
+  qui compte est que son absence d'effet se VOIE, pas qu'elle soit interdite.
 
 ## Session 2026-09-01 — CONTACT OFFICIEL de convocation (043 ✅ appliquée)
 

@@ -8,7 +8,7 @@ import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, todayISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, lireTri, trierLots } from '../lib/proprietaireLogic'
+import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, apportDe, lireTri, trierLots } from '../lib/proprietaireLogic'
 
 // Champs du propriétaire, déclarés une fois : la saisie du propriétaire actuel
 // et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
@@ -496,6 +496,13 @@ function Contenu() {
                         disabled={!peutSaisir}
                       />
                       {CONTACT_LABELS[c]}
+                      {/* ⚠ Une case reste cochable même sans coordonnée — on peut
+                          vouloir la cocher avant de saisir l'adresse. Mais son
+                          absence d'effet doit se VOIR, sinon la case laisse croire
+                          que la personne est convoquée. */}
+                      {apportDe(form, c).length === 0 && (
+                        <span className="text-xs italic text-slate-400">sans coordonnées</span>
+                      )}
                     </label>
                   ))}
                 </div>
