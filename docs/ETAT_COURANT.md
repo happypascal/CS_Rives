@@ -49,6 +49,20 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **✅ Navigation « précédente » / « suivante »** sur la fiche, dans l'ordre des parcelles du
   registre. L'ordre est **calculé côté écran** : `listLots` ne le garantit pas identique selon le
   backend, et naviguer dans un ordre différent de celui du registre serait déroutant.
+- **✅ Navigation au CLAVIER** (flèches gauche et droite) et **paire de flèches flottante** collée au
+  bord gauche du contenu, sous la main quel que soit le défilement. ⚠ Deux gardes sur le clavier :
+  rien n'est détourné quand le curseur est **dans un champ** (les flèches y déplacent le curseur, et
+  ce formulaire en est plein) ni quand une **touche de modification** est enfoncée, pour laisser
+  intacts les raccourcis du navigateur.
+- **✅ Le défilement est conservé d'une fiche à l'autre.** ⚠ Le coupable n'était pas la position des
+  boutons : c'est le `Spinner` qui **vidait la page** pendant le chargement de la suivante — hauteur
+  à zéro, défilement ramené en haut par le navigateur, position irrécupérable. La fiche précédente
+  reste donc affichée le temps que la suivante arrive, et la position est rétablie en
+  `useLayoutEffect` (avant peinture, sinon on voit la page sauter puis redescendre).
+- ⚠ **Défaut préexistant corrigé au passage** : `if (error)` remplaçait TOUTE la fiche par une carte
+  d'erreur, y compris quand c'était un **enregistrement** qui échouait — la saisie disparaissait de
+  l'écran au moment précis où l'on demandait de la corriger, et la garde de navigation ne tenait
+  donc pas sa promesse. L'erreur pleine page est désormais réservée à un échec de **chargement**.
 - **✅ La navigation suit LE TRI CHOISI dans la liste** (demande de Pascal). Le tri est donc sorti
   de la page pour `proprietaireLogic.js` : `TRIS`, `lireTri`, `ecrireTri`, `trierLots`. ⚠ Dupliquer
   les comparateurs aurait produit un décalage muet — trier par superficie dans la liste puis cliquer

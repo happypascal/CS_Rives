@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
@@ -54,6 +54,15 @@ function Contenu() {
   // quelque chose. Comparer au formulaire vide ne marcherait pas — une fiche
   // remplie paraîtrait toujours modifiée.
   const [initial, setInitial] = useState(null)
+  // Position de défilement à rétablir après un changement de parcelle. On
+  // consulte ce registre en comparant des blocs situés bas dans la page — les
+  // adresses, les dirigeants — et repartir du haut à chaque fiche oblige à
+  // refaire le chemin.
+  const scrollARetablir = useRef(null)
+  // La navigation la plus récente, pour que l'écouteur clavier — monté une
+  // seule fois — appelle toujours la bonne. Sans ce relais il faudrait remonter
+  // tout le calcul des voisines au-dessus des retours anticipés du composant.
+  const allerVersRef = useRef(null)
 
   const peutSaisir = !isMobile
 
@@ -76,6 +85,36 @@ function Contenu() {
   }, [id])
   useEffect(() => { reload() }, [reload])
 
+  // FLÈCHES DU CLAVIER. Écouteur global, monté une fois.
+  // ⚠ Deux gardes indispensables : on ne détourne PAS les flèches quand le
+  // curseur est dans un champ de saisie — elles y déplacent le curseur, et ce
+  // formulaire en est plein — ni quand une touche de modification est enfoncée,
+  // pour laisser intacts les raccourcis du navigateur (retour arrière, mot à mot).
+  useEffect(() => {
+    const auClavier = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const cible = e.target
+      const dansUnChamp =
+        cible instanceof HTMLElement &&
+        (cible.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName))
+      if (dansUnChamp) return
+      e.preventDefault()
+      allerVersRef.current?.(e.key === 'ArrowLeft')
+    }
+    document.addEventListener('keydown', auClavier)
+    return () => document.removeEventListener('keydown', auClavier)
+  }, [])
+
+  // ⚠ `useLayoutEffect` et non `useEffect` : le navigateur doit repositionner
+  // AVANT de peindre, sinon on voit la page sauter en haut puis redescendre.
+  useLayoutEffect(() => {
+    if (lot && scrollARetablir.current != null) {
+      window.scrollTo(0, scrollARetablir.current)
+      scrollARetablir.current = null
+    }
+  }, [lot])
+
   useEffect(() => {
     // `.catch(() => [])` : une liste indisponible doit désactiver la navigation,
     // pas vider l'écran — idiome de résilience du projet.
@@ -84,8 +123,17 @@ function Contenu() {
       .catch(() => setParcelles([]))
   }, [])
 
-  if (loading) return <Spinner />
-  if (error) {
+  // Le spinner ne s'affiche qu'au TOUT PREMIER chargement. Ensuite on garde la
+  // fiche précédente à l'écran le temps que la suivante arrive : si la page se
+  // vide, sa hauteur tombe à zéro, le navigateur ramène le défilement en haut,
+  // et rétablir la position devient impossible.
+  if (loading && !lot) return <Spinner />
+  // ⚠ L'erreur PLEINE PAGE est réservée à un échec de CHARGEMENT — quand il n'y
+  // a rien à montrer. Un échec d'enregistrement laisse la fiche en place et
+  // passe par la bannière en ligne plus bas : remplacer le formulaire par une
+  // carte d'erreur ferait disparaître la saisie de l'écran au moment précis où
+  // l'on demande à l'utilisateur de la corriger.
+  if (error && !lot) {
     return (
       <div>
         <PageHeader title="Registre des propriétaires" />
@@ -121,6 +169,7 @@ function Contenu() {
   // saisie effacée en silence est pire qu'un clic de plus.
   const allerVers = async (cible) => {
     if (!cible) return
+    scrollARetablir.current = window.scrollY
     if (estModifie) {
       const enregistrerAvant = await confirm({
         title: 'Modifications non enregistrées',
@@ -133,6 +182,8 @@ function Contenu() {
     }
     navigate(`/proprietaires/${cible.id}`)
   }
+
+  allerVersRef.current = (versLaPrecedente) => allerVers(versLaPrecedente ? precedente : suivante)
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setLotChamp = (k) => (e) => setLotForm((f) => ({ ...f, [k]: e.target.value }))
@@ -667,6 +718,35 @@ function Contenu() {
           </div>
         )}
       </Modal>
+
+      {/* Paire flottante, collée au bord gauche du contenu — juste à droite du
+          menu. Les flèches de l'en-tête obligeaient à remonter en haut de page
+          pour changer de fiche, puis à redescendre pour relire les adresses.
+          Celles-ci restent sous la main quel que soit le défilement.
+          Masquées en mobile, où la fiche est en consultation seule et où l'espace
+          horizontal ne s'y prête pas. */}
+      {!isMobile && (precedente || suivante) && (
+        <div className="fixed top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 md:left-[16.75rem] md:flex">
+          <button
+            onClick={() => allerVers(precedente)}
+            disabled={!precedente}
+            title={precedente ? `Parcelle ${precedente.numero} (flèche gauche)` : 'Première parcelle'}
+            aria-label="Parcelle précédente"
+            className="rounded-full border border-navy-200 bg-white/90 px-3 py-2 text-navy-700 shadow-sm backdrop-blur transition-colors hover:bg-navy-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            ←
+          </button>
+          <button
+            onClick={() => allerVers(suivante)}
+            disabled={!suivante}
+            title={suivante ? `Parcelle ${suivante.numero} (flèche droite)` : 'Dernière parcelle'}
+            aria-label="Parcelle suivante"
+            className="rounded-full border border-navy-200 bg-white/90 px-3 py-2 text-navy-700 shadow-sm backdrop-blur transition-colors hover:bg-navy-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            →
+          </button>
+        </div>
+      )}
 
       {confirmModal}
     </div>
