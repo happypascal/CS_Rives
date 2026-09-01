@@ -29,6 +29,24 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-01 — CONTACT OFFICIEL de convocation (migration 043)
+
+- **✅ Trois boutons radio sur la fiche** : l'adresse de convocation vient du **propriétaire**
+  (saisie à la main), d'un **dirigeant** ou du **mandataire** (repris, non modifiables ici).
+- ⚠ **La colonne stocke la SOURCE, jamais l'adresse.** Recopier aurait produit les deux faux
+  habituels : corriger l'e-mail du mandataire n'aurait pas mis la convocation à jour, et basculer le
+  bouton aurait écrasé l'adresse propre du propriétaire. Dérivé à la lecture — même principe que le
+  tantième, le budget d'un projet ou le statut d'un projet.
+- ⚠ **Aucune retombée quand la source désignée est vide** : l'écran affiche « injoignable » plutôt
+  que l'adresse du propriétaire. Retomber dessus ferait croire à un envoi possible.
+- **`email` et `telephone` restent la propriété du propriétaire** : conservés et réaffichés si l'on
+  revient sur « Le propriétaire ». La fiche le dit explicitement.
+- **La liste montre le contact OFFICIEL**, avec sa provenance quand ce n'est pas le propriétaire —
+  sans quoi on croirait écrire au coloti alors qu'on écrit à son relais. Le tri par e-mail suit.
+- La migration **désigne d'office le mandataire** sur les parcelles sans adresse de propriétaire
+  (0B 198, 229, 240) : leur convocation passait déjà de fait par l'intermédiaire.
+- Nouveau fichier `src/lib/proprietaireLogic.js`, dans la lignée de `agLogic` / `projetLogic`.
+
 ## Session 2026-08-28 (suite 6) — ⏳ EN ATTENTE DE FONCIA
 
 - **📤 Demande de correction ENVOYÉE au syndic le 2026-08-28** (document Word remanié par Pascal
@@ -947,7 +965,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `043` (001-029 et 031-042 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `044`. ⚠ **043 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et 031-042 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

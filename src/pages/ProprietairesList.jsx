@@ -6,6 +6,7 @@ import { Card, Button, Input, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
+import { contactOfficiel, CONTACT_PROPRIETAIRE, CONTACT_LABELS } from '../lib/proprietaireLogic'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -51,7 +52,7 @@ const COLONNES = [
     libelle: 'Propriétaire',
     tris: [
       { cle: 'proprietaire', libelle: 'nom', valeur: (l) => l.proprietaire?.nom || '' },
-      { cle: 'email', libelle: 'email', valeur: (l) => l.proprietaire?.email || '' },
+      { cle: 'email', libelle: 'email', valeur: (l) => contactOfficiel(l.proprietaire).email || '' },
     ],
   },
   {
@@ -348,8 +349,25 @@ function Contenu() {
                           {l.proprietaire.dirigeant_fonction_2 ? `${l.proprietaire.dirigeant_fonction_2} : ` : ''}{l.proprietaire.dirigeant_nom_2}
                         </span>
                       )}
-                      {l.proprietaire?.email && <span className="block text-xs text-slate-500">{l.proprietaire.email}</span>}
-                      {l.proprietaire?.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{l.proprietaire.telephone}</span>}
+                      {(() => {
+                        const c = contactOfficiel(l.proprietaire)
+                        return (
+                          <>
+                            {c.email && <span className="block text-xs text-slate-500">{c.email}</span>}
+                            {c.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{c.telephone}</span>}
+                            {/* D'où vient l'adresse : sans cela on croirait écrire
+                                au propriétaire alors qu'on écrit à son relais. */}
+                            {c.source !== CONTACT_PROPRIETAIRE && (c.email || c.telephone) && (
+                              <span className="block text-xs italic text-slate-400">
+                                {CONTACT_LABELS[c.source].toLowerCase()}{c.nom ? ` — ${c.nom}` : ''}
+                              </span>
+                            )}
+                            {l.proprietaire && !c.email && !c.telephone && (
+                              <span className="block text-xs font-medium text-amber-700">injoignable</span>
+                            )}
+                          </>
+                        )
+                      })()}
                       {/* LE SECOND INDIVISAIRE, avec SES propres coordonnées.
                           Deux noms, une seule propriété — une part de charges,
                           une voix — mais rien n'oblige les deux personnes à

@@ -541,6 +541,15 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   **tout** propriétaire, pas seulement les sociétés. Les fondre écrirait dans un registre légal que
   l'intermédiaire dirige la société. ⚠ Le mandataire suit le PROPRIÉTAIRE, pas le lot : il ne
   s'hérite jamais à la mutation.
+- **CONTACT OFFICIEL : une SOURCE, pas une copie** (`contact_officiel`, migration 043). L'adresse de
+  convocation vient du **propriétaire**, d'un **dirigeant** ou du **mandataire** ; la colonne ne
+  stocke que ce **choix**, jamais l'adresse. Recopier produirait deux faux : une correction chez le
+  mandataire n'atteindrait pas la convocation, et changer de source écraserait l'adresse propre du
+  propriétaire. Dérivé à la lecture par `contactOfficiel()` (`src/lib/proprietaireLogic.js`), comme
+  le tantième ou le budget d'un projet. ⚠ **Aucune retombée** sur une autre source quand la désignée
+  est vide : afficher l'adresse du propriétaire alors qu'on a désigné le mandataire ferait croire à
+  un envoi possible — l'écran affiche « injoignable ». `email` / `telephone` restent la propriété du
+  PROPRIÉTAIRE et ne sont écrits que par lui.
 - **Mention RGPD acceptée une fois par personne** (`membres_cs.registre_rgpd_accepte_le`, tracée par
   `trg_membres_audit_rgpd`). L'écran d'acceptation s'affiche **à la place** du registre, jamais
   par-dessus. Texte dans `src/lib/rgpdRegistre.js`, partagé par l'écran et le rappel permanent —
