@@ -8,7 +8,7 @@ import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, todayISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, CONTACT_DIRIGEANT, contactOfficiel } from '../lib/proprietaireLogic'
+import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, CONTACT_DIRIGEANT, contactOfficiel, lireTri, trierLots } from '../lib/proprietaireLogic'
 
 // Champs du propriétaire, déclarés une fois : la saisie du propriétaire actuel
 // et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
@@ -45,9 +45,10 @@ function Contenu() {
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   const [confirm, confirmModal] = useConfirm()
-  // Les parcelles voisines, pour naviguer sans repasser par la liste. Chargées
-  // une fois et triées ICI : `listLots` ne garantit pas le même ordre selon le
-  // backend, et l'ordre de navigation doit être celui du registre.
+  // Les parcelles voisines, pour naviguer sans repasser par la liste. Rangées
+  // dans L'ORDRE DU TRI CHOISI DANS LA LISTE (mémorisé par navigateur) : trier
+  // par superficie puis passer à « suivante » doit mener à la ligne d'en
+  // dessous, pas à la parcelle suivante par numéro.
   const [parcelles, setParcelles] = useState([])
   // Instantané de ce qui a été chargé : c'est lui qui dit si l'on a modifié
   // quelque chose. Comparer au formulaire vide ne marcherait pas — une fiche
@@ -79,7 +80,7 @@ function Contenu() {
     // `.catch(() => [])` : une liste indisponible doit désactiver la navigation,
     // pas vider l'écran — idiome de résilience du projet.
     repo.listLots()
-      .then((l) => setParcelles([...l].sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'fr', { numeric: true }))))
+      .then((l) => setParcelles(trierLots(l, lireTri())))
       .catch(() => setParcelles([]))
   }, [])
 

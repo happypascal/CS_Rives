@@ -6,7 +6,7 @@ import { Card, Button, Input, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { contactOfficiel, CONTACT_PROPRIETAIRE, CONTACT_LABELS } from '../lib/proprietaireLogic'
+import { contactOfficiel, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -30,65 +30,20 @@ const COLONNES = [
     // une parcelle n'est pas un lot — deux d'entre elles pèsent 1,81 et 1,19 lot,
     // soit 51 lots pour 50 parcelles. Le nombre de lots se lit sur la fiche.
     libelle: 'Parcelle',
-    tris: [
-      { cle: 'lot', libelle: 'parcelle', valeur: (l) => l.numero || '', numerique: true },
-      // Superficie triée en NUMÉRIQUE : en texte, 90 passerait après 1000.
-      { cle: 'superficie', libelle: 'surface', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
-      // Tri par n° Foncia : c'est l'ordre des appels de fonds, donc celui dans
-      // lequel on rapproche le registre des documents du syndic. Numérique, ces
-      // références étant des nombres codés par zone (1xx = A … 5xx = E).
-      { cle: 'numero_syndic', libelle: 'n° Foncia', valeur: (l) => l.numero_syndic || '', numerique: true },
-    ],
+    tris: [['lot', 'parcelle'], ['superficie', 'surface'], ['numero_syndic', 'n° Foncia']],
   },
-  {
-    libelle: 'Adresse de la parcelle',
-    tris: [{ cle: 'adresse_lotissement', libelle: 'adresse', valeur: (l) => l.adresse_lotissement || '' }],
-  },
-  {
-    libelle: 'Adresse de communication',
-    tris: [{ cle: 'adresse_communication', libelle: 'adresse', valeur: (l) => l.proprietaire?.adresse_communication || '' }],
-  },
-  {
-    libelle: 'Propriétaire',
-    tris: [
-      { cle: 'proprietaire', libelle: 'nom', valeur: (l) => l.proprietaire?.nom || '' },
-      { cle: 'email', libelle: 'email', valeur: (l) => contactOfficiel(l.proprietaire).email || '' },
-    ],
-  },
+  { libelle: 'Adresse de la parcelle', tris: [['adresse_lotissement', 'adresse']] },
+  { libelle: 'Adresse de communication', tris: [['adresse_communication', 'adresse']] },
+  { libelle: 'Propriétaire', tris: [['proprietaire', 'nom'], ['email', 'email']] },
   {
     // MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint pas le
     // propriétaire (colotis étrangers surtout). Il a sa colonne parce que sur
-    // ces parcelles-là c'est LA seule adresse utilisable : s'en tenir à celle du
-    // propriétaire laisserait croire qu'on n'a aucun moyen de les joindre.
+    // ces parcelles-là c'est LA seule adresse utilisable.
     // ⚠ Ce n'est pas un dirigeant — le dirigeant engage la société, le mandataire relaie.
     libelle: 'Mandataire',
-    // Tri sur le NOM quand il existe, sinon sur l'adresse : une fiche sans nom
-    // (0B 240) doit se ranger avec les autres mandataires, pas avec les vides.
-    tris: [{ cle: 'mandataire', libelle: 'nom', valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '' }],
+    tris: [['mandataire', 'nom']],
   },
 ]
-
-// Toutes les clés de tri à plat : l'écran range par une CLÉ, pas par une colonne.
-const TRIS = COLONNES.flatMap((c) => c.tris)
-
-// Le tri choisi est mémorisé PAR NAVIGATEUR : on consulte ce registre en
-// allers-retours (liste → fiche → liste), et retrouver la colonne « Superficie »
-// ou « Propriétaire » à chaque retour est une corvée. `localStorage` suffit —
-// c'est un confort d'affichage, propre à la personne et à son poste, il n'a rien
-// à faire en base. Toute lecture ou écriture peut lever (navigation privée,
-// site data bloqué) : on retombe alors silencieusement sur le tri par défaut.
-const CLE_TRI = 'cs-rives.registre-proprietaires.tri'
-const TRI_DEFAUT = { cle: 'lot', sens: 1 }
-
-function lireTri() {
-  try {
-    const brut = JSON.parse(localStorage.getItem(CLE_TRI) || 'null')
-    // Une colonne supprimée depuis, ou un contenu bricolé à la main, ne doit pas
-    // casser l'écran : on ne retient que ce qui existe encore.
-    if (brut && TRIS.some((t) => t.cle === brut.cle) && (brut.sens === 1 || brut.sens === -1)) return brut
-  } catch { /* stockage indisponible */ }
-  return TRI_DEFAUT
-}
 
 export default function ProprietairesList() {
   return (
@@ -127,7 +82,6 @@ function Contenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const colonne = TRIS.find((t) => t.cle === tri.cle) || TRIS[0]
   const filtres = useMemo(() => {
     const terme = q.trim().toLowerCase()
     const liste = terme
@@ -138,13 +92,10 @@ function Contenu() {
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
       : [...lots]
-    return liste.sort((a, b) => {
-      const va = colonne.valeur(a)
-      const vb = colonne.valeur(b)
-      // `numeric` pour que le lot 10 vienne après le 9, et non entre le 1 et le 2.
-      return va.localeCompare(vb, 'fr', { numeric: colonne.numerique }) * tri.sens
-    })
-  }, [lots, q, colonne, tri.sens])
+    // ⚠ Même fonction que celle dont se sert la navigation de la fiche : c'est
+    // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
+    return trierLots(liste, tri)
+  }, [lots, q, tri])
 
   // Une indivision compte pour UN propriétaire : deux personnes, mais une seule
   // propriété — une part de charges, une voix. Les compter pour deux gonflerait
@@ -162,9 +113,7 @@ function Contenu() {
   const trierPar = (cle) =>
     setTri((t) => {
       const suivant = t.cle === cle ? { cle, sens: -t.sens } : { cle, sens: 1 }
-      try {
-        localStorage.setItem(CLE_TRI, JSON.stringify(suivant))
-      } catch { /* stockage indisponible : le tri vaut pour la session */ }
+      ecrireTri(suivant)
       return suivant
     })
 
@@ -259,16 +208,16 @@ function Contenu() {
                           plupart des colonnes ; deux quand la cellule empile
                           deux données qu'on peut vouloir classer. */}
                       <span className="mt-0.5 flex flex-wrap gap-2 text-[10px] normal-case">
-                        {c.tris.map((t) => (
+                        {c.tris.map(([cle, libelle]) => (
                           <button
-                            key={t.cle}
-                            onClick={() => trierPar(t.cle)}
+                            key={cle}
+                            onClick={() => trierPar(cle)}
                             className={`inline-flex items-center gap-0.5 hover:text-navy-700 ${
-                              tri.cle === t.cle ? 'font-semibold text-navy-700' : 'text-slate-400'
+                              tri.cle === cle ? 'font-semibold text-navy-700' : 'text-slate-400'
                             }`}
                           >
-                            {t.libelle}
-                            {tri.cle === t.cle && <span>{tri.sens === 1 ? '▲' : '▼'}</span>}
+                            {libelle}
+                            {tri.cle === cle && <span>{tri.sens === 1 ? '▲' : '▼'}</span>}
                           </button>
                         ))}
                       </span>

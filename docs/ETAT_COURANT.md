@@ -49,6 +49,11 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **✅ Navigation « précédente » / « suivante »** sur la fiche, dans l'ordre des parcelles du
   registre. L'ordre est **calculé côté écran** : `listLots` ne le garantit pas identique selon le
   backend, et naviguer dans un ordre différent de celui du registre serait déroutant.
+- **✅ La navigation suit LE TRI CHOISI dans la liste** (demande de Pascal). Le tri est donc sorti
+  de la page pour `proprietaireLogic.js` : `TRIS`, `lireTri`, `ecrireTri`, `trierLots`. ⚠ Dupliquer
+  les comparateurs aurait produit un décalage muet — trier par superficie dans la liste puis cliquer
+  « suivante » aurait mené à la parcelle suivante par NUMÉRO. La page ne garde que la mise en page
+  des en-têtes.
 - ⚠ **Garde sur les modifications non enregistrées** : quitter une fiche modifiée propose de
   l'enregistrer, et **refuser laisse sur place** plutôt que de perdre la saisie. Si l'enregistrement
   **échoue**, on ne navigue pas — `enregistrer()` renvoie désormais un booléen exprès. Sans cela la

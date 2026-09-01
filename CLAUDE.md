@@ -75,6 +75,8 @@ src/
     agLogic.js        constantes/labels de majorité AG (ne compte aucune voix)
     projetLogic.js    constantes/labels/tons de statut projet
     format.js         wrappers date-fns (fr), todayISO, addBusinessDaysISO
+    proprietaireLogic.js  contact officiel (source, jamais copie) + TRI du registre,
+                      partagé par la LISTE et par la navigation de la FICHE
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
     pdf.js            PDF registre + décision unique, lignes de signature
     share.js          texte WhatsApp + URL wa.me (notification manuelle)
