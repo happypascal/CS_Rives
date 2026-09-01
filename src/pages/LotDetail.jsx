@@ -8,7 +8,7 @@ import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, todayISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, CONTACT_DIRIGEANT, contactOfficiel, lireTri, trierLots } from '../lib/proprietaireLogic'
+import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, lireTri, trierLots } from '../lib/proprietaireLogic'
 
 // Champs du propriétaire, déclarés une fois : la saisie du propriétaire actuel
 // et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
@@ -20,7 +20,7 @@ const CHAMPS_VIDES = {
   dirigeant_email: '', dirigeant_telephone: '',
   mandataire_nom: '', mandataire_email: '', mandataire_telephone: '',
   nom_2: '', email_2: '', telephone_2: '', est_indivision: false,
-  contact_officiel: CONTACT_PROPRIETAIRE,
+  contacts_officiels: [CONTACT_PROPRIETAIRE],
   date_acquisition: '', observations: '',
 }
 
@@ -150,7 +150,8 @@ function Contenu() {
     )
   }
 
-  const contactAffiche = contactOfficiel(form)
+  const cochees = sourcesCochees(form)
+  const listeDestinataires = destinataires(form)
 
   const rang = parcelles.findIndex((x) => x.id === id)
   const precedente = rang > 0 ? parcelles[rang - 1] : null
@@ -241,7 +242,7 @@ function Contenu() {
         email_2: form.email_2 || null,
         telephone_2: form.telephone_2 || null,
         est_indivision: Boolean(form.est_indivision),
-        contact_officiel: form.contact_officiel || CONTACT_PROPRIETAIRE,
+        contacts_officiels: sourcesCochees(form),
         adresse_communication: form.adresse_communication || null,
         adresse_dirigeant: form.adresse_dirigeant || null,
         email: form.email || null,
@@ -282,7 +283,7 @@ function Contenu() {
         email_2: nouveau.email_2 || null,
         telephone_2: nouveau.telephone_2 || null,
         est_indivision: Boolean(nouveau.est_indivision),
-        contact_officiel: nouveau.contact_officiel || CONTACT_PROPRIETAIRE,
+        contacts_officiels: sourcesCochees(nouveau),
         adresse_communication: nouveau.adresse_communication || null,
         adresse_dirigeant: nouveau.adresse_dirigeant || null,
         email: nouveau.email || null,
@@ -462,64 +463,72 @@ function Contenu() {
                   placeholder={'12 rte de Messery\n74140 Nernier'}
                 />
               </div>
-              {/* CONTACT OFFICIEL — celui qui sert aux convocations. Il vient de
-                  l'un de trois endroits, et le registre stocke le CHOIX, jamais
-                  l'adresse : corriger l'e-mail du mandataire met alors la
-                  convocation à jour sans qu'on y pense, et changer de source
-                  n'efface pas l'adresse propre du propriétaire.
-                  ⚠ Quand la source désignée est vide, on n'affiche RIEN d'autre :
-                  retomber sur l'adresse du propriétaire ferait croire à un envoi
-                  possible. */}
+              {/* DESTINATAIRES OFFICIELS — qui reçoit les convocations.
+                  ⚠ On convoque TOUS ceux qui doivent l'être, pas un seul : les
+                  deux indivisaires d'une indivision, l'usufruitier et le
+                  nu-propriétaire d'une donation démembrée, le dirigeant d'une SCI
+                  et son mandataire sur place. D'où des cases, pas un choix unique.
+                  Le registre stocke les cases cochées, jamais les adresses :
+                  corriger l'e-mail du mandataire met la convocation à jour sans
+                  qu'on y pense, et décocher n'efface rien. */}
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Contact officiel — convocations
+                  Destinataires des convocations
                 </p>
-                <div className="mb-3 flex flex-wrap gap-4">
+                <div className="mb-3 grid gap-2 sm:grid-cols-2">
                   {CONTACTS.map((c) => (
                     <label key={c} className="flex items-center gap-2 text-sm text-slate-600">
                       <input
-                        type="radio"
-                        name="contact_officiel"
-                        checked={(form.contact_officiel || CONTACT_PROPRIETAIRE) === c}
-                        onChange={() => setForm((f) => ({ ...f, contact_officiel: c }))}
+                        type="checkbox"
+                        checked={cochees.includes(c)}
+                        onChange={(e) =>
+                          setForm((f) => {
+                            const avant = sourcesCochees(f)
+                            const apres = e.target.checked
+                              ? [...avant, c]
+                              : avant.filter((x) => x !== c)
+                            // ⚠ Jamais aucune case : un ensemble vide voudrait
+                            // dire « ne convoquer personne ». Décocher la
+                            // dernière retombe sur le propriétaire.
+                            return { ...f, contacts_officiels: apres.length ? apres : [CONTACT_PROPRIETAIRE] }
+                          })
+                        }
                         disabled={!peutSaisir}
                       />
                       {CONTACT_LABELS[c]}
                     </label>
                   ))}
                 </div>
-                {(form.contact_officiel || CONTACT_PROPRIETAIRE) === CONTACT_PROPRIETAIRE ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Input label="Email" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
-                    <Input label="Téléphone" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
-                  </div>
+
+                {/* Les coordonnées du propriétaire se saisissent ici — c'est SA
+                    fiche. Celles des autres sources se modifient dans leur
+                    propre bloc, sans quoi on créerait une seconde copie qui
+                    divergerait. */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input label="Email du propriétaire" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
+                  <Input label="Téléphone du propriétaire" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
+                </div>
+
+                {/* Le résultat, tel qu'il partira. Le montrer évite de croire
+                    qu'une case cochée suffit quand la source est vide. */}
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Recevront la convocation
+                </p>
+                {listeDestinataires.length === 0 ? (
+                  <p className="mt-1 text-xs font-medium text-amber-700">
+                    Aucune des sources cochées ne porte de coordonnées : ce lot n’est joignable par aucun moyen officiel.
+                  </p>
                 ) : (
-                  <>
-                    {/* Non modifiable ici, et pour cause : ces valeurs vivent
-                        dans le bloc du dirigeant ou du mandataire. Les rendre
-                        éditables ici créerait une seconde copie qui divergerait. */}
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Input label="Email" value={contactAffiche.email || ''} readOnly placeholder="—" />
-                      <Input label="Téléphone" value={contactAffiche.telephone || ''} readOnly placeholder="—" />
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Repris {(form.contact_officiel === CONTACT_DIRIGEANT) ? 'du bloc dirigeant' : 'du bloc mandataire'}
-                      {contactAffiche.nom ? ` — ${contactAffiche.nom}` : ''}. Se modifie là-bas.
-                    </p>
-                    {!contactAffiche.email && !contactAffiche.telephone && (
-                      <p className="mt-1 text-xs font-medium text-amber-700">
-                        Cette source ne porte aucune coordonnée : ce lot n’est joignable par aucun moyen officiel.
-                      </p>
-                    )}
-                    {/* L'adresse propre du propriétaire n'est pas perdue pour
-                        autant : elle reste en base et réapparaît si l'on revient
-                        sur « Le propriétaire ». */}
-                    {(form.email || form.telephone) && (
-                      <p className="mt-1 text-xs text-slate-400">
-                        Conservé pour le propriétaire lui-même : {[form.email, form.telephone].filter(Boolean).join(' · ')}
-                      </p>
-                    )}
-                  </>
+                  <ul className="mt-1 space-y-0.5">
+                    {listeDestinataires.map((d, i) => (
+                      <li key={`${d.source}-${i}`} className="text-xs text-slate-600">
+                        <span className="text-slate-400">{CONTACT_LABELS[d.source]} — </span>
+                        {d.nom || <span className="italic text-slate-400">nom inconnu</span>}
+                        {d.email ? ` · ${d.email}` : ''}
+                        {d.telephone ? ` · ${d.telephone}` : ''}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
               {/* INDIVISION — deux personnes, mais UNE propriété : une part de
@@ -677,18 +686,23 @@ function Contenu() {
               </div>
               <Input label="Email" type="email" value={mutation.email} onChange={(e) => setMutation((m) => ({ ...m, email: e.target.value }))} />
               <Input label="Téléphone" value={mutation.telephone} onChange={(e) => setMutation((m) => ({ ...m, telephone: e.target.value }))} />
-              {/* La source du contact officiel se choisit dès la mutation : sans
-                  cela le nouveau propriétaire arriverait toujours en « propriétaire »,
+              {/* Les destinataires se choisissent dès la mutation : sans cela
+                  le nouveau propriétaire arriverait toujours seul destinataire,
                   y compris quand on ne connaît que son mandataire. */}
               <div className="sm:col-span-2 flex flex-wrap gap-4">
-                <span className="text-sm text-slate-500">Contact officiel —</span>
+                <span className="text-sm text-slate-500">Convocations —</span>
                 {CONTACTS.map((c) => (
                   <label key={c} className="flex items-center gap-2 text-sm text-slate-600">
                     <input
-                      type="radio"
-                      name="contact_officiel_mutation"
-                      checked={(mutation.contact_officiel || CONTACT_PROPRIETAIRE) === c}
-                      onChange={() => setMutation((m) => ({ ...m, contact_officiel: c }))}
+                      type="checkbox"
+                      checked={sourcesCochees(mutation).includes(c)}
+                      onChange={(e) =>
+                        setMutation((m) => {
+                          const avant = sourcesCochees(m)
+                          const apres = e.target.checked ? [...avant, c] : avant.filter((x) => x !== c)
+                          return { ...m, contacts_officiels: apres.length ? apres : [CONTACT_PROPRIETAIRE] }
+                        })
+                      }
                     />
                     {CONTACT_LABELS[c]}
                   </label>

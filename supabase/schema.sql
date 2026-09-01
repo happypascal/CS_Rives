@@ -436,14 +436,16 @@ create table if not exists proprietaires (
   -- place du notaire.
   est_indivision        boolean not null default false,
 
-  -- CONTACT OFFICIEL (migration 043) : d'où vient l'adresse de convocation —
-  -- du propriétaire, d'un dirigeant, ou du mandataire. ⚠ La colonne stocke le
-  -- CHOIX, jamais l'adresse : recopier ferait qu'une correction chez le
-  -- mandataire n'atteindrait pas la convocation, et que changer de source
-  -- écraserait l'adresse propre du propriétaire. Dérivé à la lecture, comme le
-  -- tantième ou le budget d'un projet.
-  contact_officiel      text not null default 'proprietaire'
-    check (contact_officiel in ('proprietaire', 'dirigeant', 'mandataire')),
+  -- DESTINATAIRES OFFICIELS (migrations 043 et 044) : qui reçoit les
+  -- convocations. ⚠ PLUSIEURS, pas un seul — les deux indivisaires, l'usufruitier
+  -- ET le nu-propriétaire, le dirigeant ET le mandataire sur place. La colonne
+  -- stocke les SOURCES cochées, jamais les adresses : recopier ferait qu'une
+  -- correction chez le mandataire n'atteindrait pas la convocation, et que
+  -- décocher effacerait l'adresse propre du propriétaire. Dérivé à la lecture.
+  -- ⚠ Au moins un : un ensemble vide voudrait dire « ne convoquer personne ».
+  contacts_officiels    text[] not null default array['proprietaire']
+    check (array_length(contacts_officiels, 1) >= 1
+           and contacts_officiels <@ array['proprietaire', 'proprietaire_2', 'dirigeant', 'mandataire']),
 
   -- Adresses. Celle du lotissement vit sur le LOT (elle ne change pas avec le
   -- propriétaire) ; ici on garde celles qui suivent la personne.

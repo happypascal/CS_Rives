@@ -1,57 +1,81 @@
 // ============================================================================
-// Registre des propriétaires — le CONTACT OFFICIEL
+// Registre des propriétaires — les DESTINATAIRES OFFICIELS
 //
-// L'adresse de convocation d'un lot vient de l'un de trois endroits : le
-// propriétaire lui-même, un dirigeant de la société propriétaire, ou le
-// mandataire qui le relaie. `proprietaires.contact_officiel` (migration 043) ne
-// stocke QUE ce choix — jamais l'adresse.
+// Une convocation ne s'adresse pas à une personne, mais à toutes celles qui
+// doivent l'être : les deux indivisaires d'une indivision, l'usufruitier ET le
+// nu-propriétaire d'une donation démembrée, le dirigeant d'une SCI ET son
+// mandataire sur place. `proprietaires.contacts_officiels` (migration 044) est
+// donc une LISTE de sources cochées, et ne contient jamais d'adresse.
 //
-// ⚠ Le contact est donc DÉRIVÉ à la lecture, comme le tantième ou le budget d'un
-// projet. Recopier l'adresse produirait les deux faux habituels : une correction
-// chez le mandataire n'atteindrait pas la convocation, et changer de source
-// écraserait l'adresse propre du propriétaire.
+// ⚠ Les coordonnées sont DÉRIVÉES à la lecture, comme le tantième ou le budget
+// d'un projet. Les recopier ferait qu'une correction chez le mandataire
+// n'atteindrait pas la convocation, et que décocher une case effacerait
+// l'adresse propre du propriétaire.
 // ============================================================================
 
 export const CONTACT_PROPRIETAIRE = 'proprietaire'
+export const CONTACT_PROPRIETAIRE_2 = 'proprietaire_2'
 export const CONTACT_DIRIGEANT = 'dirigeant'
 export const CONTACT_MANDATAIRE = 'mandataire'
 
-export const CONTACTS = [CONTACT_PROPRIETAIRE, CONTACT_DIRIGEANT, CONTACT_MANDATAIRE]
+export const CONTACTS = [
+  CONTACT_PROPRIETAIRE,
+  CONTACT_PROPRIETAIRE_2,
+  CONTACT_DIRIGEANT,
+  CONTACT_MANDATAIRE,
+]
 
 export const CONTACT_LABELS = {
   [CONTACT_PROPRIETAIRE]: 'Le propriétaire',
-  [CONTACT_DIRIGEANT]: 'Un dirigeant',
+  [CONTACT_PROPRIETAIRE_2]: 'Le second propriétaire',
+  [CONTACT_DIRIGEANT]: 'Les dirigeants',
   [CONTACT_MANDATAIRE]: 'Le mandataire',
 }
 
-// Ce que chaque source apporte. Le `nom` sert à l'écran, pour qu'on sache À QUI
-// l'on écrit — une adresse sans nom ne dit pas si elle est encore la bonne.
+// Ce que chaque source apporte. Une source peut donner PLUSIEURS personnes : une
+// société a deux dirigeants nommables, et les deux engagent la société — donc
+// les deux se convoquent.
 const SOURCES = {
-  [CONTACT_PROPRIETAIRE]: (p) => ({ nom: p.nom, email: p.email, telephone: p.telephone }),
-  [CONTACT_DIRIGEANT]: (p) => ({ nom: p.dirigeant_nom, email: p.dirigeant_email, telephone: p.dirigeant_telephone }),
-  [CONTACT_MANDATAIRE]: (p) => ({ nom: p.mandataire_nom, email: p.mandataire_email, telephone: p.mandataire_telephone }),
+  [CONTACT_PROPRIETAIRE]: (p) => [{ nom: p.nom, email: p.email, telephone: p.telephone }],
+  [CONTACT_PROPRIETAIRE_2]: (p) => [{ nom: p.nom_2, email: p.email_2, telephone: p.telephone_2 }],
+  [CONTACT_DIRIGEANT]: (p) => [
+    { nom: p.dirigeant_nom, email: p.dirigeant_email, telephone: p.dirigeant_telephone },
+    { nom: p.dirigeant_nom_2, email: p.dirigeant_email_2, telephone: p.dirigeant_telephone_2 },
+  ],
+  [CONTACT_MANDATAIRE]: (p) => [{ nom: p.mandataire_nom, email: p.mandataire_email, telephone: p.mandataire_telephone }],
+}
+
+/** Les sources cochées, nettoyées de ce qui n'existe pas. Défaut : le propriétaire. */
+export function sourcesCochees(proprietaire) {
+  const brut = proprietaire?.contacts_officiels
+  const liste = Array.isArray(brut) ? brut.filter((c) => CONTACTS.includes(c)) : []
+  return liste.length ? liste : [CONTACT_PROPRIETAIRE]
 }
 
 /**
- * Coordonnées officielles d'un propriétaire, d'après la source qu'il désigne.
+ * Destinataires officiels d'un lot, dans l'ordre des sources.
  *
- * ⚠ Ne retombe JAMAIS sur une autre source quand la désignée est vide : afficher
- * l'adresse du propriétaire alors que le mandataire a été désigné ferait croire
- * à un envoi possible. Le vide est une information — il dit qu'il manque une
- * adresse là où on a décidé d'écrire.
+ * ⚠ Ne retient que ceux qui ont une adresse OU un téléphone : une source cochée
+ * mais vide n'est pas un destinataire, et l'afficher comme tel laisserait croire
+ * qu'on peut le joindre. Ne retombe jamais sur une source non cochée.
  */
-export function contactOfficiel(proprietaire) {
-  if (!proprietaire) return { source: CONTACT_PROPRIETAIRE, nom: null, email: null, telephone: null }
-  const source = CONTACTS.includes(proprietaire.contact_officiel)
-    ? proprietaire.contact_officiel
-    : CONTACT_PROPRIETAIRE
-  return { source, ...SOURCES[source](proprietaire) }
+export function destinataires(proprietaire) {
+  if (!proprietaire) return []
+  return sourcesCochees(proprietaire).flatMap((source) =>
+    SOURCES[source](proprietaire)
+      .filter((d) => d.email || d.telephone)
+      .map((d) => ({ ...d, source })),
+  )
 }
 
-/** Le contact désigné est-il inutilisable ? Sert à l'alerte de l'écran. */
+/** Les adresses à mettre en destinataires d'un envoi, dédoublonnées. */
+export function emailsOfficiels(proprietaire) {
+  return [...new Set(destinataires(proprietaire).map((d) => d.email).filter(Boolean))]
+}
+
+/** Aucun destinataire joignable : le lot est hors de portée d'une convocation. */
 export function contactIncomplet(proprietaire) {
-  const c = contactOfficiel(proprietaire)
-  return !c.email && !c.telephone
+  return destinataires(proprietaire).length === 0
 }
 
 // ============================================================================
@@ -77,7 +101,9 @@ export const TRIS = [
   { cle: 'adresse_lotissement', valeur: (l) => l.adresse_lotissement || '' },
   { cle: 'adresse_communication', valeur: (l) => l.proprietaire?.adresse_communication || '' },
   { cle: 'proprietaire', valeur: (l) => l.proprietaire?.nom || '' },
-  { cle: 'email', valeur: (l) => contactOfficiel(l.proprietaire).email || '' },
+  // Tri sur la PREMIÈRE adresse de convocation : c'est celle qui apparaît en
+  // tête de la cellule, et trier sur autre chose que ce qu'on lit désoriente.
+  { cle: 'email', valeur: (l) => emailsOfficiels(l.proprietaire)[0] || '' },
   // Le mandataire se range sur son NOM quand il existe, sinon sur son adresse :
   // une fiche sans nom doit rejoindre les autres mandataires, pas les vides.
   { cle: 'mandataire', valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '' },

@@ -6,7 +6,7 @@ import { Card, Button, Input, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { contactOfficiel, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import { destinataires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -299,23 +299,29 @@ function Contenu() {
                         </span>
                       )}
                       {(() => {
-                        const c = contactOfficiel(l.proprietaire)
-                        return (
-                          <>
-                            {c.email && <span className="block text-xs text-slate-500">{c.email}</span>}
-                            {c.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{c.telephone}</span>}
+                        // TOUS les destinataires, pas seulement le premier : une
+                        // convocation part à plusieurs, et n'en montrer qu'un
+                        // laisserait croire que les autres ne sont pas prévenus.
+                        const liste = destinataires(l.proprietaire)
+                        if (l.proprietaire && liste.length === 0) {
+                          return <span className="block text-xs font-medium text-amber-700">injoignable</span>
+                        }
+                        return liste.map((d, i) => (
+                          <span key={`${d.source}-${i}`} className="mt-0.5 block text-xs text-slate-500">
+                            {d.email || d.telephone}
                             {/* D'où vient l'adresse : sans cela on croirait écrire
-                                au propriétaire alors qu'on écrit à son relais. */}
-                            {c.source !== CONTACT_PROPRIETAIRE && (c.email || c.telephone) && (
-                              <span className="block text-xs italic text-slate-400">
-                                {CONTACT_LABELS[c.source].toLowerCase()}{c.nom ? ` — ${c.nom}` : ''}
+                                au propriétaire alors qu'on écrit à son relais ou
+                                à l'un de ses dirigeants. */}
+                            {d.source !== CONTACT_PROPRIETAIRE && (
+                              <span className="block italic text-slate-400">
+                                {CONTACT_LABELS[d.source].toLowerCase()}{d.nom ? ` — ${d.nom}` : ''}
                               </span>
                             )}
-                            {l.proprietaire && !c.email && !c.telephone && (
-                              <span className="block text-xs font-medium text-amber-700">injoignable</span>
+                            {d.email && d.telephone && (
+                              <span className="block whitespace-nowrap text-slate-400">{d.telephone}</span>
                             )}
-                          </>
-                        )
+                          </span>
+                        ))
                       })()}
                       {/* LE SECOND INDIVISAIRE, avec SES propres coordonnées.
                           Deux noms, une seule propriété — une part de charges,

@@ -29,6 +29,30 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-01 (suite) — DESTINATAIRES MULTIPLES (migration 044)
+
+- ⚠ **La 043 avait un contresens : un choix UNIQUE.** Correction de Pascal — « s'il y a un e-mail
+  pour le mandataire et pour le propriétaire, il faut envoyer aux deux ». Une convocation ne
+  s'adresse pas à une personne : une indivision a **deux** indivisaires à prévenir, une donation
+  démembrée l'**usufruitier ET le nu-propriétaire**, une SCI dont le dirigeant est au loin se
+  convoque chez lui **et** chez son mandataire sur place. Ne retenir qu'une adresse, c'était
+  accepter de ne pas convoquer quelqu'un.
+- **✅ Quatre cases à cocher** : propriétaire, second propriétaire, dirigeants, mandataire. La source
+  « dirigeants » rend **les deux** dirigeants — tous deux engagent la société.
+- **`contact_officiel` devient `contacts_officiels`, en `text[]`.** ⚠ Renommée au pluriel : un nom
+  singulier pour un ensemble est la dérive corrigée par la 042 entre « gérant » et « dirigeant ».
+  ⚠ Le changement de type **préserve** les choix déjà faits (`array[contact_officiel]`).
+- **Tableau plutôt que quatre booléens** : l'opération naturelle est « donne-moi tous les
+  destinataires de ce lot », c'est une liste ; et une cinquième destination serait une valeur, pas
+  une colonne de plus à réunir à la main chez chaque appelant.
+- ⚠ **Au moins une case** : un ensemble vide voudrait dire « ne convoquer personne », ce qu'aucun
+  registre ne doit pouvoir exprimer par distraction. Décocher la dernière retombe sur le propriétaire.
+- La migration **coche d'office le second propriétaire** là où il existe : s'il est au registre,
+  c'est qu'il est copropriétaire, et un copropriétaire se convoque. Sans cela **dix-sept personnes**
+  seraient restées hors des convocations sans que rien ne le signale.
+- L'écran montre **le résultat tel qu'il partira**, avec la provenance de chaque adresse — et dit
+  « injoignable » quand aucune source cochée ne porte de coordonnées.
+
 ## Session 2026-09-01 — CONTACT OFFICIEL de convocation (043 ✅ appliquée)
 
 - **✅ Trois boutons radio sur la fiche** : l'adresse de convocation vient du **propriétaire**
@@ -995,7 +1019,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `044` (001-029 et 031-042 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `045`. ⚠ **044 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et 031-042 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
