@@ -29,6 +29,28 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite 3) — MANUEL REFONDU : par écran, pas par rôle
+
+- ⚠ **Changement d'approche demandé par Pascal**, et il est juste : « je ne vois que la doc
+  pertinente à mon rôle, je ne vois que les menus et boutons accessibles. La doc liste l'entrée
+  de menu et les actions possibles ; si je veux voir comment faire, j'appuie sur l'action qui se
+  déploie en pas-à-pas. »
+- **L'organisation bascule du RÔLE vers le MENU.** On n'ouvre pas un manuel en se demandant « que
+  puis-je en tant que trésorier ? », mais « je suis sur cet écran, comment je fais telle chose ? ».
+  Le rôle ne sert plus qu'à **filtrer**.
+- **Chaque action se déplie en pas-à-pas**, repliée par défaut, une seule ouverte à la fois : une
+  action qu'on sait faire ne doit pas encombrer.
+- ⚠ **`visiblePar` reproduit le filtrage de `Layout.jsx`** — le manuel ne décrit jamais un écran
+  que le lecteur ne voit pas. **Modifier l'un oblige à modifier l'autre**, et la vérification le
+  contrôle (un membre simple ne doit voir ni Signatures ni Propriétaires).
+- **Une ligne discrète** liste ce qui est réservé au président sur chaque écran : elle répond à
+  « pourquoi je ne vois pas ce bouton ? » sans alourdir.
+- **PARCOURS transversaux** : « conduire un projet, de l'enveloppe à la facture » ne relève
+  d'aucun menu — il va de l'AG au registre en passant par les projets. D'où une section à part,
+  ouverte à tous puisque n'importe quel membre peut être désigné chef de projet.
+- **Neuf écrans, une cinquantaine d'actions**, toutes avec leur pas-à-pas — vérifié
+  automatiquement : aucune action ne peut être publiée sans marche à suivre.
+
 ## Session 2026-09-03 (suite 2) — LA MÉMOIRE DU LOTISSEMENT (045 ✅ appliquée)
 
 - **✅ Livrée** : `sujets` (la synthèse) + `sujet_entrees` (la chronologie), écrans liste et fiche,

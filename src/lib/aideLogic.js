@@ -1,335 +1,599 @@
 // ============================================================================
-// MANUEL DE L'UTILISATEUR, par rôle
+// MANUEL DE L'UTILISATEUR — organisé par ENTRÉE DE MENU
 //
-// Contenu VERSIONNÉ avec le code, et non stocké en base : il décrit ce que
-// l'application fait, donc il change quand elle change. Une aide en base
-// dériverait du produit sans que rien ne le signale — c'est précisément ce
-// qu'on reproche à une documentation.
+// ⚠ L'organisation par MENU et non par rôle est un choix de Pascal (2026-09-03),
+// et il est juste : on n'ouvre pas un manuel en se demandant « que puis-je en
+// tant que trésorier ? », mais « je suis sur cet écran, comment je fais telle
+// chose ? ». Le rôle ne sert plus qu'à FILTRER — on ne voit que les menus et les
+// actions qui nous sont ouverts.
+//
+// Chaque action se déplie en pas-à-pas. Une action qu'on sait faire ne doit pas
+// encombrer : replié par défaut, déplié à la demande.
+//
+// Contenu VERSIONNÉ avec le code, jamais en base : il décrit ce que
+// l'application fait, donc il change quand elle change.
 //
 // ⚠ RÈGLE D'ÉCRITURE : ne décrire que ce qui est VRAI dans le code. Un manuel
-// qui promet un pouvoir inexistant est pire que pas de manuel — le lecteur
-// cherche un bouton qui n'existe pas et conclut que l'application est cassée.
-// Deux pièges vérifiés dans le code avant d'écrire ces lignes :
-//   - le TRÉSORIER a un vrai pouvoir (la garde d'engagement), qu'on aurait pu
-//     croire décoratif ;
-//   - « CHEF DE PROJET » n'est PAS un rôle du bureau : c'est une désignation sur
-//     un projet, qui n'ouvre aucun droit particulier.
-//
-// ⚠ Dire aussi ce qu'on ne peut PAS faire, et pourquoi. La moitié des questions
-// d'un nouveau membre porte sur une limite qu'il prend pour une panne.
+// qui promet un bouton inexistant est pire que pas de manuel.
 // ============================================================================
 
-export const ROLE_TOUS = 'tous'
+/** Ouvert à tout membre actif du conseil, quel que soit son rôle. */
+export const TOUS = 'tous'
 
 /**
- * Le manuel. Un bloc par rôle, dans l'ordre de lecture d'un arrivant : ce que
- * tout le monde peut faire d'abord, les prérogatives ensuite.
+ * Un membre voit-il cette action ?
  *
- * `peut` : ce que le rôle ouvre. `nePeutPas` : les limites, avec leur raison.
+ * ⚠ `pourQui` liste les rôles du BUREAU (`membres_cs.role`). Le président est
+ * traité à part parce qu'il garde tout : la RLS lui ouvre l'écriture partout
+ * (`write_admin`), donc le manuel doit le refléter.
  */
-export const MANUEL = [
+export function accessible(pourQui, role, isAdmin) {
+  if (pourQui === TOUS) return true
+  if (isAdmin) return true
+  return Array.isArray(pourQui) && pourQui.includes(role)
+}
+
+// ============================================================================
+// LES MENUS, dans l'ordre où ils apparaissent dans la barre de gauche.
+// `visiblePar` reproduit exactement le filtrage de `Layout.jsx` : le manuel ne
+// doit pas décrire un écran que le lecteur ne voit pas.
+// ============================================================================
+export const MENUS = [
   {
-    cle: ROLE_TOUS,
-    titre: 'Tout membre actif du conseil',
-    resume:
-      'Le socle. Ces actions n’exigent aucun rôle particulier : elles appartiennent à chaque membre du conseil, président compris.',
-    peut: [
+    cle: 'registre',
+    menu: 'Décisions CS',
+    visiblePar: TOUS,
+    aQuoi:
+      'Le registre légal des délibérations du conseil. C’est le cœur de l’application : tout le reste existe pour l’alimenter ou l’éclairer.',
+    actions: [
       {
-        titre: 'Rédiger une décision',
-        texte:
-          'Créer une décision et la travailler en brouillon, seul, aussi longtemps qu’il le faut. Un brouillon n’est visible que de son auteur — le président lui-même ne le voit pas. Demander une décision au conseil n’est pas un pouvoir présidentiel : tout membre rédige et soumet les siennes.',
+        titre: 'Créer une décision',
+        pourQui: TOUS,
+        resume: 'Rédiger un projet de délibération, seul et sans être vu.',
+        etapes: [
+          'Cliquez sur « Nouvelle décision ».',
+          'Donnez un titre court et explicite : c’est lui qui apparaîtra au registre.',
+          'Rédigez le corps de la décision — ce sur quoi le conseil va se prononcer.',
+          'Si la décision engage de l’argent, choisissez la cible (un projet ou une résolution d’AG) et saisissez le montant du devis, le taux de TVA, et si le montant est HT ou TTC.',
+          'Joignez les pièces utiles : devis, plan, courrier.',
+          'Enregistrez. La décision reste un BROUILLON, visible de vous seul.',
+        ],
+        alerte:
+          'Tant qu’elle est en brouillon, personne ne la voit — pas même le président. Vous pouvez la reprendre autant de fois qu’il le faut.',
       },
       {
-        titre: 'Planifier une soumission',
-        texte:
-          'Dater l’ouverture du vote pour plus tard. La décision reste un brouillon privé jusqu’au jour dit, puis s’ouvre seule. Utile pour qu’un vote ait lieu après une assemblée, avec le conseil qui en sortira.',
+        titre: 'Soumettre une décision au vote',
+        pourQui: TOUS,
+        resume: 'Ouvrir le vote. C’est irréversible : le texte se fige.',
+        etapes: [
+          'Ouvrez votre brouillon, vérifiez une dernière fois le titre et le corps du texte.',
+          'Cliquez sur « Soumettre au vote ».',
+          'La décision reçoit son numéro d’ordre (2026-014) et devient visible de tous les membres.',
+          'La date limite de réponse est calculée automatiquement en jours ouvrés.',
+          'Prévenez le conseil (voir l’action suivante) : rien ne part tout seul.',
+        ],
+        alerte:
+          'À partir de là, le titre et le corps du texte NE SE MODIFIENT PLUS, même pour vous. Le montant, le rattachement et les pièces jointes restent modifiables jusqu’à l’enregistrement.',
       },
       {
-        titre: 'Soumettre au vote',
-        texte:
-          'C’est à ce moment, et à ce moment seulement, que la décision reçoit son numéro d’ordre et devient visible de tous. Le texte est alors figé : ni le titre ni la description ne se modifient plus, y compris pour l’auteur. Le montant, le rattachement et les pièces jointes restent modifiables — un devis arrive souvent après.',
+        titre: 'Planifier l’ouverture du vote',
+        pourQui: TOUS,
+        resume: 'Faire ouvrir le vote plus tard, tout seul.',
+        etapes: [
+          'Dans le formulaire de la décision, indiquez une date de soumission.',
+          'Enregistrez : la décision reste un brouillon privé jusqu’à cette date.',
+          'Le jour dit, elle s’ouvre seule au vote et reçoit son numéro.',
+        ],
+        alerte:
+          'Utile pour qu’un vote ait lieu après une assemblée, avec le conseil qui en sortira : c’est la composition du jour de l’ouverture qui est appelée à voter.',
       },
       {
         titre: 'Voter',
-        texte:
-          'Pour, contre ou abstention, sur les décisions ouvertes au vote. Chacun vote pour lui-même : personne ne vote à la place d’un autre. Ne pas voter, c’est être absent — ce n’est pas un choix enregistré.',
+        pourQui: TOUS,
+        resume: 'Pour, contre ou abstention.',
+        etapes: [
+          'Ouvrez la décision depuis le registre.',
+          'Choisissez Pour, Contre ou Abstention.',
+          'Votre vote est enregistré immédiatement ; vous pouvez le changer tant que la décision n’est pas enregistrée.',
+        ],
+        alerte:
+          'L’abstention n’est pas neutre : elle compte parmi les présents et rend l’adoption plus difficile. Ne pas voter du tout, c’est être absent.',
       },
       {
-        titre: 'Poser une question, y répondre',
-        texte:
-          'Un fil de questions-réponses accompagne chaque décision et chaque projet.',
+        titre: 'Prévenir le conseil qu’une décision attend leur vote',
+        pourQui: TOUS,
+        resume: 'Envoyer le message au groupe. Manuel, jamais automatique.',
+        etapes: [
+          'Ouvrez la décision soumise au vote.',
+          'Cliquez sur « Prévenir le CS ».',
+          'Un message pré-rédigé s’ouvre dans WhatsApp : choisissez le groupe du conseil et envoyez.',
+          'Le bouton devient « Notifier à nouveau » — utile pour une relance.',
+        ],
+        alerte:
+          'L’application n’avertit personne d’elle-même. Sans ce geste, une décision peut rester ouverte sans que quiconque le sache.',
       },
       {
-        titre: 'Tenir le journal d’un projet',
-        texte:
-          'Consigner ce qui a été fait, avec la date à laquelle cela s’est passé — modifiable, car une visite du 12 notée le 20 doit se ranger au 12. Chacun corrige et supprime ses propres lignes, personne ne réécrit le compte rendu d’un autre.',
+        titre: 'Poser une question, répondre',
+        pourQui: TOUS,
+        resume: 'Le fil d’échanges attaché à la décision.',
+        etapes: [
+          'En bas de la fiche de la décision, écrivez votre question.',
+          'Chacun peut y répondre ; le fil reste attaché à la décision.',
+        ],
       },
-      {
-        titre: 'Créer assemblées, résolutions et projets',
-        texte:
-          'Saisir une AG et ses résolutions, ouvrir un projet, y rattacher les enveloppes votées.',
-      },
-      {
-        titre: 'Prévenir le conseil',
-        texte:
-          'Le bouton « Prévenir le CS » prépare un message pour le groupe WhatsApp. L’envoi reste manuel et volontaire : rien ne part tout seul.',
-      },
-    ],
-    nePeutPas: [
-      {
-        titre: 'Supprimer le brouillon d’un autre',
-        texte:
-          'Un brouillon appartient à son auteur seul. Cela vaut aussi contre le président.',
-      },
-      {
-        titre: 'Créer ou gérer depuis un téléphone',
-        texte:
-          'Sur mobile, l’application est en consultation et en vote. La saisie se fait sur ordinateur — un registre légal se relit avant d’être écrit.',
-      },
-    ],
-  },
-
-  {
-    cle: 'president',
-    titre: 'Président',
-    resume:
-      'Le président ne décide pas à la place du conseil : il constate. Sa prérogative propre est l’acte — inscrire au registre une délibération qui a eu lieu — et la signature.',
-    peut: [
       {
         titre: 'Enregistrer une décision — l’acte',
-        texte:
-          'Figer le résultat du vote et l’inscrire au registre. L’application calcule le quorum et l’adoption ; le président constate. L’enregistrement conserve aussi la composition du conseil au jour du vote, pour que le PDF reste fidèle après un changement de mandat.',
+        pourQui: ['president'],
+        resume: 'Figer le résultat et l’inscrire au registre.',
+        etapes: [
+          'Vérifiez que le quorum est atteint : l’écran l’indique.',
+          'Vérifiez le résultat calculé (adoptée ou rejetée) : l’application applique l’article 15, vous ne choisissez pas.',
+          'Cliquez sur « Enregistrer la décision ».',
+          'La composition du conseil au jour du vote est figée avec elle, pour que le PDF reste fidèle après un changement de mandat.',
+        ],
         alerte:
-          'IRRÉVERSIBLE. Une décision enregistrée ne se modifie plus, ne se vote plus, ne se supprime plus. C’est le verrou qu’impose l’article 15 aux délibérations inscrites au registre.',
+          'IRRÉVERSIBLE. Une décision enregistrée ne se modifie plus, ne se vote plus, ne se supprime plus. C’est le verrou de l’article 15.',
       },
       {
-        titre: 'Départager en cas de partage des voix',
-        texte:
-          'Quand les voix se partagent exactement, celle du président est prépondérante (art. 15). Encore faut-il qu’il ait voté : s’il s’est abstenu ou n’a pas voté, personne ne départage et la décision est rejetée.',
+        titre: 'Annuler une décision',
+        pourQui: TOUS,
+        resume: 'Retirer une décision en laissant la trace.',
+        etapes: [
+          'Ouvrez la décision (avant l’ouverture du vote).',
+          'Cliquez sur « Annuler » et saisissez le motif — il est obligatoire.',
+          'La décision reste au registre avec la mention ANNULÉE et son motif.',
+        ],
+        alerte:
+          'Annuler n’est pas supprimer. Annuler garde la trace ; supprimer n’en laisse aucune. Devant un registre légal, une décision retirée doit se voir.',
       },
       {
-        titre: 'Signer le registre',
-        texte:
-          'Ouvrir les lots de signature. Signent tous les membres présents à la délibération — y compris ceux qui ont voté contre. Les absents n’ont pas de ligne de signature.',
+        titre: 'Supprimer une décision',
+        pourQui: TOUS,
+        resume: 'Effacer sans trace — seulement avant le vote.',
+        etapes: [
+          'Votre propre brouillon : ouvrez-le et cliquez sur « Supprimer ». Aucun numéro n’ayant été attribué, il ne laisse aucun trou dans le registre.',
+          'Une décision déjà soumise : seul le président peut la supprimer, et seulement si personne n’a encore voté.',
+        ],
       },
       {
-        titre: 'Supprimer une décision soumise',
-        texte:
-          'Tant qu’elle n’est pas enregistrée et qu’elle ne porte aucun vote. Au-delà, on annule avec un motif : la trace reste au registre.',
+        titre: 'Changer la visibilité aux colotis',
+        pourQui: ['president'],
+        resume: 'Décider si une décision est réservée au conseil.',
+        etapes: [
+          'Ouvrez la décision — même enregistrée.',
+          'Changez la visibilité : réservée au conseil, ou ouverte aux colotis.',
+          'Le changement est tracé dans le journal d’audit.',
+        ],
+        alerte:
+          'Publier n’est pas délibérer : le verrou de l’article 15 protège le TEXTE, pas son audience. C’est pourquoi ce réglage reste ouvert après l’enregistrement.',
       },
       {
-        titre: 'Changer la visibilité, même sur une décision enregistrée',
-        texte:
-          'Publier n’est pas délibérer : le verrou de l’article 15 protège le texte, pas son audience. Chaque changement est tracé dans le journal d’audit.',
-      },
-      {
-        titre: 'Gérer les membres du conseil',
-        texte:
-          'Ajouter, désactiver, attribuer les rôles du bureau. Le président de l’application suit le mandat, pas la personne : le nouveau président devient administrateur dès que son adresse porte le rôle.',
-      },
-      {
-        titre: 'Consulter le registre des propriétaires',
-        texte:
-          'Avec le secrétaire, et eux seuls. Voir plus bas.',
-      },
-    ],
-    nePeutPas: [
-      {
-        titre: 'Voir, modifier ou supprimer le brouillon d’un autre membre',
-        texte:
-          'Aucune exception n’est faite pour lui. C’est un choix explicite, et il ne doit pas être défait.',
-      },
-      {
-        titre: 'Adopter une décision que le vote rejette',
-        texte:
-          'L’adoption se calcule, elle ne se décide pas. Le président enregistre un résultat, il ne le choisit pas.',
-      },
-      {
-        titre: 'Modifier une décision enregistrée',
-        texte:
-          'Ni lui ni personne. Seuls le rattachement à un projet et la visibilité restent ouverts, et ils sont tracés.',
+        titre: 'Exporter le registre en PDF',
+        pourQui: TOUS,
+        resume: 'Le registre complet, ou une décision seule.',
+        etapes: [
+          'Depuis le registre : « Exporter le PDF » produit le registre complet avec son sommaire.',
+          'Depuis une décision : le PDF de cette seule délibération, avec les lignes de signature.',
+        ],
+        alerte:
+          'Les brouillons et les décisions planifiées sont exclus du PDF : ce ne sont pas des délibérations. Les annulées y figurent, avec la mention ANNULÉE.',
       },
     ],
   },
 
   {
-    cle: 'tresorier',
-    titre: 'Trésorier',
-    resume:
-      'Le trésorier n’a pas d’écran réservé — et pourtant son vote pèse plus que les autres sur un point précis. C’est la particularité la plus facile à manquer.',
-    peut: [
+    cle: 'ag',
+    menu: 'Assemblées Générales',
+    visiblePar: TOUS,
+    aQuoi:
+      'Les assemblées et leurs résolutions. C’est l’AG qui vote les budgets ; le conseil ne fait que les engager.',
+    actions: [
       {
-        titre: 'Débloquer l’adoption d’une dépense',
-        texte:
-          'Une décision qui engage de l’argent n’est adoptée que si le trésorier OU le président a voté pour. La majorité seule ne suffit pas. Si aucun des deux n’a voté pour, la décision est rejetée même largement majoritaire.',
+        titre: 'Créer une assemblée',
+        pourQui: TOUS,
+        resume: 'Avant qu’elle ait lieu, dès la convocation.',
+        etapes: [
+          'Cliquez sur « Nouvelle AG ».',
+          'Saisissez le type, la date, l’heure et le lieu.',
+          'Laissez le président de séance VIDE : il est désigné en séance, l’inventer écrirait une information fausse.',
+        ],
+      },
+      {
+        titre: 'Ajouter une résolution',
+        pourQui: TOUS,
+        resume: 'Une ligne de l’ordre du jour, avec son budget éventuel.',
+        etapes: [
+          'Ouvrez l’AG, puis « Ajouter une résolution ».',
+          'Reprenez le NUMÉRO DE LA CONVOCATION, pas l’ordre de saisie.',
+          'Si une résolution du PV finance plusieurs projets, utilisez la sous-numérotation : 10-1, 10-2, 10-3.',
+          'Indiquez le budget alloué s’il y en a un, et la majorité requise.',
+          'Le statut par défaut est « à voter » — il passera à adoptée ou rejetée après l’assemblée.',
+        ],
         alerte:
-          'Règle INTERNE au conseil, plus stricte que les statuts. Un trésorier qui ne vote pas bloque donc les dépenses, sauf si le président les soutient.',
+          'Seule une résolution ADOPTÉE alloue réellement un budget. Une résolution à voter, rejetée ou retirée n’alloue rien : son montant n’est qu’une proposition.',
       },
       {
-        titre: 'Valider les comptes d’une assemblée',
-        texte:
-          'Les comptes d’une AG ne sont réputés validés que lorsque le trésorier et le président les ont tous deux approuvés.',
+        titre: 'Joindre la convocation ou le procès-verbal',
+        pourQui: TOUS,
+        resume: 'Les pièces de l’assemblée elle-même.',
+        etapes: [
+          'Ouvrez l’AG, section pièces jointes.',
+          'Choisissez la catégorie : convocation, PV, ou autre.',
+          'Déposez le fichier.',
+        ],
+        alerte:
+          'Possible même sur une AG clôturée, et c’est voulu : le PV arrive toujours après la séance.',
       },
       {
-        titre: 'Suivre et exporter les budgets',
-        texte:
-          'Budgets consolidés par assemblée et par projet, et export CSV pour le syndic. Accessible à tous les membres — le trésorier en est simplement le premier lecteur.',
+        titre: 'Affecter une enveloppe votée à un projet',
+        pourQui: TOUS,
+        resume: 'L’AG vote, le conseil affecte.',
+        etapes: [
+          'Ouvrez l’AG et repérez la résolution dotée d’un budget.',
+          'Cliquez sur « Ouvrir un projet » (le projet est créé et rattaché) ou « Rattacher à un projet existant ».',
+          'Le budget du projet devient la somme des enveloppes qui le pointent.',
+        ],
+        alerte:
+          'Le rattachement se pilote depuis l’AG, jamais depuis le projet : c’est la résolution qui désigne son projet. Une enveloppe rattachée y passe en entier.',
       },
-    ],
-    nePeutPas: [
       {
-        titre: 'Engager une dépense seul',
-        texte:
-          'Son vote est nécessaire, jamais suffisant. Il faut aussi la majorité des membres présents.',
+        titre: 'Saisir les résultats du vote',
+        pourQui: TOUS,
+        resume: 'Après l’assemblée, résolution par résolution.',
+        etapes: [
+          'Passez chaque résolution en adoptée, rejetée ou retirée.',
+          'Saisissez le nombre de voix tel qu’il figure au PV.',
+        ],
+        alerte:
+          'L’application ne compte AUCUNE voix d’AG : les votes sont au prorata des superficies et restent l’affaire du PV. Elle n’enregistre que le résultat.',
       },
       {
-        titre: 'Accéder au registre des propriétaires',
-        texte:
-          'Réservé au président et au secrétaire. Le trésorier n’y voit rien, pas même le nombre de parcelles.',
+        titre: 'Valider les comptes de l’exercice',
+        pourQui: ['tresorier', 'president'],
+        resume: 'À deux : trésorier et président.',
+        etapes: [
+          'Ouvrez l’AG, section comptes.',
+          'Approuvez les comptes.',
+          'Ils ne sont réputés validés que lorsque le trésorier ET le président l’ont fait.',
+        ],
       },
     ],
   },
 
   {
-    cle: 'secretaire',
-    titre: 'Secrétaire',
-    resume:
-      'Le secrétaire partage avec le président la tenue matérielle du registre et l’accès aux données des propriétaires.',
-    peut: [
+    cle: 'projets',
+    menu: 'Projets',
+    visiblePar: TOUS,
+    aQuoi:
+      'Les chantiers du conseil. Un projet dépense une enveloppe votée en assemblée — il ne crée pas d’argent.',
+    actions: [
       {
-        titre: 'Ouvrir et suivre les signatures',
-        texte:
-          'L’écran des signatures lui est ouvert comme au président (art. 14 et 15).',
-      },
-      {
-        titre: 'Tenir le registre des propriétaires',
-        texte:
-          'Parcelles, superficies, propriétaires actuels, historique des mutations, coordonnées, destinataires des convocations. En lecture comme en écriture.',
+        titre: 'Créer un projet',
+        pourQui: TOUS,
+        resume: 'Le plus souvent depuis l’AG, pas depuis ici.',
+        etapes: [
+          'Le chemin normal : depuis la fiche de l’AG, « Ouvrir un projet » sur la résolution qui le finance.',
+          'Depuis cet écran, « Nouveau projet » crée un projet sans budget — à rattacher ensuite depuis l’AG.',
+          'Renseignez le titre, la description, les dates d’ouverture et de fin prévue.',
+        ],
         alerte:
-          'DONNÉES PERSONNELLES DE TIERS. Seuls le nom, l’adresse dans le lotissement et la parcelle sont communicables. Toute autre divulgation engage la responsabilité personnelle de celui qui la commet. Une mention à accepter une fois précède le premier accès.',
+          'Le budget n’est jamais saisi : il découle des résolutions adoptées qui pointent le projet. Un projet à 0 € est un projet sans enveloppe rattachée.',
       },
-    ],
-    nePeutPas: [
       {
-        titre: 'Enregistrer une délibération',
-        texte:
-          'L’acte reste au président. Le secrétaire tient le registre, il ne le clôt pas.',
+        titre: 'Désigner le chef de projet et son adjoint',
+        pourQui: TOUS,
+        resume: 'Qui pilote, et qui prend le relais.',
+        etapes: [
+          'Ouvrez le projet, puis « Modifier ».',
+          'Choisissez le chef de projet parmi les membres du conseil, et son adjoint.',
+          'Les deux ont exactement les mêmes possibilités : l’adjoint existe pour que le projet ne s’arrête pas en cas d’absence.',
+        ],
+      },
+      {
+        titre: 'Tenir le journal de bord',
+        pourQui: TOUS,
+        resume: 'Ce qui a été fait, avec la date réelle.',
+        etapes: [
+          'Ouvrez le projet, section journal.',
+          'Saisissez la date à laquelle la chose s’est passée — pas celle où vous l’écrivez.',
+          'Décrivez en une ligne : visite, appel, courrier, réunion.',
+        ],
+        alerte:
+          'Chacun corrige et supprime ses propres lignes. Le chef de projet ne réécrit pas le compte rendu d’un autre.',
+      },
+      {
+        titre: 'Suspendre, reprendre ou terminer un projet',
+        pourQui: TOUS,
+        resume: 'Il n’y a pas de bouton : c’est une décision.',
+        etapes: [
+          'Créez une décision qui cible le projet.',
+          'Dans « Effet sur le projet », choisissez suspendre, reprendre ou terminer.',
+          'Soumettez au vote ; l’effet ne se produit qu’à l’enregistrement, décision adoptée.',
+        ],
+        alerte:
+          'Aucun bouton n’existe, volontairement. Ces trois transitions sont des délibérations du conseil : ni le chef de projet, ni l’adjoint, ni le président ne les décident seuls.',
       },
     ],
   },
 
   {
-    cle: 'chef_projet',
-    titre: 'Chef de projet et adjoint',
-    resume:
-      'Ce n’est pas un rôle du bureau mais une désignation sur un projet : elle dit qui pilote, et n’ouvre aucun droit supplémentaire. Le chef de projet ne dépense pas — il prépare la décision qui permettra au conseil de dépenser.',
-    // ⚠ Un chef de projet n'a pas besoin de connaître ses droits, il a besoin de
-    // savoir DANS QUEL ORDRE faire les choses. D'où cette marche à suivre, qui
-    // suit le vrai cheminement : de l'enveloppe votée à la facture payée.
-    demarche: [
+    cle: 'budgets',
+    menu: 'Budgets',
+    visiblePar: TOUS,
+    aQuoi: 'Ce qui a été voté, ce qui est engagé, ce qui reste — par assemblée et par projet.',
+    actions: [
       {
-        titre: 'Vérifier l’enveloppe avant toute chose',
-        texte:
-          'Ouvrez la fiche du projet : le budget alloué y figure. Il n’est jamais saisi — c’est la somme des résolutions d’assemblée adoptées qui pointent vers ce projet. S’il affiche zéro, aucune enveloppe n’a été rattachée : cela se corrige depuis la fiche de l’AG (« Rattacher à un projet »), pas depuis le projet. Sans enveloppe votée, rien ne pourra être engagé.',
+        titre: 'Lire les budgets consolidés',
+        pourQui: TOUS,
+        resume: 'Alloué, engagé, restant.',
+        etapes: [
+          'L’écran présente chaque assemblée, ses résolutions dotées et les projets qu’elles financent.',
+          'L’engagé ne compte que les décisions ENREGISTRÉES et ADOPTÉES : une décision en cours de vote n’engage rien.',
+        ],
       },
       {
-        titre: 'Tenir le journal dès le premier jour',
-        texte:
-          'Chaque visite, appel, courrier, réunion sur place. Saisissez la date à laquelle la chose s’est passée, pas celle où vous l’écrivez : une visite du 12 notée le 20 doit se ranger au 12. C’est ce journal qui permettra, dans deux ans, de savoir pourquoi telle entreprise a été écartée et à quelle date le chantier a démarré.',
-      },
-      {
-        titre: 'Consulter plusieurs fournisseurs',
-        texte:
-          'Demandez plusieurs devis. Consignez au journal qui a répondu, à quel prix, ce que le devis comprend et ce qu’il exclut. Les devis eux-mêmes se joignent en pièces jointes — sur le projet pendant la consultation, puis sur la décision qui retiendra l’un d’eux.',
-      },
-      {
-        titre: 'Rédiger la décision qui engage la dépense',
-        texte:
-          'C’est le seul moyen d’engager de l’argent. Créez une décision, choisissez « Projet » comme cible, puis votre projet. L’écran affiche alors trois chiffres : alloué, déjà engagé, restant. Saisissez le montant du devis retenu, indiquez le taux de TVA et si le montant est HT ou TTC — l’application calcule le coût TTC et prévient en rouge s’il dépasse le disponible.',
-        alerte:
-          'La description doit expliquer le CHOIX, pas seulement le montant : quelles entreprises ont été consultées, pourquoi celle-ci. Le texte sera figé dès la soumission au vote et ne pourra plus être modifié — c’est lui qui restera au registre.',
-      },
-      {
-        titre: 'Joindre le devis retenu',
-        texte:
-          'À la décision, avant de soumettre. Les pièces jointes restent modifiables jusqu’à l’enregistrement — un devis corrigé arrive souvent après le vote — mais le devis qui fonde la décision doit y être dès le départ.',
-      },
-      {
-        titre: 'Soumettre au vote et prévenir le conseil',
-        texte:
-          'La soumission fige le texte, attribue le numéro et rend la décision visible de tous. Rien ne part automatiquement : utilisez « Prévenir le CS » pour avertir le groupe, sinon personne ne saura qu’un vote est ouvert.',
-        alerte:
-          'Une décision qui engage de l’argent n’est adoptée que si le trésorier OU le président a voté pour. La majorité seule ne suffit pas : si aucun des deux ne s’est prononcé favorablement, la dépense est rejetée.',
-      },
-      {
-        titre: 'Attendre l’enregistrement par le président',
-        texte:
-          'Tant que la décision n’est pas enregistrée, rien n’est engagé — le montant n’apparaît dans aucun budget et le fournisseur ne doit pas être commandé. L’enregistrement est l’acte qui inscrit la délibération au registre ; c’est à ce moment que la dépense devient réelle.',
-      },
-      {
-        titre: 'Suivre l’exécution au journal',
-        texte:
-          'Commande passée, acompte versé, démarrage du chantier, réception des travaux, réserves éventuelles. Les factures se joignent au projet. C’est cette trace qui justifiera les paiements auprès du syndic et de l’assemblée.',
-      },
-      {
-        titre: 'Clore, suspendre ou reprendre — encore une décision',
-        texte:
-          'Dans le formulaire de décision, le champ « Effet sur le projet » permet de suspendre, reprendre ou terminer. L’effet ne se produit qu’à l’enregistrement d’une décision adoptée. Le statut du projet est calculé à partir de ces délibérations, jamais saisi — c’est pourquoi aucun bouton ne le change directement.',
+        titre: 'Exporter le CSV pour le syndic',
+        pourQui: TOUS,
+        resume: 'Le fichier attendu par Foncia.',
+        etapes: [
+          'Cliquez sur « Exporter CSV ».',
+          'Le fichier utilise le point-virgule et la virgule décimale : il s’ouvre directement dans Excel en français.',
+        ],
       },
     ],
-    peut: [
+  },
+
+  {
+    cle: 'memoire',
+    menu: 'Mémoire',
+    visiblePar: TOUS,
+    aQuoi:
+      'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
+    actions: [
       {
-        titre: 'Piloter le projet et tenir son journal',
-        texte:
-          'Le chef et l’adjoint ont exactement les mêmes possibilités : l’adjoint existe pour que le projet ne s’arrête pas quand le chef est indisponible.',
+        titre: 'Créer un sujet',
+        pourQui: TOUS,
+        resume: 'Un par dossier qui revient d’une année sur l’autre.',
+        etapes: [
+          'Saisissez le titre du dossier et choisissez une catégorie.',
+          'Un titre par dossier, et un seul : deux sujets « Portail » couperaient la mémoire en deux.',
+        ],
       },
       {
-        titre: 'Être identifié comme interlocuteur',
-        texte:
-          'Le nom apparaît dans la liste des projets et sur la fiche : chacun sait à qui poser sa question.',
+        titre: 'Écrire la synthèse',
+        pourQui: TOUS,
+        resume: 'Où en est-on aujourd’hui.',
+        etapes: [
+          'Ouvrez le sujet, « Modifier la synthèse ».',
+          'Le résumé d’une ligne apparaît dans la liste ; la synthèse développe.',
+          'Écrivez pour quelqu’un qui arrive : ce qui a été décidé, et surtout pourquoi.',
+        ],
+        alerte:
+          'Consignez aussi les impasses. Savoir qu’une piste a été écartée, et pour quelle raison, évite de la reprendre dans trois ans.',
       },
       {
-        titre: 'Joindre les pièces du dossier',
-        texte:
-          'Devis, plans, factures, photos. Elles restent attachées au projet et survivent aux changements de chef.',
+        titre: 'Ajouter une entrée à la chronologie',
+        pourQui: TOUS,
+        resume: 'Un fait, à sa date.',
+        etapes: [
+          'Ouvrez le sujet, « Ajouter une entrée ».',
+          'Indiquez la date à laquelle la chose s’est passée.',
+          'Décrivez le fait : une réunion, un courrier, un refus, un devis.',
+          'Citez les décisions par leur numéro : le registre en garde le texte exact.',
+        ],
       },
     ],
-    nePeutPas: [
+  },
+
+  {
+    cle: 'signatures',
+    menu: 'Signatures',
+    visiblePar: ['president', 'secretaire'],
+    aQuoi:
+      'La signature du registre par les membres présents à la délibération (art. 15).',
+    actions: [
       {
-        titre: 'Engager une dépense seul',
-        texte:
-          'Aucun engagement n’existe avant qu’une décision ne soit votée et enregistrée. Commander sur la seule foi d’un devis, c’est engager l’association sans mandat.',
+        titre: 'Ouvrir un lot de signature',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Regrouper les décisions à faire signer.',
+        etapes: [
+          'Sélectionnez les décisions enregistrées à faire signer.',
+          'Les signataires sont TOUS les membres présents à la délibération — y compris ceux qui ont voté contre.',
+          'Les absents n’ont pas de ligne de signature.',
+        ],
+        alerte:
+          'La signature électronique est aujourd’hui une simulation : le module réel n’est pas encore raccordé. Les signatures sur papier restent nécessaires.',
+      },
+    ],
+  },
+
+  {
+    cle: 'membres',
+    menu: 'Membres du CS',
+    visiblePar: TOUS,
+    aQuoi: 'La composition du conseil et les rôles du bureau.',
+    actions: [
+      {
+        titre: 'Consulter la composition du conseil',
+        pourQui: TOUS,
+        resume: 'Qui siège, depuis quand, avec quel rôle.',
+        etapes: ['La liste montre les membres actifs, leur rôle et leur date d’élection.'],
       },
       {
-        titre: 'Suspendre, reprendre ou terminer par un bouton',
-        texte:
-          'Il n’en existe pas, volontairement. Ces trois transitions sont des délibérations du conseil : ni le chef de projet, ni l’adjoint, ni le président ne les décident seuls.',
+        titre: 'Ajouter un membre',
+        pourQui: ['president'],
+        resume: 'À l’issue d’une élection.',
+        etapes: [
+          'Cliquez sur « Ajouter un membre ».',
+          'Saisissez le nom, le prénom et l’ADRESSE E-MAIL exacte : c’est elle qui lie la fiche au compte de connexion.',
+          'Renseignez la date d’élection et l’AG qui l’a élu.',
+          'Créez ensuite son compte de connexion dans Supabase, avec la même adresse.',
+        ],
+        alerte:
+          'L’adresse doit correspondre au caractère près entre la fiche et le compte, sinon la personne se connecte sans être reconnue comme membre.',
       },
       {
-        titre: 'Fixer ou corriger le budget du projet',
-        texte:
-          'Il n’est pas saisi : il découle des enveloppes votées en assemblée. L’assemblée vote, le conseil affecte, personne ne réécrit le montant.',
+        titre: 'Attribuer un rôle du bureau',
+        pourQui: ['president'],
+        resume: 'Président, trésorier, secrétaire.',
+        etapes: [
+          'Ouvrez la fiche du membre et choisissez son rôle.',
+          'Ces trois rôles sont à titulaire unique : un seul président, un seul trésorier, un seul secrétaire à la fois.',
+        ],
+        alerte:
+          'Le rôle de président transfère les droits d’administration. Le président de l’application suit le mandat, pas la personne.',
       },
       {
-        titre: 'Corriger le journal d’un autre',
-        texte:
-          'Chacun corrige ses propres lignes. Piloter un projet n’est pas réécrire le compte rendu de ses collègues.',
+        titre: 'Désactiver un membre',
+        pourQui: ['president'],
+        resume: 'Fin de mandat.',
+        etapes: [
+          'Ouvrez la fiche et décochez « actif ».',
+          'Il ne compte plus dans le quorum et ne peut plus voter, mais ses votes passés restent au registre.',
+        ],
+      },
+    ],
+  },
+
+  {
+    cle: 'proprietaires',
+    menu: 'Propriétaires',
+    visiblePar: ['president', 'secretaire'],
+    aQuoi:
+      'Le registre des membres de l’ASL : parcelles, superficies, propriétaires et coordonnées.',
+    actions: [
+      {
+        titre: 'Consulter le registre',
+        pourQui: ['president', 'secretaire'],
+        resume: 'La liste des parcelles et de leurs propriétaires.',
+        etapes: [
+          'La liste affiche la parcelle et sa surface, l’adresse du bien, l’adresse de communication, le propriétaire et le mandataire.',
+          'Cliquez sur les intitulés de colonne pour changer le tri ; il est retenu d’une fois sur l’autre.',
+          'Les lignes en jaune pâle sont des sociétés.',
+        ],
+        alerte:
+          'DONNÉES PERSONNELLES DE TIERS. Seuls le nom, l’adresse dans le lotissement et la parcelle sont communicables. Toute autre divulgation engage votre responsabilité personnelle.',
+      },
+      {
+        titre: 'Compléter une fiche',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Coordonnées, dirigeants, mandataire.',
+        etapes: [
+          'Ouvrez la parcelle depuis la liste.',
+          'Renseignez la superficie — elle sert d’assiette aux voix en AG et aux charges.',
+          'Pour une société, nommez ses dirigeants ; pour un colotis injoignable, son mandataire.',
+          'Les flèches ← → ou celles du clavier passent à la parcelle suivante, dans l’ordre du tri.',
+        ],
+      },
+      {
+        titre: 'Choisir les destinataires des convocations',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Plusieurs personnes, pas une seule.',
+        etapes: [
+          'Sur la fiche, cochez les sources : le propriétaire, le second propriétaire, les dirigeants, le mandataire.',
+          'L’encart « Recevront la convocation » montre exactement ce qui partira.',
+          'Une case sans coordonnées est signalée « sans coordonnées » : elle ne produit aucun destinataire.',
+        ],
+        alerte:
+          'On convoque tous ceux qui doivent l’être : les deux indivisaires, l’usufruitier et le nu-propriétaire, le dirigeant et son mandataire sur place.',
+      },
+      {
+        titre: 'Enregistrer une mutation',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Un changement de propriétaire.',
+        etapes: [
+          'Sur la fiche, cliquez sur « Enregistrer une mutation ».',
+          'Saisissez la DATE DE L’ACTE : elle clôt la période de l’ancien propriétaire et ouvre celle du nouveau.',
+          'Renseignez le nouveau propriétaire et ses coordonnées.',
+        ],
+        alerte:
+          'N’enregistrez pas une mutation sans sa date réelle : ce sont les bornes de période qui font la valeur de l’historique. Mieux vaut un registre en retard qu’un registre faux.',
+      },
+    ],
+  },
+
+  {
+    cle: 'parametres',
+    menu: 'Paramètres',
+    visiblePar: TOUS,
+    aQuoi: 'Votre compte et vos préférences.',
+    actions: [
+      {
+        titre: 'Changer votre mot de passe',
+        pourQui: TOUS,
+        resume: 'Huit caractères minimum.',
+        etapes: [
+          'Saisissez le nouveau mot de passe et confirmez-le.',
+          'À la première connexion, ce changement est obligatoire avant d’accéder au reste.',
+        ],
       },
     ],
   },
 ]
 
-/** Le bloc correspondant au rôle d'un membre, pour l'ouvrir en premier. */
-export function blocDuRole(role) {
-  return MANUEL.find((b) => b.cle === role) || null
-}
+// ============================================================================
+// PARCOURS TRANSVERSAUX
+//
+// Certaines tâches traversent plusieurs menus : elles n'ont donc de place dans
+// aucun. Conduire un projet en est le cas type — cela va de l'enveloppe votée en
+// assemblée à la facture payée, en passant par une décision du conseil.
+// ============================================================================
+export const PARCOURS = [
+  {
+    cle: 'conduire_projet',
+    titre: 'Conduire un projet, de l’enveloppe à la facture',
+    pourQui: TOUS,
+    resume:
+      'À lire si vous êtes chef de projet ou adjoint. L’ordre compte : commander avant l’enregistrement, c’est engager l’association sans mandat.',
+    etapes: [
+      {
+        titre: 'Vérifier l’enveloppe',
+        texte:
+          'Ouvrez la fiche du projet : le budget alloué y figure. Il n’est jamais saisi — c’est la somme des résolutions d’assemblée adoptées qui pointent ce projet. S’il affiche zéro, aucune enveloppe n’a été rattachée : cela se corrige depuis la fiche de l’AG, pas depuis le projet.',
+      },
+      {
+        titre: 'Tenir le journal dès le premier jour',
+        texte:
+          'Chaque visite, appel, courrier, réunion. Avec la date à laquelle la chose s’est passée. C’est ce journal qui permettra, dans deux ans, de savoir pourquoi telle entreprise a été écartée.',
+      },
+      {
+        titre: 'Consulter plusieurs fournisseurs',
+        texte:
+          'Demandez plusieurs devis. Consignez au journal qui a répondu, à quel prix, ce que le devis comprend et ce qu’il exclut. Joignez les devis au projet.',
+      },
+      {
+        titre: 'Rédiger la décision qui engage la dépense',
+        texte:
+          'C’est le seul moyen d’engager de l’argent. Créez une décision, cible « Projet », puis votre projet. L’écran affiche alloué, déjà engagé et restant. Saisissez le montant du devis retenu, le taux de TVA, et si le montant est HT ou TTC : l’application calcule le coût TTC et prévient en rouge s’il dépasse le disponible.',
+        alerte:
+          'La description doit expliquer le CHOIX, pas seulement le montant : quelles entreprises ont été consultées, pourquoi celle-ci. Le texte sera figé à la soumission — c’est lui qui restera au registre.',
+      },
+      {
+        titre: 'Joindre le devis retenu, puis soumettre',
+        texte:
+          'Le devis qui fonde la décision doit y être avant la soumission. Puis soumettez au vote et prévenez le conseil : rien ne part automatiquement.',
+        alerte:
+          'Une décision qui engage de l’argent n’est adoptée que si le trésorier OU le président a voté pour. La majorité seule ne suffit pas.',
+      },
+      {
+        titre: 'Attendre l’enregistrement avant de commander',
+        texte:
+          'Tant que la décision n’est pas enregistrée par le président, rien n’est engagé : le montant n’apparaît dans aucun budget et le fournisseur ne doit pas être commandé.',
+      },
+      {
+        titre: 'Suivre l’exécution, puis clore',
+        texte:
+          'Journal : commande, acompte, chantier, réception, réserves. Factures jointes au projet. Pour terminer le projet, créez une décision avec « Effet sur le projet : terminer » — il n’y a pas de bouton.',
+      },
+    ],
+  },
+]
 
 // ============================================================================
 // CE QUE PERSONNE NE PEUT FAIRE
 //
 // Les limites qui ne dépendent d'aucun rôle. Elles sont ici parce qu'un nouveau
-// membre les prend systématiquement pour des pannes, et parce que plusieurs sont
-// des choix qu'il ne faut pas défaire par mégarde.
+// membre les prend systématiquement pour des pannes.
 // ============================================================================
 export const LIMITES_COMMUNES = [
   {
@@ -340,12 +604,12 @@ export const LIMITES_COMMUNES = [
   {
     titre: 'Personne ne vote pour un autre',
     texte:
-      'La représentation — « ou représentés », dans les statuts — n’est pas gérée par l’application. Un membre sans vote est absent, jamais représenté. C’est l’écart connu entre les statuts et l’outil.',
+      'La représentation — « ou représentés », dans les statuts — n’est pas gérée par l’application. Un membre sans vote est absent, jamais représenté.',
   },
   {
     titre: 'L’abstention fait obstacle',
     texte:
-      'L’adoption exige la majorité des membres PRÉSENTS, et un abstentionniste est présent. S’abstenir n’est donc pas neutre : cela rend l’adoption plus difficile.',
+      'L’adoption exige la majorité des membres PRÉSENTS, et un abstentionniste est présent. S’abstenir n’est donc pas neutre.',
   },
   {
     titre: 'Un quorum plus strict que les statuts',
@@ -357,4 +621,34 @@ export const LIMITES_COMMUNES = [
     texte:
       'L’application ne prévient personne d’elle-même, ni à l’ouverture d’un vote ni à l’enregistrement. C’est à l’auteur de prévenir le conseil.',
   },
+  {
+    titre: 'Pas de saisie depuis un téléphone',
+    texte:
+      'Sur mobile, l’application est en consultation et en vote. La saisie se fait sur ordinateur : un registre légal se relit avant d’être écrit.',
+  },
 ]
+
+/**
+ * Les menus visibles par ce lecteur, avec les seules actions qui lui sont
+ * ouvertes. Un menu dont aucune action n'est accessible disparaît : le manuel ne
+ * doit décrire que ce que la personne voit et peut faire.
+ */
+export function manuelPour(role, isAdmin) {
+  return MENUS
+    .filter((m) => accessible(m.visiblePar, role, isAdmin))
+    .map((m) => ({
+      ...m,
+      actions: m.actions.filter((a) => accessible(a.pourQui, role, isAdmin)),
+      // Ce qui est réservé à d'autres SUR CET ÉCRAN, en une ligne. Répond à
+      // « pourquoi je ne vois pas ce bouton ? » sans encombrer le manuel.
+      reservees: m.actions
+        .filter((a) => !accessible(a.pourQui, role, isAdmin))
+        .map((a) => a.titre),
+    }))
+    .filter((m) => m.actions.length > 0)
+}
+
+/** Les parcours transversaux ouverts à ce lecteur. */
+export function parcoursPour(role, isAdmin) {
+  return PARCOURS.filter((p) => accessible(p.pourQui, role, isAdmin))
+}

@@ -670,15 +670,25 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     d'autres ont nourrie n'est pas une correction.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
-- **MANUEL PAR RÔLE** (`src/lib/aideLogic.js` + `pages/Aide.jsx`, 2026-09-03) : contenu
-  **versionné avec le code**, jamais en base — une aide stockée dériverait du produit sans
-  que rien ne le signale. ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un
-  pouvoir inexistant est pire que pas de manuel. Deux pièges vérifiés dans le code avant
-  rédaction — le **trésorier a un pouvoir réel** (la garde d'engagement : sans son vote ou
-  celui du président, une décision qui engage de l'argent n'est pas adoptée), et **« chef de
-  projet » n'est PAS un rôle du bureau** mais une désignation sur un projet, sans droit
-  particulier. ⚠ Dire aussi ce qu'on **ne peut pas** faire, et pourquoi : la moitié des
-  questions d'un nouveau membre porte sur une limite prise pour une panne.
+- **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
+  **versionné avec le code**, jamais en base — une aide stockée dériverait du produit sans que
+  rien ne le signale.
+  - ⚠ **Par MENU et non par rôle** (arbitrage Pascal, 2026-09-03) : on n'ouvre pas un manuel en
+    se demandant « que puis-je en tant que trésorier ? », mais « je suis sur cet écran, comment
+    je fais telle chose ? ». **Le rôle ne sert plus qu'à FILTRER** — on ne voit que les menus et
+    les actions réellement ouverts, et chaque action se déplie en **pas-à-pas**.
+  - `visiblePar` de chaque menu **reproduit le filtrage de `Layout.jsx`** : le manuel ne doit
+    jamais décrire un écran que le lecteur ne voit pas. ⚠ Modifier l'un oblige à modifier l'autre.
+  - Une ligne discrète liste ce qui est **réservé au président sur cet écran** : elle répond à
+    « pourquoi je ne vois pas ce bouton ? » sans encombrer.
+  - **PARCOURS transversaux** (`PARCOURS`) pour les tâches qui traversent plusieurs écrans —
+    « conduire un projet, de l'enveloppe à la facture ». Aucun menu ne pouvait les porter.
+  - ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un bouton inexistant est pire que
+    pas de manuel. Deux pièges vérifiés dans le code avant rédaction — le **trésorier a un pouvoir
+    réel** (sans son vote ou celui du président, une décision qui engage de l'argent n'est pas
+    adoptée), et **« chef de projet » n'est PAS un rôle du bureau** mais une désignation sur un
+    projet. ⚠ Dire aussi ce qu'on **ne peut pas** faire : la moitié des questions d'un nouveau
+    membre porte sur une limite prise pour une panne.
 - **Mobile** : `useIsMobile()` (<768px) → mobile = **consultation + vote seulement**. Création et
   gestion derrière `!isMobile` et `<DesktopOnly>`.
 
