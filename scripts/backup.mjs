@@ -70,6 +70,8 @@ const TABLES_SECOURS = [
   'proprietaires',
   'comptes_ag',
   'audit_log',
+  'sujets',
+  'sujet_entrees',
 ]
 const BUCKET = 'documents'
 const PAGE = 1000
@@ -118,8 +120,11 @@ async function dumpTable(table) {
   return rows.length
 }
 
-// Le Storage liste par préfixe, sans récursion : on descend à la main dans
-// decisions/<id>/… et projets/<id>/…
+// Le Storage liste par préfixe, sans récursion : on descend nous-mêmes.
+// ⚠ La descente part de la RACINE et ne connaît aucun préfixe : `decisions/`,
+// `projets/`, `ag/`, `resolutions/`, `sujets/` et tout préfixe futur sont pris
+// sans qu'on ait à toucher ce fichier. Ne pas « optimiser » en énumérant les
+// préfixes connus — c'est ainsi qu'on oublie les suivants.
 async function listRecursive(prefix = '') {
   const files = []
   for (let offset = 0; ; offset += PAGE) {

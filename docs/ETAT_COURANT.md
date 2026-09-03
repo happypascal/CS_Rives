@@ -48,6 +48,13 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **Nouveau composant `PiecesJointes.jsx`, CONTRÔLÉ** : la liste appartient à l'appelant, qui
   décide quand enregistrer. C'est ce qui permet de joindre un fichier à une entrée **avant**
   qu'elle existe, puis de tout enregistrer d'un coup. Utilisé aux trois emplacements.
+- **✅ Sauvegarde vérifiée après coup** — et elle couvre déjà tout, par construction : les tables
+  sont **découvertes** via la description OpenAPI de PostgREST (donc `sujets` et `sujet_entrees`
+  sans rien changer), et le parcours du bucket **part de la racine** sans connaître aucun préfixe.
+  ⚠ **Un trou trouvé quand même** : la liste de secours de `backup.mjs` avait deux migrations de
+  retard. Elle ne sert que si la découverte échoue — mais dans ce cas la mémoire du lotissement
+  aurait été omise **en silence**, exactement le mode de panne que le fichier dénonce lui-même
+  (« on croit être couvert »). Complétée.
 - ⚠ **Piège évité et vérifié** : corriger le titre d'une entrée ne doit pas effacer ses pièces
   jointes. La liste blanche de `updateSujetEntree` est porteuse — oublier `documents` côté
   Supabase aurait fait échouer chaque ajout, silencieusement en mock et bruyamment en prod.
