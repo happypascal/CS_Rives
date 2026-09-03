@@ -201,6 +201,77 @@ export const supabaseRepo = {
     return must(await supabase.from('questions_reponses_projet').insert(input).select())[0]
   },
 
+  // ---- Mémoire du lotissement (migration 045) ----
+  //
+  // Un SUJET porte la synthèse (réécrite au fil du temps), ses ENTRÉES la
+  // chronologie (qui s'ajoute). La RLS ouvre la synthèse à tout membre actif et
+  // borne les entrées à leur auteur.
+  async listSujets() {
+    const sujets = must(await supabase.from('sujets').select('*'))
+    // Un seul aller-retour pour les compteurs plutôt qu'un par sujet.
+    const entrees = must(await supabase.from('sujet_entrees').select('sujet_id'))
+    return sujets.map((s) => ({
+      ...s,
+      entrees: entrees.filter((e) => e.sujet_id === s.id).length,
+    }))
+  },
+
+  async getSujet(id) {
+    const s = must(await supabase.from('sujets').select('*').eq('id', id).maybeSingle())
+    if (!s) return null
+    // `membres_cs` porte l'auteur : on veut un nom, pas un identifiant.
+    const entrees = must(await supabase.from('sujet_entrees')
+      .select('*, membres_cs:auteur_id (prenom, nom)').eq('sujet_id', id))
+    return {
+      ...s,
+      entrees: entrees.map((e) => ({
+        ...e,
+        auteur: e.membres_cs ? `${e.membres_cs.prenom} ${e.membres_cs.nom}` : null,
+      })),
+    }
+  },
+
+  async createSujet(input) {
+    return must(await supabase.from('sujets').insert(input).select())[0]
+  },
+
+  // ⚠ Payload explicite plutôt que `...patch` : `getSujet` renvoie une jointure
+  // (`entrees`, `membres_cs`), et PostgREST rejette toute colonne inconnue. Le
+  // mock, lui, l'avalerait sans rien dire — le bug ne se verrait qu'en prod.
+  async updateSujet(id, patch) {
+    const champs = ['titre', 'categorie', 'resume', 'contenu', 'documents']
+    const payload = Object.fromEntries(
+      Object.entries(patch).filter(([k]) => champs.includes(k)),
+    )
+    return must(await supabase.from('sujets')
+      .update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
+  },
+
+  async deleteSujet(id) {
+    must(await supabase.from('sujets').delete().eq('id', id))
+    return { ok: true }
+  },
+
+  async addSujetEntree(input) {
+    return must(await supabase.from('sujet_entrees').insert(input).select())[0]
+  },
+
+  // `created_at` n'est jamais touché : c'est la date de SAISIE. Seuls la date de
+  // l'événement, le titre et le contenu se corrigent. La RLS borne à l'auteur.
+  async updateSujetEntree(id, patch) {
+    const champs = ['date_evenement', 'titre', 'contenu']
+    const payload = Object.fromEntries(
+      Object.entries(patch).filter(([k]) => champs.includes(k)),
+    )
+    return must(await supabase.from('sujet_entrees')
+      .update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
+  },
+
+  async deleteSujetEntree(id) {
+    must(await supabase.from('sujet_entrees').delete().eq('id', id))
+    return { ok: true }
+  },
+
   // ---- Journal de bord des projets (migration 029) ----
   // ⚠ Rien à voir avec `audit_log` : celui-là est automatique et immuable, le
   // journal est saisi à la main et corrigeable par son auteur.

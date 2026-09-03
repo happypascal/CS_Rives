@@ -77,6 +77,7 @@ src/
     format.js         wrappers date-fns (fr), todayISO, addBusinessDaysISO
     proprietaireLogic.js  contact officiel (source, jamais copie) + TRI du registre,
                       partagé par la LISTE et par la navigation de la FICHE
+    sujetLogic.js     MÉMOIRE DU LOTISSEMENT : catégories (libres) et tris
     aideLogic.js      MANUEL par rôle — contenu VERSIONNÉ, jamais en base : il décrit ce que
                       l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
@@ -93,6 +94,7 @@ src/
     badges.jsx        badges de statut par entité
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
   pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS, Aide,
+                      SujetList/SujetDetail (mémoire du lotissement),
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
 scripts/
@@ -649,6 +651,25 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
   registre Word existant). ⚠ `cx()` n'est **pas exporté** par `ui.jsx` : composer les classes
   conditionnelles avec un template literal. Ton : sobre, professionnel,
   document juridique.
+- **MÉMOIRE DU LOTISSEMENT** (`sujets` + `sujet_entrees`, migration 045). Un « sujet » n'est ni
+  un projet (budget, dates, chef) ni une décision (délibération) : c'est le fil d'un dossier qui
+  traverse les années — le portail, la zone C, le recouvrement — et il porte le **POURQUOI**, que
+  rien d'autre ne conserve. ⚠ **DEUX tables pour deux questions** : « où en est-on ? » (une
+  synthèse réécrite, `sujets.contenu`) et « comment y est-on arrivé ? » (une chronologie qui
+  s'ajoute, `sujet_entrees`). Un seul texte perdrait l'attribution et la date des faits.
+  - **`titre` UNIQUE** : deux sujets « Portail » scinderaient la connaissance en deux moitiés dont
+    aucune ne serait complète — le mode de ruine d'une base de connaissance.
+  - **`date_evenement` modifiable**, `created_at` jamais : même règle que `journal_projet`.
+  - **`categorie` LIBRE**, sans contrainte — une catégorie imprévue ne doit pas exiger une
+    migration (même choix qu'en 031).
+  - **Lue par TOUS les membres** (boucle `read_auth`). ⚠ C'est l'inverse du registre des
+    propriétaires, et c'est voulu : celui-ci porte des données personnelles de tiers, celle-là est
+    la mémoire commune du conseil — la cacher recréerait le problème qu'elle résout.
+  - **La synthèse est collective** (tout membre actif l'améliore), les **entrées appartiennent à
+    leur auteur**. ⚠ **Supprimer un sujet est réservé au président** : effacer une mémoire que
+    d'autres ont nourrie n'est pas une correction.
+  - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
+    numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL PAR RÔLE** (`src/lib/aideLogic.js` + `pages/Aide.jsx`, 2026-09-03) : contenu
   **versionné avec le code**, jamais en base — une aide stockée dériverait du produit sans
   que rien ne le signale. ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un

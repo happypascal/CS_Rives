@@ -15,6 +15,10 @@ const NAV = [
   { to: '/ag', label: 'Assemblées Générales' },
   { to: '/projets', label: 'Projets' },
   { to: '/budgets', label: 'Budgets' },
+  // La mémoire du lotissement : le POURQUOI des dossiers, que ni le registre des
+  // décisions ni les projets ne portent. Ouverte à tous les membres — c'est
+  // l'inverse du registre des propriétaires, et c'est voulu.
+  { to: '/memoire', label: 'Mémoire' },
   // Signature du registre : président OU secrétaire (art. 14/15). Masquée pour
   // les autres membres — la page elle-même redouble la garde.
   { to: '/signatures', label: 'Signatures', visible: (a) => a.isAdmin || a.isSecretaire },

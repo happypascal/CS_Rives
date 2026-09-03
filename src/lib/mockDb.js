@@ -1267,6 +1267,136 @@ export const mockRepo = {
     return clone(q)
   },
 
+  // ---- Mémoire du lotissement (migration 045) ----
+  //
+  // Un SUJET porte une synthèse réécrite au fil du temps ; ses ENTRÉES portent la
+  // chronologie, qui s'ajoute et ne se réécrit pas. Deux questions différentes :
+  // « où en est-on ? » et « comment y est-on arrivé ? ».
+  async listSujets() {
+    await delay()
+    const data = load()
+    // Le compte d'entrées évite d'ouvrir chaque fiche pour savoir laquelle est
+    // nourrie et laquelle n'est qu'un titre.
+    return clone(data.sujets || []).map((s) => ({
+      ...s,
+      entrees: (data.sujet_entrees || []).filter((e) => e.sujet_id === s.id).length,
+    }))
+  },
+
+  async getSujet(id) {
+    await delay()
+    const data = load()
+    const s = (data.sujets || []).find((x) => x.id === id)
+    if (!s) return null
+    const membres = data.membres_cs || []
+    return {
+      ...clone(s),
+      entrees: clone((data.sujet_entrees || []).filter((e) => e.sujet_id === id)).map((e) => {
+        const a = membres.find((m) => m.id === e.auteur_id)
+        return { ...e, auteur: a ? `${a.prenom} ${a.nom}` : null }
+      }),
+    }
+  },
+
+  async createSujet(input) {
+    await delay()
+    const data = load()
+    data.sujets ||= []
+    const titre = (input.titre || '').trim()
+    // ⚠ Le titre est unique en base : deux sujets « Portail » scinderaient la
+    // connaissance en deux moitiés dont aucune ne serait complète. Le mock
+    // reproduit le refus pour que la démo montre le même message.
+    if (data.sujets.some((x) => (x.titre || '').toLowerCase() === titre.toLowerCase())) {
+      throw new Error(`Un sujet « ${titre} » existe déjà.`)
+    }
+    const user = getSessionUser()
+    const s = {
+      id: uid(), categorie: null, resume: null, contenu: null, documents: [],
+      created_by: user?.membre_id || null,
+      ...input,
+      // Après le spread : c'est le titre NETTOYÉ qui fait foi, pas celui du payload.
+      titre,
+      created_at: nowISO(), updated_at: nowISO(),
+    }
+    data.sujets.push(s)
+    save(data)
+    return clone(s)
+  },
+
+  async updateSujet(id, patch) {
+    await delay()
+    const data = load()
+    const s = (data.sujets || []).find((x) => x.id === id)
+    if (!s) throw new Error('Sujet introuvable')
+    if (patch.titre !== undefined) {
+      const titre = (patch.titre || '').trim()
+      if (data.sujets.some((x) => x.id !== id && (x.titre || '').toLowerCase() === titre.toLowerCase())) {
+        throw new Error(`Un sujet « ${titre} » existe déjà.`)
+      }
+    }
+    Object.assign(s, patch, { updated_at: nowISO() })
+    save(data)
+    return clone(s)
+  },
+
+  // Supprimer un sujet efface une mémoire que d'autres ont nourrie : réservé au
+  // président, comme en base.
+  async deleteSujet(id) {
+    await delay()
+    const data = load()
+    const user = getSessionUser()
+    if (user?.role !== 'admin') throw new Error('Seul le président peut supprimer un sujet.')
+    data.sujets = (data.sujets || []).filter((x) => x.id !== id)
+    data.sujet_entrees = (data.sujet_entrees || []).filter((e) => e.sujet_id !== id)
+    save(data)
+    return { ok: true }
+  },
+
+  async addSujetEntree({ sujet_id, date_evenement, titre, contenu, auteur_id }) {
+    await delay()
+    const data = load()
+    data.sujet_entrees ||= []
+    const e = {
+      id: uid(), sujet_id, date_evenement, titre, contenu: contenu || null, auteur_id,
+      created_at: nowISO(), updated_at: nowISO(),
+    }
+    data.sujet_entrees.push(e)
+    save(data)
+    return clone(e)
+  },
+
+  // `created_at` n'est JAMAIS touché : c'est la date de saisie. Seuls la date de
+  // l'événement, le titre et le contenu se corrigent — et par leur auteur seul.
+  async updateSujetEntree(id, { date_evenement, titre, contenu }) {
+    await delay()
+    const data = load()
+    const e = (data.sujet_entrees || []).find((x) => x.id === id)
+    if (!e) throw new Error('Entrée introuvable')
+    const user = getSessionUser()
+    if (e.auteur_id !== user?.membre_id && user?.role !== 'admin') {
+      throw new Error('Seul l’auteur de cette entrée peut la corriger.')
+    }
+    if (date_evenement !== undefined) e.date_evenement = date_evenement
+    if (titre !== undefined) e.titre = titre
+    if (contenu !== undefined) e.contenu = contenu
+    e.updated_at = nowISO()
+    save(data)
+    return clone(e)
+  },
+
+  async deleteSujetEntree(id) {
+    await delay()
+    const data = load()
+    const e = (data.sujet_entrees || []).find((x) => x.id === id)
+    const user = getSessionUser()
+    if (e && e.auteur_id !== user?.membre_id && user?.role !== 'admin') {
+      throw new Error('Seul l’auteur de cette entrée peut la supprimer.')
+    }
+    data.sujet_entrees = (data.sujet_entrees || []).filter((x) => x.id !== id)
+    save(data)
+    return { ok: true }
+  },
+
   // ---- Journal de bord des projets (migration 029) ----
   //
   // ⚠ Rien à voir avec `audit()` : celui-ci est automatique et immuable, le

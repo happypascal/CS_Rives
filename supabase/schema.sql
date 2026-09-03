@@ -177,6 +177,51 @@ alter table resolutions_ag
 
 create index if not exists resolutions_ag_projet_id_idx on resolutions_ag (projet_id);
 
+-- =============================================================================
+-- MÉMOIRE DU LOTISSEMENT (migration 045)
+--
+-- Un « sujet » n'est ni un projet (budget, dates, chef) ni une décision
+-- (délibération) : c'est le fil d'un dossier qui traverse les années — le
+-- portail, la zone C, le recouvrement. Il porte le POURQUOI, que rien d'autre
+-- ne conserve.
+--
+-- DEUX tables parce qu'il y a deux questions : « où en est-on ? » (une synthèse
+-- réécrite, `sujets.contenu`) et « comment y est-on arrivé ? » (une chronologie
+-- qui s'ajoute, `sujet_entrees`). Un seul texte perdrait l'attribution et la
+-- date des faits.
+-- =============================================================================
+create table if not exists sujets (
+  id          uuid primary key default gen_random_uuid(),
+  -- ⚠ UNIQUE : deux sujets « Portail » scinderaient la connaissance en deux
+  -- moitiés dont aucune ne serait complète — le mode de ruine d'une base de
+  -- connaissance.
+  titre       text not null unique,
+  categorie   text,                  -- libre, sans contrainte (même choix qu'en 031)
+  resume      text,                  -- une ligne, pour la liste
+  contenu     text,                  -- la synthèse, HTML de RichTextEditor
+  documents   jsonb not null default '[]'::jsonb,
+  created_by  uuid references membres_cs(id) on delete set null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists sujets_categorie_idx on sujets (categorie, titre);
+
+create table if not exists sujet_entrees (
+  id             uuid primary key default gen_random_uuid(),
+  sujet_id       uuid not null references sujets(id) on delete cascade,
+  -- Quand la chose s'est PASSÉE. Modifiable, comme `journal_projet.date_action`
+  -- et pour la même raison : une réunion de mars notée en juin se range en mars.
+  date_evenement date not null,
+  titre          text not null,
+  contenu        text,
+  auteur_id      uuid not null references membres_cs(id) on delete cascade,
+  created_at     timestamptz not null default now(),  -- la SAISIE, jamais modifiée
+  updated_at     timestamptz not null default now()
+);
+
+create index if not exists sujet_entrees_idx on sujet_entrees (sujet_id, date_evenement desc);
+
 -- ------------------------------------------------------------ decisions (CS)
 --
 -- DEUX axes distincts, à ne jamais confondre (migration 026) :
@@ -863,7 +908,11 @@ begin
     -- `security definer` de la migration 026. Un historique de brouillon
     -- réécrivable depuis le client ne prouverait rien. (L'historique est ensuite
     -- restreint à la visibilité de SA décision, cf. `historique_suit_la_decision`.)
-    'decisions_historique','cron_runs','questions_reponses_projet','journal_projet'
+    'decisions_historique','cron_runs','questions_reponses_projet','journal_projet',
+    -- Mémoire du lotissement (045) : lue par TOUS les membres, contrairement au
+    -- registre des propriétaires. C'est la mémoire commune du conseil ; la
+    -- cacher recréerait le problème qu'elle résout.
+    'sujets','sujet_entrees'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -1090,6 +1139,51 @@ create policy "journal_projet_self_insert" on journal_projet
 drop policy if exists "journal_projet_self_update" on journal_projet;
 create policy "journal_projet_self_update" on journal_projet
   for update to authenticated
+  using (auteur_id = current_membre_id());
+
+-- ---------------------------------------------- mémoire du lotissement (045)
+-- La SYNTHÈSE est collective : tout membre actif l'améliore. À cinq personnes,
+-- l'arbitrage par le président suffit ; exiger une validation garantirait
+-- surtout que rien ne soit jamais écrit. ⚠ Pas de suppression pour autant —
+-- effacer un sujet, c'est effacer une mémoire que d'autres ont nourrie.
+alter table sujets        enable row level security;
+alter table sujet_entrees enable row level security;
+
+drop policy if exists "sujets_admin" on sujets;
+create policy "sujets_admin" on sujets
+  for all to authenticated using (is_admin()) with check (is_admin());
+
+drop policy if exists "sujets_membre_insert" on sujets;
+create policy "sujets_membre_insert" on sujets
+  for insert to authenticated
+  with check (exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif));
+
+drop policy if exists "sujets_membre_update" on sujets;
+create policy "sujets_membre_update" on sujets
+  for update to authenticated
+  using (exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif));
+
+-- Les ENTRÉES suivent la règle du journal de projet : chacun les siennes.
+drop policy if exists "sujet_entrees_admin" on sujet_entrees;
+create policy "sujet_entrees_admin" on sujet_entrees
+  for all to authenticated using (is_admin()) with check (is_admin());
+
+drop policy if exists "sujet_entrees_self_insert" on sujet_entrees;
+create policy "sujet_entrees_self_insert" on sujet_entrees
+  for insert to authenticated
+  with check (
+    auteur_id = current_membre_id()
+    and exists (select 1 from membres_cs m where m.id = current_membre_id() and m.actif)
+  );
+
+drop policy if exists "sujet_entrees_self_update" on sujet_entrees;
+create policy "sujet_entrees_self_update" on sujet_entrees
+  for update to authenticated
+  using (auteur_id = current_membre_id());
+
+drop policy if exists "sujet_entrees_self_delete" on sujet_entrees;
+create policy "sujet_entrees_self_delete" on sujet_entrees
+  for delete to authenticated
   using (auteur_id = current_membre_id());
 
 drop policy if exists "journal_projet_self_delete" on journal_projet;

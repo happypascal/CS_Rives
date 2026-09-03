@@ -22,6 +22,8 @@ import ProprietairesList from './pages/ProprietairesList'
 import LotDetail from './pages/LotDetail'
 import Parametres from './pages/Parametres'
 import Aide from './pages/Aide'
+import SujetList from './pages/SujetList'
+import SujetDetail from './pages/SujetDetail'
 
 export default function App() {
   return (
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="/proprietaires" element={<ProprietairesList />} />
             <Route path="/proprietaires/:id" element={<LotDetail />} />
             <Route path="/parametres" element={<Parametres />} />
+            <Route path="/memoire" element={<SujetList />} />
+            <Route path="/memoire/:id" element={<SujetDetail />} />
             <Route path="/aide" element={<Aide />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -29,6 +29,36 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite 2) — LA MÉMOIRE DU LOTISSEMENT (migration 045)
+
+- **✅ Livrée** : `sujets` (la synthèse) + `sujet_entrees` (la chronologie), écrans liste et fiche,
+  entrée « Mémoire » au menu, méthodes repo **aux deux backends à parité**.
+- **Le besoin** : le portail, la plage, les canalisations, la zone C, le recouvrement, le cahier
+  des charges — chacun a une histoire de plusieurs années, éparpillée entre des dossiers Finder,
+  des courriels et la tête du président sortant. **Un nouveau conseil hérite des décisions mais pas
+  du POURQUOI**, et refait les débats déjà tranchés.
+- ⚠ **DEUX tables pour deux questions**, et c'est la décision structurante : « où en est-on ? »
+  appelle une **synthèse réécrite**, « comment y est-on arrivé ? » une **chronologie qui s'ajoute**.
+  Un seul champ de texte aurait perdu l'attribution et la date des faits, et obligé à rouvrir toute
+  la page pour ajouter une ligne.
+- **`titre` unique** — deux « Portail » scinderaient la connaissance en deux moitiés incomplètes.
+- **Lue par tous les membres**, contrairement au registre des propriétaires : c'est la mémoire
+  commune du conseil, la cacher recréerait le problème qu'elle résout.
+- **Synthèse collective, entrées personnelles** : tout membre actif améliore la synthèse (à cinq
+  personnes, exiger une validation garantirait surtout que rien ne soit jamais écrit) ; chacun
+  corrige ses propres entrées, comme au journal de projet. ⚠ **Seul le président supprime un
+  sujet** — effacer une mémoire nourrie par d'autres n'est pas une correction.
+- **L'écran pousse à écrire le POURQUOI** : l'encart « Comment nourrir ce sujet » demande
+  explicitement de consigner **les impasses** — savoir qu'une piste a été écartée, et pourquoi,
+  évite de la reprendre dans trois ans.
+- ⚠ **Limite assumée, v1** : **aucun lien formel vers les décisions et les projets**. Ce serait la
+  suite naturelle (« tout ce qui concerne le portail »), mais une table de liaison est une
+  complexité qu'on n'ajoute pas avant d'avoir vu comment les sujets sont réellement utilisés. En
+  attendant, on cite les numéros de décision dans le texte.
+- **Reste de la demande** : le **point d'entrée technique** pour un développeur et le **« comment
+  faire évoluer l'app »** pour un membre du CS — surtout de l'assemblage de ce qui existe déjà
+  dans `docs/`.
+
 ## Session 2026-09-03 (suite) — MANUEL PAR RÔLE dans l'app
 
 Demande de Pascal : une base de connaissance et trois documentations — technique, « comment
@@ -1082,7 +1112,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `045` (001-029 et 031-042 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `046`. ⚠ **045 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et 031-042 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).
