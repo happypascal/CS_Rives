@@ -188,6 +188,65 @@ export const MENUS = [
   },
 
   {
+    cle: 'projets',
+    menu: 'Projets',
+    visiblePar: TOUS,
+    aQuoi:
+      'Les chantiers du conseil. Un projet dépense une enveloppe votée en assemblée — il ne crée pas d’argent.',
+    noteAcces:
+      'Vous pouvez créer un projet — vous en devenez alors le chef — et tenir le journal de n’importe quel projet. En revanche, seuls le chef, son adjoint et le président modifient la fiche d’un projet existant.',
+    actions: [
+      {
+        titre: 'Créer un projet',
+        pourQui: TOUS,
+        resume: 'Le plus souvent depuis l’AG, pas depuis ici.',
+        etapes: [
+          'Le chemin normal : depuis la fiche de l’AG, « Ouvrir un projet » sur la résolution qui le finance.',
+          'Depuis cet écran, « Nouveau projet » crée un projet sans budget — à rattacher ensuite depuis l’AG.',
+          'Renseignez le titre, la description, les dates d’ouverture et de fin prévue.',
+        ],
+        alerte:
+          'Le budget n’est jamais saisi : il découle des résolutions adoptées qui pointent le projet. Un projet à 0 € est un projet sans enveloppe rattachée.',
+      },
+      {
+        titre: 'Désigner le chef de projet et son adjoint',
+        // Le chef, son adjoint, ou le président (`projets_chef_update`).
+        pourQui: ['secretaire', 'tresorier', 'membre'],
+        resume: 'Qui pilote, et qui prend le relais.',
+        etapes: [
+          'Ouvrez le projet, puis « Modifier ».',
+          'Choisissez le chef de projet parmi les membres du conseil, et son adjoint.',
+          'Les deux ont exactement les mêmes possibilités : l’adjoint existe pour que le projet ne s’arrête pas en cas d’absence.',
+        ],
+      },
+      {
+        titre: 'Tenir le journal de bord',
+        pourQui: TOUS,
+        resume: 'Ce qui a été fait, avec la date réelle.',
+        etapes: [
+          'Ouvrez le projet, section journal.',
+          'Saisissez la date à laquelle la chose s’est passée — pas celle où vous l’écrivez.',
+          'Décrivez en une ligne : visite, appel, courrier, réunion.',
+        ],
+        alerte:
+          'Chacun corrige et supprime ses propres lignes. Le chef de projet ne réécrit pas le compte rendu d’un autre.',
+      },
+      {
+        titre: 'Suspendre, reprendre ou terminer un projet',
+        pourQui: TOUS,
+        resume: 'Il n’y a pas de bouton : c’est une décision.',
+        etapes: [
+          'Créez une décision qui cible le projet.',
+          'Dans « Effet sur le projet », choisissez suspendre, reprendre ou terminer.',
+          'Soumettez au vote ; l’effet ne se produit qu’à l’enregistrement, décision adoptée.',
+        ],
+        alerte:
+          'Aucun bouton n’existe, volontairement. Ces trois transitions sont des délibérations du conseil : ni le chef de projet, ni l’adjoint, ni le président ne les décident seuls.',
+      },
+    ],
+  },
+
+  {
     cle: 'ag',
     menu: 'Assemblées Générales',
     visiblePar: TOUS,
@@ -280,65 +339,6 @@ export const MENUS = [
   },
 
   {
-    cle: 'projets',
-    menu: 'Projets',
-    visiblePar: TOUS,
-    aQuoi:
-      'Les chantiers du conseil. Un projet dépense une enveloppe votée en assemblée — il ne crée pas d’argent.',
-    noteAcces:
-      'Vous pouvez créer un projet — vous en devenez alors le chef — et tenir le journal de n’importe quel projet. En revanche, seuls le chef, son adjoint et le président modifient la fiche d’un projet existant.',
-    actions: [
-      {
-        titre: 'Créer un projet',
-        pourQui: TOUS,
-        resume: 'Le plus souvent depuis l’AG, pas depuis ici.',
-        etapes: [
-          'Le chemin normal : depuis la fiche de l’AG, « Ouvrir un projet » sur la résolution qui le finance.',
-          'Depuis cet écran, « Nouveau projet » crée un projet sans budget — à rattacher ensuite depuis l’AG.',
-          'Renseignez le titre, la description, les dates d’ouverture et de fin prévue.',
-        ],
-        alerte:
-          'Le budget n’est jamais saisi : il découle des résolutions adoptées qui pointent le projet. Un projet à 0 € est un projet sans enveloppe rattachée.',
-      },
-      {
-        titre: 'Désigner le chef de projet et son adjoint',
-        // Le chef, son adjoint, ou le président (`projets_chef_update`).
-        pourQui: ['secretaire', 'tresorier', 'membre'],
-        resume: 'Qui pilote, et qui prend le relais.',
-        etapes: [
-          'Ouvrez le projet, puis « Modifier ».',
-          'Choisissez le chef de projet parmi les membres du conseil, et son adjoint.',
-          'Les deux ont exactement les mêmes possibilités : l’adjoint existe pour que le projet ne s’arrête pas en cas d’absence.',
-        ],
-      },
-      {
-        titre: 'Tenir le journal de bord',
-        pourQui: TOUS,
-        resume: 'Ce qui a été fait, avec la date réelle.',
-        etapes: [
-          'Ouvrez le projet, section journal.',
-          'Saisissez la date à laquelle la chose s’est passée — pas celle où vous l’écrivez.',
-          'Décrivez en une ligne : visite, appel, courrier, réunion.',
-        ],
-        alerte:
-          'Chacun corrige et supprime ses propres lignes. Le chef de projet ne réécrit pas le compte rendu d’un autre.',
-      },
-      {
-        titre: 'Suspendre, reprendre ou terminer un projet',
-        pourQui: TOUS,
-        resume: 'Il n’y a pas de bouton : c’est une décision.',
-        etapes: [
-          'Créez une décision qui cible le projet.',
-          'Dans « Effet sur le projet », choisissez suspendre, reprendre ou terminer.',
-          'Soumettez au vote ; l’effet ne se produit qu’à l’enregistrement, décision adoptée.',
-        ],
-        alerte:
-          'Aucun bouton n’existe, volontairement. Ces trois transitions sont des délibérations du conseil : ni le chef de projet, ni l’adjoint, ni le président ne les décident seuls.',
-      },
-    ],
-  },
-
-  {
     cle: 'budgets',
     menu: 'Budgets',
     visiblePar: TOUS,
@@ -366,50 +366,8 @@ export const MENUS = [
   },
 
   {
-    cle: 'memoire',
-    menu: 'Mémoire',
-    visiblePar: TOUS,
-    aQuoi:
-      'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
-    actions: [
-      {
-        titre: 'Créer un sujet',
-        pourQui: TOUS,
-        resume: 'Un par dossier qui revient d’une année sur l’autre.',
-        etapes: [
-          'Saisissez le titre du dossier et choisissez une catégorie.',
-          'Un titre par dossier, et un seul : deux sujets « Portail » couperaient la mémoire en deux.',
-        ],
-      },
-      {
-        titre: 'Écrire la synthèse',
-        pourQui: TOUS,
-        resume: 'Où en est-on aujourd’hui.',
-        etapes: [
-          'Ouvrez le sujet, « Modifier la synthèse ».',
-          'Le résumé d’une ligne apparaît dans la liste ; la synthèse développe.',
-          'Écrivez pour quelqu’un qui arrive : ce qui a été décidé, et surtout pourquoi.',
-        ],
-        alerte:
-          'Consignez aussi les impasses. Savoir qu’une piste a été écartée, et pour quelle raison, évite de la reprendre dans trois ans.',
-      },
-      {
-        titre: 'Ajouter une entrée à la chronologie',
-        pourQui: TOUS,
-        resume: 'Un fait, à sa date.',
-        etapes: [
-          'Ouvrez le sujet, « Ajouter une entrée ».',
-          'Indiquez la date à laquelle la chose s’est passée.',
-          'Décrivez le fait : une réunion, un courrier, un refus, un devis.',
-          'Citez les décisions par leur numéro : le registre en garde le texte exact.',
-        ],
-      },
-    ],
-  },
-
-  {
     cle: 'signatures',
-    menu: 'Signatures',
+    menu: 'Signatures légales',
     visiblePar: ['president', 'secretaire'],
     aQuoi:
       'La signature du registre par les membres présents à la délibération (art. 15).',
@@ -430,58 +388,8 @@ export const MENUS = [
   },
 
   {
-    cle: 'membres',
-    menu: 'Membres du CS',
-    visiblePar: TOUS,
-    aQuoi: 'La composition du conseil et les rôles du bureau.',
-    noteAcces:
-      'Cet écran est en lecture seule pour vous. Seul le président ajoute un membre, lui attribue un rôle du bureau ou le désactive : la composition du conseil détermine le quorum et la validité des votes.',
-    actions: [
-      {
-        titre: 'Consulter la composition du conseil',
-        pourQui: TOUS,
-        resume: 'Qui siège, depuis quand, avec quel rôle.',
-        etapes: ['La liste montre les membres actifs, leur rôle et leur date d’élection.'],
-      },
-      {
-        titre: 'Ajouter un membre',
-        pourQui: ['president'],
-        resume: 'À l’issue d’une élection.',
-        etapes: [
-          'Cliquez sur « Ajouter un membre ».',
-          'Saisissez le nom, le prénom et l’ADRESSE E-MAIL exacte : c’est elle qui lie la fiche au compte de connexion.',
-          'Renseignez la date d’élection et l’AG qui l’a élu.',
-          'Créez ensuite son compte de connexion dans Supabase, avec la même adresse.',
-        ],
-        alerte:
-          'L’adresse doit correspondre au caractère près entre la fiche et le compte, sinon la personne se connecte sans être reconnue comme membre.',
-      },
-      {
-        titre: 'Attribuer un rôle du bureau',
-        pourQui: ['president'],
-        resume: 'Président, trésorier, secrétaire.',
-        etapes: [
-          'Ouvrez la fiche du membre et choisissez son rôle.',
-          'Ces trois rôles sont à titulaire unique : un seul président, un seul trésorier, un seul secrétaire à la fois.',
-        ],
-        alerte:
-          'Le rôle de président transfère les droits d’administration. Le président de l’application suit le mandat, pas la personne.',
-      },
-      {
-        titre: 'Désactiver un membre',
-        pourQui: ['president'],
-        resume: 'Fin de mandat.',
-        etapes: [
-          'Ouvrez la fiche et décochez « actif ».',
-          'Il ne compte plus dans le quorum et ne peut plus voter, mais ses votes passés restent au registre.',
-        ],
-      },
-    ],
-  },
-
-  {
     cle: 'proprietaires',
-    menu: 'Propriétaires',
+    menu: 'Registre des propriétaires',
     visiblePar: ['president', 'secretaire'],
     aQuoi:
       'Le registre des membres de l’ASL : parcelles, superficies, propriétaires et coordonnées.',
@@ -537,6 +445,98 @@ export const MENUS = [
   },
 
   {
+    cle: 'membres',
+    menu: 'Membres du CS',
+    visiblePar: TOUS,
+    aQuoi: 'La composition du conseil et les rôles du bureau.',
+    noteAcces:
+      'Cet écran est en lecture seule pour vous. Seul le président ajoute un membre, lui attribue un rôle du bureau ou le désactive : la composition du conseil détermine le quorum et la validité des votes.',
+    actions: [
+      {
+        titre: 'Consulter la composition du conseil',
+        pourQui: TOUS,
+        resume: 'Qui siège, depuis quand, avec quel rôle.',
+        etapes: ['La liste montre les membres actifs, leur rôle et leur date d’élection.'],
+      },
+      {
+        titre: 'Ajouter un membre',
+        pourQui: ['president'],
+        resume: 'À l’issue d’une élection.',
+        etapes: [
+          'Cliquez sur « Ajouter un membre ».',
+          'Saisissez le nom, le prénom et l’ADRESSE E-MAIL exacte : c’est elle qui lie la fiche au compte de connexion.',
+          'Renseignez la date d’élection et l’AG qui l’a élu.',
+          'Créez ensuite son compte de connexion dans Supabase, avec la même adresse.',
+        ],
+        alerte:
+          'L’adresse doit correspondre au caractère près entre la fiche et le compte, sinon la personne se connecte sans être reconnue comme membre.',
+      },
+      {
+        titre: 'Attribuer un rôle du bureau',
+        pourQui: ['president'],
+        resume: 'Président, trésorier, secrétaire.',
+        etapes: [
+          'Ouvrez la fiche du membre et choisissez son rôle.',
+          'Ces trois rôles sont à titulaire unique : un seul président, un seul trésorier, un seul secrétaire à la fois.',
+        ],
+        alerte:
+          'Le rôle de président transfère les droits d’administration. Le président de l’application suit le mandat, pas la personne.',
+      },
+      {
+        titre: 'Désactiver un membre',
+        pourQui: ['president'],
+        resume: 'Fin de mandat.',
+        etapes: [
+          'Ouvrez la fiche et décochez « actif ».',
+          'Il ne compte plus dans le quorum et ne peut plus voter, mais ses votes passés restent au registre.',
+        ],
+      },
+    ],
+  },
+
+  {
+    cle: 'memoire',
+    menu: 'Mémoire de l’ASL',
+    visiblePar: TOUS,
+    aQuoi:
+      'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
+    actions: [
+      {
+        titre: 'Créer un sujet',
+        pourQui: TOUS,
+        resume: 'Un par dossier qui revient d’une année sur l’autre.',
+        etapes: [
+          'Saisissez le titre du dossier et choisissez une catégorie.',
+          'Un titre par dossier, et un seul : deux sujets « Portail » couperaient la mémoire en deux.',
+        ],
+      },
+      {
+        titre: 'Écrire la synthèse',
+        pourQui: TOUS,
+        resume: 'Où en est-on aujourd’hui.',
+        etapes: [
+          'Ouvrez le sujet, « Modifier la synthèse ».',
+          'Le résumé d’une ligne apparaît dans la liste ; la synthèse développe.',
+          'Écrivez pour quelqu’un qui arrive : ce qui a été décidé, et surtout pourquoi.',
+        ],
+        alerte:
+          'Consignez aussi les impasses. Savoir qu’une piste a été écartée, et pour quelle raison, évite de la reprendre dans trois ans.',
+      },
+      {
+        titre: 'Ajouter une entrée à la chronologie',
+        pourQui: TOUS,
+        resume: 'Un fait, à sa date.',
+        etapes: [
+          'Ouvrez le sujet, « Ajouter une entrée ».',
+          'Indiquez la date à laquelle la chose s’est passée.',
+          'Décrivez le fait : une réunion, un courrier, un refus, un devis.',
+          'Citez les décisions par leur numéro : le registre en garde le texte exact.',
+        ],
+      },
+    ],
+  },
+
+  {
     cle: 'parametres',
     menu: 'Paramètres',
     visiblePar: TOUS,
@@ -552,8 +552,7 @@ export const MENUS = [
         ],
       },
     ],
-  },
-]
+  },]
 
 // ============================================================================
 // PARCOURS TRANSVERSAUX

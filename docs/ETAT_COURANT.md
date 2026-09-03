@@ -29,6 +29,25 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite 4) — MENU RÉORGANISÉ en trois sections
+
+- **✅ Le menu passe d'une liste plate de dix entrées à trois sections** : **Gestion** (ce qu'on
+  fait), **Données** (ce qu'on tient), **Application** (l'outil lui-même). On y choisit au lieu
+  d'y chercher.
+- **Le tableau de bord quitte la liste pour une ICÔNE** en tête : c'est un point de départ, pas une
+  rubrique — et cela retire une ligne. Titre de l'app : **ASL Rives**.
+- **Intitulés précisés** : « Signatures légales », « Registre des propriétaires », « Mémoire de
+  l'ASL », « Manuel d'utilisation ».
+- **« Messages aux propriétaires » figure GRISÉ**, non cliquable, avec la mention « à venir ».
+  ⚠ Choix assumé : montrer où la fonction arrivera plutôt que la taire, pour qu'on ne la cherche
+  pas ailleurs. Réservée au bureau, comme le registre dont elle tirera les adresses. Elle attend
+  l'adresse de l'ASL et un service d'envoi.
+- **Une section dont tout est masqué disparaît entièrement** : un intertitre sans rien dessous
+  ressemble à une panne.
+- ⚠ **Le manuel a été réaligné** : mêmes intitulés, même ordre. Sans quoi le lecteur chercherait
+  « Signatures » dans une barre qui affiche « Signatures légales ». La vérification compare
+  désormais `aideLogic.js` à `Layout.jsx` — c'est le point qui se dégradera en premier.
+
 ## Session 2026-09-03 (suite 3) — MANUEL REFONDU : par écran, pas par rôle
 
 - ⚠ **Changement d'approche demandé par Pascal**, et il est juste : « je ne vois que la doc

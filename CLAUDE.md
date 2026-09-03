@@ -86,7 +86,10 @@ src/
     signatureProvider.js  couche signature : provider mock + stub yousign
     useIsMobile.js    matchMedia <768px
   components/
-    Layout.jsx        sidebar, menu mobile, gate ForcePasswordChange, badge démo
+    Layout.jsx        sidebar en 3 SECTIONS (Gestion / Données / Application), tableau de bord
+                      en icône, menu mobile, gate ForcePasswordChange, badge démo
+                      ⚠ `SECTIONS[].items[].visible` est répliqué dans `aideLogic.js` —
+                      modifier l'un oblige à modifier l'autre
     ProtectedRoute.jsx  gate auth + (curieusement) exporte `PageHeader`
     ui.jsx            primitives : Button/Card/Badge/Input/Modal/EmptyState/DesktopOnly/Spinner/eur/num
                       ⚠ `cx` y est PRIVÉ (pas exporté) — composer les classes conditionnelles
