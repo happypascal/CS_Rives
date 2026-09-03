@@ -121,6 +121,62 @@ mais c'est une zone grise : la trancher maintenant, pas le jour où le compte es
 - Mettre à jour `docs/GUIDE_A_comptes_membres.md` **si** la référence Supabase a changé
   (elle y est en dur). Normalement : rien à faire.
 
+## Reprendre le projet — ce qui se transfère, et ce qui ne se transfère pas
+
+> Question de Pascal (2026-09-03) : « il y a une chose qui doit aussi être transférée, c'est
+> ce projet dans code ». Réponse courte : **il n'y a rien à transférer de plus que le dépôt**,
+> et c'est un choix, pas une lacune.
+
+### Le dépôt EST la passation
+
+La valeur de ce projet ne tient pas à un outil ni à un compte, mais à deux fichiers :
+
+- **`CLAUDE.md`** — la doctrine. Pourquoi l'abstention reste au dénominateur (art. 15),
+  pourquoi un brouillon n'appartient qu'à son auteur, pourquoi le mandataire n'est pas le
+  dirigeant, pourquoi « M. ou Mme » chez Foncia signifie que **les deux** sont propriétaires.
+- **`docs/ETAT_COURANT.md`** — le journal de bord, séance par séance, avec les arbitrages et
+  les pistes écartées.
+
+S'y ajoutent les **messages de commit**, écrits pour expliquer le *pourquoi* et pas seulement
+le *quoi*, et les **migrations SQL**, chacune commentée avec la raison de son existence.
+
+⚠ **Tout cela est en français lisible, à dessein.** Un successeur reprendra peut-être ce
+projet sans assistant, avec un développeur ordinaire ou seul. La doctrine doit être lisible
+par un humain, sinon elle ne vaut rien le jour où elle sert.
+
+### Ce qui NE se transfère pas
+
+| Quoi | Où | Pourquoi ça reste |
+|---|---|---|
+| Historique des conversations (~41 Mo) | `~/.claude/projects/…` sur le Mac de Pascal | Lié à la machine et au compte. ⚠ **Contient les noms, adresses et téléphones des colotis** — c'est une copie de données RGPD hors du registre, à effacer avec le poste le jour d'un changement d'ordinateur. |
+| Abonnement à l'assistant | Compte personnel | Le successeur prendra le sien, ou fera sans. |
+| Fichiers de travail à données personnelles | `_1_lotissement/propriétaires/` et `4_ASL/7-contacts/` | **Ne doivent jamais entrer dans le dépôt.** Ils appartiennent au classeur de l'ASL. |
+
+### Les fichiers de travail à données personnelles
+
+Ils vivent **hors du dépôt**, délibérément — cinquante noms et adresses de tiers dans un
+dépôt Git, c'est exactement la diffusion que la mention RGPD du registre interdit. À
+transmettre au successeur par le classeur de l'ASL, pas par GitHub :
+
+- `propriétaires/` — les exports vCard et Foncia, `ECARTS_REGISTRE_FONCIA.md` (le
+  rapprochement avec l'état du syndic), `SOCIETES_REGISTRE_OFFICIEL.md` (les douze sociétés
+  vérifiées au registre national, avec SIREN et dirigeants).
+- `4_ASL/7-contacts/` — le CSV des destinataires et le rapport des groupes.
+
+⚠ Ces documents **se reconstruisent** depuis le registre et les sources publiques. Ce ne
+sont pas des originaux : le registre l'est.
+
+### L'outillage, lui, est versionné
+
+- `scripts/backup.mjs` — sauvegarde de la base.
+- `scripts/creer_groupes_colotis.py` — constitue les trois groupes d'envoi dans Contacts
+  (Apple) à partir du registre. ⚠ Il **supprime et reconstruit** les groupes à chaque
+  exécution : le registre est la source, un groupe qu'on se contente de compléter garde
+  indéfiniment les adresses retirées et l'envoi suivant part encore à l'ancien propriétaire.
+- `scripts/REQUETE_export_destinataires.sql` — la requête qui l'alimente.
+
+Ces trois-là suivent le dépôt. Le CSV qu'ils produisent, non.
+
 ## Le vrai risque
 
 Aucune de ces étapes n'est difficile. Le risque est de **s'arrêter au milieu** : un

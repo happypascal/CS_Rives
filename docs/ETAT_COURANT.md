@@ -29,6 +29,24 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 — outillage d'envoi versionné, et « reprendre le projet »
+
+- **✅ `scripts/creer_groupes_colotis.py` entre dans le dépôt**, avec
+  `scripts/REQUETE_export_destinataires.sql`. Il vivait dans `4_ASL/7-contacts/`, hors
+  versioning : c'était le seul vrai trou de la passation — un outil de travail qui aurait
+  disparu au transfert. ⚠ Le script est un **mécanisme**, il ne contient aucune donnée
+  personnelle ; le CSV qu'il consomme en contient cinquante et **ne doit jamais entrer ici**.
+- **✅ `docs/TRANSFERT_ASL.md` gagne une section « Reprendre le projet »**, en réponse à la
+  question de Pascal : que transfère-t-on du projet lui-même ?
+  **Rien de plus que le dépôt — et c'est un choix.** La valeur tient à `CLAUDE.md` et à ce
+  journal, tous deux versionnés depuis le début, écrits en français lisible parce qu'un
+  successeur les reprendra peut-être sans assistant.
+- ⚠ **Ce qui ne se transfère pas, consigné** : les ~41 Mo d'historique de conversation dans
+  `~/.claude` (liés à la machine, et **contenant les données RGPD des colotis** — à effacer
+  avec le poste), l'abonnement, et les dossiers de travail `propriétaires/` et `7-contacts/`.
+  Ces derniers passent par le classeur de l'ASL, pas par GitHub. Ils **se reconstruisent**
+  depuis le registre : ce ne sont pas des originaux, le registre l'est.
+
 ## Session 2026-09-01 (suite) — DESTINATAIRES MULTIPLES (044 ✅ appliquée)
 
 - ⚠ **La 043 avait un contresens : un choix UNIQUE.** Correction de Pascal — « s'il y a un e-mail

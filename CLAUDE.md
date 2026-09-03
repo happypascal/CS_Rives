@@ -93,6 +93,12 @@ src/
   pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
+scripts/
+  backup.mjs          sauvegarde de la base (tables découvertes via l'OpenAPI PostgREST)
+  creer_groupes_colotis.py  constitue les 3 groupes d'envoi dans Contacts (Apple) depuis le
+                      registre ; ⚠ SUPPRIME et reconstruit les groupes à chaque exécution
+  REQUETE_export_destinataires.sql  la requête qui l'alimente
+                      ⚠ Le CSV produit contient 50 noms et adresses : JAMAIS dans le dépôt
 supabase/
   schema.sql          schéma + RLS + helpers — source de vérité pour une install neuve
   seed.sql            bootstrap membres_cs
