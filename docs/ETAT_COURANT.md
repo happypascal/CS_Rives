@@ -29,6 +29,33 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite) — MANUEL PAR RÔLE dans l'app
+
+Demande de Pascal : une base de connaissance et trois documentations — technique, « comment
+faire évoluer l'app », et manuel par rôle. ⚠ **Deux natures différentes, deux endroits** : la
+documentation change quand le code change, donc elle est **versionnée avec lui** ; la mémoire
+du lotissement grandit avec la vie de l'association, donc elle demande une **table**. Ne pas
+les mélanger.
+
+- **✅ Manuel par rôle livré en premier**, pour une raison de calendrier : l'AG du 15 peut
+  élire un nouveau conseil, et ces membres arriveront dans une app qu'ils ne connaissent pas.
+- **Rôles couverts** : socle « tout membre actif », président, trésorier, secrétaire, chef de
+  projet. Le bloc du lecteur s'ouvre d'emblée, les autres restent consultables — savoir ce que
+  le président ne peut PAS faire évite la moitié des malentendus d'un conseil.
+- ⚠ **DEUX PIÈGES VÉRIFIÉS DANS LE CODE avant d'écrire** :
+  - le **trésorier a un vrai pouvoir**, qu'on aurait pu croire décoratif : sans son vote ou
+    celui du président, une décision qui engage de l'argent n'est pas adoptée (`engagementApprouve`) ;
+  - **« chef de projet » n'est pas un rôle du bureau** — `membres_cs.role` ne connaît que
+    président / trésorier / secrétaire / membre. C'est une désignation sur un projet, qui
+    n'ouvre aucun droit. Un manuel qui laisserait croire l'inverse serait pire que rien.
+- **Chaque bloc dit aussi ce qui est IMPOSSIBLE, et pourquoi.** Trois alertes portent ce qui
+  coûte cher à ignorer : l'irréversibilité de l'acte, le pouvoir réel du trésorier, la
+  responsabilité personnelle du secrétaire sur les données des propriétaires.
+- **Reste à faire** : (1) la **mémoire du lotissement** — base de connaissance par sujet
+  (portail, plage, canalisations, zone C, recouvrement…), qui est de la **donnée** et demande
+  une table, des droits et des pièces jointes ; (2) le **point d'entrée technique** pour un
+  développeur ; (3) le **« comment faire évoluer l'app »** pour un membre du CS.
+
 ## Session 2026-09-03 — outillage d'envoi versionné, et « reprendre le projet »
 
 - **✅ `scripts/creer_groupes_colotis.py` entre dans le dépôt**, avec

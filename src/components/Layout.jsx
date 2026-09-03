@@ -23,6 +23,10 @@ const NAV = [
   // personnelles de tiers). Le masquage est un confort — la RLS ferme.
   { to: '/proprietaires', label: 'Propriétaires', visible: (a) => a.isAdmin || a.isSecretaire },
   { to: '/parametres', label: 'Paramètres' },
+  // Manuel par rôle. Ouvert à tous, y compris aux rôles qui n'ont accès qu'à
+  // une partie des écrans : savoir ce que le président peut faire — et ce qu'il
+  // ne peut PAS faire — évite la moitié des malentendus d'un conseil.
+  { to: '/aide', label: 'Manuel' },
 ]
 
 export default function Layout() {

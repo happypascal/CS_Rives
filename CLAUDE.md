@@ -77,6 +77,8 @@ src/
     format.js         wrappers date-fns (fr), todayISO, addBusinessDaysISO
     proprietaireLogic.js  contact officiel (source, jamais copie) + TRI du registre,
                       partagé par la LISTE et par la navigation de la FICHE
+    aideLogic.js      MANUEL par rôle — contenu VERSIONNÉ, jamais en base : il décrit ce que
+                      l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
     pdf.js            PDF registre + décision unique, lignes de signature
     share.js          texte WhatsApp + URL wa.me (notification manuelle)
@@ -90,7 +92,7 @@ src/
                       avec un template literal, ou l'exporter d'abord
     badges.jsx        badges de statut par entité
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
-  pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
+  pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS, Aide,
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
 scripts/
@@ -647,6 +649,15 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
   registre Word existant). ⚠ `cx()` n'est **pas exporté** par `ui.jsx` : composer les classes
   conditionnelles avec un template literal. Ton : sobre, professionnel,
   document juridique.
+- **MANUEL PAR RÔLE** (`src/lib/aideLogic.js` + `pages/Aide.jsx`, 2026-09-03) : contenu
+  **versionné avec le code**, jamais en base — une aide stockée dériverait du produit sans
+  que rien ne le signale. ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un
+  pouvoir inexistant est pire que pas de manuel. Deux pièges vérifiés dans le code avant
+  rédaction — le **trésorier a un pouvoir réel** (la garde d'engagement : sans son vote ou
+  celui du président, une décision qui engage de l'argent n'est pas adoptée), et **« chef de
+  projet » n'est PAS un rôle du bureau** mais une désignation sur un projet, sans droit
+  particulier. ⚠ Dire aussi ce qu'on **ne peut pas** faire, et pourquoi : la moitié des
+  questions d'un nouveau membre porte sur une limite prise pour une panne.
 - **Mobile** : `useIsMobile()` (<768px) → mobile = **consultation + vote seulement**. Création et
   gestion derrière `!isMobile` et `<DesktopOnly>`.
 
