@@ -259,7 +259,7 @@ export const supabaseRepo = {
   // `created_at` n'est jamais touché : c'est la date de SAISIE. Seuls la date de
   // l'événement, le titre et le contenu se corrigent. La RLS borne à l'auteur.
   async updateSujetEntree(id, patch) {
-    const champs = ['date_evenement', 'titre', 'contenu']
+    const champs = ['date_evenement', 'titre', 'contenu', 'documents']
     const payload = Object.fromEntries(
       Object.entries(patch).filter(([k]) => champs.includes(k)),
     )

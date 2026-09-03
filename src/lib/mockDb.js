@@ -1352,12 +1352,13 @@ export const mockRepo = {
     return { ok: true }
   },
 
-  async addSujetEntree({ sujet_id, date_evenement, titre, contenu, auteur_id }) {
+  async addSujetEntree({ sujet_id, date_evenement, titre, contenu, documents, auteur_id }) {
     await delay()
     const data = load()
     data.sujet_entrees ||= []
     const e = {
-      id: uid(), sujet_id, date_evenement, titre, contenu: contenu || null, auteur_id,
+      id: uid(), sujet_id, date_evenement, titre, contenu: contenu || null,
+      documents: documents || [], auteur_id,
       created_at: nowISO(), updated_at: nowISO(),
     }
     data.sujet_entrees.push(e)
@@ -1367,7 +1368,7 @@ export const mockRepo = {
 
   // `created_at` n'est JAMAIS touché : c'est la date de saisie. Seuls la date de
   // l'événement, le titre et le contenu se corrigent — et par leur auteur seul.
-  async updateSujetEntree(id, { date_evenement, titre, contenu }) {
+  async updateSujetEntree(id, { date_evenement, titre, contenu, documents }) {
     await delay()
     const data = load()
     const e = (data.sujet_entrees || []).find((x) => x.id === id)
@@ -1379,6 +1380,7 @@ export const mockRepo = {
     if (date_evenement !== undefined) e.date_evenement = date_evenement
     if (titre !== undefined) e.titre = titre
     if (contenu !== undefined) e.contenu = contenu
+    if (documents !== undefined) e.documents = documents
     e.updated_at = nowISO()
     save(data)
     return clone(e)

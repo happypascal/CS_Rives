@@ -95,6 +95,8 @@ src/
                       ⚠ `cx` y est PRIVÉ (pas exporté) — composer les classes conditionnelles
                       avec un template literal, ou l'exporter d'abord
     badges.jsx        badges de statut par entité
+    PiecesJointes.jsx composant CONTRÔLÉ d'envoi/liste/retrait — la liste appartient à
+                      l'appelant, ce qui permet de joindre AVANT que la ligne existe
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
   pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
                       Aide (manuel écran par écran) + CommentFaire (parcours transversaux),
@@ -673,6 +675,12 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
   - **La synthèse est collective** (tout membre actif l'améliore), les **entrées appartiennent à
     leur auteur**. ⚠ **Supprimer un sujet est réservé au président** : effacer une mémoire que
     d'autres ont nourrie n'est pas une correction.
+  - **PIÈCES JOINTES** (migration 046) sur les **entrées** de chronologie et sur le **sujet**
+    lui-même. Une entrée qui dit « refus de la mairie » vaut cent fois moins que la même
+    accompagnée du courrier. ⚠ Le chemin porte l'id du **SUJET**, pas de l'entrée : le sujet
+    existe toujours au moment de l'envoi, l'entrée pas encore. **Aucune policy de Storage à
+    ajouter** — vérifié : `documents_insert_membre` ouvre à tout membre actif,
+    `documents_brouillon_prive` ne vise que le préfixe `decisions`.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu

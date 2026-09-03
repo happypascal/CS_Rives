@@ -215,6 +215,13 @@ create table if not exists sujet_entrees (
   date_evenement date not null,
   titre          text not null,
   contenu        text,
+  -- Pièces jointes (migration 046) : le courrier de refus, le devis, la photo.
+  -- Une entrée qui dit « refus de la mairie » vaut cent fois moins que la même
+  -- accompagnée du courrier. ⚠ Le chemin porte l'id du SUJET, pas de l'entrée :
+  -- le sujet existe toujours au moment de l'envoi. Aucune policy de Storage à
+  -- ajouter — `documents_insert_membre` ouvre à tout membre actif et n'exclut
+  -- que le préfixe `decisions`.
+  documents      jsonb not null default '[]'::jsonb,
   auteur_id      uuid not null references membres_cs(id) on delete cascade,
   created_at     timestamptz not null default now(),  -- la SAISIE, jamais modifiée
   updated_at     timestamptz not null default now()

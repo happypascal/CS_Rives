@@ -4,6 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Spinner } from '../components/ui'
 import RichTextEditor from '../components/RichTextEditor'
+import PiecesJointes from '../components/PiecesJointes'
 import { useConfirm } from '../components/useConfirm'
 import { formatDate, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
@@ -24,7 +25,7 @@ export default function SujetDetail() {
   const [busy, setBusy] = useState(false)
   const [confirm, confirmModal] = useConfirm()
 
-  const [form, setForm] = useState({ titre: '', categorie: '', resume: '', contenu: '' })
+  const [form, setForm] = useState({ titre: '', categorie: '', resume: '', contenu: '', documents: [] })
   const [editionSynthese, setEditionSynthese] = useState(false)
   const [nouvelle, setNouvelle] = useState(null) // { date_evenement, titre, contenu }
   const [editee, setEditee] = useState(null)
@@ -42,6 +43,7 @@ export default function SujetDetail() {
           categorie: s.categorie || '',
           resume: s.resume || '',
           contenu: s.contenu || '',
+          documents: s.documents || [],
         })
       }
     } catch (e) {
@@ -80,6 +82,7 @@ export default function SujetDetail() {
         categorie: form.categorie || null,
         resume: form.resume || null,
         contenu: form.contenu || null,
+        documents: form.documents || [],
       })
       setEditionSynthese(false)
       await reload()
@@ -100,6 +103,7 @@ export default function SujetDetail() {
         date_evenement: nouvelle.date_evenement,
         titre: nouvelle.titre.trim(),
         contenu: nouvelle.contenu || null,
+        documents: nouvelle.documents || [],
         auteur_id: user?.membre_id,
       })
       setNouvelle(null)
@@ -120,6 +124,7 @@ export default function SujetDetail() {
         date_evenement: editee.date_evenement,
         titre: editee.titre.trim(),
         contenu: editee.contenu || null,
+        documents: editee.documents || [],
       })
       setEditee(null)
       await reload()
@@ -235,6 +240,13 @@ export default function SujetDetail() {
                     <strong> pourquoi</strong>. Les pistes écartées valent autant que celles retenues.
                   </p>
                 </div>
+                <PiecesJointes
+                  scope="sujets"
+                  entityId={id}
+                  documents={form.documents || []}
+                  onChange={(documents) => setForm((f) => ({ ...f, documents }))}
+                  label="Pièces jointes du sujet"
+                />
                 <div className="flex justify-end gap-2">
                   <Button variant="secondary" onClick={() => { setEditionSynthese(false); reload() }}>
                     Annuler
@@ -255,6 +267,11 @@ export default function SujetDetail() {
                     doit savoir sur ce dossier.
                   </p>
                 )}
+                {(sujet.documents || []).length > 0 && (
+                  <div className="mt-4 border-t border-navy-50 pt-3">
+                    <PiecesJointes scope="sujets" entityId={id} documents={sujet.documents} readOnly />
+                  </div>
+                )}
               </div>
             )}
           </Card>
@@ -267,7 +284,7 @@ export default function SujetDetail() {
                 peutSaisir && !nouvelle && (
                   <Button
                     variant="secondary"
-                    onClick={() => setNouvelle({ date_evenement: todayISO(), titre: '', contenu: '' })}
+                    onClick={() => setNouvelle({ date_evenement: todayISO(), titre: '', contenu: '', documents: [] })}
                   >
                     Ajouter une entrée
                   </Button>
@@ -299,6 +316,15 @@ export default function SujetDetail() {
                   value={nouvelle.contenu}
                   onChange={(v) => setNouvelle((n) => ({ ...n, contenu: v }))}
                   placeholder="Détail, contexte, qui était présent, ce qui a été dit… (facultatif)"
+                />
+                {/* ⚠ Le chemin porte l'id du SUJET : l'entrée n'existe pas encore
+                    au moment où l'on joint le fichier. */}
+                <PiecesJointes
+                  scope="sujets"
+                  entityId={id}
+                  documents={nouvelle.documents || []}
+                  onChange={(documents) => setNouvelle((n) => ({ ...n, documents }))}
+                  label="Joindre le courrier, le devis, la photo"
                 />
                 <div className="flex justify-end gap-2">
                   <Button variant="secondary" onClick={() => setNouvelle(null)}>Annuler</Button>
@@ -339,6 +365,12 @@ export default function SujetDetail() {
                           value={editee.contenu}
                           onChange={(v) => setEditee((x) => ({ ...x, contenu: v }))}
                         />
+                        <PiecesJointes
+                          scope="sujets"
+                          entityId={id}
+                          documents={editee.documents || []}
+                          onChange={(documents) => setEditee((x) => ({ ...x, documents }))}
+                        />
                         <div className="flex justify-end gap-2">
                           <Button variant="secondary" onClick={() => setEditee(null)}>Annuler</Button>
                           <Button onClick={enregistrerEntree} disabled={busy}>Enregistrer</Button>
@@ -354,7 +386,7 @@ export default function SujetDetail() {
                           {peutSaisir && peutModifier(e) && (
                             <span className="flex gap-2">
                               <button
-                                onClick={() => setEditee({ id: e.id, date_evenement: e.date_evenement, titre: e.titre, contenu: e.contenu || '' })}
+                                onClick={() => setEditee({ id: e.id, date_evenement: e.date_evenement, titre: e.titre, contenu: e.contenu || '', documents: e.documents || [] })}
                                 className="text-xs text-navy-600 underline hover:text-navy-800"
                               >
                                 Corriger
@@ -370,6 +402,11 @@ export default function SujetDetail() {
                         </div>
                         {e.contenu && (
                           <div className="rich-text mt-1 text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: e.contenu }} />
+                        )}
+                        {(e.documents || []).length > 0 && (
+                          <div className="mt-2">
+                            <PiecesJointes scope="sujets" entityId={id} documents={e.documents} readOnly label="" />
+                          </div>
                         )}
                         {e.auteur && <p className="mt-1 text-xs text-slate-400">{e.auteur}</p>}
                       </>

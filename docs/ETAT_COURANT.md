@@ -29,6 +29,29 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite 6) — pièces jointes sur la mémoire (migration 046)
+
+- **✅ Fichiers attachés à chaque entrée de chronologie**, et au sujet lui-même. Demande de
+  Pascal, et c'est la pièce qui manquait pour que la mémoire serve : une entrée « refus de la
+  mairie sur l'implantation » vaut cent fois moins que la même accompagnée du courrier de refus.
+  La chronologie devient un dossier.
+- **✅ `sujets.documents` enfin exploitée** : la colonne existait depuis la 045 sans écran. Une
+  colonne morte finit toujours par être « nettoyée » par quelqu'un qui la croit inutile.
+- ⚠ **Le chemin porte l'id du SUJET, pas celui de l'entrée.** Deux raisons : le sujet existe
+  toujours au moment de l'envoi (l'entrée, non — on joint le fichier avant de l'enregistrer), et
+  aucune policy n'a besoin de remonter à l'entrée, contrairement aux décisions où l'id du chemin
+  sert à refuser de toucher au fichier d'une délibération figée.
+- ⚠ **Aucune policy de Storage ajoutée, et c'est vérifié plutôt que supposé** :
+  `documents_insert_membre` autorise tout membre actif et n'exclut que les chemins pointant une
+  décision enregistrée ; `documents_brouillon_prive` est restrictive mais ne vise que le préfixe
+  `decisions`. Même conclusion qu'à la 031.
+- **Nouveau composant `PiecesJointes.jsx`, CONTRÔLÉ** : la liste appartient à l'appelant, qui
+  décide quand enregistrer. C'est ce qui permet de joindre un fichier à une entrée **avant**
+  qu'elle existe, puis de tout enregistrer d'un coup. Utilisé aux trois emplacements.
+- ⚠ **Piège évité et vérifié** : corriger le titre d'une entrée ne doit pas effacer ses pièces
+  jointes. La liste blanche de `updateSujetEntree` est porteuse — oublier `documents` côté
+  Supabase aurait fait échouer chaque ajout, silencieusement en mock et bruyamment en prod.
+
 ## Session 2026-09-03 (suite 5) — parcours transversaux + doc technique
 
 - **✅ Menu élargi** de 16 à 18 rem : « Registre des propriétaires » et « Messages aux
@@ -1203,7 +1226,7 @@ Toutes ces fonctionnalités sont **en prod** (déployées + migrations 019-021 a
 - **Dépôt** : `github.com/happypascal/CS_Rives`. `main` → Vercel **Production**, toute autre
   branche (dont `staging`) → **Preview**. Déploiement automatique au push.
 - **Bases Supabase** : prod `aitqnonioyhurbystfnk` (Paris) ; staging = 2ᵉ projet à créer.
-- **Prochaine migration SQL libre** : `046` (001-029 et 031-042 appliquées en **prod**). Le
+- **Prochaine migration SQL libre** : `047`. ⚠ **046 est ÉCRITE mais PAS APPLIQUÉE** (001-029 et 031-042 appliquées en **prod**). Le
   numéro **030 n'existe pas** : il avait été attribué à la suspension par bouton, écartée avant
   livraison. Récentes : 022 (heures d'AG), 023 (cycle de statut d'AG + quorum/m²), 024 (TVA sur
   décisions), 025 (PJ sur résolutions), 026 (brouillon / soumission planifiée + pg_cron).

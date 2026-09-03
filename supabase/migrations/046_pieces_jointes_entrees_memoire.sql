@@ -1,0 +1,36 @@
+-- =============================================================================
+-- Migration 046 — PIÈCES JOINTES sur les entrées de la mémoire du lotissement
+--
+-- Demande de Pascal (2026-09-03) : « il faut pouvoir ajouter des fichiers
+-- attachés à chaque entrée dans la chronologie des sujets. »
+--
+-- C'est la pièce qui manquait pour que la mémoire soit utile. Une entrée qui dit
+-- « refus de la mairie sur l'implantation » vaut cent fois moins que la même
+-- accompagnée du courrier de refus. La chronologie devient un dossier, pas une
+-- suite de souvenirs.
+--
+-- Même dispositif que partout ailleurs (migration 012) : la ligne ne garde que
+-- `{path,name,type,size}`, le fichier vit dans le bucket privé `documents`, et
+-- l'URL est signée pour cinq minutes au clic. On stocke un CHEMIN, jamais une
+-- URL — le bucket étant privé, aucune adresse permanente n'existe.
+--
+-- ⚠ AUCUNE POLICY DE STORAGE À AJOUTER, vérifié plutôt que supposé :
+-- `documents_insert_membre` autorise tout membre actif et n'exclut que les
+-- chemins dont le deuxième segment est une décision enregistrée ;
+-- `documents_brouillon_prive` est restrictive mais ne vise que le préfixe
+-- `decisions`. Un chemin `sujets/<sujet_id>/<uuid>.<ext>` traverse les deux.
+-- Même conclusion qu'à la migration 031 pour les pièces jointes d'AG.
+--
+-- ⚠ Le chemin porte l'id du SUJET, pas celui de l'entrée. Deux raisons : le
+-- sujet existe toujours au moment de l'envoi (l'entrée, elle, n'existe pas
+-- encore quand on joint un fichier à sa création), et aucune policy n'a besoin
+-- de remonter à l'entrée — contrairement aux décisions, où l'id dans le chemin
+-- sert à refuser de toucher au fichier d'une délibération figée.
+--
+-- ⚠ RAPPEL DE FORME (éditeur SQL de Supabase) : aucune chaine vide, aucun
+-- argument de formatage de `raise`, aucun guillemet dollar imbriqué, aucun
+-- deux-points ni barre oblique dans une chaine, et une vérification SIMPLE.
+-- =============================================================================
+
+alter table sujet_entrees
+  add column if not exists documents jsonb not null default '[]'::jsonb;
