@@ -45,6 +45,12 @@ export const MENUS = [
     visiblePar: TOUS,
     aQuoi:
       'Le registre légal des délibérations du conseil. C’est le cœur de l’application : tout le reste existe pour l’alimenter ou l’éclairer.',
+    // ⚠ `noteAcces` s'adresse à CEUX QUI N'ONT PAS TOUS LES DROITS sur l'écran.
+    // Elle remplace la liste grisée des actions interdites (arbitrage Pascal,
+    // 2026-09-03) : une colonne de titres barrés encombre sans rien expliquer,
+    // une phrase dit ce qu'on peut faire et pourquoi le reste est réservé.
+    noteAcces:
+      'Vous pouvez tout faire ici, sauf deux actes réservés au président : enregistrer une délibération — son inscription définitive au registre, au sens de l’article 15 — et décider si une décision est communicable aux colotis.',
     actions: [
       {
         titre: 'Créer une décision',
@@ -187,10 +193,23 @@ export const MENUS = [
     visiblePar: TOUS,
     aQuoi:
       'Les assemblées et leurs résolutions. C’est l’AG qui vote les budgets ; le conseil ne fait que les engager.',
+    noteAcces:
+      'Cet écran est en lecture seule pour vous. Le président et le secrétaire tiennent les assemblées — convocation, résolutions, numérotation, résultats — parce que ces éléments doivent correspondre au procès-verbal, dont le secrétaire répond.',
     actions: [
       {
-        titre: 'Créer une assemblée',
+        titre: 'Consulter une assemblée',
         pourQui: TOUS,
+        resume: 'Résolutions, budgets votés, convocation et procès-verbal.',
+        etapes: [
+          'Ouvrez l’assemblée depuis la liste.',
+          'Les résolutions sont classées par leur numéro de convocation, avec leur statut et le budget alloué.',
+          'La convocation et le PV sont en pièces jointes de l’assemblée elle-même.',
+          'Les projets financés par une résolution sont indiqués en regard.',
+        ],
+      },
+      {
+        titre: 'Créer une assemblée',
+        pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'Avant qu’elle ait lieu, dès la convocation.',
         etapes: [
           'Cliquez sur « Nouvelle AG ».',
@@ -200,7 +219,7 @@ export const MENUS = [
       },
       {
         titre: 'Ajouter une résolution',
-        pourQui: TOUS,
+        pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'Une ligne de l’ordre du jour, avec son budget éventuel.',
         etapes: [
           'Ouvrez l’AG, puis « Ajouter une résolution ».',
@@ -214,7 +233,7 @@ export const MENUS = [
       },
       {
         titre: 'Joindre la convocation ou le procès-verbal',
-        pourQui: TOUS,
+        pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'Les pièces de l’assemblée elle-même.',
         etapes: [
           'Ouvrez l’AG, section pièces jointes.',
@@ -226,7 +245,7 @@ export const MENUS = [
       },
       {
         titre: 'Affecter une enveloppe votée à un projet',
-        pourQui: TOUS,
+        pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'L’AG vote, le conseil affecte.',
         etapes: [
           'Ouvrez l’AG et repérez la résolution dotée d’un budget.',
@@ -238,7 +257,7 @@ export const MENUS = [
       },
       {
         titre: 'Saisir les résultats du vote',
-        pourQui: TOUS,
+        pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'Après l’assemblée, résolution par résolution.',
         etapes: [
           'Passez chaque résolution en adoptée, rejetée ou retirée.',
@@ -266,6 +285,8 @@ export const MENUS = [
     visiblePar: TOUS,
     aQuoi:
       'Les chantiers du conseil. Un projet dépense une enveloppe votée en assemblée — il ne crée pas d’argent.',
+    noteAcces:
+      'Vous pouvez créer un projet — vous en devenez alors le chef — et tenir le journal de n’importe quel projet. En revanche, seuls le chef, son adjoint et le président modifient la fiche d’un projet existant.',
     actions: [
       {
         titre: 'Créer un projet',
@@ -281,7 +302,8 @@ export const MENUS = [
       },
       {
         titre: 'Désigner le chef de projet et son adjoint',
-        pourQui: TOUS,
+        // Le chef, son adjoint, ou le président (`projets_chef_update`).
+        pourQui: ['secretaire', 'tresorier', 'membre'],
         resume: 'Qui pilote, et qui prend le relais.',
         etapes: [
           'Ouvrez le projet, puis « Modifier ».',
@@ -412,6 +434,8 @@ export const MENUS = [
     menu: 'Membres du CS',
     visiblePar: TOUS,
     aQuoi: 'La composition du conseil et les rôles du bureau.',
+    noteAcces:
+      'Cet écran est en lecture seule pour vous. Seul le président ajoute un membre, lui attribue un rôle du bureau ou le désactive : la composition du conseil détermine le quorum et la validité des votes.',
     actions: [
       {
         titre: 'Consulter la composition du conseil',
@@ -639,13 +663,14 @@ export function manuelPour(role, isAdmin) {
     .map((m) => ({
       ...m,
       actions: m.actions.filter((a) => accessible(a.pourQui, role, isAdmin)),
-      // Ce qui est réservé à d'autres SUR CET ÉCRAN, en une ligne. Répond à
-      // « pourquoi je ne vois pas ce bouton ? » sans encombrer le manuel.
-      reservees: m.actions
-        .filter((a) => !accessible(a.pourQui, role, isAdmin))
-        .map((a) => a.titre),
+      // ⚠ On ne liste PAS les actions interdites : une colonne de titres grisés
+      // encombre sans rien expliquer. On affiche la note d'accès de l'écran, et
+      // seulement si le lecteur y est effectivement bridé.
+      note: m.actions.some((a) => !accessible(a.pourQui, role, isAdmin)) ? m.noteAcces || null : null,
     }))
-    .filter((m) => m.actions.length > 0)
+  // ⚠ On ne retire PAS un écran dont aucune action n'est ouverte : il reste
+  // visible dans le menu, donc lisible, et le manuel doit dire à quoi il sert.
+  // Le supprimer laisserait le lecteur devant un écran que rien n'explique.
 }
 
 /** Les parcours transversaux ouverts à ce lecteur. */

@@ -43,8 +43,22 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - ⚠ **`visiblePar` reproduit le filtrage de `Layout.jsx`** — le manuel ne décrit jamais un écran
   que le lecteur ne voit pas. **Modifier l'un oblige à modifier l'autre**, et la vérification le
   contrôle (un membre simple ne doit voir ni Signatures ni Propriétaires).
-- **Une ligne discrète** liste ce qui est réservé au président sur chaque écran : elle répond à
-  « pourquoi je ne vois pas ce bouton ? » sans alourdir.
+- ⚠ **La liste grisée des actions interdites est SUPPRIMÉE** (Pascal, le même jour) : elle
+  encombrait sans rien expliquer. Chaque écran porte désormais une **note rédigée**, affichée
+  seulement à qui y est bridé — « cet écran est en lecture seule pour vous ; le président et le
+  secrétaire tiennent les assemblées parce que… ».
+- ⚠ **ERREUR DE FOND CORRIGÉE** : le manuel annonçait que **tout membre** pouvait créer une AG et
+  ses résolutions. **Faux** — la RLS les réserve au président et au secrétaire
+  (`ag_secretaire_insert/update` + `write_admin`), et l'écran cachait d'ailleurs déjà le bouton.
+  C'est exactement l'erreur que l'en-tête du fichier interdit : promettre un bouton qui n'existe
+  pas. Cinq actions corrigées, plus la modification d'un projet (chef, adjoint ou président).
+- ⚠ **Défaut attrapé par la vérification** : un écran dont aucune action n'était ouverte
+  **disparaissait du manuel** — contraire au principe « on ne cache pas un écran qu'on peut lire ».
+  Un écran visible reste désormais au manuel quoi qu'il arrive, et la **lecture d'une assemblée**
+  est documentée comme une action à part entière (où trouver le PV, les résolutions, les résultats).
+- **Audit de l'interface, fait à cette occasion** : l'app cachait **déjà** correctement ses boutons
+  d'écriture — `canManage` dans `AGList`, `AGDetail` et `Membres`, `canEdit` dans `ProjetDetail`
+  (chef, adjoint ou président). Rien à corriger de ce côté : c'était le manuel qui mentait.
 - **PARCOURS transversaux** : « conduire un projet, de l'enveloppe à la facture » ne relève
   d'aucun menu — il va de l'AG au registre en passant par les projets. D'où une section à part,
   ouverte à tous puisque n'importe quel membre peut être désigné chef de projet.

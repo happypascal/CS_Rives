@@ -679,8 +679,13 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     les actions réellement ouverts, et chaque action se déplie en **pas-à-pas**.
   - `visiblePar` de chaque menu **reproduit le filtrage de `Layout.jsx`** : le manuel ne doit
     jamais décrire un écran que le lecteur ne voit pas. ⚠ Modifier l'un oblige à modifier l'autre.
-  - Une ligne discrète liste ce qui est **réservé au président sur cet écran** : elle répond à
-    « pourquoi je ne vois pas ce bouton ? » sans encombrer.
+  - ⚠ **PAS de liste grisée des actions interdites** (arbitrage Pascal) : une colonne de titres
+    barrés encombre sans rien expliquer. Chaque écran porte une **`noteAcces` rédigée**, affichée
+    seulement à qui y est bridé — « cet écran est en lecture seule pour vous ; seul le président… ».
+  - ⚠ **On ne cache JAMAIS un écran qu'on peut lire** : un menu sans aucune action ouverte reste au
+    manuel, avec sa note. Ce sont les **boutons d'écriture** que l'app retire, pas l'écran — et
+    elle le fait déjà (`canManage` dans `AGList`, `AGDetail`, `Membres` ; `canEdit` dans
+    `ProjetDetail`).
   - **PARCOURS transversaux** (`PARCOURS`) pour les tâches qui traversent plusieurs écrans —
     « conduire un projet, de l'enveloppe à la facture ». Aucun menu ne pouvait les porter.
   - ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un bouton inexistant est pire que

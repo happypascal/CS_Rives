@@ -127,11 +127,13 @@ export default function Aide() {
               })}
             </ul>
 
-            {/* Une ligne, pas davantage : elle répond à « pourquoi je ne vois pas
-                ce bouton ? » sans encombrer un manuel qu'on veut simple. */}
-            {m.reservees.length > 0 && (
-              <p className="border-t border-navy-50 px-5 py-2 text-xs text-slate-400">
-                Réservé au président sur cet écran : {m.reservees.join(', ').toLowerCase()}.
+            {/* ⚠ Pas de liste grisée des actions interdites : elle encombrait
+                sans rien expliquer. Une phrase dit ce qu'on peut faire ici et
+                pourquoi le reste est réservé — et n'apparaît que si le lecteur
+                y est effectivement bridé. */}
+            {m.note && (
+              <p className="border-t border-navy-50 bg-slate-50 px-5 py-3 text-xs text-slate-600">
+                {m.note}
               </p>
             )}
           </Card>
