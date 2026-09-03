@@ -38,12 +38,24 @@ export default function Aide() {
       </Card>
 
       {/* Les parcours d'abord : ils traversent plusieurs écrans et répondent à
-          une tâche entière, pas à un bouton. */}
+          une tâche entière, pas à un bouton. Affecter un budget va de l'AG au
+          projet, mener une décision va du brouillon à la signature — les ranger
+          sous un menu aurait obligé le lecteur à deviner lequel. */}
+      {parcours.length > 0 && (
+        <>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Comment faire
+          </h2>
+          <p className="mb-4 text-sm text-slate-600">
+            Les tâches qui traversent plusieurs écrans, de bout en bout.
+          </p>
+        </>
+      )}
       {parcours.map((p) => {
         const cle = `parcours-${p.cle}`
         const ouvert = ouverte === cle
         return (
-          <Card key={cle} className="mb-6 overflow-hidden border-navy-200">
+          <Card key={cle} className="mb-3 overflow-hidden border-navy-200">
             <button
               onClick={() => basculer(cle)}
               className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left hover:bg-navy-50/40"
@@ -77,6 +89,13 @@ export default function Aide() {
           </Card>
         )
       })}
+
+      <h2 className="mb-1 mt-10 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        Écran par écran
+      </h2>
+      <p className="mb-4 text-sm text-slate-600">
+        Dans l’ordre du menu de gauche, avec les actions qui vous sont ouvertes.
+      </p>
 
       <div className="space-y-6">
         {menus.map((m) => (

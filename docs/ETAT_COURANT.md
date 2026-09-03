@@ -29,6 +29,35 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-03 (suite 5) — parcours transversaux + doc technique
+
+- **✅ Menu élargi** de 16 à 18 rem : « Registre des propriétaires » et « Messages aux
+  propriétaires » + son badge ne tenaient pas sur une ligne. ⚠ Les **flèches flottantes** de la
+  fiche parcelle sont calées sur cette largeur (`md:left-[18.75rem]`) — élargir l'un sans décaler
+  l'autre les ferait chevaucher.
+- **✅ SIX parcours transversaux ajoutés** aux côtés de « conduire un projet », qui les rejoint
+  naturellement : affecter un budget voté à un projet, mener une décision du brouillon à la
+  signature, **annuler ou supprimer une décision**, tenir une AG de la convocation au PV, accueillir
+  un nouveau membre après une élection, enregistrer une mutation.
+  ⚠ **Leur place est là et pas sous un écran** : affecter un budget va de l'AG au projet, mener une
+  décision va du brouillon à la signature. Les ranger sous un menu aurait obligé le lecteur à
+  deviner lequel.
+- **Le manuel a désormais deux parties** : « Comment faire » (les parcours) et « Écran par écran ».
+- **Contenus qui répondent à des pièges réels** :
+  - *Affecter un budget* : le rattachement se pilote **depuis l'AG, jamais depuis le projet** —
+    c'est le contresens le plus courant, et le formulaire du projet n'a volontairement aucun champ
+    de budget.
+  - *Annuler ou supprimer* : quatre situations selon l'avancement, et une décision **enregistrée ne
+    se retire jamais** — le conseil prend une nouvelle décision qui revient sur la précédente.
+  - *Nouveau membre* : l'adresse e-mail doit être **identique au caractère près** entre la fiche et
+    le compte Supabase. C'est la panne de chaque renouvellement.
+- **✅ `docs/TECHNIQUE.md`** — point d'entrée d'un développeur qui reprend le projet. Il ne redit
+  pas ce qui existe : il dit **où** chaque chose est écrite et **dans quel ordre** la lire, puis
+  expose les cinq idées d'architecture (dérivé plutôt que stocké, deux backends à parité, la
+  sécurité en base et non dans l'écran, l'identité par l'e-mail, le verrou de l'acte), les pièges
+  déjà payés, et **comment un membre du CS peut faire corriger un défaut sans être développeur**.
+  Lié depuis le README.
+
 ## Session 2026-09-03 (suite 4) — MENU RÉORGANISÉ en trois sections
 
 - **✅ Le menu passe d'une liste plate de dix entrées à trois sections** : **Gestion** (ce qu'on

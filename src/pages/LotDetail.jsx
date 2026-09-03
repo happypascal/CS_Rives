@@ -745,9 +745,11 @@ function Contenu() {
           pour changer de fiche, puis à redescendre pour relire les adresses.
           Celles-ci restent sous la main quel que soit le défilement.
           Masquées en mobile, où la fiche est en consultation seule et où l'espace
-          horizontal ne s'y prête pas. */}
+          horizontal ne s'y prête pas.
+          ⚠ `left` est calé sur la LARGEUR DU MENU (md:w-72 = 18rem) : élargir le
+          menu sans décaler cette valeur ferait chevaucher les deux. */}
       {!isMobile && (precedente || suivante) && (
-        <div className="fixed top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 md:left-[16.75rem] md:flex">
+        <div className="fixed top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 md:left-[18.75rem] md:flex">
           <button
             onClick={() => allerVers(precedente)}
             disabled={!precedente}

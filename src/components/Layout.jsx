@@ -83,7 +83,7 @@ export default function Layout() {
 
   const linkClass = ({ isActive }) =>
     [
-      'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
+      'block whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors',
       isActive ? 'bg-navy-600 text-white' : 'text-navy-100 hover:bg-navy-700/60 hover:text-white',
     ].join(' ')
 
@@ -101,7 +101,7 @@ export default function Layout() {
           doit suivre ne colle jamais. D'où self-start + h-screen + sticky top-0.
           `overflow-y-auto` garde le menu atteignable si la fenêtre est courte.
           Rien de tout cela en mobile : le menu y est un panneau qu'on déplie. */}
-      <aside className="flex flex-col bg-navy-800 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:self-start md:overflow-y-auto">
+      <aside className="flex flex-col bg-navy-800 md:sticky md:top-0 md:h-screen md:w-72 md:shrink-0 md:self-start md:overflow-y-auto">
         <div className="flex items-center justify-between gap-2 px-4 py-4">
           {/* Le tableau de bord passe du menu à une icône : c'est un point de
               départ, pas une rubrique — et cela retire une ligne d'un menu qui
@@ -172,7 +172,7 @@ export default function Layout() {
                       <span
                         key={item.label}
                         title="À venir : nécessite l’adresse de l’ASL et un service d’envoi."
-                        className="flex cursor-not-allowed items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-navy-400/70"
+                        className="flex cursor-not-allowed items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-navy-400/70"
                       >
                         {item.label}
                         <span className="text-[10px] uppercase tracking-wide">à venir</span>

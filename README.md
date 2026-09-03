@@ -10,6 +10,10 @@ d'exécution), vue budgets consolidée avec export CSV pour Foncia, membres du C
 > **Stack** : React 19 + Vite · Tailwind CSS v4 · Supabase (Auth + PostgreSQL + Storage)
 > · jsPDF · react-router. Hébergement cible : Vercel + Supabase (eu-west / Paris).
 
+> 📖 **Vous reprenez le projet ?** Commencez par **[`docs/TECHNIQUE.md`](docs/TECHNIQUE.md)** : il
+> dit où chaque chose est écrite et dans quel ordre la lire. Le manuel de l'utilisateur, lui, est
+> **dans l'application** (menu « Manuel d'utilisation »).
+
 ---
 
 ## Démarrage rapide (mode démo — aucun cloud requis)

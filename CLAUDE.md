@@ -111,7 +111,8 @@ supabase/
   seed.sql            bootstrap membres_cs
   nettoyage.sql       DESTRUCTIF, ne garde que le président
   migrations/         001..006, voir §Supabase
-docs/                 DEPLOIEMENT.md, GUIDE_A_comptes_membres.md, Guide_membre_vote.doc
+docs/                 TECHNIQUE.md (POINT D'ENTRÉE d'un développeur qui reprend le projet),
+                      DEPLOIEMENT.md, TRANSFERT_ASL.md, GUIDE_A_comptes_membres.md
 public/favicon.svg    seul asset public
 ```
 

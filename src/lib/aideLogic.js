@@ -610,6 +610,251 @@ export const PARCOURS = [
       },
     ],
   },
+  {
+    cle: 'budget_projet',
+    titre: 'Affecter un budget voté à un projet',
+    pourQui: ['secretaire'],
+    resume:
+      'L’argent vient toujours d’une résolution d’assemblée. Le rattachement se fait depuis l’AG, jamais depuis le projet — c’est la source d’erreur la plus fréquente.',
+    etapes: [
+      {
+        titre: 'Vérifier que la résolution est ADOPTÉE',
+        texte:
+          'Ouvrez l’assemblée et repérez la résolution qui porte le budget. Tant qu’elle est « à voter », rejetée ou retirée, son montant n’est qu’une proposition : elle n’alloue rien.',
+      },
+      {
+        titre: 'Se placer sur la fiche de l’ASSEMBLÉE, pas du projet',
+        texte:
+          'Le rattachement se pilote depuis la résolution : c’est elle qui désigne son projet. Le formulaire du projet n’a volontairement aucun champ de budget.',
+        alerte:
+          'C’est le contresens le plus courant. Chercher « budget » sur la fiche du projet ne donne rien — le montant y est affiché, jamais saisi.',
+      },
+      {
+        titre: 'Ouvrir un projet, ou rattacher à un projet existant',
+        texte:
+          '« Ouvrir un projet » crée le projet et le rattache d’un geste. « Rattacher à un projet existant » sert quand le chantier a été ouvert avant le vote.',
+      },
+      {
+        titre: 'Vérifier le montant sur la fiche du projet',
+        texte:
+          'Le budget alloué devient la somme des résolutions adoptées qui pointent ce projet. Plusieurs résolutions peuvent le financer — une rallonge votée l’année suivante s’y ajoute simplement.',
+        alerte:
+          'Une enveloppe rattachée y passe EN ENTIER : elle ne se partage pas entre deux projets. Pour ventiler un budget du PV sur trois projets, créez trois résolutions numérotées 10-1, 10-2, 10-3.',
+      },
+      {
+        titre: 'Détacher, si l’on s’est trompé',
+        texte:
+          'Depuis l’AG, retirez le rattachement. Attention : le verrou de modification d’une résolution se ferme dès qu’une décision ou un projet la référence.',
+      },
+    ],
+  },
+  {
+    cle: 'mener_decision',
+    titre: 'Mener une décision du conseil, du brouillon à la signature',
+    pourQui: TOUS,
+    resume: 'Le parcours complet d’une délibération, avec ce qui devient irréversible à chaque étape.',
+    etapes: [
+      {
+        titre: 'Rédiger le brouillon',
+        texte:
+          'Créez la décision et travaillez-la autant qu’il le faut : elle n’est visible que de vous, y compris du président. Aucun numéro n’est encore attribué — un brouillon abandonné ne laisse donc aucun trou au registre.',
+      },
+      {
+        titre: 'Chiffrer, si la décision engage de l’argent',
+        texte:
+          'Choisissez la cible — un projet ou une résolution d’AG — puis le montant du devis, le taux de TVA, et si le montant est HT ou TTC. L’écran affiche alloué, engagé et restant, et prévient en rouge en cas de dépassement.',
+      },
+      {
+        titre: 'Soumettre au vote',
+        texte:
+          'La décision reçoit son numéro, devient visible de tous, et sa date limite est calculée en jours ouvrés.',
+        alerte:
+          'À cet instant, le TITRE et le CORPS DU TEXTE se figent définitivement. Relisez-les avant. Le montant, le rattachement et les pièces jointes restent modifiables.',
+      },
+      {
+        titre: 'Prévenir le conseil',
+        texte:
+          'Rien ne part automatiquement. Sans le bouton « Prévenir le CS », une décision peut rester ouverte sans que personne le sache.',
+      },
+      {
+        titre: 'Laisser voter',
+        texte:
+          'Chacun vote pour lui-même. Le quorum exige que plus de la moitié des membres actifs se soient prononcés — les statuts n’en imposent aucun, c’est une exigence que le conseil s’est donnée.',
+        alerte:
+          'L’adoption exige la majorité des membres PRÉSENTS, abstentionnistes compris. Et si la décision engage de l’argent, le trésorier ou le président doit avoir voté pour.',
+      },
+      {
+        titre: 'Faire enregistrer par le président',
+        texte:
+          'Le président constate le résultat et l’inscrit au registre. La composition du conseil au jour du vote est figée avec la décision.',
+        alerte:
+          'IRRÉVERSIBLE. Plus aucune modification, plus aucun vote, plus aucune suppression. En cas de partage exact des voix, celle du président départage — encore faut-il qu’il ait voté.',
+      },
+      {
+        titre: 'Faire signer',
+        texte:
+          'Depuis Signatures légales, le président ou le secrétaire ouvre un lot. Signent tous les membres PRÉSENTS à la délibération, y compris ceux qui ont voté contre ; les absents n’ont pas de ligne.',
+      },
+    ],
+  },
+  {
+    cle: 'retirer_decision',
+    titre: 'Retirer une décision : annuler ou supprimer ?',
+    pourQui: TOUS,
+    resume:
+      'Deux gestes très différents. L’un laisse une trace au registre, l’autre n’en laisse aucune — et ce que vous pouvez faire dépend de l’avancement.',
+    etapes: [
+      {
+        titre: 'Comprendre la différence avant d’agir',
+        texte:
+          'SUPPRIMER efface sans trace : la décision n’a jamais existé. ANNULER la conserve au registre avec la mention ANNULÉE et un motif obligatoire. Devant un registre légal, une délibération retirée après avoir été portée à la connaissance du conseil doit se voir.',
+      },
+      {
+        titre: 'Votre brouillon : supprimez',
+        texte:
+          'Tant qu’elle n’a pas été soumise, la décision n’a ni numéro ni existence publique. Ouvrez-la et supprimez : le registre n’en garde rien, et aucune numérotation n’est trouée.',
+      },
+      {
+        titre: 'Soumise mais sans aucun vote : le président peut supprimer',
+        texte:
+          'La décision est visible de tous mais personne ne s’est prononcé. Le président seul peut l’effacer, et seulement dans ce cas.',
+      },
+      {
+        titre: 'Soumise et déjà votée : annulez',
+        texte:
+          'Dès qu’un vote existe, la suppression est fermée. Utilisez « Annuler » et saisissez le motif : il est obligatoire, et c’est lui qui explique au lecteur du registre pourquoi la décision n’a pas abouti.',
+      },
+      {
+        titre: 'Enregistrée : rien n’est possible',
+        texte:
+          'Une délibération inscrite au registre ne se retire plus, en aucune manière. Si le conseil change d’avis, il prend une NOUVELLE décision qui revient sur la précédente — c’est ainsi qu’un registre légal se corrige.',
+        alerte:
+          'Seules deux choses restent ouvertes sur une décision enregistrée, et elles sont tracées : son rattachement à un projet, et sa visibilité aux colotis.',
+      },
+    ],
+  },
+  {
+    cle: 'tenir_ag',
+    titre: 'Tenir une assemblée générale, de la convocation au procès-verbal',
+    pourQui: ['secretaire'],
+    resume: 'Avant, pendant, après. L’application ne compte aucune voix : elle enregistre ce que dit le PV.',
+    etapes: [
+      {
+        titre: 'Créer l’assemblée dès la convocation',
+        texte:
+          'Type, date, heure, lieu. Laissez le président de séance VIDE : il est désigné en séance, l’inventer écrirait une information fausse dans un registre.',
+      },
+      {
+        titre: 'Saisir les résolutions dans la numérotation de la convocation',
+        texte:
+          'Reprenez les numéros du document envoyé aux colotis, pas l’ordre de saisie. Si un numéro est déjà pris, l’application propose de déplacer l’occupante en zone 101+ plutôt que de vous bloquer.',
+        alerte:
+          'Une résolution du PV qui finance plusieurs projets se saisit en plusieurs lignes : 10-1, 10-2, 10-3. Inventer des numéros absents du PV serait un faux.',
+      },
+      {
+        titre: 'Joindre la convocation',
+        texte:
+          'En pièce jointe de l’assemblée, catégorie « convocation ». Elle prouve la régularité de l’appel — elle ne se rattache à aucune résolution en particulier.',
+      },
+      {
+        titre: 'Après la séance : saisir les résultats',
+        texte:
+          'Passez chaque résolution en adoptée, rejetée ou retirée, et reportez les voix telles qu’elles figurent au PV.',
+        alerte:
+          'L’application ne compte AUCUNE voix d’assemblée : les votes sont au prorata des superficies et restent l’affaire du PV. Elle n’enregistre que le résultat.',
+      },
+      {
+        titre: 'Joindre le procès-verbal',
+        texte:
+          'Catégorie « PV ». C’est possible sur une assemblée déjà clôturée, et c’est voulu : le PV arrive toujours après la séance.',
+      },
+      {
+        titre: 'Affecter les enveloppes votées',
+        texte:
+          'Pour chaque résolution adoptée et dotée, ouvrez ou rattachez le projet qui la dépensera. Sans ce geste, le budget voté n’est visible nulle part.',
+      },
+      {
+        titre: 'Faire valider les comptes',
+        texte:
+          'Le trésorier et le président approuvent chacun de leur côté. Les comptes ne sont réputés validés que lorsque les deux l’ont fait.',
+      },
+    ],
+  },
+  {
+    cle: 'nouveau_membre',
+    titre: 'Accueillir un nouveau membre après une élection',
+    pourQui: ['president'],
+    resume:
+      'Deux endroits à renseigner, et une adresse qui doit correspondre au caractère près. C’est la panne la plus fréquente à chaque renouvellement.',
+    etapes: [
+      {
+        titre: 'Créer la fiche dans Membres du CS',
+        texte:
+          'Nom, prénom, adresse e-mail, date d’élection et assemblée qui l’a élu.',
+      },
+      {
+        titre: 'Créer le compte de connexion dans Supabase',
+        texte:
+          'Authentication → Add user, avec un mot de passe provisoire.',
+        alerte:
+          'L’ADRESSE DOIT ÊTRE IDENTIQUE au caractère près entre la fiche et le compte. C’est elle, et non un identifiant, qui relie les deux. Une différence de casse ou un espace, et la personne se connecte sans être reconnue comme membre : elle ne voit rien et ne peut pas voter.',
+      },
+      {
+        titre: 'Lui transmettre ses accès',
+        texte:
+          'À sa première connexion, l’application lui imposera de choisir son mot de passe avant d’accéder à quoi que ce soit.',
+      },
+      {
+        titre: 'Attribuer un rôle du bureau, s’il y a lieu',
+        texte:
+          'Président, trésorier ou secrétaire — chacun à titulaire unique. Retirez le rôle au sortant avant de le donner au nouveau.',
+        alerte:
+          'Transférer le rôle de président transfère les droits d’administration, y compris sur votre propre compte. Le président de l’application suit le mandat, pas la personne.',
+      },
+      {
+        titre: 'Désactiver les membres sortants',
+        texte:
+          'Décochez « actif ». Ils ne comptent plus dans le quorum et ne peuvent plus voter, mais leurs votes passés restent au registre — une délibération ne se réécrit pas.',
+      },
+    ],
+  },
+  {
+    cle: 'mutation',
+    titre: 'Enregistrer un changement de propriétaire',
+    pourQui: ['secretaire'],
+    resume: 'Une mutation clôt une période et en ouvre une autre. La date de l’acte est ce qui donne sa valeur à l’historique.',
+    etapes: [
+      {
+        titre: 'Obtenir la date de l’acte',
+        texte:
+          'Auprès du notaire ou du syndic. Sans elle, n’enregistrez rien : mieux vaut un registre en retard qu’un registre faux.',
+        alerte:
+          'Ce sont les bornes de période qui font la valeur de l’historique. Une date inventée rendrait impossible de savoir qui était propriétaire à une date donnée — donc qui devait être convoqué.',
+      },
+      {
+        titre: 'Ouvrir la parcelle et cliquer sur « Enregistrer une mutation »',
+        texte:
+          'Saisissez la date : elle clôt la période de l’ancien propriétaire et ouvre celle du nouveau, d’un seul geste.',
+      },
+      {
+        titre: 'Renseigner le nouveau propriétaire',
+        texte:
+          'Nom, adresse de communication, coordonnées. Pour une société, ses dirigeants ; pour un colotis injoignable, son mandataire.',
+        alerte:
+          'Rien ne s’hérite : ni les coordonnées, ni le mandataire, ni le second propriétaire. C’est voulu — l’acquéreur n’a aucune raison de partager le relais de son vendeur.',
+      },
+      {
+        titre: 'Choisir les destinataires des convocations',
+        texte:
+          'Cochez les sources utiles et vérifiez l’encart « Recevront la convocation » : c’est ce qui partira réellement.',
+      },
+      {
+        titre: 'Vérifier auprès du registre officiel, si c’est une société',
+        texte:
+          'L’annuaire des entreprises (recherche-entreprises.api.gouv.fr) donne la dénomination exacte et les dirigeants. Il prime sur nos listes comme sur l’état du syndic.',
+      },
+    ],
+  },
 ]
 
 // ============================================================================
