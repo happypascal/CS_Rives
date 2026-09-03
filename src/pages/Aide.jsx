@@ -68,6 +68,37 @@ export default function Aide() {
 
               {ouvert && (
                 <div className="border-t border-navy-100 px-5 py-4">
+                  {/* MARCHE À SUIVRE, quand le rôle en a une. Elle passe AVANT la
+                      liste des possibilités : un chef de projet n'a pas besoin de
+                      connaître ses droits, il a besoin de savoir dans quel ordre
+                      faire les choses. Numérotée, parce que l'ordre est le fond
+                      du sujet — on ne commande pas avant l'enregistrement. */}
+                  {bloc.demarche?.length > 0 && (
+                    <>
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Marche à suivre
+                      </p>
+                      <ol className="mb-6 space-y-4">
+                        {bloc.demarche.map((etape, i) => (
+                          <li key={etape.titre} className="flex gap-3">
+                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy-100 text-xs font-semibold text-navy-700">
+                              {i + 1}
+                            </span>
+                            <span className="min-w-0">
+                              <p className="text-sm font-medium text-navy-800">{etape.titre}</p>
+                              <p className="mt-0.5 text-sm text-slate-600">{etape.texte}</p>
+                              {etape.alerte && (
+                                <p className="mt-1 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                  {etape.alerte}
+                                </p>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    </>
+                  )}
+
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Ce qui est possible
                   </p>

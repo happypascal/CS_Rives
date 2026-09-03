@@ -222,29 +222,93 @@ export const MANUEL = [
     cle: 'chef_projet',
     titre: 'Chef de projet et adjoint',
     resume:
-      'Ce n’est pas un rôle du bureau, mais une désignation sur un projet donné. Elle dit qui pilote et à qui l’on s’adresse — elle n’ouvre aucun droit supplémentaire dans l’application.',
+      'Ce n’est pas un rôle du bureau mais une désignation sur un projet : elle dit qui pilote, et n’ouvre aucun droit supplémentaire. Le chef de projet ne dépense pas — il prépare la décision qui permettra au conseil de dépenser.',
+    // ⚠ Un chef de projet n'a pas besoin de connaître ses droits, il a besoin de
+    // savoir DANS QUEL ORDRE faire les choses. D'où cette marche à suivre, qui
+    // suit le vrai cheminement : de l'enveloppe votée à la facture payée.
+    demarche: [
+      {
+        titre: 'Vérifier l’enveloppe avant toute chose',
+        texte:
+          'Ouvrez la fiche du projet : le budget alloué y figure. Il n’est jamais saisi — c’est la somme des résolutions d’assemblée adoptées qui pointent vers ce projet. S’il affiche zéro, aucune enveloppe n’a été rattachée : cela se corrige depuis la fiche de l’AG (« Rattacher à un projet »), pas depuis le projet. Sans enveloppe votée, rien ne pourra être engagé.',
+      },
+      {
+        titre: 'Tenir le journal dès le premier jour',
+        texte:
+          'Chaque visite, appel, courrier, réunion sur place. Saisissez la date à laquelle la chose s’est passée, pas celle où vous l’écrivez : une visite du 12 notée le 20 doit se ranger au 12. C’est ce journal qui permettra, dans deux ans, de savoir pourquoi telle entreprise a été écartée et à quelle date le chantier a démarré.',
+      },
+      {
+        titre: 'Consulter plusieurs fournisseurs',
+        texte:
+          'Demandez plusieurs devis. Consignez au journal qui a répondu, à quel prix, ce que le devis comprend et ce qu’il exclut. Les devis eux-mêmes se joignent en pièces jointes — sur le projet pendant la consultation, puis sur la décision qui retiendra l’un d’eux.',
+      },
+      {
+        titre: 'Rédiger la décision qui engage la dépense',
+        texte:
+          'C’est le seul moyen d’engager de l’argent. Créez une décision, choisissez « Projet » comme cible, puis votre projet. L’écran affiche alors trois chiffres : alloué, déjà engagé, restant. Saisissez le montant du devis retenu, indiquez le taux de TVA et si le montant est HT ou TTC — l’application calcule le coût TTC et prévient en rouge s’il dépasse le disponible.',
+        alerte:
+          'La description doit expliquer le CHOIX, pas seulement le montant : quelles entreprises ont été consultées, pourquoi celle-ci. Le texte sera figé dès la soumission au vote et ne pourra plus être modifié — c’est lui qui restera au registre.',
+      },
+      {
+        titre: 'Joindre le devis retenu',
+        texte:
+          'À la décision, avant de soumettre. Les pièces jointes restent modifiables jusqu’à l’enregistrement — un devis corrigé arrive souvent après le vote — mais le devis qui fonde la décision doit y être dès le départ.',
+      },
+      {
+        titre: 'Soumettre au vote et prévenir le conseil',
+        texte:
+          'La soumission fige le texte, attribue le numéro et rend la décision visible de tous. Rien ne part automatiquement : utilisez « Prévenir le CS » pour avertir le groupe, sinon personne ne saura qu’un vote est ouvert.',
+        alerte:
+          'Une décision qui engage de l’argent n’est adoptée que si le trésorier OU le président a voté pour. La majorité seule ne suffit pas : si aucun des deux ne s’est prononcé favorablement, la dépense est rejetée.',
+      },
+      {
+        titre: 'Attendre l’enregistrement par le président',
+        texte:
+          'Tant que la décision n’est pas enregistrée, rien n’est engagé — le montant n’apparaît dans aucun budget et le fournisseur ne doit pas être commandé. L’enregistrement est l’acte qui inscrit la délibération au registre ; c’est à ce moment que la dépense devient réelle.',
+      },
+      {
+        titre: 'Suivre l’exécution au journal',
+        texte:
+          'Commande passée, acompte versé, démarrage du chantier, réception des travaux, réserves éventuelles. Les factures se joignent au projet. C’est cette trace qui justifiera les paiements auprès du syndic et de l’assemblée.',
+      },
+      {
+        titre: 'Clore, suspendre ou reprendre — encore une décision',
+        texte:
+          'Dans le formulaire de décision, le champ « Effet sur le projet » permet de suspendre, reprendre ou terminer. L’effet ne se produit qu’à l’enregistrement d’une décision adoptée. Le statut du projet est calculé à partir de ces délibérations, jamais saisi — c’est pourquoi aucun bouton ne le change directement.',
+      },
+    ],
     peut: [
       {
         titre: 'Piloter le projet et tenir son journal',
         texte:
-          'Consigner les actions, les visites, les échanges avec les entreprises. Le chef et l’adjoint ont exactement les mêmes possibilités.',
+          'Le chef et l’adjoint ont exactement les mêmes possibilités : l’adjoint existe pour que le projet ne s’arrête pas quand le chef est indisponible.',
       },
       {
         titre: 'Être identifié comme interlocuteur',
         texte:
           'Le nom apparaît dans la liste des projets et sur la fiche : chacun sait à qui poser sa question.',
       },
+      {
+        titre: 'Joindre les pièces du dossier',
+        texte:
+          'Devis, plans, factures, photos. Elles restent attachées au projet et survivent aux changements de chef.',
+      },
     ],
     nePeutPas: [
       {
-        titre: 'Suspendre, reprendre ou terminer son projet',
+        titre: 'Engager une dépense seul',
         texte:
-          'Aucun bouton n’existe pour cela, volontairement. Suspendre ou clore un projet est une délibération du conseil : cela se saisit dans une décision, et ne prend effet qu’une fois celle-ci enregistrée et adoptée. Ni le chef de projet, ni l’adjoint, ni le président ne le font seuls.',
+          'Aucun engagement n’existe avant qu’une décision ne soit votée et enregistrée. Commander sur la seule foi d’un devis, c’est engager l’association sans mandat.',
       },
       {
-        titre: 'Fixer le budget du projet',
+        titre: 'Suspendre, reprendre ou terminer par un bouton',
         texte:
-          'Le budget n’est pas saisi : il est la somme des enveloppes votées en assemblée et rattachées au projet. L’assemblée vote, le conseil affecte, personne ne réécrit le montant.',
+          'Il n’en existe pas, volontairement. Ces trois transitions sont des délibérations du conseil : ni le chef de projet, ni l’adjoint, ni le président ne les décident seuls.',
+      },
+      {
+        titre: 'Fixer ou corriger le budget du projet',
+        texte:
+          'Il n’est pas saisi : il découle des enveloppes votées en assemblée. L’assemblée vote, le conseil affecte, personne ne réécrit le montant.',
       },
       {
         titre: 'Corriger le journal d’un autre',

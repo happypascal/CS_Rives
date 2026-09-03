@@ -51,6 +51,16 @@ les mélanger.
 - **Chaque bloc dit aussi ce qui est IMPOSSIBLE, et pourquoi.** Trois alertes portent ce qui
   coûte cher à ignorer : l'irréversibilité de l'acte, le pouvoir réel du trésorier, la
   responsabilité personnelle du secrétaire sur les données des propriétaires.
+- **✅ Le bloc « chef de projet » réécrit en MARCHE À SUIVRE** (correction de Pascal, le même
+  jour). Ma première version listait ses **droits** ; ce dont il a besoin, c'est de savoir
+  **dans quel ordre faire les choses**. Neuf étapes, de l'enveloppe votée à la facture payée :
+  vérifier le budget alloué, tenir le journal dès le premier jour, consulter plusieurs
+  fournisseurs, rédiger la décision qui engage (avec TVA, HT/TTC et l'alerte de dépassement),
+  joindre le devis, soumettre et prévenir, **attendre l'enregistrement avant de commander**,
+  suivre l'exécution, clore par une décision.
+  ⚠ L'ordre EST le fond du sujet : commander sur la foi d'un devis avant l'enregistrement,
+  c'est engager l'association sans mandat. D'où une liste numérotée, placée **avant** les
+  droits.
 - **Reste à faire** : (1) la **mémoire du lotissement** — base de connaissance par sujet
   (portail, plage, canalisations, zone C, recouvrement…), qui est de la **donnée** et demande
   une table, des droits et des pièces jointes ; (2) le **point d'entrée technique** pour un
