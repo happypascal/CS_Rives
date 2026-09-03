@@ -42,7 +42,14 @@ du budget demandé à l'AG et du backlog ci-dessous.
   ⚠ **Leur place est là et pas sous un écran** : affecter un budget va de l'AG au projet, mener une
   décision va du brouillon à la signature. Les ranger sous un menu aurait obligé le lecteur à
   deviner lequel.
-- **Le manuel a désormais deux parties** : « Comment faire » (les parcours) et « Écran par écran ».
+- **✅ « Comment faire » devient une ENTRÉE DE MENU à part entière** (Pascal, le même jour), avant
+  le manuel. ⚠ Ce sont **deux questions différentes** : le manuel répond à « je suis sur cet écran,
+  que puis-je y faire ? », les parcours à « je dois accomplir telle chose, par où je commence ? ».
+  Les enfouir sous le manuel les rendait introuvables — et on cherche plus souvent à accomplir une
+  tâche qu'à inventorier un écran, d'où leur place **avant** dans le menu.
+- **Les deux pages se renvoient l'une à l'autre** : sans ce lien, le lecteur qui se trompe d'écran
+  ne trouve rien. Et le manuel **ne rend plus** les parcours — une doublure finit toujours par
+  diverger.
 - **Contenus qui répondent à des pièges réels** :
   - *Affecter un budget* : le rattachement se pilote **depuis l'AG, jamais depuis le projet** —
     c'est le contresens le plus courant, et le formulaire du projet n'a volontairement aucun champ

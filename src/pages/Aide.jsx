@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader } from '../components/ui'
 import { useAuth } from '../lib/AuthContext'
-import { manuelPour, parcoursPour, LIMITES_COMMUNES } from '../lib/aideLogic'
+import { manuelPour, LIMITES_COMMUNES } from '../lib/aideLogic'
 import { ROLE_LABELS } from '../lib/rolesLogic'
 
 // Manuel organisé par ENTRÉE DE MENU, filtré au rôle du lecteur.
@@ -17,7 +18,6 @@ export default function Aide() {
   const { user, isAdmin } = useAuth()
   const role = user?.membre_role || (isAdmin ? 'president' : 'membre')
   const menus = useMemo(() => manuelPour(role, isAdmin), [role, isAdmin])
-  const parcours = useMemo(() => parcoursPour(role, isAdmin), [role, isAdmin])
 
   // Une seule action ouverte à la fois : on cherche à faire UNE chose.
   const [ouverte, setOuverte] = useState(null)
@@ -35,67 +35,14 @@ export default function Aide() {
           Le manuel suit le menu de gauche. Pour chaque écran, les actions qui vous sont ouvertes —
           cliquez sur l’une d’elles pour voir la marche à suivre.
         </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Vous cherchez plutôt comment accomplir une tâche entière — affecter un budget, tenir une
+          assemblée ?{' '}
+          <Link to="/comment-faire" className="text-navy-600 underline">
+            Voir « Comment faire ».
+          </Link>
+        </p>
       </Card>
-
-      {/* Les parcours d'abord : ils traversent plusieurs écrans et répondent à
-          une tâche entière, pas à un bouton. Affecter un budget va de l'AG au
-          projet, mener une décision va du brouillon à la signature — les ranger
-          sous un menu aurait obligé le lecteur à deviner lequel. */}
-      {parcours.length > 0 && (
-        <>
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Comment faire
-          </h2>
-          <p className="mb-4 text-sm text-slate-600">
-            Les tâches qui traversent plusieurs écrans, de bout en bout.
-          </p>
-        </>
-      )}
-      {parcours.map((p) => {
-        const cle = `parcours-${p.cle}`
-        const ouvert = ouverte === cle
-        return (
-          <Card key={cle} className="mb-3 overflow-hidden border-navy-200">
-            <button
-              onClick={() => basculer(cle)}
-              className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left hover:bg-navy-50/40"
-            >
-              <span className="min-w-0">
-                <span className="block text-base font-semibold text-navy-800">{p.titre}</span>
-                <span className="mt-1 block text-sm text-slate-600">{p.resume}</span>
-              </span>
-              <span className="mt-1 shrink-0 text-navy-400">{ouvert ? '▲' : '▼'}</span>
-            </button>
-            {ouvert && (
-              <ol className="space-y-4 border-t border-navy-100 px-5 py-4">
-                {p.etapes.map((e, i) => (
-                  <li key={e.titre} className="flex gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy-100 text-xs font-semibold text-navy-700">
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0">
-                      <p className="text-sm font-medium text-navy-800">{e.titre}</p>
-                      <p className="mt-0.5 text-sm text-slate-600">{e.texte}</p>
-                      {e.alerte && (
-                        <p className="mt-1 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                          {e.alerte}
-                        </p>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </Card>
-        )
-      })}
-
-      <h2 className="mb-1 mt-10 text-sm font-semibold uppercase tracking-wide text-slate-500">
-        Écran par écran
-      </h2>
-      <p className="mb-4 text-sm text-slate-600">
-        Dans l’ordre du menu de gauche, avec les actions qui vous sont ouvertes.
-      </p>
 
       <div className="space-y-6">
         {menus.map((m) => (

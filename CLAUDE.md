@@ -96,7 +96,8 @@ src/
                       avec un template literal, ou l'exporter d'abord
     badges.jsx        badges de statut par entité
     RichTextEditor.jsx  éditeur contentEditable 3 boutons (execCommand)
-  pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS, Aide,
+  pages/              Login, ResetPassword, ForcePasswordChange, Dashboard, RegistreCS,
+                      Aide (manuel écran par écran) + CommentFaire (parcours transversaux),
                       SujetList/SujetDetail (mémoire du lotissement),
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
@@ -690,8 +691,13 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     manuel, avec sa note. Ce sont les **boutons d'écriture** que l'app retire, pas l'écran — et
     elle le fait déjà (`canManage` dans `AGList`, `AGDetail`, `Membres` ; `canEdit` dans
     `ProjetDetail`).
-  - **PARCOURS transversaux** (`PARCOURS`) pour les tâches qui traversent plusieurs écrans —
-    « conduire un projet, de l'enveloppe à la facture ». Aucun menu ne pouvait les porter.
+  - **PARCOURS transversaux** (`PARCOURS`), sur leur **propre écran** « Comment faire »
+    (`pages/CommentFaire.jsx`, entrée de menu distincte). ⚠ Deux questions différentes : le manuel
+    répond à « je suis sur cet écran, que puis-je y faire ? », les parcours à « je dois accomplir
+    telle chose, par où je commence ? ». Affecter un budget va de l'AG au projet, mener une
+    décision va du brouillon à la signature — aucune entrée de menu ne pouvait les porter, et les
+    enfouir dans le manuel les rendait introuvables. **Les deux pages se renvoient l'une à
+    l'autre.**
   - ⚠ **Ne décrire que ce qui est VRAI** : un manuel qui promet un bouton inexistant est pire que
     pas de manuel. Deux pièges vérifiés dans le code avant rédaction — le **trésorier a un pouvoir
     réel** (sans son vote ou celui du président, une décision qui engage de l'argent n'est pas

@@ -46,6 +46,7 @@ const SECTIONS = [
   {
     titre: 'Application',
     items: [
+      { to: '/comment-faire', label: 'Comment faire' },
       { to: '/aide', label: 'Manuel d’utilisation' },
       { to: '/parametres', label: 'Paramètres' },
     ],

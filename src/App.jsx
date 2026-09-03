@@ -22,6 +22,7 @@ import ProprietairesList from './pages/ProprietairesList'
 import LotDetail from './pages/LotDetail'
 import Parametres from './pages/Parametres'
 import Aide from './pages/Aide'
+import CommentFaire from './pages/CommentFaire'
 import SujetList from './pages/SujetList'
 import SujetDetail from './pages/SujetDetail'
 
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/parametres" element={<Parametres />} />
             <Route path="/memoire" element={<SujetList />} />
             <Route path="/memoire/:id" element={<SujetDetail />} />
+            <Route path="/comment-faire" element={<CommentFaire />} />
             <Route path="/aide" element={<Aide />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
