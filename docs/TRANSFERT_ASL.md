@@ -166,6 +166,26 @@ transmettre au successeur par le classeur de l'ASL, pas par GitHub :
 ⚠ Ces documents **se reconstruisent** depuis le registre et les sources publiques. Ce ne
 sont pas des originaux : le registre l'est.
 
+### Le carnet d'adresses du président (arbitrage Pascal, 2026-09-03)
+
+Les 55 destinataires figurent aussi dans **Contacts, sur la machine personnelle du
+président**, avec les trois groupes d'envoi. C'est assumé et cohérent avec la règle de
+l'app : la mention RGPD interdit de **transmettre** les coordonnées à des tiers, pas au
+président d'avoir de quoi joindre les colotis pour exercer son mandat.
+
+Position tenue : **ces fiches ne sont pas transmises au successeur**, et elles sont
+**effacées sur simple demande** de celui-ci.
+
+⚠ **Ce n'est pas le vote de l'AG qui rendra ce carnet inutile, mais l'infrastructure d'envoi
+qui suivra.** Entre l'AG et une adresse `info@cs-rives.com` réellement capable d'envoyer
+depuis l'app — service choisi, domaine authentifié, fonction serveur en place — le carnet et
+`scripts/creer_groupes_colotis.py` restent le seul moyen d'écrire aux colotis. Ne pas
+confondre l'objectif et la date : tant que l'app n'envoie pas, effacer le carnet reviendrait
+à priver l'ASL de tout moyen de communication.
+
+Le jour où l'app enverra elle-même, ces copies locales deviennent un résidu — et c'est alors
+qu'il faut les effacer, sur les deux supports : Contacts **et** l'historique de session.
+
 ### L'outillage, lui, est versionné
 
 - `scripts/backup.mjs` — sauvegarde de la base.
