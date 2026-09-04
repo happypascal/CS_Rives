@@ -26,6 +26,15 @@
 // PRÉALABLE : le schéma doit exister sur la cible. Passer `supabase/schema.sql`
 // dans le SQL Editor du projet vierge AVANT de lancer ce script.
 //
+// ÉPROUVÉ EN VRAI le 2026-09-04 : 19 tables, 198 lignes, 14 fichiers restaurés
+// sur un projet vierge, puis comparés à la sauvegarde champ par champ et fichier
+// par fichier (empreinte SHA-256). Identiques. Le test a trouvé DEUX défauts que
+// rien d'autre n'aurait montrés : une policy de Storage absente de `schema.sql`
+// (donc une install neuve où aucune pièce jointe ne pouvait être téléversée) et
+// un trigger qui traitait la RÉINSERTION comme une SOUMISSION, datant une
+// délibération du jour de la restauration (migration 047). C'est la raison
+// d'être de ce script, et elle est démontrée.
+//
 // ⚠ CE QUI N'EST PAS RESTAURÉ : les comptes de connexion (`auth.users`). Ils se
 // recréent à la main dans Authentication, avec les MÊMES adresses e-mail que
 // `membres_cs` — c'est l'e-mail qui lie les deux, au caractère près. Sans cela,

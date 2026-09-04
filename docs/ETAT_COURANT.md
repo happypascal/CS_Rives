@@ -50,10 +50,35 @@ du budget demandé à l'AG et du backlog ci-dessous.
   archive ? » sans sortir la clé `service_role`, qui contourne toute la RLS.
 - ⚠ **NON RESTAURÉ : `auth.users`.** Les comptes se recréent à la main, avec **exactement** les
   mêmes adresses e-mail que `membres_cs` — c'est l'e-mail qui lie les deux.
-- ⚠ **RESTE À ÉPROUVER EN VRAI** : il faut un projet Supabase **vierge**, `schema.sql` passé
-  dedans, puis `--confirmer`. Deux inconnues que seul ce test lèvera — les **triggers** peuvent
-  gêner (le garde de cycle des décisions à l'insertion, les triggers d'audit qui créeront des
-  lignes parasites), et l'ordre réel peut révéler un cycle que le graphe supposé ignore.
+- ✅ **ÉPROUVÉE EN VRAI le 2026-09-04**, sur un projet Supabase vierge : 19 tables, 198 lignes,
+  14 fichiers, puis vérification **champ par champ** et **empreinte SHA-256 de chaque fichier**.
+  La cible reproduit la sauvegarde à l'identique. L'insertion par passes a trouvé seule l'ordre
+  (`lots` avant `proprietaires`, `decisions` avant `votes`, `votes` avant
+  `decision_status_history`) — aucun cycle, trois passes.
+- ⚠ **LE TEST A TROUVÉ DEUX DÉFAUTS RÉELS**, tous deux invisibles autrement. C'est le résultat le
+  plus important de la session : ni l'un ni l'autre ne pouvait apparaître sans installer le
+  schéma sur une base vierge et y réinsérer les données pour de vrai.
+  1. **`schema.sql` n'avait pas la policy `documents_insert_membre`**, restée dans la seule
+     migration 012. Une **installation neuve** donnait un bucket où l'on pouvait lire et
+     supprimer mais **rien téléverser** : toutes les pièces jointes auraient échoué. La prod
+     n'était pas touchée — elle l'avait reçue par la migration. C'est la règle « `schema.sql` est
+     maintenu à jour » qui avait silencieusement cessé d'être vraie. Un audit complet
+     migrations ⇄ schéma ne trouve aucun autre trou.
+  2. **Le trigger `decisions_cycle_guard` ne distinguait pas réinsérer de soumettre**
+     (→ migration **047**). Son étape 5 était la seule à ne pas se garder par `v_maj` : en
+     restaurant, la décision **2026-003** a pris `soumise_le` = jour de la restauration et s'est
+     retrouvée **gelée**, alors qu'elle est antérieure à la 026 et que l'étape 3 s'interdit
+     précisément de geler ces décisions-là. **Une sauvegarde restaurée ne reproduisait pas le
+     registre.** Une seule décision sur huit était touchée — les sept autres étaient déjà gelées
+     et la condition les excluait par accident : le défaut se cachait derrière son propre
+     garde-fou partiel.
+     ⚠ **La correction n'était PAS de retirer `insert` du trigger** : l'application crée bien une
+     décision directement `ouverte_au_vote` en une écriture (« Enregistrer et soumettre » sur une
+     décision neuve), qui doit recevoir numéro, empreinte et gel. On distingue par ce que la ligne
+     PORTE DÉJÀ — un numéro ou une date de soumission ⇒ réinsertion, elle passe intacte. Effet nul
+     en exploitation normale.
+- ⚠ **NON RESTAURÉ : `auth.users`** (rappel). Après restauration, la base est complète mais
+  **personne ne peut se connecter** tant que les comptes ne sont pas recréés à la main.
 
 ## Session 2026-09-03 (suite 6) — pièces jointes sur la mémoire (046 ✅ appliquée)
 

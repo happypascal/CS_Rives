@@ -1000,12 +1000,22 @@ export const mockRepo = {
     // et le NUMÉRO attribué tout de suite. Les dates, elles, restent celles
     // saisies au formulaire — seule une décision qui ÉTAIT un brouillon voit sa
     // publication recalée.
-    if (phaseOf(d) === 'ouverte_au_vote') {
+    //
+    // REPRISE (migration 047) : une ligne qui porte DÉJÀ un numéro ou une date de
+    // soumission a été soumise un jour — on la réinsère, on ne la soumet pas une
+    // seconde fois. La regeler daterait la délibération du jour de la reprise.
+    // ⚠ Aucun appelant du mock ne réinsère aujourd'hui (le mode démo repart d'un
+    // seed) : la garde est ici pour que les deux backends ne divergent pas, la
+    // divergence étant exactement ce qui a laissé le défaut vivre côté Supabase.
+    const reprise = Boolean(input?.numero || input?.soumise_le)
+    if (phaseOf(d) === 'ouverte_au_vote' && !reprise) {
       d.soumise_le = nowISO()
       d.contenu_gele = contenuAGeler(d)
       d.hash_contenu = await sha256Hex(d.contenu_gele)
       if (!d.numero) d.numero = nextNumero(Number(String(d.date_publication).slice(0, 4)), data.decisions)
-    } else {
+    } else if (phaseOf(d) !== 'ouverte_au_vote') {
+      // Un brouillon n'a PAS de numéro (034). ⚠ La reprise, elle, garde le sien :
+      // le vider effacerait le numéro d'une délibération déjà au registre.
       d.numero = null
     }
     data.decisions.push(d)

@@ -693,16 +693,30 @@ end $$;
 create or replace function decisions_cycle_guard()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  v_maj    boolean;
-  v_change boolean := false;
-  v_texte  text;
-  v_annee  integer;
-  v_seq    integer;
+  v_maj     boolean;
+  v_change  boolean := false;
+  v_reprise boolean;
+  v_texte   text;
+  v_annee   integer;
+  v_seq     integer;
 begin
   -- ⚠ FORME CONTRAINTE PAR L'ÉDITEUR SQL DE SUPABASE, pas par le goût.
   -- Interdits, sous peine de rejet AVANT Postgres : toute chaine vide, toute
   -- apostrophe échappée, tout argument de formatage de `raise`. Messages NUS.
   v_maj := tg_op = 'UPDATE';
+
+  -- REPRISE (migration 047) : une insertion dont la ligne porte déjà un numéro
+  -- ou une date de soumission n'est pas une soumission, c'est une délibération
+  -- qui existait déjà et qu'on réinsère — restauration d'une sauvegarde, reprise
+  -- de données. Sans cette distinction, restaurer datait la délibération du jour
+  -- de la restauration et GELAIT le texte des décisions antérieures à 026, que
+  -- l'étape 3 s'interdit précisément de geler. Défaut trouvé en restaurant pour
+  -- de vrai, jamais visible autrement.
+  -- ⚠ Ne PAS « simplifier » en retirant `insert` du trigger : l'application crée
+  -- une décision directement `ouverte_au_vote` en une seule écriture (bouton
+  -- « Enregistrer et soumettre » sur une décision neuve). Elle arrive nue — ni
+  -- numéro, ni date de soumission — et doit bien passer par l'étape 5.
+  v_reprise := tg_op = 'INSERT' and (new.numero is not null or new.soumise_le is not null);
 
   if v_maj then
     v_change := new.titre is distinct from old.titre or new.description is distinct from old.description;
@@ -737,7 +751,9 @@ begin
   end if;
 
   -- 5. OUVERTURE DU VOTE : gel, empreinte, recalage des dates, NUMÉRO.
-  if new.phase = 'ouverte_au_vote' and new.contenu_gele is null then
+  --    `not v_reprise` (047) : on ne soumet pas une seconde fois une
+  --    délibération qui a déjà été soumise, on la réinsère telle quelle.
+  if new.phase = 'ouverte_au_vote' and new.contenu_gele is null and not v_reprise then
     new.soumise_le := coalesce(new.soumise_le, now());
     v_texte := concat(new.titre, chr(10), chr(10), new.description);
     new.contenu_gele := v_texte;
