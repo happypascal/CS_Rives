@@ -85,6 +85,20 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-04 (suite) — RECETTE EN SECRÉTAIRE sur la copie restaurée
 
+> **Migrations 047, 048 et 049 APPLIQUÉES EN PRODUCTION le 2026-09-04.** Validation passée :
+> les deux fonctions et leurs droits d'exécution en place, les deux gardes du cycle présentes,
+> la 2026-003 intacte (texte non gelé, date de soumission d'origine), aucune décision ouverte
+> sans numéro. ⚠ La validation de production est **en LECTURE SEULE**, à la différence de celle
+> du staging qui exécute réellement les fonctions : accepter une mention RGPD et horodater un
+> partage inscrirait dans un registre légal deux faits qui n'ont pas eu lieu. La preuve
+> fonctionnelle se fait sur le staging, sur une copie fidèle et avec le même SQL — c'est
+> précisément à cela qu'il sert.
+>
+> Recette conduite dans les trois rôles, y compris sur ce qu'ils ne doivent PAS pouvoir faire :
+> le trésorier ne voit rien du registre des propriétaires, un membre ordinaire ne relance pas la
+> décision d'un autre. Le trésorier valide bien les comptes (co-validation, 017) — vérifié en base,
+> pas seulement à l'écran.
+
 > Le staging portant une **copie fidèle de la prod**, la recette a été faite dessus en se
 > connectant successivement dans chaque rôle. Deux défauts trouvés en moins d'une heure, tous
 > deux invisibles au président — c'est l'argument pour ne jamais recetter en admin.
