@@ -1295,6 +1295,31 @@ create policy "documents_brouillon_prive" on storage.objects
     )
   );
 
+-- Écriture : tout membre ACTIF, et jamais sous une décision ENREGISTRÉE. La
+-- policy n'exige pas que la décision existe déjà : à la création, le fichier
+-- part AVANT que la ligne soit insérée (l'id est tiré côté client). Un chemin
+-- qui ne correspond à aucune décision — `projets/…`, `sujets/…`, `ag/…` — passe
+-- donc librement, ce qui est voulu : seules les délibérations figées sont
+-- protégées.
+--
+-- ⚠ `(storage.foldername(name))[2]` comparé en TEXTE et non converti en uuid :
+-- un chemin malformé lèverait une erreur au lieu de renvoyer faux.
+drop policy if exists "documents_insert_membre" on storage.objects;
+create policy "documents_insert_membre" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'documents'
+    and exists (
+      select 1 from public.membres_cs m
+      where m.id = public.current_membre_id() and m.actif
+    )
+    and not exists (
+      select 1 from public.decisions d
+      where d.id::text = (storage.foldername(name))[2]
+        and d.enregistree
+    )
+  );
+
 -- Pas de policy UPDATE, volontairement : chaque fichier est écrit sous un uuid
 -- neuf. Sans policy, l'écrasement est impossible.
 
