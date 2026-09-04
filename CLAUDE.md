@@ -105,6 +105,10 @@ src/
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
 scripts/
   backup.mjs          sauvegarde de la base (tables découvertes via l'OpenAPI PostgREST)
+  restore.mjs         restauration — ⚠ ordre d'insertion NON codé en dur : insertion par
+                      PASSES, ce qui échoue sur une clé étrangère repasse au tour suivant.
+                      Essai à blanc par défaut, refuse une cible non vide. Ne restaure PAS
+                      `auth.users` : les comptes se recréent à la main, même e-mail exact
   creer_groupes_colotis.py  constitue les 3 groupes d'envoi dans Contacts (Apple) depuis le
                       registre ; ⚠ SUPPRIME et reconstruit les groupes à chaque exécution
   REQUETE_export_destinataires.sql  la requête qui l'alimente

@@ -29,6 +29,32 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-04 — SAUVEGARDE exécutée, script de RESTAURATION écrit
+
+- **✅ Première sauvegarde réelle depuis l'ajout de la mémoire** : 19 tables, 198 lignes,
+  14 fichiers. `sujets` et `sujet_entrees` bien présents, **aucun avertissement** de découverte.
+- **Détail qui confirme le modèle** : **51 propriétaires pour 50 parcelles**. C'est la mutation
+  Gabisam — la période de Mme Pflieger a été close et une nouvelle ouverte, au lieu d'écraser la
+  ligne. « Le lot est stable, le propriétaire est une période » fonctionne comme prévu.
+- **✅ `scripts/restore.mjs`** — parce qu'une sauvegarde qu'on ne sait pas restaurer n'est pas une
+  sauvegarde, c'est une collection de fichiers rassurants.
+- ⚠ **L'ORDRE D'INSERTION N'EST PAS CODÉ EN DUR**, et c'est le cœur du script. Une liste ordonnée
+  à la main dériverait à la première migration — exactement ce qui venait d'arriver à la liste de
+  secours de `backup.mjs`. Insertion **par PASSES** : ce qui échoue sur une clé étrangère repasse
+  au tour suivant, on s'arrête quand une passe entière ne progresse plus. L'ordre se déduit du
+  réel. **Vérifié sans base** sur le piège authentique — `decision_status_history` précède
+  `decisions` dans l'ordre alphabétique des fichiers, et les passes rétablissent l'ordre.
+- **Trois gardes contre l'accident** : essai à blanc par défaut, refus d'une cible non vide (sauf
+  `--ecraser`), URL cible affichée avant toute écriture.
+- **Inspection possible SANS identifiants** : on doit pouvoir répondre à « qu'y a-t-il dans cette
+  archive ? » sans sortir la clé `service_role`, qui contourne toute la RLS.
+- ⚠ **NON RESTAURÉ : `auth.users`.** Les comptes se recréent à la main, avec **exactement** les
+  mêmes adresses e-mail que `membres_cs` — c'est l'e-mail qui lie les deux.
+- ⚠ **RESTE À ÉPROUVER EN VRAI** : il faut un projet Supabase **vierge**, `schema.sql` passé
+  dedans, puis `--confirmer`. Deux inconnues que seul ce test lèvera — les **triggers** peuvent
+  gêner (le garde de cycle des décisions à l'insertion, les triggers d'audit qui créeront des
+  lignes parasites), et l'ordre réel peut révéler un cycle que le graphe supposé ignore.
+
 ## Session 2026-09-03 (suite 6) — pièces jointes sur la mémoire (046 ✅ appliquée)
 
 - **✅ Fichiers attachés à chaque entrée de chronologie**, et au sujet lui-même. Demande de
