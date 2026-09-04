@@ -49,6 +49,16 @@ export function AuthProvider({ children }) {
 
   const resetPassword = useCallback((email) => authApi.resetPassword(email), [])
 
+  // L'utilisateur en mémoire est figé à l'ouverture de session (`resolveUser`).
+  // Une acceptation RGPD écrite en base n'y apparaîtrait qu'au prochain
+  // rechargement complet : l'écran d'acceptation reviendrait à chaque fois qu'on
+  // remonte `RgpdGate`, exactement comme quand l'écriture échouait. On recopie
+  // donc la date ici. ⚠ C'est un REFLET de ce que la base vient de confirmer,
+  // pas une supposition : on ne pose que la valeur renvoyée par l'écriture.
+  const marquerRgpdAccepte = useCallback((date) => {
+    setUser((u) => (u ? { ...u, registre_rgpd_accepte_le: date || new Date().toISOString() } : u))
+  }, [])
+
   // isAdmin = président (rôle d'auth). isSecretaire / isTresorier lisent le rôle
   // du bureau exposé par resolveUser. Distincts : un secrétaire n'est pas admin.
   const isAdmin = user?.role === 'admin'
@@ -56,7 +66,7 @@ export function AuthProvider({ children }) {
   const isTresorier = user?.membre_role === 'tresorier'
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isSecretaire, isTresorier, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isSecretaire, isTresorier, signIn, signOut, resetPassword, marquerRgpdAccepte }}>
       {children}
     </AuthContext.Provider>
   )

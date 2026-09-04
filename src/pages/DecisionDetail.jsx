@@ -27,7 +27,7 @@ function activeMembersAt(members, dateISO) {
 export default function DecisionDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isSecretaire } = useAuth()
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [decision, setDecision] = useState(null)
@@ -374,8 +374,13 @@ export default function DecisionDetail() {
                 aussi notifier, y compris APRÈS enregistrement — pour annoncer au CS
                 qu'une décision est enregistrée, quel que soit le résultat. D'où le
                 retrait de `!locked` ici (la modale propose le bon gabarit).
-                Rien à annoncer, en revanche, tant que la décision n'est pas soumise. */}
-            {(isOwner || isAdmin) && !enPreparation && (
+                Rien à annoncer, en revanche, tant que la décision n'est pas soumise.
+                ⚠ Le SECRÉTAIRE aussi (arbitrage Pascal 2026-09-04) : convoquer et
+                relancer le conseil est sa fonction, y compris sur la décision d'un
+                autre. La même règle est portée en base par
+                `marquer_decision_notifiee` (migration 048) — l'écran ne fait que
+                l'annoncer, il ne la décide pas. */}
+            {(isOwner || isAdmin || isSecretaire) && !enPreparation && (
               <Button variant={decision.date_notification ? 'secondary' : 'primary'} onClick={() => setShare(true)}>
                 {decision.date_notification ? 'Notifier à nouveau' : 'Prévenir le CS'}
               </Button>

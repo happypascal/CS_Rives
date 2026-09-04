@@ -1157,6 +1157,16 @@ export const mockRepo = {
     const data = load()
     const d = data.decisions.find((x) => x.id === id)
     if (!d) throw new Error('Décision introuvable')
+    // Miroir de `marquer_decision_notifiee` (migration 048) : auteur, président
+    // ou SECRÉTAIRE — convoquer et relancer le conseil est sa fonction. Le mock
+    // ne prouve rien (il n'a pas de RLS), mais s'il restait permissif il
+    // masquerait à nouveau un refus de la base, ce qui est précisément le piège
+    // qui a laissé le défaut vivre.
+    const u = getSessionUser()
+    const membre = u ? data.membres_cs.find((m) => m.id === u.membre_id) : null
+    const autorise = d.created_by === u?.membre_id || u?.role === 'admin' || membre?.role === 'secretaire'
+    if (!autorise) throw new Error('Seuls l’auteur, le président et le secrétaire annoncent une décision au conseil.')
+    if (avantSoumission(d)) throw new Error('Rien à annoncer : la décision n’a pas encore été soumise au vote.')
     d.date_notification = nowISO()
     audit(data, 'decisions', id, 'notify', `Partage au CS — ${d.numero}`)
     save(data)
@@ -1654,7 +1664,9 @@ export const mockRepo = {
       audit(data, 'membres_cs', membreId, 'rgpd', `Mention RGPD du registre des propriétaires acceptée par ${m.prenom} ${m.nom}`)
       save(data)
     }
-    return clone(m)
+    // Renvoie la DATE, comme `accepter_rgpd_registre` côté Supabase — l'écran
+    // la reporte dans le contexte d'auth pour ne pas redemander l'acceptation.
+    return m.registre_rgpd_accepte_le
   },
 
   // ---- Audit ----

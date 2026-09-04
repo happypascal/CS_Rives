@@ -114,6 +114,7 @@ export const MENUS = [
           'Cliquez sur « Prévenir le CS ».',
           'Un message pré-rédigé s’ouvre dans WhatsApp : choisissez le groupe du conseil et envoyez.',
           'Le bouton devient « Notifier à nouveau » — utile pour une relance.',
+          'Sur VOS décisions, vous en êtes toujours capable. Sur celle d’un autre membre, seuls le président et le secrétaire peuvent relancer — convoquer le conseil est la fonction du secrétaire.',
         ],
         alerte:
           'L’application n’avertit personne d’elle-même. Sans ce geste, une décision peut rester ouverte sans que quiconque le sache.',

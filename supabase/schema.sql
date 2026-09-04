@@ -693,12 +693,13 @@ end $$;
 create or replace function decisions_cycle_guard()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  v_maj     boolean;
-  v_change  boolean := false;
-  v_reprise boolean;
-  v_texte   text;
-  v_annee   integer;
-  v_seq     integer;
+  v_maj       boolean;
+  v_change    boolean := false;
+  v_reprise   boolean;
+  v_ouverture boolean;
+  v_texte     text;
+  v_annee     integer;
+  v_seq       integer;
 begin
   -- ⚠ FORME CONTRAINTE PAR L'ÉDITEUR SQL DE SUPABASE, pas par le goût.
   -- Interdits, sous peine de rejet AVANT Postgres : toute chaine vide, toute
@@ -717,6 +718,17 @@ begin
   -- « Enregistrer et soumettre » sur une décision neuve). Elle arrive nue — ni
   -- numéro, ni date de soumission — et doit bien passer par l'étape 5.
   v_reprise := tg_op = 'INSERT' and (new.numero is not null or new.soumise_le is not null);
+
+  -- OUVERTURE (migration 049) : le moment, unique, où le vote s'ouvre. Soit
+  -- l'insertion d'une décision soumise d'emblée, soit le PASSAGE à
+  -- `ouverte_au_vote`. Une décision déjà ouverte ne s'ouvre pas une seconde fois.
+  -- ⚠ Sans cette distinction, TOUTE mise à jour d'une décision antérieure à la
+  -- 026 (ouverte, jamais gelée) la gelait et reposait `soumise_le` au jour du
+  -- clic — changer la visibilité, horodater un partage, rattacher un projet. La
+  -- promesse de l'étape 3 (« ne pas geler rétroactivement ») ne tenait que
+  -- jusqu'au premier UPDATE.
+  v_ouverture := (tg_op = 'INSERT' and not v_reprise)
+              or (v_maj and new.phase is distinct from old.phase and new.phase = 'ouverte_au_vote');
 
   if v_maj then
     v_change := new.titre is distinct from old.titre or new.description is distinct from old.description;
@@ -751,9 +763,10 @@ begin
   end if;
 
   -- 5. OUVERTURE DU VOTE : gel, empreinte, recalage des dates, NUMÉRO.
-  --    `not v_reprise` (047) : on ne soumet pas une seconde fois une
-  --    délibération qui a déjà été soumise, on la réinsère telle quelle.
-  if new.phase = 'ouverte_au_vote' and new.contenu_gele is null and not v_reprise then
+  --    `v_ouverture` (047 + 049) : on gèle au moment où le vote s'ouvre — ni à
+  --    la réinsertion d'une délibération qui l'a déjà été, ni à chaque mise à
+  --    jour d'une décision déjà ouverte.
+  if new.phase = 'ouverte_au_vote' and new.contenu_gele is null and v_ouverture then
     new.soumise_le := coalesce(new.soumise_le, now());
     v_texte := concat(new.titre, chr(10), chr(10), new.description);
     new.contenu_gele := v_texte;
@@ -782,6 +795,92 @@ begin
 
   return new;
 end $$;
+
+-- =============================================================================
+-- DEUX ÉCRITURES ÉTROITES POUR LE SECRÉTAIRE (migration 048)
+--
+-- ⚠ Une écriture rejetée par la RLS ne lève AUCUNE erreur : PostgREST renvoie
+-- `data: []`, `error: null`, et l'écran croit avoir réussi. Les deux défauts
+-- ci-dessous ont vécu ainsi jusqu'à une recette faite EN SECRÉTAIRE — ni le
+-- compte président (qui passe par `write_admin`) ni le mode démo (sans RLS) ne
+-- pouvaient les montrer.
+--
+-- La RLS ne sait pas restreindre les COLONNES. Ouvrir `membres_cs` ou
+-- `decisions` en écriture au secrétaire lui donnerait bien plus que ce qu'on
+-- veut — son rôle, son `actif`, le montant d'une délibération. D'où deux
+-- fonctions `security definer` à portée étroite, plutôt que deux policies
+-- larges. L'identité vient toujours de `current_membre_id()`, jamais du client.
+-- =============================================================================
+
+-- Acceptation de la mention RGPD du registre des propriétaires. Une seule fois :
+-- `coalesce` garde la PREMIÈRE date, donc `trg_membres_audit_rgpd` ne trace pas
+-- deux fois.
+create or replace function accepter_rgpd_registre()
+returns timestamptz language plpgsql security definer set search_path = public as $$
+declare
+  v_membre uuid;
+  v_date   timestamptz;
+begin
+  v_membre := current_membre_id();
+  if v_membre is null then
+    raise exception 'Aucune fiche de membre ne correspond a ce compte : acceptation impossible.';
+  end if;
+
+  update membres_cs
+     set registre_rgpd_accepte_le = coalesce(registre_rgpd_accepte_le, now())
+   where id = v_membre
+  returning registre_rgpd_accepte_le into v_date;
+
+  return v_date;
+end $$;
+
+revoke all on function accepter_rgpd_registre() from public;
+grant execute on function accepter_rgpd_registre() to authenticated;
+
+-- Horodatage du partage au CS. Convoquer et relancer le conseil est la fonction
+-- du SECRÉTAIRE (arbitrage Pascal, 2026-09-04) : il n'était ni auteur ni
+-- président, donc son écriture partait à zéro ligne. L'auteur et le président
+-- passent par le même chemin — deux chemins finissent toujours par diverger.
+-- Rien à annoncer avant la soumission ; une décision annulée ou enregistrée
+-- reste notifiable, c'est justement le résultat qu'on annonce.
+create or replace function marquer_decision_notifiee(p_decision_id uuid)
+returns timestamptz language plpgsql security definer set search_path = public as $$
+declare
+  v_membre uuid;
+  v_auteur uuid;
+  v_phase  text;
+  v_date   timestamptz;
+begin
+  v_membre := current_membre_id();
+  if v_membre is null then
+    raise exception 'Aucune fiche de membre ne correspond a ce compte.';
+  end if;
+
+  select d.created_by, d.phase into v_auteur, v_phase
+    from decisions d where d.id = p_decision_id;
+
+  if v_phase is null then
+    raise exception 'Decision introuvable.';
+  end if;
+
+  if v_phase in ('brouillon','planifiee') then
+    raise exception 'Rien a annoncer : la decision n a pas encore ete soumise au vote.';
+  end if;
+
+  if not (v_auteur = v_membre or is_admin() or is_secretaire()) then
+    raise exception 'Seuls l auteur, le president et le secretaire annoncent une decision au conseil.';
+  end if;
+
+  update decisions
+     set date_notification = now()
+   where id = p_decision_id
+  returning date_notification into v_date;
+
+  return v_date;
+end $$;
+
+revoke all on function marquer_decision_notifiee(uuid) from public;
+grant execute on function marquer_decision_notifiee(uuid) to authenticated;
 
 drop trigger if exists trg_decisions_cycle_guard on decisions;
 create trigger trg_decisions_cycle_guard

@@ -79,6 +79,49 @@ du budget demandé à l'AG et du backlog ci-dessous.
      en exploitation normale.
 - ⚠ **NON RESTAURÉ : `auth.users`** (rappel). Après restauration, la base est complète mais
   **personne ne peut se connecter** tant que les comptes ne sont pas recréés à la main.
+  **Vérifié en vrai** : le staging portait encore les 5 comptes de test de l'ancien seed
+  (`+president`, `+tresorier`…), dont **aucun** ne correspondait aux membres restaurés. Base
+  intacte, application inutilisable. Le jour d'un vrai sinistre, c'est là qu'on perdrait une heure.
+
+## Session 2026-09-04 (suite) — RECETTE EN SECRÉTAIRE sur la copie restaurée
+
+> Le staging portant une **copie fidèle de la prod**, la recette a été faite dessus en se
+> connectant successivement dans chaque rôle. Deux défauts trouvés en moins d'une heure, tous
+> deux invisibles au président — c'est l'argument pour ne jamais recetter en admin.
+
+- ⚠ **UNE ÉCRITURE REFUSÉE PAR LA RLS NE LÈVE AUCUNE ERREUR.** PostgREST renvoie `data: []`,
+  `error: null` ; `must()` n'a rien à signaler et l'écran croit avoir réussi. **C'est le mode de
+  panne dominant de cette application**, et les deux défauts ci-dessous en sont des cas. Même
+  famille que l'incident de casse d'e-mail du 2026-07-19 (migration 018).
+- **Acceptation RGPD jamais enregistrée pour le secrétaire** (→ **048**). `membres_cs` ne porte que
+  `read_auth` et `write_admin` : l'update d'un non-président touchait zéro ligne. `RgpdGate`
+  masquait l'échec dans la session par son état local, d'où un écran qui revenait à chaque visite.
+  ⚠ **Corrigé par une fonction `security definer` étroite, PAS par une policy d'écriture sur
+  `membres_cs`** : la RLS ne restreint pas les colonnes, et `using (id = current_membre_id())`
+  aurait laissé un membre changer son propre `role`. L'identité vient de `current_membre_id()`,
+  jamais d'un argument — on ne laisse pas le client désigner qui accepte une mention légale.
+  ⚠ **Second étage** : même la base corrigée, l'écran serait revenu — l'utilisateur du contexte est
+  figé à l'ouverture de session. D'où `marquerRgpdAccepte` dans `AuthContext`.
+- **Relance du vote impossible au secrétaire** (→ **048**, arbitrage Pascal 2026-09-04) : convoquer
+  et relancer le conseil **est** sa fonction, y compris sur la décision d'un autre. ⚠ Ouvrir le
+  bouton seul n'aurait rien donné : l'écriture de `date_notification` serait repartie à zéro ligne,
+  exactement comme le RGPD. La règle est donc portée **en base**
+  (`marquer_decision_notifiee`), et l'auteur comme le président passent par le **même** chemin —
+  deux chemins finissent toujours par diverger.
+- **Le gel appartenait à toute mise à jour, pas à l'ouverture** (→ **049**), trouvé en préparant la
+  relance. Sur une décision antérieure à la 026 — la **2026-003** — *n'importe quelle* mise à jour
+  déclenchait l'étape 5 : gel du texte et `soumise_le` reposée au jour du clic. Changer la
+  visibilité suffisait, et la première relance du secrétaire l'aurait datée d'aujourd'hui. La
+  promesse de l'étape 3 (« ne pas geler rétroactivement ») ne tenait que jusqu'au premier UPDATE.
+  Désormais on gèle **quand le vote s'ouvre** — insertion d'une décision soumise d'emblée, ou
+  passage de brouillon/planifiée à ouverte — et jamais ensuite.
+- **Validé par un script qui EXÉCUTE les fonctions**, pas qui constate leur existence : le
+  secrétaire accepte le RGPD et relance la décision d'un autre, un membre ordinaire est **refusé**.
+  ⚠ Une règle qui autorise sans jamais refuser n'est pas une règle — le contre-test fait partie de
+  la validation, pas de son décor.
+- **Confirmé, non un bug** : le secrétaire **modifie** le registre des propriétaires. C'est la seule
+  table de l'app ouverte au président *et* au secrétaire, et fermée à tous les autres, trésorier
+  compris (migration 035).
 
 ## Session 2026-09-03 (suite 6) — pièces jointes sur la mémoire (046 ✅ appliquée)
 

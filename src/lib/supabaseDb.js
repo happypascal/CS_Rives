@@ -453,12 +453,15 @@ export const supabaseRepo = {
   },
   // Horodate le partage au CS. Volontairement hors updateDecision : ce n'est
   // pas une modification de contenu, et une relance doit rester possible.
+  //
+  // ⚠ RPC et non `update` (migration 048) : le SECRÉTAIRE n'est ni auteur ni
+  // président, son update partait à zéro ligne en silence. Convoquer et relancer
+  // le conseil est pourtant sa fonction. La fonction en base porte la règle
+  // d'accès — auteur, président ou secrétaire — pour que l'écran ne soit pas seul
+  // à la connaître.
   async markDecisionNotified(id) {
-    return must(
-      await supabase.from('decisions')
-        .update({ date_notification: new Date().toISOString() })
-        .eq('id', id).select(),
-    )[0]
+    must(await supabase.rpc('marquer_decision_notifiee', { p_decision_id: id }))
+    return null
   },
   async recordDecision(id, { statut, quorum_atteint, composition_snapshot, date_enregistrement }) {
     const current = must(await supabase.from('decisions').select('statut').eq('id', id).maybeSingle())
@@ -667,10 +670,20 @@ export const supabaseRepo = {
       .insert({ ...nouveau, lot_id: lotId, date_acquisition: date_mutation }).select())[0]
   },
   // Acceptation de la mention RGPD. Tracée en base par `trg_membres_audit_rgpd`.
-  async accepterRgpdRegistre(membreId) {
-    return must(await supabase.from('membres_cs')
-      .update({ registre_rgpd_accepte_le: new Date().toISOString() })
-      .eq('id', membreId).select())[0]
+  //
+  // ⚠ RPC et non `update` (migration 048). `membres_cs` ne porte que `read_auth`
+  // et `write_admin` : l'update d'un SECRÉTAIRE touchait zéro ligne, sans erreur
+  // — PostgREST renvoie `data: []`, `error: null`. L'acceptation n'était donc
+  // jamais enregistrée et l'écran revenait à chaque visite. On ne corrige pas en
+  // ouvrant `membres_cs` en écriture : la RLS ne restreint pas les colonnes, et
+  // un membre pourrait changer son rôle. `membreId` reste dans la signature pour
+  // la parité avec le mock, mais la fonction ignore l'argument et lit l'identité
+  // en base : on ne laisse pas le client désigner qui accepte une mention légale.
+  // Renvoie la DATE d'acceptation — la première, si elle existait déjà. Même
+  // valeur de retour que le mock, pour que l'écran n'ait pas à savoir lequel des
+  // deux backends il interroge.
+  async accepterRgpdRegistre(_membreId) {
+    return must(await supabase.rpc('accepter_rgpd_registre'))
   },
 
   // ---- Audit ----

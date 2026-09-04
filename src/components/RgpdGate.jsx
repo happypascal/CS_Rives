@@ -28,7 +28,7 @@ import {
 } from '../lib/rgpdRegistre'
 
 export function RgpdGate({ children }) {
-  const { user, isAdmin, isSecretaire } = useAuth()
+  const { user, isAdmin, isSecretaire, marquerRgpdAccepte } = useAuth()
   const bureau = isAdmin || isSecretaire
   // `null` tant qu'on n'a rien accepté dans CETTE session : la valeur de départ
   // vient du membre connecté, l'acceptation locale évite un rechargement.
@@ -58,7 +58,12 @@ export function RgpdGate({ children }) {
       setBusy(true)
       setError('')
       try {
-        await repo.accepterRgpdRegistre(user.membre_id)
+        // ⚠ On reporte la date dans l'utilisateur du contexte, pas seulement
+        // dans l'état local : `accepteLocal` disparaît au démontage, et l'écran
+        // reviendrait à chaque retour sur le registre — le symptôme même qu'on
+        // corrige (migration 048).
+        const date = await repo.accepterRgpdRegistre(user.membre_id)
+        marquerRgpdAccepte(date)
         setAccepteLocal(true)
       } catch (e) {
         setError(e.message)
