@@ -29,6 +29,27 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
 
+## Session 2026-09-10 — Pièces jointes sur les entrées du journal de projet
+
+> **Migration 050 APPLIQUÉE EN PRODUCTION le 2026-09-10.** Colonne `journal_projet.documents`
+> vérifiée (`jsonb`, défaut `'[]'::jsonb`).
+
+- Demande de Pascal : « on ne peut les attacher qu'au projet pour l'instant ». Même besoin et
+  même réponse qu'à la **046** pour la mémoire du lotissement.
+- ⚠ **La distinction est le gain, pas la colonne.** Les pièces du PROJET décrivent le projet et
+  ne sont datées de rien ; celles d'une ENTRÉE sont attachées à un fait daté. Trois devis rangés
+  en vrac sur la fiche ne disent plus lequel est arrivé avant la visite du 12 — c'est exactement
+  ce que le journal existe pour tenir (cf. les deux dates de la 029).
+- ⚠ **Aucune policy à ajouter, vérifié plutôt que supposé** : le chemin est `projets/<projet_id>/…`,
+  déjà celui des pièces du projet, donc `documents_insert_membre` l'accepte et
+  `documents_brouillon_prive` ne vise que le préfixe `decisions`. Côté table, `journal_projet` est
+  déjà dans `read_auth` et l'écriture reste bornée par `journal_projet_self_update/_self_delete`.
+- ⚠ Le chemin porte l'id du **projet**, pas de l'entrée : le projet existe au moment de l'envoi,
+  l'entrée pas encore. Même raison qu'en 046.
+- **Manuel corrigé** : deux parcours disaient encore de joindre les devis et les factures « au
+  projet ». Un manuel qui décrit un rangement qui n'est plus le bon est aussi faux qu'un manuel
+  qui promet un bouton inexistant.
+
 ## Session 2026-09-04 — SAUVEGARDE exécutée, script de RESTAURATION écrit
 
 - **✅ Première sauvegarde réelle depuis l'ajout de la mémoire** : 19 tables, 198 lignes,
