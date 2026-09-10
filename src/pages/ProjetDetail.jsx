@@ -10,6 +10,7 @@ import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDocument } from '../lib/documents'
+import PiecesJointes from '../components/PiecesJointes'
 
 export default function ProjetDetail() {
   const { id } = useParams()
@@ -29,7 +30,12 @@ export default function ProjetDetail() {
   // c'est le point de la demande, on note souvent après coup.
   const [jDate, setJDate] = useState(todayISO())
   const [jTexte, setJTexte] = useState('')
-  const [jEdit, setJEdit] = useState(null) // { id, date_action, texte } en cours de correction
+  // Pièces jointes de l'entrée en cours de saisie (migration 050). Le composant
+  // est CONTRÔLÉ : les fichiers partent tout de suite vers le bucket, la liste
+  // vit ici jusqu'à « Consigner ». C'est ce qui permet de joindre un document
+  // avant que la ligne existe.
+  const [jDocs, setJDocs] = useState([])
+  const [jEdit, setJEdit] = useState(null) // { id, date_action, texte, documents } en cours de correction
   const [confirm, confirmModal] = useConfirm()
 
   // Bucket privé : l'URL est signée au clic, un échec doit se voir.
@@ -121,9 +127,13 @@ export default function ProjetDetail() {
   const addJournal = async () => {
     if (!jTexte.trim() || !jDate) return
     try {
-      await repo.addJournalProjet({ projet_id: id, date_action: jDate, texte: jTexte.trim(), auteur_id: user.membre_id })
+      await repo.addJournalProjet({
+        projet_id: id, date_action: jDate, texte: jTexte.trim(),
+        auteur_id: user.membre_id, documents: jDocs,
+      })
       setJTexte('')
       setJDate(todayISO())
+      setJDocs([])
       await reload()
     } catch (e) {
       alert('L’entrée n’a pas pu être enregistrée : ' + e.message)
@@ -132,7 +142,9 @@ export default function ProjetDetail() {
   const saveJournal = async () => {
     if (!jEdit?.texte.trim() || !jEdit?.date_action) return
     try {
-      await repo.updateJournalProjet(jEdit.id, { date_action: jEdit.date_action, texte: jEdit.texte.trim() })
+      await repo.updateJournalProjet(jEdit.id, {
+        date_action: jEdit.date_action, texte: jEdit.texte.trim(), documents: jEdit.documents || [],
+      })
       setJEdit(null)
       await reload()
     } catch (e) {
@@ -367,9 +379,23 @@ export default function ProjetDetail() {
                 <Textarea autoGrow rows={2} value={jTexte} onChange={(e) => setJTexte(e.target.value)} placeholder="ex : visite de chantier, relance du prestataire, rendez-vous en mairie…" className="min-w-0 flex-1" />
                 <Button onClick={addJournal} disabled={!jTexte.trim() || !jDate}>Consigner</Button>
               </div>
+              {/* Pièces jointes de l'entrée (migration 050). Le chemin porte
+                  l'id du PROJET — il existe, l'entrée pas encore — et c'est
+                  déjà le préfixe des pièces du projet, donc aucune policy de
+                  Storage à ajouter. */}
+              <div className="mt-3">
+                <PiecesJointes
+                  scope="projets"
+                  entityId={id}
+                  documents={jDocs}
+                  onChange={setJDocs}
+                  label="Pièces jointes de cette entrée"
+                />
+              </div>
               <p className="mt-1 text-xs text-slate-400">
                 La date est celle de <strong>l’action</strong>, pas de la saisie : notez aujourd’hui ce qui s’est passé la
-                semaine dernière, en reculant la date.
+                semaine dernière, en reculant la date. Joignez ici ce qui date du même jour — la photo de la visite, le
+                devis reçu, le courrier ; les pièces qui décrivent le projet lui-même vont sur la fiche, plus haut.
               </p>
             </div>
           )}
@@ -383,11 +409,22 @@ export default function ProjetDetail() {
                 return (
                   <li key={j.id} className="rounded-md border border-slate-200 px-3 py-2">
                     {jEdit?.id === j.id ? (
-                      <div className="flex flex-wrap items-end gap-2">
-                        <Input label="Date de l’action" type="date" value={jEdit.date_action} onChange={(e) => setJEdit({ ...jEdit, date_action: e.target.value })} className="w-44" />
-                        <Textarea autoGrow rows={2} value={jEdit.texte} onChange={(e) => setJEdit({ ...jEdit, texte: e.target.value })} className="min-w-0 flex-1" />
-                        <Button size="sm" onClick={saveJournal}>Enregistrer</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setJEdit(null)}>Annuler</Button>
+                      <div>
+                        <div className="flex flex-wrap items-end gap-2">
+                          <Input label="Date de l’action" type="date" value={jEdit.date_action} onChange={(e) => setJEdit({ ...jEdit, date_action: e.target.value })} className="w-44" />
+                          <Textarea autoGrow rows={2} value={jEdit.texte} onChange={(e) => setJEdit({ ...jEdit, texte: e.target.value })} className="min-w-0 flex-1" />
+                          <Button size="sm" onClick={saveJournal}>Enregistrer</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setJEdit(null)}>Annuler</Button>
+                        </div>
+                        <div className="mt-3">
+                          <PiecesJointes
+                            scope="projets"
+                            entityId={id}
+                            documents={jEdit.documents || []}
+                            onChange={(documents) => setJEdit((x) => ({ ...x, documents }))}
+                            label="Pièces jointes de cette entrée"
+                          />
+                        </div>
                       </div>
                     ) : (
                       /* UNE SEULE LIGNE quand le sujet est court : date, sujet,
@@ -398,16 +435,26 @@ export default function ProjetDetail() {
                          celle de l'action intéresse le lecteur. Elle reste
                          stockée dans `created_at` — on cesse de la montrer, on
                          ne cesse pas de la garder. */
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className="whitespace-nowrap text-sm font-semibold text-navy-800">{formatDate(j.date_action)}</span>
-                        <span className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-slate-700">{j.texte}</span>
-                        {mien && (
-                          <span className="flex shrink-0 gap-2">
-                            <button onClick={() => setJEdit({ id: j.id, date_action: j.date_action, texte: j.texte })} className="text-xs text-navy-600 underline">Corriger</button>
-                            <button onClick={() => delJournal(j)} className="text-xs text-red-600 underline">Supprimer</button>
-                          </span>
+                      <div>
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <span className="whitespace-nowrap text-sm font-semibold text-navy-800">{formatDate(j.date_action)}</span>
+                          <span className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-slate-700">{j.texte}</span>
+                          {mien && (
+                            <span className="flex shrink-0 gap-2">
+                              <button onClick={() => setJEdit({ id: j.id, date_action: j.date_action, texte: j.texte, documents: j.documents || [] })} className="text-xs text-navy-600 underline">Corriger</button>
+                              <button onClick={() => delJournal(j)} className="text-xs text-red-600 underline">Supprimer</button>
+                            </span>
+                          )}
+                          <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{nameOf(j.auteur_id)}</span>
+                        </div>
+                        {/* Les pièces ne s'affichent que s'il y en a : une entrée
+                            sur deux n'en a pas, et un intitulé vide sur chaque
+                            ligne alourdirait le journal pour rien. */}
+                        {(j.documents || []).length > 0 && (
+                          <div className="mt-2">
+                            <PiecesJointes scope="projets" entityId={id} documents={j.documents} readOnly label="" />
+                          </div>
                         )}
-                        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{nameOf(j.auteur_id)}</span>
                       </div>
                     )}
                   </li>

@@ -1423,11 +1423,17 @@ export const mockRepo = {
   //
   // ⚠ Rien à voir avec `audit()` : celui-ci est automatique et immuable, le
   // journal est saisi à la main et corrigeable. Deux journaux, deux usages.
-  async addJournalProjet({ projet_id, date_action, texte, auteur_id }) {
+  async addJournalProjet({ projet_id, date_action, texte, auteur_id, documents }) {
     await delay()
     const data = load()
     data.journal_projet ||= []
-    const j = { id: uid(), projet_id, date_action, texte, auteur_id, created_at: nowISO(), updated_at: nowISO() }
+    // `documents` (migration 050) : les pièces sont déjà téléversées quand on
+    // arrive ici — le composant est contrôlé, la liste appartient à l'écran.
+    const j = {
+      id: uid(), projet_id, date_action, texte, auteur_id,
+      documents: documents || [],
+      created_at: nowISO(), updated_at: nowISO(),
+    }
     data.journal_projet.push(j)
     save(data)
     return clone(j)
@@ -1435,7 +1441,7 @@ export const mockRepo = {
   // `created_at` n'est JAMAIS touché : c'est la date de saisie, elle fait foi
   // sur le moment où la ligne a été écrite. Seuls la date de l'action et le
   // texte se corrigent.
-  async updateJournalProjet(id, { date_action, texte }) {
+  async updateJournalProjet(id, { date_action, texte, documents }) {
     await delay()
     const data = load()
     const j = (data.journal_projet || []).find((x) => x.id === id)
@@ -1446,6 +1452,7 @@ export const mockRepo = {
     }
     if (date_action !== undefined) j.date_action = date_action
     if (texte !== undefined) j.texte = texte
+    if (documents !== undefined) j.documents = documents
     j.updated_at = nowISO()
     save(data)
     return clone(j)

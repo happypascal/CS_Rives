@@ -228,9 +228,11 @@ export const MENUS = [
           'Ouvrez le projet, section journal.',
           'Saisissez la date à laquelle la chose s’est passée — pas celle où vous l’écrivez.',
           'Décrivez en une ligne : visite, appel, courrier, réunion.',
+          'Joignez les pièces du jour : la photo de la visite, le devis reçu, le courrier de la mairie. Elles restent attachées à cette entrée et à sa date.',
+          '« Consigner » enregistre la ligne et ses pièces d’un seul coup.',
         ],
         alerte:
-          'Chacun corrige et supprime ses propres lignes. Le chef de projet ne réécrit pas le compte rendu d’un autre.',
+          'Chacun corrige et supprime ses propres lignes. Le chef de projet ne réécrit pas le compte rendu d’un autre. Les pièces jointes à une entrée ne se confondent pas avec celles de la fiche du projet : celles-ci décrivent le projet, celles-là sont datées d’un fait.',
       },
       {
         titre: 'Suspendre, reprendre ou terminer un projet',
@@ -583,7 +585,7 @@ export const PARCOURS = [
       {
         titre: 'Consulter plusieurs fournisseurs',
         texte:
-          'Demandez plusieurs devis. Consignez au journal qui a répondu, à quel prix, ce que le devis comprend et ce qu’il exclut. Joignez les devis au projet.',
+          'Demandez plusieurs devis. Consignez au journal qui a répondu, à quel prix, ce que le devis comprend et ce qu’il exclut — et joignez chaque devis à l’entrée du jour où il est arrivé. Rangés en vrac sur la fiche du projet, trois devis ne disent plus lequel est venu avant quoi.',
       },
       {
         titre: 'Rédiger la décision qui engage la dépense',
@@ -607,7 +609,7 @@ export const PARCOURS = [
       {
         titre: 'Suivre l’exécution, puis clore',
         texte:
-          'Journal : commande, acompte, chantier, réception, réserves. Factures jointes au projet. Pour terminer le projet, créez une décision avec « Effet sur le projet : terminer » — il n’y a pas de bouton.',
+          'Journal : commande, acompte, chantier, réception, réserves — chaque facture et chaque photo jointe à l’entrée qui la date. Pour terminer le projet, créez une décision avec « Effet sur le projet : terminer » — il n’y a pas de bouton.',
       },
     ],
   },

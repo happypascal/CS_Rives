@@ -1,0 +1,49 @@
+-- =============================================================================
+-- Migration 050 — PIÈCES JOINTES sur les entrées du journal de bord des projets
+--
+-- Demande de Pascal (2026-09-10) : « pour les projets, il faut pouvoir attacher
+-- des documents à chaque entrée du journal. On ne peut les attacher qu'au projet
+-- pour l'instant. »
+--
+-- Même besoin, même réponse qu'à la migration 046 pour la mémoire du lotissement.
+-- Une entrée qui dit « visite de chantier, reprise du regard côté plage » vaut
+-- cent fois moins que la même accompagnée de la photo ou du devis. Le journal
+-- devient un dossier de suivi, pas une suite de souvenirs.
+--
+-- ⚠ POURQUOI PAS LES PIÈCES DU PROJET. Le projet en porte déjà, mais elles ne
+-- sont datées de rien : elles décrivent le projet, pas ce qui s'est passé un
+-- jour donné. Trois devis rangés sur le projet ne disent pas lequel a été reçu
+-- avant la visite du 12. C'est exactement la distinction que le journal existe
+-- pour tenir — `date_action` d'un côté, `created_at` de l'autre (migration 029).
+--
+-- Même dispositif que partout ailleurs (migration 012) : la ligne ne garde que
+-- `{path,name,type,size}`, le fichier vit dans le bucket privé `documents`, et
+-- l'URL est signée pour cinq minutes au clic. On stocke un CHEMIN, jamais une
+-- URL — le bucket étant privé, aucune adresse permanente n'existe.
+--
+-- ⚠ LE CHEMIN PORTE L'ID DU PROJET, pas celui de l'entrée : `projets/<projet_id>/…`,
+-- le même préfixe que les pièces du projet lui-même. Deux raisons, les mêmes
+-- qu'en 046 : le projet existe toujours au moment de l'envoi (l'entrée, elle,
+-- n'existe pas encore quand on joint un fichier à sa création), et aucune policy
+-- n'a besoin de remonter à l'entrée — contrairement aux décisions, où l'id dans
+-- le chemin sert à refuser de toucher au fichier d'une délibération figée.
+--
+-- ⚠ AUCUNE POLICY DE STORAGE À AJOUTER, vérifié plutôt que supposé :
+-- `documents_insert_membre` autorise tout membre actif et n'exclut que les
+-- chemins dont le deuxième segment est une décision ENREGISTRÉE ;
+-- `documents_brouillon_prive` est restrictive mais ne vise que le préfixe
+-- `decisions`. Un chemin `projets/<projet_id>/…` traverse les deux — il le fait
+-- d'ailleurs déjà, puisque c'est celui des pièces jointes du projet.
+--
+-- ⚠ AUCUNE POLICY DE TABLE À AJOUTER non plus : `journal_projet` est déjà dans la
+-- boucle `read_auth`, et l'écriture reste bornée par
+-- `journal_projet_self_update` / `_self_delete` — l'auteur seul corrige sa ligne,
+-- le président garde tout. Ajouter une colonne ne change rien à ces règles.
+--
+-- ⚠ RAPPEL DE FORME (éditeur SQL de Supabase) : aucune chaine vide, aucun
+-- argument de formatage de `raise`, aucun guillemet dollar imbriqué, aucun
+-- deux-points ni barre oblique dans une chaine, et une vérification SIMPLE.
+-- =============================================================================
+
+alter table journal_projet
+  add column if not exists documents jsonb not null default '[]'::jsonb;

@@ -160,6 +160,15 @@ create table if not exists journal_projet (
   projet_id   uuid not null references projets(id) on delete cascade,
   date_action date not null,
   texte       text not null,
+  -- Pièces jointes (migration 050) : la photo de la visite, le devis reçu ce
+  -- jour-là, le courrier de la mairie. ⚠ À ne pas confondre avec `projets.documents` :
+  -- celles-là décrivent le projet et ne sont datées de rien, celles-ci sont
+  -- attachées à un FAIT daté. Trois devis rangés sur le projet ne disent pas
+  -- lequel est arrivé avant la visite du 12.
+  -- ⚠ Le chemin porte l'id du PROJET, pas de l'entrée : le projet existe
+  -- toujours au moment de l'envoi, l'entrée pas encore. Aucune policy de Storage
+  -- à ajouter — c'est déjà le préfixe des pièces jointes du projet.
+  documents   jsonb not null default '[]'::jsonb,
   auteur_id   uuid not null references membres_cs(id) on delete cascade,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
