@@ -1,7 +1,10 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-08-26** — **journal de bord des projets** (migration 029, appliquée).
-> Avant : décisions en **brouillon** avec **soumission planifiée**
+> Dernière session : **2026-09-10** — **pièces jointes sur les entrées du journal de projet**
+> (migration 050, appliquée en prod et **validée en usage réel** le jour même).
+> Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
+> et parcours « Comment faire » (2026-09-03) ; **journal de bord des projets** (migration 029).
+> Avant encore : décisions en **brouillon** avec **soumission planifiée**
 > (migrations 026 et 027, **appliquées en prod**), **code déployé** ; puis **adjoint de projet +
 > fil d'échanges** (migration 028, appliquée) et la **spéc d'onboarding des colotis**, gelée. Puis : statuts en révision,
 > l'AG du 15/09 les adapte au fonctionnement de l'app — voir le backlog.
@@ -33,6 +36,8 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 > **Migration 050 APPLIQUÉE EN PRODUCTION le 2026-09-10.** Colonne `journal_projet.documents`
 > vérifiée (`jsonb`, défaut `'[]'::jsonb`).
+> **✅ VALIDÉE EN USAGE RÉEL par Pascal le 2026-09-10** : envoi, affichage sous l'entrée et
+> relecture du document depuis une entrée du journal, sur la base de production.
 
 - Demande de Pascal : « on ne peut les attacher qu'au projet pour l'instant ». Même besoin et
   même réponse qu'à la **046** pour la mémoire du lotissement.

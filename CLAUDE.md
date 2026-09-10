@@ -280,6 +280,17 @@ ligne dans `decision_status_history`.
 - **L'AUTEUR seul corrige et supprime sa ligne** (`journal_projet_self_update/delete`) — le chef et
   l'adjoint pilotent le projet, ils ne réécrivent pas le compte rendu d'un autre. Le président garde
   tout. **Aucun verrou de temps** : ce n'est pas une délibération, elle n'entre pas au registre.
+- **PIÈCES JOINTES SUR L'ENTRÉE** (migration 050, `journal_projet.documents`, validée en usage réel
+  le 2026-09-10). ⚠ **Ce n'est pas un doublon des pièces du projet** : celles du projet le
+  *décrivent* et ne sont datées de rien, celles d'une entrée sont attachées à un **fait daté**.
+  Trois devis rangés en vrac sur la fiche ne disent plus lequel est arrivé avant la visite du 12 —
+  c'est exactement ce que les deux dates de la 029 existent pour tenir. **Ne pas fusionner les deux
+  emplacements.**
+  - ⚠ Le chemin porte l'id du **PROJET**, pas de l'entrée : le projet existe au moment de l'envoi,
+    l'entrée pas encore. Même raison qu'en 046. Comme c'est déjà le préfixe des pièces du projet,
+    **aucune policy de Storage ni de table à ajouter** — vérifié, pas supposé.
+  - Affichées **seulement s'il y en a** : un intitulé vide sur chaque ligne alourdirait un journal
+    dont l'entrée tient sur une ligne.
 
 ### Modèle de propriété (migration 006)
 > Tout membre actif crée et devient owner ; l'owner seul modifie et notifie ; le président
