@@ -459,7 +459,11 @@ export const MENUS = [
         titre: 'Consulter la composition du conseil',
         pourQui: TOUS,
         resume: 'Qui siège, depuis quand, avec quel rôle.',
-        etapes: ['La liste montre les membres actifs, leur rôle et leur date d’élection.'],
+        etapes: [
+          'L’écran présente DEUX listes séparées : le « Conseil syndical actuel » et les « Anciens membres ».',
+          'Seuls les membres du premier tableau votent et comptent dans le quorum.',
+          'Un sablier ⏳ sur une ligne signale un mandat dont le terme est dépassé : l’intéressé siège toujours, c’est un rappel qu’une élection est à prévoir.',
+        ],
       },
       {
         titre: 'Consulter l’historique des mandats d’un membre',
@@ -469,8 +473,8 @@ export const MENUS = [
           'Dans la colonne « Mandats », cliquez sur « Voir » : la liste de ses mandats se déplie sous sa ligne, du plus récent au plus ancien.',
           'Chaque ligne indique le rôle tenu pendant cette période, ses dates, et si la personne a été ÉLUE par l’AG ou DÉSIGNÉE par le président.',
           'Un mandat sans date de fin est le mandat en cours.',
-          'La DURÉE VOTÉE par l’AG (1 an, 2 ans…) est rappelée, et le terme qui en découle est calculé pour les mandats en cours.',
-          'Un mandat marqué « Échu » a dépassé son terme sans avoir été renouvelé : c’est un signal, pas une panne — l’intéressé continue de siéger et de compter dans le quorum jusqu’à l’AG qui le renouvelle.',
+          'La DURÉE VOTÉE par l’AG (1 an, 2 ans…) est rappelée, et la date de fin en découle : elle est calculée, pas saisie.',
+          'Un mandat marqué « Échu — à renouveler » a dépassé son terme : c’est un signal, pas une panne. L’intéressé continue de siéger et de compter dans le quorum jusqu’à l’AG qui le renouvelle.',
         ],
       },
       {
@@ -495,7 +499,7 @@ export const MENUS = [
           'Dépliez les mandats du membre, puis cliquez sur « Ajouter un mandat ».',
           'Laissez « AG de l’application » sur « Aucune », et saisissez la référence de l’AG EN TOUTES LETTRES, telle qu’elle figure au procès-verbal.',
           'Indiquez le rôle tenu à l’époque, la date de début et la DURÉE votée par l’assemblée (1 an, 2 ans…). Si la durée n’est pas connue, laissez « non précisée » plutôt que d’en supposer une.',
-          'La « fin effective » ne se renseigne que si la personne a réellement cessé de siéger — ce n’est pas le terme prévu du mandat, que l’application calcule seule.',
+          'La date de fin se remplit TOUTE SEULE dès que vous choisissez la durée. Ne la corrigez que si le mandat s’est terminé avant son terme — démission, départ.',
           'Pour un membre qui ne siège plus et n’a jamais eu de compte, créez d’abord sa fiche en décochant « Membre actif » : l’adresse e-mail n’est alors pas exigée.',
         ],
         alerte:

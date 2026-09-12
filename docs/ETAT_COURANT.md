@@ -1,8 +1,9 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051), puis
-> **durée votée du mandat + correctif de saisie** (migration 052). Les deux **appliquées en prod et
-> déployées** le jour même, avant l'AG du 15/09.
+> Dernière session : **2026-09-12** — **historique des mandats du CS** (051), **durée votée +
+> correctif de saisie** (052), toutes deux appliquées en prod et déployées ; puis **fin de mandat
+> calculée et deux listes de membres** (053, ⚠ **commentaires seuls, non appliquée** — sans effet
+> sur les données). Le tout avant l'AG du 15/09.
 > Avant : **pièces jointes sur les entrées du journal de projet**
 > (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
@@ -34,6 +35,42 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-12 (fin) — Fin de mandat calculée + deux listes de membres (migration 053)
+
+> **MIGRATION 053 = COMMENTAIRES SEULS**, aucune donnée touchée. Rien ne casse si elle n'est pas
+> appliquée ; elle corrige deux commentaires de la base devenus faux. À passer quand c'est commode.
+
+- **Demande de Pascal** : « la date de fin de mandat doit être calculée automatiquement quand on
+  choisit 1, 2 ou 3 ans » et « dans la liste des membres, il faut 2 listes : le conseil syndical
+  actuel et les anciens membres, visuellement plus clair ».
+- **✅ La fin est CALCULÉE et posée dans le champ.** La 052 gardait l'échéance à l'affichage seul,
+  par souci de ne pas confondre l'intention votée et le fait constaté. ⚠ **En usage, cette pureté
+  coûtait une addition mentale par membre** — « 15/09/2026 plus deux ans » — dans un registre où une
+  erreur d'un jour est une erreur de fond. Le champ reste **modifiable** : si la période s'est close
+  avant le terme (démission), la saisie manuelle l'emporte.
+- ⚠ **CE QUI N'A PAS BOUGÉ, et c'est le point** : un terme dépassé ne fait sortir personne. Aucun
+  effet sur `membres_cs.actif`, sur `membres_cs.date_fin`, donc sur `activeMembersAt` ni sur le
+  **dénominateur du quorum**. Badge « Échu — à renouveler », et l'intéressé vote toujours.
+- ⚠ **`mandatEnCours` change de définition** : le **dernier mandat commencé**, et non « celui sans
+  date de fin » — ils en portent tous une maintenant. Sans ce changement, l'écran aurait annoncé
+  qu'un conseil en exercice n'a aucun mandat. L'unicité du mandat courant devient **structurelle**,
+  et l'index partiel de la 051 n'a plus d'invariant à porter.
+- **`finMandat()` retombe sur l'échéance calculée** quand la date est nulle : les mandats saisis
+  avant portent une durée sans date, et sans cette retombée ils ne seraient jamais signalés échus.
+  Constaté en vérifiant l'écran — la ligne de Dubois aurait dû être marquée et ne l'était pas.
+- **Plus d'alerte de divergence sur un mandat échu** : elle aurait fait clignoter tout le conseil
+  dès le lendemain du terme et, devenue permanente, n'aurait plus été lue le jour d'une vraie
+  contradiction.
+- **✅ DEUX LISTES** : « Conseil syndical actuel » et « Anciens membres », chacune son tableau titré
+  et compté. La case « afficher les anciens membres » obligeait à lire la colonne Statut ligne à
+  ligne pour savoir qui compose le conseil. ⚠ **Un seul composant rendu deux fois**
+  (`SectionMembres`) — dupliquer le tableau aurait garanti qu'une colonne ajoutée un jour n'existe
+  que d'un côté. Colonne « Fin de fonction » réservée aux anciens ; côté conseil en exercice, une
+  colonne de badges « Actif » identiques n'apprenait rien.
+- **Vérifié dans le navigateur** : deux listes (5 actifs / 1 ancien), sablier sur la ligne d'un
+  mandat échu, badge « Échu — à renouveler » dans la chronologie, et la date de fin qui passe à
+  19/06/2028 dès qu'on choisit « 3 ans » sur un mandat commencé le 19/06/2025. Aucune erreur console.
 
 ## Session 2026-09-12 (suite) — Durée votée du mandat + correctif de saisie (migration 052)
 

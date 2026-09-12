@@ -328,19 +328,37 @@ ligne dans `decision_status_history`.
   continue de l'exiger d'un membre **actif**, qui doit se connecter.
 - **Lecture ouverte à tous les membres**, écriture au président. ⚠ Ce n'est **pas** le registre des
   propriétaires : la composition du conseil figure déjà au registre, aux PV d'AG et au bas des PDF.
-- **DURÉE VOTÉE, PAS DATE DE FIN** (migration 052, correction Pascal 2026-09-12). ⚠ **Deux notions
-  qu'il ne faut pas fusionner** : `duree_annees` est **ce que l'AG a voté** (« élu pour 2 ans ») et
-  l'**échéance en est DÉRIVÉE** (`date_debut` + N ans, `echeanceISO`, jamais stockée) ;
-  `date_fin` est **ce qui s'est réellement passé** (réélection, démission). Un mandat voté pour deux
-  ans peut s'interrompre au bout de six mois, et un membre élu pour un an **reste en fonction
-  au-delà du terme jusqu'à l'AG qui le renouvelle** — cas ordinaire, pas une anomalie.
-  - ⚠ **L'échéance ne clôt RIEN** : elle ne touche ni `date_fin`, ni `membres_cs.date_fin`, donc ni
-    `activeMembersAt`. Sinon un membre qui siège encore sortirait du **dénominateur du quorum** en
-    plein vote, en silence, et une délibération deviendrait irrégulière sans que personne n'agisse.
-    L'écran affiche un badge « Échu depuis le … ». Même esprit que « rien ne s'adopte tout seul ».
+- **L'AG VOTE UNE DURÉE, ET LA FIN EN EST CALCULÉE** (migrations 052 puis 053, demandes Pascal
+  2026-09-12). `duree_annees` = **ce que l'AG a voté** (1, 2, 3 ans) ; `date_fin` = **le TERME**,
+  que l'écran calcule (`date_debut` + durée) et **pose dans le champ** à la saisie, corrigeable si
+  la période s'est close avant (démission, départ). ⚠ La 052 avait laissé l'échéance à l'affichage
+  seul ; en usage, cette pureté coûtait une addition mentale par membre, dans un registre où une
+  erreur d'un jour est une erreur de fond.
+  - ⚠ **UN TERME DÉPASSÉ NE FAIT SORTIR PERSONNE.** Il ne touche ni `membres_cs.actif`, ni
+    `membres_cs.date_fin`, donc ni `activeMembersAt` ni le **dénominateur du quorum** : un membre élu
+    pour un an siège **jusqu'à l'AG qui le renouvelle** — cas ordinaire, pas une anomalie. Badge
+    « Échu — à renouveler », et il continue de voter. On **signale**, on ne révoque pas. Même esprit
+    que « rien ne s'adopte tout seul ».
+  - ⚠ **`mandatEnCours` = LE DERNIER COMMENCÉ**, plus « celui sans date de fin » : ils en portent
+    tous une désormais. Chercher une fin nulle aurait annoncé qu'un conseil en exercice n'a aucun
+    mandat. L'unicité du mandat courant devient **structurelle** (un maximum n'a qu'une valeur) et
+    l'index partiel `mandats_cs_en_cours_par_membre` n'a plus d'invariant à porter — conservé, sans
+    dommage.
+  - **`finMandat()` retombe sur l'échéance calculée** quand `date_fin` est nulle : les mandats
+    saisis avant la 053 portent une durée sans date, et sans cette retombée ils ne seraient jamais
+    signalés échus — donc muets précisément sur les lignes les plus anciennes.
   - **Nullable, sans défaut** : la durée de bien des mandats anciens n'est pas connue. `not null
     default 1` ferait affirmer au registre une durée que personne n'a votée.
   - Contrainte `> 0` **sans plafond** : les statuts en révision pourraient retenir trois ans.
+  - ⚠ **Aucune alerte de divergence sur un mandat échu** : elle ferait clignoter tout le conseil dès
+    le lendemain du terme et, devenue permanente, ne serait plus lue le jour d'une vraie contradiction.
+- **DEUX LISTES, PAS UNE LISTE FILTRÉE** (écran Membres, Pascal 2026-09-12) : « Conseil syndical
+  actuel » et « Anciens membres », chacune son tableau titré. Une case « afficher les anciens »
+  obligeait à lire la colonne Statut ligne à ligne pour savoir qui compose le conseil — la première
+  question que l'écran doit trancher d'un coup d'œil. ⚠ **Un seul composant** rendu deux fois
+  (`SectionMembres`) : dupliquer le tableau garantissait qu'une colonne ajoutée un jour n'existerait
+  que d'un côté. La colonne « Statut » ne subsiste que chez les anciens, où elle porte la **date** de
+  fin de fonction ; côté conseil en exercice, une colonne de badges « Actif » identiques n'apprend rien.
 - ⚠ **Les `null` de la base traversent le spread d'un formulaire** (`sansNull`, `Membres.jsx`).
   `{ ...EMPTY, ...ligne }` n'est PAS suffisant : `null` écrase la valeur vide du modèle (seul
   `undefined` laisse la valeur de gauche), et un `.trim()` plante. Normaliser champ par champ est ce

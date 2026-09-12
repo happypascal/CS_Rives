@@ -81,16 +81,21 @@ create table if not exists mandats_cs (
   origine      text not null default 'election'
                check (origine in ('election','designation','cooptation')),
   date_debut   date not null,
-  -- ⚠ DEUX NOTIONS À NE PAS FUSIONNER (migration 052) :
-  --   `duree_annees` = ce que l'AG a VOTÉ (1 an, 2 ans…). L'échéance théorique
-  --      en est DÉRIVÉE (`date_debut` + N ans) et n'est jamais stockée.
-  --   `date_fin`     = ce qui s'est RÉELLEMENT passé — réélection, démission.
-  -- Un mandat voté pour deux ans peut s'interrompre au bout de six mois ; un
-  -- membre élu pour un an reste en fonction au-delà du terme jusqu'à l'AG qui le
-  -- renouvelle. ⚠ L'échéance ne ferme RIEN toute seule : sinon un membre qui
-  -- siège encore sortirait du dénominateur du quorum en silence.
+  -- `duree_annees` = ce que l'AG a VOTÉ (1 an, 2 ans…) — l'assemblée élit pour une
+  -- DURÉE, pas jusqu'à une date (migration 052).
+  -- `date_fin`     = le TERME du mandat. Depuis la 053, l'écran le CALCULE à la
+  --   saisie (`date_debut` + `duree_annees`) et le pose dans la colonne ; il reste
+  --   corrigeable si la période s'est close avant (démission, départ).
+  --
+  -- ⚠ UN TERME DÉPASSÉ NE FAIT SORTIR PERSONNE. Il ne touche ni `membres_cs.actif`
+  -- ni `membres_cs.date_fin`, donc pas `activeMembersAt` ni le dénominateur du
+  -- quorum : un membre élu pour un an siège jusqu'à l'AG qui le renouvelle. Son
+  -- mandat s'affiche « échu », il continue de voter. On signale, on ne révoque pas.
+  --
+  -- ⚠ Côté JS, « mandat en cours » = LE DERNIER COMMENCÉ, et non « celui sans date
+  -- de fin » : ils en portent tous une désormais.
   duree_annees integer,                                 -- nulle = non renseignée
-  date_fin     date,                                    -- nulle = mandat EN COURS
+  date_fin     date,                                    -- terme du mandat
   ag_id        uuid references assemblees_generales(id) on delete set null,
   ag_libelle   text,
   observations text,
@@ -102,8 +107,13 @@ create table if not exists mandats_cs (
     check (duree_annees is null or duree_annees > 0)
 );
 
--- Un seul mandat ouvert par membre : même garde que `proprietaires_actuel_par_lot`.
--- Sans elle, une réélection mal terminée ferait dire deux rôles à la fois.
+-- ⚠ GARDE DEVENUE RÉSIDUELLE (voir migration 053). Elle portait l'invariant « un
+-- seul mandat en cours par membre » quand « en cours » voulait dire « sans date de
+-- fin ». Depuis que le terme est calculé et posé à la saisie, les mandats ont tous
+-- une date de fin et l'index ne s'applique presque plus. L'invariant est devenu
+-- STRUCTUREL — le mandat en cours est le dernier commencé, et un maximum n'a
+-- qu'une valeur. L'index est conservé (il interdit encore deux périodes sans fin),
+-- mais ce n'est plus lui qui garantit quoi que ce soit.
 create unique index if not exists mandats_cs_en_cours_par_membre
   on mandats_cs (membre_id) where date_fin is null;
 

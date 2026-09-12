@@ -9,7 +9,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 import { ROLE_LABELS, ROLE_TONES, ROLE_VALUES, ROLES_UNIQUES } from '../lib/rolesLogic'
 import {
   ORIGINE_LABELS, ORIGINE_COURT, ORIGINE_TONES, ORIGINE_VALUES,
-  DUREE_VALUES, dureeLabel, echeanceISO, estEchu,
+  DUREE_VALUES, dureeLabel, echeanceISO, finMandat, estEchu,
   compareMandats, mandatEnCours, referenceAG, divergences, veilleISO,
 } from '../lib/mandatLogic'
 
@@ -26,7 +26,6 @@ export default function Membres() {
   const [ags, setAgs] = useState([])
   const [modal, setModal] = useState(null)
   const [mandatModal, setMandatModal] = useState(null)
-  const [showInactive, setShowInactive] = useState(true)
   // Historique déplié, par id de membre. Fermé par défaut : l'écran répond
   // d'abord à « qui siège aujourd'hui ? ».
   const [ouvert, setOuvert] = useState({})
@@ -59,8 +58,23 @@ export default function Membres() {
 
   if (loading) return <Spinner />
 
-  const visible = membres.filter((m) => showInactive || m.actif)
+  // ⚠ DEUX LISTES, PAS UNE LISTE FILTRÉE (demande de Pascal, 2026-09-12).
+  // Une case « afficher les anciens membres » mélangeait dans un même tableau le
+  // conseil en exercice et ceux qui n'y siègent plus : il fallait lire la colonne
+  // « statut » ligne à ligne pour savoir qui compose le conseil aujourd'hui —
+  // alors que c'est la première question que cet écran doit trancher d'un
+  // coup d'œil. Deux tableaux titrés la répondent sans qu'on ait à lire.
+  const actifs = membres.filter((m) => m.actif)
+  const anciens = membres.filter((m) => !m.actif)
   const toggle = (id) => setOuvert((o) => ({ ...o, [id]: !o[id] }))
+
+  const listeProps = {
+    parMembre, ags, canManage, ouvert, toggle,
+    onEditMembre: setModal,
+    onAddMandat: (m) => setMandatModal({ membre: m, mandat: { ...EMPTY_MANDAT, role: m.role } }),
+    onEditMandat: (m, mandat) => setMandatModal({ membre: m, mandat }),
+    onChanged: reload,
+  }
 
   return (
     <div>
@@ -70,112 +84,22 @@ export default function Membres() {
         actions={canManage && <Button onClick={() => setModal(EMPTY)}>+ Ajouter un membre</Button>}
       />
 
-      <Card className="mb-4 p-3">
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-          Afficher les anciens membres
-        </label>
-      </Card>
+      <SectionMembres
+        titre="Conseil syndical actuel"
+        sousTitre="Les membres qui siègent aujourd’hui. Eux seuls votent et comptent dans le quorum."
+        membres={actifs}
+        vide="Aucun membre actif. Le conseil ne peut pas délibérer."
+        {...listeProps}
+      />
 
-      <Card className="overflow-hidden">
-        {/* Desktop : tableau. Mobile : cartes 2 lignes — le tableau (6-7 colonnes)
-            débordait du cadre en portrait. */}
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-4 py-2.5 font-medium">Nom</th>
-                <th className="px-4 py-2.5 font-medium">Prénom</th>
-                <th className="px-4 py-2.5 font-medium">Rôle</th>
-                <th className="px-4 py-2.5 font-medium">Élu en</th>
-                <th className="px-4 py-2.5 font-medium">AG d’élection</th>
-                <th className="px-4 py-2.5 font-medium">Statut</th>
-                <th className="px-4 py-2.5 font-medium">Mandats</th>
-                {canManage && <th className="px-4 py-2.5" />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-navy-50">
-              {visible.map((m) => {
-                const liste = parMembre[m.id] || []
-                const alertes = divergences(m, liste)
-                return (
-                  <Fragment key={m.id}>
-                    <tr className="hover:bg-navy-50/40">
-                      <td className="px-4 py-3 font-medium text-slate-700">{m.nom}</td>
-                      <td className="px-4 py-3 text-slate-600">{m.prenom}</td>
-                      <td className="px-4 py-3">
-                        <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(m.date_election)}</td>
-                      <td className="px-4 py-3 text-slate-600">{m.ag_election || '—'}</td>
-                      <td className="px-4 py-3">
-                        <Badge tone={m.actif ? 'green' : 'gray'}>{m.actif ? 'Actif' : `Ancien${m.date_fin ? ' (' + formatDate(m.date_fin) + ')' : ''}`}</Badge>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <button onClick={() => toggle(m.id)} className="text-xs text-navy-600 underline">
-                          {ouvert[m.id] ? 'Masquer' : 'Voir'} ({liste.length})
-                        </button>
-                        {alertes.length > 0 && (
-                          <span className="ml-2 text-xs text-amber-700" title={alertes.join(' ')}>⚠</span>
-                        )}
-                      </td>
-                      {canManage && (
-                        <td className="px-4 py-3 text-right">
-                          <button onClick={() => setModal(m)} className="text-xs text-navy-600 underline">Modifier</button>
-                        </td>
-                      )}
-                    </tr>
-                    {ouvert[m.id] && (
-                      <tr>
-                        <td colSpan={canManage ? 8 : 7} className="bg-navy-50/30 px-4 py-3">
-                          <Historique
-                            mandats={liste}
-                            ags={ags}
-                            alertes={alertes}
-                            canManage={canManage}
-                            onAdd={() => setMandatModal({ membre: m, mandat: { ...EMPTY_MANDAT, role: m.role } })}
-                            onEdit={(mandat) => setMandatModal({ membre: m, mandat })}
-                            onChanged={reload}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        {/* Mobile : une carte par membre, sur 2 lignes (nom + statut, puis rôle +
-            élection). L'historique se déplie aussi — c'est de la consultation,
-            seule la gestion reste réservée au poste de travail. */}
-        <div className="divide-y divide-navy-50 md:hidden">
-          {visible.map((m) => {
-            const liste = parMembre[m.id] || []
-            return (
-              <div key={m.id} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
-                  <Badge tone={m.actif ? 'green' : 'gray'}>{m.actif ? 'Actif' : `Ancien${m.date_fin ? ' (' + formatDate(m.date_fin) + ')' : ''}`}</Badge>
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
-                  <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
-                  <span>Élu le {formatDate(m.date_election)}</span>
-                  {m.ag_election && <span>· {m.ag_election}</span>}
-                  <button onClick={() => toggle(m.id)} className="ml-auto text-navy-600 underline">
-                    Mandats ({liste.length})
-                  </button>
-                </div>
-                {ouvert[m.id] && (
-                  <div className="mt-2">
-                    <Historique mandats={liste} ags={ags} alertes={[]} canManage={false} onChanged={reload} />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </Card>
+      <SectionMembres
+        titre="Anciens membres"
+        sousTitre="Ils ne votent plus et ne comptent plus dans le quorum ; leurs votes passés restent au registre."
+        membres={anciens}
+        vide="Aucun ancien membre enregistré."
+        ton="gris"
+        {...listeProps}
+      />
 
       {modal && (
         <MembreModal
@@ -199,13 +123,155 @@ export default function Membres() {
   )
 }
 
+// ------------------------------------------------------------- une des 2 listes
+// Le même tableau, rendu deux fois : conseil en exercice puis anciens membres.
+// ⚠ Un seul composant pour les deux — dupliquer le tableau garantissait qu'une
+// colonne ajoutée un jour n'existerait que d'un côté.
+function SectionMembres({
+  titre, sousTitre, membres, vide, ton,
+  parMembre, ags, canManage, ouvert, toggle,
+  onEditMembre, onAddMandat, onEditMandat, onChanged,
+}) {
+  const ancien = ton === 'gris'
+  return (
+    <section className="mb-6">
+      <div className="mb-2 flex items-baseline gap-2">
+        <h2 className={`text-sm font-semibold uppercase tracking-wide ${ancien ? 'text-slate-500' : 'text-navy-700'}`}>
+          {titre}
+        </h2>
+        <span className="text-xs text-slate-500">({membres.length})</span>
+      </div>
+      <p className="mb-2 text-xs text-slate-500">{sousTitre}</p>
+
+      {membres.length === 0 ? (
+        <Card className="p-4 text-sm text-slate-500">{vide}</Card>
+      ) : (
+      <Card className={`overflow-hidden ${ancien ? 'opacity-90' : ''}`}>
+        {/* Desktop : tableau. Mobile : cartes 2 lignes — le tableau (6-7 colonnes)
+            débordait du cadre en portrait. */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-navy-100 bg-navy-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-4 py-2.5 font-medium">Nom</th>
+                <th className="px-4 py-2.5 font-medium">Prénom</th>
+                <th className="px-4 py-2.5 font-medium">Rôle</th>
+                <th className="px-4 py-2.5 font-medium">Élu en</th>
+                <th className="px-4 py-2.5 font-medium">AG d’élection</th>
+                {/* ⚠ Pas de colonne « Statut » dans le conseil en exercice : une
+                    colonne entière de badges « Actif » identiques n'apprend rien,
+                    c'est le titre du tableau qui le dit. Chez les anciens, en
+                    revanche, la DATE de fin de fonction est une information. */}
+                {ancien && <th className="px-4 py-2.5 font-medium">Fin de fonction</th>}
+                <th className="px-4 py-2.5 font-medium">Mandats</th>
+                {canManage && <th className="px-4 py-2.5" />}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy-50">
+              {membres.map((m) => {
+                const liste = parMembre[m.id] || []
+                const alertes = divergences(m, liste)
+                // Sablier discret sur la ligne : le mandat en cours a dépassé son
+                // terme. Rappel, pas alerte — l'intéressé siège toujours.
+                const echuCourant = m.actif && estEchu(mandatEnCours(liste), todayISO())
+                return (
+                  <Fragment key={m.id}>
+                    <tr className="hover:bg-navy-50/40">
+                      <td className="px-4 py-3 font-medium text-slate-700">{m.nom}</td>
+                      <td className="px-4 py-3 text-slate-600">{m.prenom}</td>
+                      <td className="px-4 py-3">
+                        <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(m.date_election)}</td>
+                      <td className="px-4 py-3 text-slate-600">{m.ag_election || '—'}</td>
+                      {ancien && (
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                          {m.date_fin ? formatDate(m.date_fin) : '— non précisée —'}
+                        </td>
+                      )}
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <button onClick={() => toggle(m.id)} className="text-xs text-navy-600 underline">
+                          {ouvert[m.id] ? 'Masquer' : 'Voir'} ({liste.length})
+                        </button>
+                        {alertes.length > 0 && (
+                          <span className="ml-2 text-xs text-amber-700" title={alertes.join(' ')}>⚠</span>
+                        )}
+                        {echuCourant && <span className="ml-2 text-xs text-amber-700" title="Mandat échu : à renouveler">⏳</span>}
+                      </td>
+                      {canManage && (
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => onEditMembre(m)} className="text-xs text-navy-600 underline">Modifier</button>
+                        </td>
+                      )}
+                    </tr>
+                    {ouvert[m.id] && (
+                      <tr>
+                        <td colSpan={6 + (ancien ? 1 : 0) + (canManage ? 1 : 0)} className="bg-navy-50/30 px-4 py-3">
+                          <Historique
+                            membre={m}
+                            mandats={liste}
+                            ags={ags}
+                            alertes={alertes}
+                            canManage={canManage}
+                            onAdd={() => onAddMandat(m)}
+                            onEdit={(mandat) => onEditMandat(m, mandat)}
+                            onChanged={onChanged}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        {/* Mobile : une carte par membre, sur 2 lignes (nom + statut, puis rôle +
+            élection). L'historique se déplie aussi — c'est de la consultation,
+            seule la gestion reste réservée au poste de travail. */}
+        <div className="divide-y divide-navy-50 md:hidden">
+          {membres.map((m) => {
+            const liste = parMembre[m.id] || []
+            const echuCourant = m.actif && estEchu(mandatEnCours(liste), todayISO())
+            return (
+              <div key={m.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-slate-700">{m.prenom} {m.nom}</span>
+                  {ancien
+                    ? <Badge tone="gray">{m.date_fin ? `Parti le ${formatDate(m.date_fin)}` : 'Ancien'}</Badge>
+                    : echuCourant && <Badge tone="amber">Mandat échu</Badge>}
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                  <Badge tone={ROLE_TONES[m.role] || 'gray'}>{ROLE_LABELS[m.role] || m.role}</Badge>
+                  <span>Élu le {formatDate(m.date_election)}</span>
+                  {m.ag_election && <span>· {m.ag_election}</span>}
+                  <button onClick={() => toggle(m.id)} className="ml-auto text-navy-600 underline">
+                    Mandats ({liste.length})
+                  </button>
+                </div>
+                {ouvert[m.id] && (
+                  <div className="mt-2">
+                    <Historique membre={m} mandats={liste} ags={ags} alertes={[]} canManage={false} onChanged={onChanged} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+      )}
+    </section>
+  )
+}
+
 // ---------------------------------------------------------------- historique
 // La CHRONOLOGIE des mandats d'un membre, du plus récent au plus ancien.
 // ⚠ Affiche « aucun mandat enregistré » plutôt que de reconstituer une ligne à
 // partir de `membres_cs` : une période inventée à l'affichage se recopierait tôt
 // ou tard dans le registre comme si elle avait été constatée.
-function Historique({ mandats, ags, alertes, canManage, onAdd, onEdit, onChanged }) {
+function Historique({ membre, mandats, ags, alertes, canManage, onAdd, onEdit, onChanged }) {
   const [confirm, confirmModal] = useConfirm()
+  const courant = mandatEnCours(mandats)
 
   const supprimer = async (mandat) => {
     const ok = await confirm({
@@ -241,23 +307,19 @@ function Historique({ mandats, ags, alertes, canManage, onAdd, onEdit, onChanged
         <ul className="space-y-1.5">
           {mandats.map((mandat) => {
             const ref = referenceAG(mandat, ags)
-            const echeance = echeanceISO(mandat)
-            const echu = estEchu(mandat, todayISO())
+            // ⚠ « Échu » ne se dit que du mandat EN COURS d'un membre qui SIÈGE.
+            // Sur une période déjà remplacée, ou chez un ancien membre, une date de
+            // fin passée n'est pas une alerte : c'est simplement le passé.
+            const echu = mandat.id === courant?.id && membre.actif && estEchu(mandat, todayISO())
             return (
               <li key={mandat.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
                 <Badge tone={ROLE_TONES[mandat.role] || 'gray'}>{ROLE_LABELS[mandat.role] || mandat.role}</Badge>
                 <span className="whitespace-nowrap font-medium text-slate-700">
-                  {formatDate(mandat.date_debut)} → {mandat.date_fin ? formatDate(mandat.date_fin) : 'en cours'}
+                  {formatDate(mandat.date_debut)} → {finMandat(mandat) ? formatDate(finMandat(mandat)) : 'sans terme'}
                 </span>
                 <Badge tone={ORIGINE_TONES[mandat.origine] || 'gray'}>{ORIGINE_COURT[mandat.origine] || mandat.origine}</Badge>
                 {mandat.duree_annees && <span className="text-slate-500">· élu pour {dureeLabel(mandat.duree_annees)}</span>}
-                {/* Le terme n'a d'intérêt que tant que le mandat court : sur une
-                    période déjà close, seule la fin réelle compte. */}
-                {echeance && !mandat.date_fin && (
-                  echu
-                    ? <Badge tone="amber">Échu depuis le {formatDate(echeance)}</Badge>
-                    : <span className="text-slate-500">· terme le {formatDate(echeance)}</span>
-                )}
+                {echu && <Badge tone="amber">Échu — à renouveler</Badge>}
                 <span className="text-slate-500">{ref ? `· ${ref}` : '· AG non précisée'}</span>
                 {mandat.observations && <span className="text-slate-500">· {mandat.observations}</span>}
                 {canManage && (
@@ -309,9 +371,25 @@ function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
   const [form, setForm] = useState(() => sansNull({ ...EMPTY_MANDAT, ...mandat }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  // Aperçu du terme, recalculé à chaque frappe sur la date ou la durée.
-  const echeanceApercu = echeanceISO({ date_debut: form.date_debut, duree_annees: Number(form.duree_annees) || null })
+  // ⚠ LA FIN EST CALCULÉE (demande de Pascal, 2026-09-12). Choisir « 2 ans »
+  // remplit la date de fin : c'est l'AG qui vote une durée, pas une date, et
+  // laisser le président faire l'addition l'exposait à se tromper d'un jour dans
+  // un registre légal.
+  //
+  // ⚠ Elle reste MODIFIABLE, et c'est nécessaire : le terme voté est une
+  // prévision, la réalité peut être une démission en cours de route. La saisie
+  // manuelle l'emporte alors — la date écrite finit par dire ce qui s'est passé,
+  // pas ce qui était prévu.
+  const set = (k) => (e) => setForm((f) => {
+    const next = { ...f, [k]: e.target.value }
+    if (k === 'duree_annees' || k === 'date_debut') {
+      const echeance = echeanceISO({ date_debut: next.date_debut, duree_annees: Number(next.duree_annees) || null })
+      // Sans durée, on n'efface rien : une fin saisie à la main sur un mandat
+      // ancien n'a pas à disparaître parce qu'on repasse la durée à « non précisée ».
+      if (echeance) next.date_fin = echeance
+    }
+    return next
+  })
 
   const save = async () => {
     setError('')
@@ -382,23 +460,17 @@ function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
             {DUREE_VALUES.map((d) => <option key={d} value={d}>{dureeLabel(d)}</option>)}
           </Select>
         </div>
-        {/* L'échéance est CALCULÉE et affichée, jamais saisie ni stockée. */}
-        {echeanceApercu && (
-          <p className="text-xs text-slate-600">
-            Terme du mandat : <strong>{formatDate(echeanceApercu)}</strong>. L’application ne
-            clôturera rien à cette date — un membre élu pour un an reste en fonction jusqu’à l’AG
-            qui le renouvelle. Elle signalera simplement le mandat comme échu.
-          </p>
-        )}
         <Input
-          label="Fin effective (vide = mandat en cours)"
+          label="Fin du mandat (calculée à partir de la durée)"
           type="date"
           value={form.date_fin}
           onChange={set('date_fin')}
         />
         <p className="text-xs text-slate-500">
-          À ne renseigner que pour une fin <strong>réelle</strong> : réélection, démission, départ.
-          Ce n’est pas le terme prévu — c’est le jour où la personne a cessé de siéger.
+          Remplie automatiquement dès que vous choisissez une durée. Corrigez-la seulement si le
+          mandat s’est terminé <strong>avant son terme</strong> — démission, départ.
+          {' '}Une échéance dépassée ne fait pas sortir du conseil : le membre siège jusqu’à l’AG
+          qui le renouvelle, et son mandat s’affiche simplement « échu ».
         </p>
         <Select label="AG de l’application (si elle y figure)" value={form.ag_id} onChange={set('ag_id')}>
           <option value="">— Aucune / AG antérieure à l’application —</option>
@@ -490,7 +562,13 @@ function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
           origine: 'election',
           date_debut: form.date_election,
           duree_annees: Number(form.duree_annees) || null,
-          date_fin: form.date_fin || null,
+          // ⚠ La fin du MANDAT est le terme calculé à partir de la durée votée.
+          // Ce n'est pas `form.date_fin`, qui est la fin de fonction de la FICHE
+          // (celle qui retire du quorum) : les deux ne coïncident que si la
+          // personne part précisément à son terme. À défaut de durée connue, on
+          // retombe sur la fin de fonction, seule date dont on dispose.
+          date_fin: echeanceISO({ date_debut: form.date_election, duree_annees: Number(form.duree_annees) || null })
+            || form.date_fin || null,
           ag_id: null,
           ag_libelle: form.ag_election || null,
           observations: null,
@@ -513,7 +591,13 @@ function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
           origine: form.date_election !== membre.date_election ? 'election' : 'designation',
           date_debut: form.date_election,
           duree_annees: Number(form.duree_annees) || null,
-          date_fin: form.date_fin || null,
+          // ⚠ La fin du MANDAT est le terme calculé à partir de la durée votée.
+          // Ce n'est pas `form.date_fin`, qui est la fin de fonction de la FICHE
+          // (celle qui retire du quorum) : les deux ne coïncident que si la
+          // personne part précisément à son terme. À défaut de durée connue, on
+          // retombe sur la fin de fonction, seule date dont on dispose.
+          date_fin: echeanceISO({ date_debut: form.date_election, duree_annees: Number(form.duree_annees) || null })
+            || form.date_fin || null,
           ag_id: null,
           ag_libelle: form.ag_election || null,
           observations: null,

@@ -53,11 +53,12 @@ export function dureeLabel(annees) {
 // ÉCHÉANCE THÉORIQUE — dérivée, jamais stockée, comme le tantième d'un lot ou le
 // budget d'un projet. `date_debut` + la durée votée.
 //
-// ⚠ ELLE NE FERME RIEN. Un membre élu pour un an reste en fonction au-delà du
-// terme jusqu'à l'AG qui le renouvelle : c'est le cas ORDINAIRE. Si l'échéance
-// clôturait le mandat, l'intéressé sortirait du dénominateur du quorum en plein
-// vote, sans que personne n'ait rien fait — et la délibération deviendrait
-// irrégulière en silence. On SIGNALE, on ne ferme pas.
+// ⚠ ELLE NE FAIT PAS SORTIR DU QUORUM. Un membre élu pour un an reste en fonction
+// au-delà du terme jusqu'à l'AG qui le renouvelle : c'est le cas ORDINAIRE. Le
+// terme atteint n'a donc aucun effet sur `membres_cs` — ni sur `actif`, ni sur
+// `membres_cs.date_fin`, donc ni sur `activeMembersAt`. Sinon l'intéressé
+// sortirait du dénominateur du quorum en plein vote, sans que personne n'ait rien
+// fait, et la délibération deviendrait irrégulière en silence.
 export function echeanceISO(mandat) {
   if (!mandat?.duree_annees || !mandat?.date_debut) return null
   const d = new Date(`${mandat.date_debut}T12:00:00`)
@@ -65,13 +66,29 @@ export function echeanceISO(mandat) {
   return d.toISOString().slice(0, 10)
 }
 
-// Mandat ÉCHU : encore ouvert alors que son terme est passé. Information de
-// gouvernance — c'est le signal qu'une élection est à inscrire à l'ordre du jour,
-// pas un défaut de l'application.
+// TERME D'UN MANDAT : la date inscrite, et à défaut celle que la durée votée
+// implique.
+//
+// ⚠ LA RETOMBÉE EST NÉCESSAIRE, pas une commodité. La date de fin n'est calculée
+// à la saisie que depuis le 2026-09-12 : les mandats enregistrés avant peuvent
+// porter une durée sans date. Sans ce recalcul, un mandat « élu pour 1 an » en
+// 2025 n'aurait aucun terme et ne serait jamais signalé échu — l'application
+// serait muette précisément sur les lignes les plus anciennes, donc les plus
+// susceptibles d'être dépassées.
+export function finMandat(mandat) {
+  return mandat?.date_fin || echeanceISO(mandat)
+}
+
+// Mandat ÉCHU : son terme est passé. Information de GOUVERNANCE — le signal qu'une
+// élection est à inscrire à l'ordre du jour, pas un défaut de l'application.
+//
+// ⚠ Ne vaut que pour le mandat EN COURS d'un membre ACTIF : sur une période déjà
+// remplacée par une autre, une date de fin passée est simplement… le passé.
+// L'appelant fait ce tri (cf. `Historique`), la fonction ne dit que « le terme
+// est derrière nous ».
 export function estEchu(mandat, aujourdhuiISO) {
-  if (mandat?.date_fin) return false
-  const echeance = echeanceISO(mandat)
-  return Boolean(echeance) && echeance < aujourdhuiISO
+  const fin = finMandat(mandat)
+  return Boolean(fin) && fin < aujourdhuiISO
 }
 
 // Tri de l'historique : le plus récent d'abord, comme le registre des décisions.
@@ -83,11 +100,28 @@ export function compareMandats(a, b) {
   return (b.created_at || '').localeCompare(a.created_at || '')
 }
 
-// Le mandat EN COURS d'un membre : celui qui n'a pas de fin. C'est la définition
-// retenue en base (index partiel `mandats_cs_en_cours_par_membre`), la même que
-// « propriétaire actuel = date_cession is null ».
+// Le mandat EN COURS d'un membre : le DERNIER COMMENCÉ.
+//
+// ⚠ CE N'EST PLUS « celui qui n'a pas de date de fin » (2026-09-12). Depuis que la
+// date de fin est calculée à partir de la durée votée, tous les mandats en portent
+// une — y compris celui qui court encore, dont l'échéance est simplement à venir.
+// Chercher une fin nulle ne trouverait plus rien, et l'écran aurait annoncé qu'un
+// conseil en exercice n'a aucun mandat.
+//
+// ⚠ Et c'est aussi ce qui rend correct le cas ORDINAIRE du mandat échu : un membre
+// élu pour un an en juin 2025 a une fin inscrite au 19/06/2026, pourtant il siège
+// toujours en septembre. Son mandat reste « en cours » — daté, dépassé, signalé
+// comme tel — jusqu'à ce qu'une nouvelle élection en ouvre un autre.
+//
+// Rien ne peut donc produire deux mandats en cours : c'est STRUCTUREL, un maximum
+// n'ayant qu'une valeur. L'index partiel de la 051 ne garde plus qu'un rôle
+// résiduel (interdire deux périodes sans fin), ce qui est sans dommage.
+//
+// Qu'un membre SIÈGE encore ne se lit pas ici mais dans `membres_cs.actif`, qui
+// reste l'état opérant — cette fonction ne fait que désigner la dernière période.
 export function mandatEnCours(mandats = []) {
-  return mandats.find((m) => !m.date_fin) || null
+  if (!mandats.length) return null
+  return [...mandats].sort(compareMandats)[0]
 }
 
 // Référence de l'AG à afficher. `ag_id` quand l'assemblée est dans l'app,
@@ -116,12 +150,18 @@ export function divergences(membre, mandats = []) {
   const courant = mandatEnCours(mandats)
   const out = []
   if (!courant) {
-    // Un membre actif sans mandat ouvert : son historique ne dit pas qu'il siège.
-    if (membre.actif) out.push('Aucun mandat en cours n’est enregistré.')
+    // Un membre actif sans aucun mandat : son historique ne dit pas qu'il siège.
+    if (membre.actif) out.push('Aucun mandat n’est enregistré pour ce membre.')
     return out
   }
-  if (!membre.actif) {
-    out.push('Membre marqué « ancien », mais son mandat est toujours ouvert.')
+  // ⚠ AUCUNE ALERTE SUR UN MANDAT ÉCHU. Depuis que la date de fin porte l'échéance
+  // votée, un membre actif dont le terme est passé est le cas ORDINAIRE — il siège
+  // jusqu'à l'AG qui le renouvelle. Le signaler ici comme une anomalie ferait
+  // clignoter tout le conseil dès le lendemain du terme, et l'avertissement, devenu
+  // permanent, ne serait plus lu le jour où il portera sur une vraie contradiction.
+  // Le badge « Échu » de la chronologie suffit à le dire.
+  if (!membre.actif && !courant.date_fin) {
+    out.push('Membre marqué « ancien », mais sa dernière période de mandat n’a pas de fin.')
   }
   if (courant.role !== membre.role) {
     out.push(
