@@ -328,6 +328,23 @@ ligne dans `decision_status_history`.
   continue de l'exiger d'un membre **actif**, qui doit se connecter.
 - **Lecture ouverte à tous les membres**, écriture au président. ⚠ Ce n'est **pas** le registre des
   propriétaires : la composition du conseil figure déjà au registre, aux PV d'AG et au bas des PDF.
+- **DURÉE VOTÉE, PAS DATE DE FIN** (migration 052, correction Pascal 2026-09-12). ⚠ **Deux notions
+  qu'il ne faut pas fusionner** : `duree_annees` est **ce que l'AG a voté** (« élu pour 2 ans ») et
+  l'**échéance en est DÉRIVÉE** (`date_debut` + N ans, `echeanceISO`, jamais stockée) ;
+  `date_fin` est **ce qui s'est réellement passé** (réélection, démission). Un mandat voté pour deux
+  ans peut s'interrompre au bout de six mois, et un membre élu pour un an **reste en fonction
+  au-delà du terme jusqu'à l'AG qui le renouvelle** — cas ordinaire, pas une anomalie.
+  - ⚠ **L'échéance ne clôt RIEN** : elle ne touche ni `date_fin`, ni `membres_cs.date_fin`, donc ni
+    `activeMembersAt`. Sinon un membre qui siège encore sortirait du **dénominateur du quorum** en
+    plein vote, en silence, et une délibération deviendrait irrégulière sans que personne n'agisse.
+    L'écran affiche un badge « Échu depuis le … ». Même esprit que « rien ne s'adopte tout seul ».
+  - **Nullable, sans défaut** : la durée de bien des mandats anciens n'est pas connue. `not null
+    default 1` ferait affirmer au registre une durée que personne n'a votée.
+  - Contrainte `> 0` **sans plafond** : les statuts en révision pourraient retenir trois ans.
+- ⚠ **Les `null` de la base traversent le spread d'un formulaire** (`sansNull`, `Membres.jsx`).
+  `{ ...EMPTY, ...ligne }` n'est PAS suffisant : `null` écrase la valeur vide du modèle (seul
+  `undefined` laisse la valeur de gauche), et un `.trim()` plante. Normaliser champ par champ est ce
+  qui a produit le bug — deux champs traités, le troisième oublié. **Les traiter tous, une fois.**
 - **Divergences SIGNALÉES, jamais corrigées en silence** (`divergences()`, `mandatLogic.js`) :
   aligner automatiquement réécrirait soit la sécurité (`role`), soit l'histoire, sur une supposition.
   ⚠ La date se compare à la dernière **élection**, pas au mandat en cours — un trésorier désigné en

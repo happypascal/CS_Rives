@@ -81,13 +81,25 @@ create table if not exists mandats_cs (
   origine      text not null default 'election'
                check (origine in ('election','designation','cooptation')),
   date_debut   date not null,
+  -- ⚠ DEUX NOTIONS À NE PAS FUSIONNER (migration 052) :
+  --   `duree_annees` = ce que l'AG a VOTÉ (1 an, 2 ans…). L'échéance théorique
+  --      en est DÉRIVÉE (`date_debut` + N ans) et n'est jamais stockée.
+  --   `date_fin`     = ce qui s'est RÉELLEMENT passé — réélection, démission.
+  -- Un mandat voté pour deux ans peut s'interrompre au bout de six mois ; un
+  -- membre élu pour un an reste en fonction au-delà du terme jusqu'à l'AG qui le
+  -- renouvelle. ⚠ L'échéance ne ferme RIEN toute seule : sinon un membre qui
+  -- siège encore sortirait du dénominateur du quorum en silence.
+  duree_annees integer,                                 -- nulle = non renseignée
   date_fin     date,                                    -- nulle = mandat EN COURS
   ag_id        uuid references assemblees_generales(id) on delete set null,
   ag_libelle   text,
   observations text,
   created_at   timestamptz not null default now(),
   constraint mandats_cs_periode_coherente
-    check (date_fin is null or date_fin >= date_debut)
+    check (date_fin is null or date_fin >= date_debut),
+  -- Aucun plafond : les statuts en révision pourraient retenir trois ans.
+  constraint mandats_cs_duree_positive
+    check (duree_annees is null or duree_annees > 0)
 );
 
 -- Un seul mandat ouvert par membre : même garde que `proprietaires_actuel_par_lot`.

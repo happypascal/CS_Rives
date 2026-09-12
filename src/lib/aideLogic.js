@@ -469,6 +469,8 @@ export const MENUS = [
           'Dans la colonne « Mandats », cliquez sur « Voir » : la liste de ses mandats se déplie sous sa ligne, du plus récent au plus ancien.',
           'Chaque ligne indique le rôle tenu pendant cette période, ses dates, et si la personne a été ÉLUE par l’AG ou DÉSIGNÉE par le président.',
           'Un mandat sans date de fin est le mandat en cours.',
+          'La DURÉE VOTÉE par l’AG (1 an, 2 ans…) est rappelée, et le terme qui en découle est calculé pour les mandats en cours.',
+          'Un mandat marqué « Échu » a dépassé son terme sans avoir été renouvelé : c’est un signal, pas une panne — l’intéressé continue de siéger et de compter dans le quorum jusqu’à l’AG qui le renouvelle.',
         ],
       },
       {
@@ -478,6 +480,7 @@ export const MENUS = [
         etapes: [
           'Ouvrez la fiche du membre et modifiez son rôle, sa date d’élection, ou les deux.',
           'L’application demande alors s’il s’agit d’un NOUVEAU MANDAT ou d’une CORRECTION de saisie.',
+          'Si vous choisissez « nouveau mandat », indiquez la DURÉE votée par l’assemblée (1 an, 2 ans…) : c’est ce qui a été délibéré, pas une date de fin à calculer vous-même.',
           '« Nouveau mandat » clôt le mandat en cours la veille et en ouvre un nouveau : les deux restent dans l’historique.',
           '« Correction » ne touche pas à l’historique — à réserver aux erreurs de frappe.',
         ],
@@ -491,7 +494,8 @@ export const MENUS = [
         etapes: [
           'Dépliez les mandats du membre, puis cliquez sur « Ajouter un mandat ».',
           'Laissez « AG de l’application » sur « Aucune », et saisissez la référence de l’AG EN TOUTES LETTRES, telle qu’elle figure au procès-verbal.',
-          'Indiquez le rôle tenu à l’époque, le début et la fin du mandat.',
+          'Indiquez le rôle tenu à l’époque, la date de début et la DURÉE votée par l’assemblée (1 an, 2 ans…). Si la durée n’est pas connue, laissez « non précisée » plutôt que d’en supposer une.',
+          'La « fin effective » ne se renseigne que si la personne a réellement cessé de siéger — ce n’est pas le terme prévu du mandat, que l’application calcule seule.',
           'Pour un membre qui ne siège plus et n’a jamais eu de compte, créez d’abord sa fiche en décochant « Membre actif » : l’adresse e-mail n’est alors pas exigée.',
         ],
         alerte:

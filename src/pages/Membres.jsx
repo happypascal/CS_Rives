@@ -3,17 +3,18 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Modal, Spinner, Badge } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
-import { formatDate } from '../lib/format'
+import { formatDate, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { ROLE_LABELS, ROLE_TONES, ROLE_VALUES, ROLES_UNIQUES } from '../lib/rolesLogic'
 import {
   ORIGINE_LABELS, ORIGINE_COURT, ORIGINE_TONES, ORIGINE_VALUES,
+  DUREE_VALUES, dureeLabel, echeanceISO, estEchu,
   compareMandats, mandatEnCours, referenceAG, divergences, veilleISO,
 } from '../lib/mandatLogic'
 
-const EMPTY = { nom: '', prenom: '', email: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', actif: true }
-const EMPTY_MANDAT = { role: 'membre', origine: 'election', date_debut: '', date_fin: '', ag_id: '', ag_libelle: '', observations: '' }
+const EMPTY = { nom: '', prenom: '', email: '', role: 'membre', date_election: '', ag_election: '', date_fin: '', duree_annees: '', actif: true }
+const EMPTY_MANDAT = { role: 'membre', origine: 'election', date_debut: '', duree_annees: '', date_fin: '', ag_id: '', ag_libelle: '', observations: '' }
 
 export default function Membres() {
   const { isAdmin } = useAuth()
@@ -240,6 +241,8 @@ function Historique({ mandats, ags, alertes, canManage, onAdd, onEdit, onChanged
         <ul className="space-y-1.5">
           {mandats.map((mandat) => {
             const ref = referenceAG(mandat, ags)
+            const echeance = echeanceISO(mandat)
+            const echu = estEchu(mandat, todayISO())
             return (
               <li key={mandat.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
                 <Badge tone={ROLE_TONES[mandat.role] || 'gray'}>{ROLE_LABELS[mandat.role] || mandat.role}</Badge>
@@ -247,6 +250,14 @@ function Historique({ mandats, ags, alertes, canManage, onAdd, onEdit, onChanged
                   {formatDate(mandat.date_debut)} → {mandat.date_fin ? formatDate(mandat.date_fin) : 'en cours'}
                 </span>
                 <Badge tone={ORIGINE_TONES[mandat.origine] || 'gray'}>{ORIGINE_COURT[mandat.origine] || mandat.origine}</Badge>
+                {mandat.duree_annees && <span className="text-slate-500">· élu pour {dureeLabel(mandat.duree_annees)}</span>}
+                {/* Le terme n'a d'intérêt que tant que le mandat court : sur une
+                    période déjà close, seule la fin réelle compte. */}
+                {echeance && !mandat.date_fin && (
+                  echu
+                    ? <Badge tone="amber">Échu depuis le {formatDate(echeance)}</Badge>
+                    : <span className="text-slate-500">· terme le {formatDate(echeance)}</span>
+                )}
                 <span className="text-slate-500">{ref ? `· ${ref}` : '· AG non précisée'}</span>
                 {mandat.observations && <span className="text-slate-500">· {mandat.observations}</span>}
                 {canManage && (
@@ -275,13 +286,32 @@ function Historique({ mandats, ags, alertes, canManage, onAdd, onEdit, onChanged
   )
 }
 
+// ⚠ NULL DE LA BASE → CHAÎNE VIDE POUR LE FORMULAIRE.
+//
+// `{ ...EMPTY_MANDAT, ...mandat }` semble suffire, mais ne suffit PAS : une
+// colonne nullable revient à `null`, et `null` ÉCRASE la valeur vide du modèle
+// (ce n'est pas `undefined`, le seul cas où le spread laisse la valeur de
+// gauche). Un `form.observations.trim()` plantait alors sur « Cannot read
+// properties of null » à la réouverture d'un mandat déjà enregistré.
+//
+// Normaliser champ par champ à la main est ce qui a produit le bug — deux
+// champs traités, le troisième oublié. On les traite donc TOUS, une fois.
+// Un `<input>` contrôlé n'accepte de toute façon pas `null` sans avertissement.
+function sansNull(obj) {
+  const out = { ...obj }
+  for (const k of Object.keys(out)) if (out[k] === null || out[k] === undefined) out[k] = ''
+  return out
+}
+
 // ------------------------------------------------------------- modale mandat
 function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
   const editing = Boolean(mandat.id)
-  const [form, setForm] = useState({ ...EMPTY_MANDAT, ...mandat, ag_id: mandat.ag_id || '', ag_libelle: mandat.ag_libelle || '', date_fin: mandat.date_fin || '' })
+  const [form, setForm] = useState(() => sansNull({ ...EMPTY_MANDAT, ...mandat }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  // Aperçu du terme, recalculé à chaque frappe sur la date ou la durée.
+  const echeanceApercu = echeanceISO({ date_debut: form.date_debut, duree_annees: Number(form.duree_annees) || null })
 
   const save = async () => {
     setError('')
@@ -302,6 +332,9 @@ function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
         role: form.role,
         origine: form.origine,
         date_debut: form.date_debut,
+        // `Number('')` vaut 0 : le `||` renvoie donc null pour « non précisée »,
+        // ce que la contrainte `duree_annees > 0` refuserait sinon.
+        duree_annees: Number(form.duree_annees) || null,
         date_fin: form.date_fin || null,
         ag_id: form.ag_id || null,
         ag_libelle: form.ag_libelle.trim() || null,
@@ -344,8 +377,29 @@ function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input label="Début du mandat" type="date" value={form.date_debut} onChange={set('date_debut')} required />
-          <Input label="Fin du mandat (vide = en cours)" type="date" value={form.date_fin} onChange={set('date_fin')} />
+          <Select label="Durée votée par l’AG" value={form.duree_annees} onChange={set('duree_annees')}>
+            <option value="">— Non précisée —</option>
+            {DUREE_VALUES.map((d) => <option key={d} value={d}>{dureeLabel(d)}</option>)}
+          </Select>
         </div>
+        {/* L'échéance est CALCULÉE et affichée, jamais saisie ni stockée. */}
+        {echeanceApercu && (
+          <p className="text-xs text-slate-600">
+            Terme du mandat : <strong>{formatDate(echeanceApercu)}</strong>. L’application ne
+            clôturera rien à cette date — un membre élu pour un an reste en fonction jusqu’à l’AG
+            qui le renouvelle. Elle signalera simplement le mandat comme échu.
+          </p>
+        )}
+        <Input
+          label="Fin effective (vide = mandat en cours)"
+          type="date"
+          value={form.date_fin}
+          onChange={set('date_fin')}
+        />
+        <p className="text-xs text-slate-500">
+          À ne renseigner que pour une fin <strong>réelle</strong> : réélection, démission, départ.
+          Ce n’est pas le terme prévu — c’est le jour où la personne a cessé de siéger.
+        </p>
         <Select label="AG de l’application (si elle y figure)" value={form.ag_id} onChange={set('ag_id')}>
           <option value="">— Aucune / AG antérieure à l’application —</option>
           {ags.map((a) => <option key={a.id} value={a.id}>{a.numero} — {formatDate(a.date_ag)}</option>)}
@@ -366,7 +420,9 @@ function MandatModal({ membre, mandat, ags, onClose, onSaved }) {
 // ------------------------------------------------------------- modale membre
 function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
   const editing = Boolean(membre.id)
-  const [form, setForm] = useState({ ...EMPTY, ...membre })
+  // Même normalisation que pour les mandats : `email`, `ag_election` et
+  // `date_fin` sont nullables, et un null venu de la base traverse le spread.
+  const [form, setForm] = useState(() => sansNull({ ...EMPTY, ...membre }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   // « Nouveau mandat » ou « correction » — voir plus bas, c'est l'arbitrage que
@@ -433,6 +489,7 @@ function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
           role: form.role,
           origine: 'election',
           date_debut: form.date_election,
+          duree_annees: Number(form.duree_annees) || null,
           date_fin: form.date_fin || null,
           ag_id: null,
           ag_libelle: form.ag_election || null,
@@ -455,6 +512,7 @@ function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
           // l'historique, où la cooptation est également proposée.
           origine: form.date_election !== membre.date_election ? 'election' : 'designation',
           date_debut: form.date_election,
+          duree_annees: Number(form.duree_annees) || null,
           date_fin: form.date_fin || null,
           ag_id: null,
           ag_libelle: form.ag_election || null,
@@ -511,11 +569,34 @@ function MembreModal({ membre, membres = [], mandats = [], onClose, onSaved }) {
         </div>
         <Input label="AG d’élection" value={form.ag_election || ''} onChange={set('ag_election')} placeholder="AGO 19 juin 2025" />
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Fin de mandat (optionnel)" type="date" value={form.date_fin || ''} onChange={set('date_fin')} />
+          {/* ⚠ Visible seulement quand un mandat va réellement être créé : à la
+              création du membre, ou quand « nouveau mandat » est retenu. Sur une
+              simple correction, aucun mandat ne s'ouvre — le champ n'aurait rien
+              à décrire. */}
+          {(!editing || (mandatChange && suite === 'nouveau')) && (
+            <Select label="Durée votée par l’AG" value={form.duree_annees} onChange={set('duree_annees')}>
+              <option value="">— Non précisée —</option>
+              {DUREE_VALUES.map((d) => <option key={d} value={d}>{dureeLabel(d)}</option>)}
+            </Select>
+          )}
           <label className="flex items-end gap-2 pb-2 text-sm text-slate-600">
             <input type="checkbox" checked={form.actif} onChange={set('actif')} /> Membre actif
           </label>
         </div>
+        {/* ⚠ `membres_cs.date_fin` sert au QUORUM (`activeMembersAt`) : la
+            renseigner retire la personne du dénominateur à partir de cette date.
+            Ce n'est donc pas le terme prévu du mandat, et le libellé doit le dire
+            — c'est exactement la confusion que la 052 vient corriger. */}
+        <Input
+          label="Fin effective de fonction (optionnel)"
+          type="date"
+          value={form.date_fin || ''}
+          onChange={set('date_fin')}
+        />
+        <p className="text-xs text-slate-500">
+          Le jour où la personne a <strong>cessé de siéger</strong>, pas le terme prévu de son
+          mandat : à partir de cette date elle ne compte plus dans le quorum.
+        </p>
 
         {/* ⚠ LE SEUL ARBITRAGE QUE L'APPLICATION NE PEUT PAS PRENDRE.
             Rôle ou date d'élection modifiés : s'agit-il d'une nouvelle mandature,

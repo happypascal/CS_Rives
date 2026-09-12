@@ -39,6 +39,41 @@ export const ORIGINE_TONES = {
 
 export const ORIGINE_VALUES = ['election', 'designation', 'cooptation']
 
+// DURÉE VOTÉE par l'assemblée (migration 052). L'AG n'élit pas jusqu'à une date,
+// elle élit POUR une durée — et c'est cette durée qui a été délibérée.
+// ⚠ « Non précisée » n'est pas une négligence : la durée de bien des mandats
+// anciens n'est pas connue, et en inventer une l'affirmerait au registre.
+export const DUREE_VALUES = [1, 2, 3]
+
+export function dureeLabel(annees) {
+  if (!annees) return 'Durée non précisée'
+  return annees === 1 ? '1 an' : `${annees} ans`
+}
+
+// ÉCHÉANCE THÉORIQUE — dérivée, jamais stockée, comme le tantième d'un lot ou le
+// budget d'un projet. `date_debut` + la durée votée.
+//
+// ⚠ ELLE NE FERME RIEN. Un membre élu pour un an reste en fonction au-delà du
+// terme jusqu'à l'AG qui le renouvelle : c'est le cas ORDINAIRE. Si l'échéance
+// clôturait le mandat, l'intéressé sortirait du dénominateur du quorum en plein
+// vote, sans que personne n'ait rien fait — et la délibération deviendrait
+// irrégulière en silence. On SIGNALE, on ne ferme pas.
+export function echeanceISO(mandat) {
+  if (!mandat?.duree_annees || !mandat?.date_debut) return null
+  const d = new Date(`${mandat.date_debut}T12:00:00`)
+  d.setFullYear(d.getFullYear() + Number(mandat.duree_annees))
+  return d.toISOString().slice(0, 10)
+}
+
+// Mandat ÉCHU : encore ouvert alors que son terme est passé. Information de
+// gouvernance — c'est le signal qu'une élection est à inscrire à l'ordre du jour,
+// pas un défaut de l'application.
+export function estEchu(mandat, aujourdhuiISO) {
+  if (mandat?.date_fin) return false
+  const echeance = echeanceISO(mandat)
+  return Boolean(echeance) && echeance < aujourdhuiISO
+}
+
 // Tri de l'historique : le plus récent d'abord, comme le registre des décisions.
 // `date_debut` décroissante, puis `created_at` décroissante pour départager deux
 // mandats commencés le même jour (une AG qui élit puis désigne le bureau dans la

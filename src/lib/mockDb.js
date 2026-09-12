@@ -350,14 +350,14 @@ function seed() {
   //   3. une DÉSIGNATION du bureau en cours de mandature (Bernard élu membre en
   //      juin, désigné trésorier en septembre), acte du président et non de l'AG.
   const mandats_cs = [
-    { id: uid(), membre_id: mPresident, role: 'membre', origine: 'election', date_debut: '2022-06-11', date_fin: '2025-06-18', ag_id: null, ag_libelle: 'AGO du 11 juin 2022', observations: 'AG antérieure à l’application : référence reprise du procès-verbal.', created_at: '2022-06-11T18:00:00Z' },
-    { id: uid(), membre_id: mPresident, role: 'president', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
-    { id: uid(), membre_id: mTres, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: '2025-09-05', ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
-    { id: uid(), membre_id: mTres, role: 'tresorier', origine: 'designation', date_debut: '2025-09-06', date_fin: null, ag_id: null, ag_libelle: '', observations: 'Désigné trésorier par le président (art. 14).', created_at: '2025-09-06T10:00:00Z' },
-    { id: uid(), membre_id: mVice, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
-    { id: uid(), membre_id: m3, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
-    { id: uid(), membre_id: m4, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
-    { id: uid(), membre_id: m5, role: 'membre', origine: 'election', date_debut: '2024-06-15', date_fin: '2025-06-19', ag_id: null, ag_libelle: 'AGO 15 juin 2024', observations: 'Non représenté au renouvellement de 2025.', created_at: '2024-06-15T18:00:00Z' },
+    { id: uid(), membre_id: mPresident, role: 'membre', origine: 'election', duree_annees: 3, date_debut: '2022-06-11', date_fin: '2025-06-18', ag_id: null, ag_libelle: 'AGO du 11 juin 2022', observations: 'AG antérieure à l’application : référence reprise du procès-verbal.', created_at: '2022-06-11T18:00:00Z' },
+    { id: uid(), membre_id: mPresident, role: 'president', origine: 'election', duree_annees: 1, date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: mTres, role: 'membre', origine: 'election', duree_annees: 1, date_debut: '2025-06-19', date_fin: '2025-09-05', ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: mTres, role: 'tresorier', origine: 'designation', duree_annees: null, date_debut: '2025-09-06', date_fin: null, ag_id: null, ag_libelle: '', observations: 'Désigné trésorier par le président (art. 14).', created_at: '2025-09-06T10:00:00Z' },
+    { id: uid(), membre_id: mVice, role: 'membre', origine: 'election', duree_annees: 2, date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m3, role: 'membre', origine: 'election', duree_annees: 2, date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m4, role: 'membre', origine: 'election', duree_annees: 2, date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m5, role: 'membre', origine: 'election', duree_annees: 1, date_debut: '2024-06-15', date_fin: '2025-06-19', ag_id: null, ag_libelle: 'AGO 15 juin 2024', observations: 'Non représenté au renouvellement de 2025.', created_at: '2024-06-15T18:00:00Z' },
   ]
 
   const qProjet = uid()
@@ -413,7 +413,7 @@ function reprendreMandats(data) {
     if (connus.has(m.id)) continue
     data.mandats_cs.push({
       id: uid(), membre_id: m.id, role: m.role, origine: 'election',
-      date_debut: m.date_election, date_fin: m.date_fin || null,
+      date_debut: m.date_election, duree_annees: null, date_fin: m.date_fin || null,
       ag_id: null, ag_libelle: m.ag_election || '', observations: '',
       created_at: m.created_at || nowISO(),
     })
@@ -796,7 +796,7 @@ export const mockRepo = {
     await delay()
     const data = load()
     data.mandats_cs ||= []
-    const m = { id: uid(), origine: 'election', date_fin: null, ag_id: null, ag_libelle: '', observations: '', created_at: nowISO(), ...input }
+    const m = { id: uid(), origine: 'election', duree_annees: null, date_fin: null, ag_id: null, ag_libelle: '', observations: '', created_at: nowISO(), ...input }
     data.mandats_cs.push(m)
     audit(data, 'mandats_cs', m.id, 'create', `Mandat ouvert le ${m.date_debut}`)
     save(data)

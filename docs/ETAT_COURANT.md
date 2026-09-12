@@ -1,7 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051,
-> **appliquée en prod et code déployé** le jour même, avant l'AG du 15/09).
+> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051, appliquée en
+> prod et déployée), puis **durée votée du mandat + correctif de saisie**
+> (migration 052, ⚠ **ÉCRITE, PAS ENCORE APPLIQUÉE**).
 > Avant : **pièces jointes sur les entrées du journal de projet**
 > (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
@@ -33,6 +34,36 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-12 (suite) — Durée votée du mandat + correctif de saisie (migration 052)
+
+> ⚠ **MIGRATION 052 ÉCRITE, NON APPLIQUÉE.** À passer avant de pousser le code.
+
+- **Bug signalé par Pascal, corrigé** : « je ne peux pas modifier le mandat une fois inscrit —
+  *Cannot read properties of null (reading 'trim')* ». ⚠ **Cause** : `{ ...EMPTY_MANDAT, ...mandat }`
+  laisse passer les `null` de la base — `null` **écrase** la valeur vide du modèle, seul `undefined`
+  laisse la valeur de gauche. `observations` revenait donc à `null` et `.trim()` plantait.
+  J'avais normalisé `ag_libelle` et `date_fin` **à la main**, et oublié le troisième : c'est la
+  méthode qui était fautive, pas l'étourderie. Remplacée par `sansNull()`, qui les traite **tous**.
+- **✅ `duree_annees` (migration 052)** — correction de modèle : « plutôt qu'une date pour la fin de
+  mandat, on vote pour 1 an ou 2 ans ». L'AG ne vote pas une date, elle élit pour une **durée** ;
+  faire calculer « + 2 ans » au président avant de taper le résultat perdait l'information
+  réellement délibérée.
+- ⚠ **DEUX NOTIONS À NE PAS FUSIONNER**, c'est tout l'objet de la migration : `duree_annees` = ce
+  qui a été **voté** (l'échéance en est **dérivée**, jamais stockée) ; `date_fin` = ce qui s'est
+  **réellement passé**. Un mandat voté pour deux ans peut s'interrompre à six mois, et un membre élu
+  pour un an **reste en fonction au-delà du terme** jusqu'à l'AG qui le renouvelle.
+- ⚠ **L'échéance ne clôt RIEN** : elle ne touche pas `membres_cs.date_fin`, donc pas
+  `activeMembersAt`. Sinon un membre qui siège encore sortirait du **dénominateur du quorum** en
+  silence, et une délibération deviendrait irrégulière sans que personne n'ait rien fait. L'écran
+  affiche « Échu depuis le … » — il signale, il ne ferme pas.
+- **Libellé corrigé dans la fiche membre** : « Fin de mandat (optionnel) » → « Fin effective de
+  fonction », avec la mention qu'à partir de cette date la personne ne compte plus au quorum. C'est
+  la confusion même que la 052 corrige.
+- **Vérifié dans le navigateur** : réouverture d'un mandat enregistré (plus de plantage), durée
+  « 2 ans » enregistrée et affichée, terme calculé à l'écran (11/06/2018 + 2 ans = 11/06/2020),
+  badge « Échu depuis le 19/06/2026 » sur un mandat d'un an encore ouvert, le membre restant
+  « Actif ». Aucune erreur de console.
 
 ## Session 2026-09-12 — Historique des mandats du CS (migration 051)
 
