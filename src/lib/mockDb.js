@@ -340,6 +340,26 @@ function seed() {
     { id: uid(), projet_id: p1, date_action: '2026-06-03', texte: 'Relance de RoutesPlus sur le planning de reprise des regards. Sans réponse à ce jour.', auteur_id: mVice, created_at: '2026-06-03T11:00:00Z', updated_at: '2026-06-03T11:00:00Z' },
   ]
 
+  // Historique des mandats (migration 051). Le jeu de démonstration montre les
+  // trois cas qui justifient la table, sans quoi elle ressemblerait à une copie
+  // de `membres_cs` :
+  //   1. une AG ANTÉRIEURE À L'APPLICATION, qui n'existe qu'en toutes lettres
+  //      (Pascal élu simple membre en 2022) ;
+  //   2. une RÉÉLECTION qui change le rôle (membre en 2022, président en 2025) —
+  //      c'est exactement ce que l'ancien modèle écrasait ;
+  //   3. une DÉSIGNATION du bureau en cours de mandature (Bernard élu membre en
+  //      juin, désigné trésorier en septembre), acte du président et non de l'AG.
+  const mandats_cs = [
+    { id: uid(), membre_id: mPresident, role: 'membre', origine: 'election', date_debut: '2022-06-11', date_fin: '2025-06-18', ag_id: null, ag_libelle: 'AGO du 11 juin 2022', observations: 'AG antérieure à l’application : référence reprise du procès-verbal.', created_at: '2022-06-11T18:00:00Z' },
+    { id: uid(), membre_id: mPresident, role: 'president', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: mTres, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: '2025-09-05', ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: mTres, role: 'tresorier', origine: 'designation', date_debut: '2025-09-06', date_fin: null, ag_id: null, ag_libelle: '', observations: 'Désigné trésorier par le président (art. 14).', created_at: '2025-09-06T10:00:00Z' },
+    { id: uid(), membre_id: mVice, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m3, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m4, role: 'membre', origine: 'election', date_debut: '2025-06-19', date_fin: null, ag_id: null, ag_libelle: 'AGO 19 juin 2025', observations: '', created_at: '2025-06-19T18:00:00Z' },
+    { id: uid(), membre_id: m5, role: 'membre', origine: 'election', date_debut: '2024-06-15', date_fin: '2025-06-19', ag_id: null, ag_libelle: 'AGO 15 juin 2024', observations: 'Non représenté au renouvellement de 2025.', created_at: '2024-06-15T18:00:00Z' },
+  ]
+
   const qProjet = uid()
   const questions_reponses_projet = [
     { id: qProjet, projet_id: p1, auteur_id: mVice, type: 'question', parent_id: null, texte: 'RoutesPlus a-t-il confirmé la date de démarrage du tronçon nord ?', created_at: '2026-04-02T09:00:00Z' },
@@ -347,7 +367,7 @@ function seed() {
     { id: uid(), projet_id: p1, auteur_id: m3, type: 'commentaire', parent_id: null, texte: 'Reconnaissance faite sur place le 5 avril : deux regards à reprendre en plus du devis initial.', created_at: '2026-04-05T17:00:00Z' },
   ]
 
-  return { accounts, membres_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
+  return { accounts, membres_cs, mandats_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -373,6 +393,33 @@ export function resetMockDb() {
   const data = seed()
   save(data)
   return data
+}
+
+// Reprise de l'existant pour l'historique des mandats (migration 051), côté démo.
+//
+// ⚠ MÊME GESTE QUE LA MIGRATION, et il faut qu'il le reste : en base, la 051
+// verse un mandat par membre à partir de ses colonnes (`insert … where not
+// exists`). Sans l'équivalent ici, un magasin localStorage créé avant cette
+// version afficherait un historique VIDE pour des membres qui siègent — la démo
+// montrerait l'inverse de ce que fait la vraie application.
+//
+// Ne comble que les membres SANS aucun mandat : ce qui a déjà été saisi n'est
+// jamais réécrit.
+function reprendreMandats(data) {
+  data.mandats_cs ||= []
+  const connus = new Set(data.mandats_cs.map((x) => x.membre_id))
+  let ajout = false
+  for (const m of data.membres_cs) {
+    if (connus.has(m.id)) continue
+    data.mandats_cs.push({
+      id: uid(), membre_id: m.id, role: m.role, origine: 'election',
+      date_debut: m.date_election, date_fin: m.date_fin || null,
+      ag_id: null, ag_libelle: m.ag_election || '', observations: '',
+      created_at: m.created_at || nowISO(),
+    })
+    ajout = true
+  }
+  if (ajout) save(data)
 }
 
 function audit(data, entite, entite_id, action, details) {
@@ -729,6 +776,49 @@ export const mockRepo = {
   },
   async deactivateMembre(id, date_fin) {
     return this.updateMembre(id, { actif: false, date_fin: date_fin || nowISO().slice(0, 10) })
+  },
+
+  // ---- Mandats (historique — migration 051) ----
+  // ⚠ `|| []` et `||= []` : un magasin localStorage créé avant la 051 n'a pas la
+  // clé. Même idiome que pour les sujets (045).
+  //
+  // ⚠ Le mock NE REPRODUIT PAS l'index partiel « un seul mandat en cours par
+  // membre » : c'est une garde de base, et la démo ne prouve rien sur les
+  // contraintes. C'est l'écran qui ferme la période précédente avant d'en ouvrir
+  // une ; en Supabase, l'index refuserait l'oubli, ici il passerait.
+  async listMandats() {
+    await delay()
+    const data = load()
+    reprendreMandats(data)
+    return clone(data.mandats_cs).sort((a, b) => (a.date_debut < b.date_debut ? 1 : -1))
+  },
+  async createMandat(input) {
+    await delay()
+    const data = load()
+    data.mandats_cs ||= []
+    const m = { id: uid(), origine: 'election', date_fin: null, ag_id: null, ag_libelle: '', observations: '', created_at: nowISO(), ...input }
+    data.mandats_cs.push(m)
+    audit(data, 'mandats_cs', m.id, 'create', `Mandat ouvert le ${m.date_debut}`)
+    save(data)
+    return clone(m)
+  },
+  async updateMandat(id, patch) {
+    await delay()
+    const data = load()
+    const m = (data.mandats_cs || []).find((x) => x.id === id)
+    if (!m) throw new Error('Mandat introuvable')
+    Object.assign(m, patch)
+    audit(data, 'mandats_cs', id, 'update', 'Modification d’un mandat')
+    save(data)
+    return clone(m)
+  },
+  async deleteMandat(id) {
+    await delay()
+    const data = load()
+    data.mandats_cs = (data.mandats_cs || []).filter((x) => x.id !== id)
+    audit(data, 'mandats_cs', id, 'delete', 'Suppression d’un mandat')
+    save(data)
+    return { ok: true }
   },
 
   // ---- AG ----

@@ -87,6 +87,24 @@ export const supabaseRepo = {
     return this.updateMembre(id, { actif: false, date_fin: date_fin || new Date().toISOString().slice(0, 10) })
   },
 
+  // ---- Mandats (historique — migration 051) ----
+  // `membres_cs` porte le mandat COURANT et pilote la sécurité et le quorum ;
+  // ces lignes-ci portent l'enchaînement des périodes. Aucune des deux ne se
+  // déduit de l'autre : l'écran écrit les deux, et signale un désaccord.
+  async listMandats() {
+    return must(await supabase.from('mandats_cs').select('*').order('date_debut', { ascending: false }))
+  },
+  async createMandat(input) {
+    return must(await supabase.from('mandats_cs').insert(input).select())[0]
+  },
+  async updateMandat(id, patch) {
+    return must(await supabase.from('mandats_cs').update(patch).eq('id', id).select())[0]
+  },
+  async deleteMandat(id) {
+    must(await supabase.from('mandats_cs').delete().eq('id', id))
+    return { ok: true }
+  },
+
   // ---- AG ----
   async listAG() {
     return must(await supabase.from('assemblees_generales').select('*').order('date_ag', { ascending: false }))

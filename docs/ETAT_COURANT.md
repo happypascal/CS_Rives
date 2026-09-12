@@ -1,7 +1,9 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-10** — **pièces jointes sur les entrées du journal de projet**
-> (migration 050, appliquée en prod et **validée en usage réel** le jour même).
+> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051,
+> ⚠ **ÉCRITE, PAS ENCORE APPLIQUÉE EN PROD** — à passer AVANT de saisir les élus du 15/09).
+> Avant : **pièces jointes sur les entrées du journal de projet**
+> (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
 > et parcours « Comment faire » (2026-09-03) ; **journal de bord des projets** (migration 029).
 > Avant encore : décisions en **brouillon** avec **soumission planifiée**
@@ -31,6 +33,44 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-12 — Historique des mandats du CS (migration 051)
+
+> ⚠ **MIGRATION 051 ÉCRITE, NON APPLIQUÉE.** À passer dans le SQL Editor **avant** de saisir les
+> élus de l'AG du 15 septembre — sinon la saisie écrasera la mandature de juin 2025, exactement ce
+> que cette session corrige. Vérification incluse en fin de migration (autant de mandats que de
+> membres, zéro membre sans mandat).
+
+- **Demande de Pascal** : « un historique de toutes les élections (même si c'est une AG ancienne qui
+  n'est pas dans l'app) et leur rôle s'il a changé. »
+- **Ce que la base oubliait** : `membres_cs` porte UN mandat à plat. Une réélection écrasait
+  l'élection précédente ; le registre ne pouvait répondre ni à « qui siégeait en 2019 ? » ni à
+  « depuis quand est-il trésorier ? ». ⚠ **L'échéance rendait la perte imminente** : le
+  renouvellement du 15/09 effaçait définitivement la mandature de 2025.
+- **✅ `mandats_cs`** — une ligne par période, avec le rôle tenu PENDANT la période. Même patron que
+  `lots` / `proprietaires` : le membre est stable, le mandat est une période.
+- ⚠ **`membres_cs` garde ses colonnes et reste l'état OPÉRANT.** `is_admin()` lit `role`, et
+  `activeMembersAt` lit `date_election` / `date_fin` pour **le dénominateur du quorum**. Déplacer
+  ces lectures aurait changé une règle de l'art. 15 par effet de bord, à trois jours d'une AG. La
+  table **raconte**, elle ne décide pas. Écart assumé, à rouvrir sereinement après l'AG.
+- ⚠ **Un trigger a été écrit puis ÉCARTÉ** : il ne sait pas distinguer une réélection d'une
+  correction de frappe, et aurait fabriqué des élections qui n'ont jamais eu lieu. L'écran pose la
+  question — « nouveau mandat » ou « correction » — et c'est la seule réponse honnête.
+- ⚠ **`ag_id` nullable + `ag_libelle` en toutes lettres** : c'est le cœur de la demande. On ne crée
+  pas une AG fictive pour satisfaire une clé étrangère.
+- ⚠ **`membres_cs.email` devient NULLABLE** : inscrire l'élection de 2018 suppose d'inscrire ceux
+  qui siégeaient alors, dont certains n'auront jamais de compte. `not null` obligeait à inventer une
+  adresse. Sans effet sur la sécurité — une adresse nulle ne matche aucun JWT ; l'écran l'exige
+  toujours d'un membre **actif**.
+- **`origine`** distingue l'ÉLECTION (par l'AG) de la DÉSIGNATION (du bureau, par le président,
+  art. 14) et de la cooptation.
+- **Vérifié dans le navigateur, en mode démo** : réélection au 15/09/2026 → le mandat de 2025 est
+  **conservé** et clos au 14/09 ; ajout d'une élection de 2018 dont l'AG n'existe pas dans l'app ;
+  refus d'un mandat sans aucune référence d'AG. Aucune erreur de console.
+- **Le mock reprend l'existant comme la migration** (`reprendreMandats`) : sans ça, un magasin de
+  démo antérieur afficherait un historique vide pour des membres qui siègent.
+- **Manuel mis à jour** : consultation de l'historique, réélection sans perte, élection antérieure à
+  l'application, et l'étape « membre reconduit » ajoutée au parcours de renouvellement.
 
 ## Session 2026-09-10 — Pièces jointes sur les entrées du journal de projet
 

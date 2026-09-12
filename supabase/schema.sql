@@ -10,11 +10,20 @@
 create extension if not exists "pgcrypto";
 
 -- --------------------------------------------------------------------- membres
+-- ⚠ `role`, `date_election` et `date_fin` sont l'état OPÉRANT du mandat en cours :
+-- les helpers de sécurité lisent `role`, et `activeMembersAt` (JS) lit les dates
+-- pour établir la composition appelée à voter et le dénominateur du quorum.
+-- L'HISTORIQUE des mandats vit à côté, dans `mandats_cs` (migration 051) — cette
+-- table-ci ne porte que le mandat courant, et l'écrase à chaque réélection.
+--
+-- ⚠ `email` est NULLABLE depuis la 051 : un membre ayant siégé avant l'application
+-- n'aura jamais de compte, et `not null` obligeait à inventer une adresse. Une
+-- adresse nulle ne matche aucun JWT, donc n'ouvre rien.
 create table if not exists membres_cs (
   id            uuid primary key default gen_random_uuid(),
   nom           text not null,
   prenom        text not null,
-  email         text not null,
+  email         text,
   role          text not null default 'membre' check (role in ('president','tresorier','secretaire','membre')),
   date_election date not null,
   date_fin      date,
@@ -49,6 +58,45 @@ create table if not exists assemblees_generales (
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
+
+-- ------------------------------------------------------------ mandats_cs (051)
+-- HISTORIQUE des mandats du CS. Le MEMBRE est stable, le MANDAT est une PÉRIODE
+-- — même patron que `lots` / `proprietaires`. Une ligne par période, portant le
+-- rôle tenu PENDANT cette période, de sorte qu'une réélection ou une désignation
+-- au bureau n'efface plus ce qui précède (ce que faisait `membres_cs` seule).
+--
+-- ⚠ Déclarée APRÈS `assemblees_generales`, qu'elle référence.
+--
+-- ⚠ `ag_id` est NULLABLE et `ag_libelle` le double en texte : les AG antérieures
+-- à l'application n'y figurent pas et n'y figureront jamais. On ne fabrique pas
+-- une AG fictive pour satisfaire une clé étrangère.
+--
+-- ⚠ `origine` sépare ce que l'art. 14 sépare : l'AG ÉLIT les membres du conseil,
+-- le président DÉSIGNE le trésorier et le secrétaire parmi eux.
+create table if not exists mandats_cs (
+  id           uuid primary key default gen_random_uuid(),
+  membre_id    uuid not null references membres_cs(id) on delete cascade,
+  role         text not null default 'membre'
+               check (role in ('president','tresorier','secretaire','membre')),
+  origine      text not null default 'election'
+               check (origine in ('election','designation','cooptation')),
+  date_debut   date not null,
+  date_fin     date,                                    -- nulle = mandat EN COURS
+  ag_id        uuid references assemblees_generales(id) on delete set null,
+  ag_libelle   text,
+  observations text,
+  created_at   timestamptz not null default now(),
+  constraint mandats_cs_periode_coherente
+    check (date_fin is null or date_fin >= date_debut)
+);
+
+-- Un seul mandat ouvert par membre : même garde que `proprietaires_actuel_par_lot`.
+-- Sans elle, une réélection mal terminée ferait dire deux rôles à la fois.
+create unique index if not exists mandats_cs_en_cours_par_membre
+  on mandats_cs (membre_id) where date_fin is null;
+
+create index if not exists mandats_cs_membre_idx
+  on mandats_cs (membre_id, date_debut desc);
 
 -- ------------------------------------------------------------ resolutions_ag
 -- Résultat seul : les voix (au prorata superficie) restent dans le PV.
@@ -1013,6 +1061,7 @@ grant execute on function ouvrir_decisions_planifiees(text) to authenticated;
 -- =============================================================================
 alter table comptes_ag              enable row level security;
 alter table membres_cs              enable row level security;
+alter table mandats_cs              enable row level security;
 alter table assemblees_generales    enable row level security;
 alter table resolutions_ag          enable row level security;
 alter table projets                 enable row level security;
@@ -1043,7 +1092,11 @@ begin
     -- Mémoire du lotissement (045) : lue par TOUS les membres, contrairement au
     -- registre des propriétaires. C'est la mémoire commune du conseil ; la
     -- cacher recréerait le problème qu'elle résout.
-    'sujets','sujet_entrees'
+    'sujets','sujet_entrees',
+    -- Historique des mandats (051) : lu par TOUS les membres. Ce n'est pas le
+    -- registre des propriétaires — la composition du conseil figure déjà au
+    -- registre des délibérations, dans les PV d'AG et au bas des PDF signés.
+    'mandats_cs'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -1057,7 +1110,10 @@ declare t text;
 begin
   foreach t in array array[
     'membres_cs','assemblees_generales','resolutions_ag','projets','decisions',
-    'signature_batches','decision_status_history','audit_log'
+    'signature_batches','decision_status_history','audit_log',
+    -- Mandats (051) : qui siège et depuis quand est un acte de l'AG constaté par
+    -- le président. Un membre ne se réélit pas lui-même dans le registre.
+    'mandats_cs'
   ]
   loop
     execute format('drop policy if exists "write_admin" on %I;', t);

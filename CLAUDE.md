@@ -74,6 +74,9 @@ src/
     decisionLogic.js  PUR : tally/quorum/adoption (ARTICLE 15), nextNumero
     agLogic.js        constantes/labels de majorité AG (ne compte aucune voix)
     projetLogic.js    constantes/labels/tons de statut projet
+    mandatLogic.js    HISTORIQUE DES MANDATS : origines (élection/désignation/cooptation), tri,
+                      mandat en cours, référence d'AG (hors app comprise), DÉTECTION de divergence
+                      avec `membres_cs` — signalée, jamais corrigée en silence
     format.js         wrappers date-fns (fr), todayISO, addBusinessDaysISO
     proprietaireLogic.js  contact officiel (source, jamais copie) + TRI du registre,
                       partagé par la LISTE et par la navigation de la FICHE
@@ -291,6 +294,44 @@ ligne dans `decision_status_history`.
     **aucune policy de Storage ni de table à ajouter** — vérifié, pas supposé.
   - Affichées **seulement s'il y en a** : un intitulé vide sur chaque ligne alourdirait un journal
     dont l'entrée tient sur une ligne.
+
+### Historique des mandats du CS (migration 051) — `mandats_cs` RACONTE, `membres_cs` OPÈRE
+> **LE MEMBRE EST STABLE, LE MANDAT EST UNE PÉRIODE** — même patron que
+> `lots` / `proprietaires`. Avant la 051, `membres_cs` portait UN mandat à plat
+> (`role`, `date_election`, `date_fin`, `ag_election`) : une réélection ÉCRASAIT l'élection
+> précédente, une désignation au bureau écrasait le rôle tenu avant.
+
+- ⚠ **`membres_cs` GARDE ses colonnes de mandat, et reste l'état opérant.** Deux mécanismes en
+  dépendent et **n'ont pas été déplacés** : les helpers de sécurité (`is_admin()`,
+  `is_tresorier()`, `is_secretaire()`) lisent `membres_cs.role`, et **`activeMembersAt` lit
+  `date_election` / `date_fin`** pour établir la composition appelée à voter et **le dénominateur
+  du quorum**. Brancher le quorum sur l'historique changerait une règle de l'art. 15 par effet de
+  bord. **Écart assumé et documenté**, pas un oubli.
+- ⚠ **L'HISTORIQUE EST SAISI, PAS DÉDUIT.** Un trigger qui ouvrirait un mandat à chaque changement
+  de `role` ou de `date_election` a été écrit puis **écarté** : il ne sait pas distinguer une
+  **réélection** d'une **correction de saisie**, et corriger une faute de frappe aurait fabriqué
+  une élection qui n'a jamais eu lieu. L'écran **pose la question** (« nouveau mandat » /
+  « correction ») à celui qui sait. **Ne pas réintroduire d'automatisme ici.**
+- ⚠ **`ag_id` NULLABLE + `ag_libelle` texte** : c'est le cœur de la demande. Les AG antérieures à
+  l'application n'y figurent pas et n'y figureront jamais ; leur référence est saisie en toutes
+  lettres, telle qu'elle se lit au PV. **On ne fabrique pas une AG fictive pour satisfaire une clé
+  étrangère.** Même raisonnement que le président de séance jamais obligatoire à la convocation.
+- **`origine`** (`election` / `designation` / `cooptation`) sépare ce que l'art. 14 sépare :
+  **l'AG élit** les membres, **le président désigne** le trésorier et le secrétaire parmi eux.
+  Ranger une désignation sous « élu par l'AG » prêterait à l'assemblée un acte qu'elle n'a pas fait.
+- **Un seul mandat en cours par membre** : index partiel `mandats_cs_en_cours_par_membre`, exactement
+  le rôle de `proprietaires_actuel_par_lot`. D'où l'**ORDRE IMPOSÉ** à la réélection — clore d'abord,
+  ouvrir ensuite. Non atomique et assumé ; si la seconde écriture échoue, `divergences()` l'affiche.
+- ⚠ **`membres_cs.email` est devenu NULLABLE.** Inscrire l'élection de 2018 suppose d'inscrire ceux
+  qui siégeaient alors, dont certains n'auront jamais de compte : `not null` obligeait à **inventer
+  une adresse**. Aucun effet sur la sécurité (une adresse nulle ne matche aucun JWT). L'écran
+  continue de l'exiger d'un membre **actif**, qui doit se connecter.
+- **Lecture ouverte à tous les membres**, écriture au président. ⚠ Ce n'est **pas** le registre des
+  propriétaires : la composition du conseil figure déjà au registre, aux PV d'AG et au bas des PDF.
+- **Divergences SIGNALÉES, jamais corrigées en silence** (`divergences()`, `mandatLogic.js`) :
+  aligner automatiquement réécrirait soit la sécurité (`role`), soit l'histoire, sur une supposition.
+  ⚠ La date se compare à la dernière **élection**, pas au mandat en cours — un trésorier désigné en
+  cours de mandature a légitimement une période qui commence après son élection.
 
 ### Modèle de propriété (migration 006)
 > Tout membre actif crée et devient owner ; l'owner seul modifie et notifie ; le président
@@ -599,9 +640,9 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - Le mock reproduit la garde de rôle pour que la démo montre le même refus — il ne **prouve** rien,
   seules les policies ferment. À éprouver sur staging.
 
-Tables : `membres_cs`, `assemblees_generales`, `resolutions_ag`, `projets`, `decisions`, `votes`,
-`questions_reponses`, `signature_batches`, `decision_status_history`, `decisions_historique`,
-`cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`.
+Tables : `membres_cs`, `mandats_cs`, `assemblees_generales`, `resolutions_ag`, `projets`,
+`decisions`, `votes`, `questions_reponses`, `signature_batches`, `decision_status_history`,
+`decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`

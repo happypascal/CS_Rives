@@ -462,14 +462,51 @@ export const MENUS = [
         etapes: ['La liste montre les membres actifs, leur rôle et leur date d’élection.'],
       },
       {
+        titre: 'Consulter l’historique des mandats d’un membre',
+        pourQui: TOUS,
+        resume: 'Toutes ses élections successives, et ses changements de rôle.',
+        etapes: [
+          'Dans la colonne « Mandats », cliquez sur « Voir » : la liste de ses mandats se déplie sous sa ligne, du plus récent au plus ancien.',
+          'Chaque ligne indique le rôle tenu pendant cette période, ses dates, et si la personne a été ÉLUE par l’AG ou DÉSIGNÉE par le président.',
+          'Un mandat sans date de fin est le mandat en cours.',
+        ],
+      },
+      {
+        titre: 'Inscrire une réélection ou un changement de rôle',
+        pourQui: ['president'],
+        resume: 'Sans effacer le mandat précédent.',
+        etapes: [
+          'Ouvrez la fiche du membre et modifiez son rôle, sa date d’élection, ou les deux.',
+          'L’application demande alors s’il s’agit d’un NOUVEAU MANDAT ou d’une CORRECTION de saisie.',
+          '« Nouveau mandat » clôt le mandat en cours la veille et en ouvre un nouveau : les deux restent dans l’historique.',
+          '« Correction » ne touche pas à l’historique — à réserver aux erreurs de frappe.',
+        ],
+        alerte:
+          'Ce choix ne peut pas être deviné par l’application : inscrire une élection qui n’a pas eu lieu est une faute grave dans un registre. En cas de doute, choisissez « correction » et ajoutez le mandat à part.',
+      },
+      {
+        titre: 'Inscrire une élection antérieure à l’application',
+        pourQui: ['president'],
+        resume: 'Une AG de 2018 dont l’application n’a aucune trace.',
+        etapes: [
+          'Dépliez les mandats du membre, puis cliquez sur « Ajouter un mandat ».',
+          'Laissez « AG de l’application » sur « Aucune », et saisissez la référence de l’AG EN TOUTES LETTRES, telle qu’elle figure au procès-verbal.',
+          'Indiquez le rôle tenu à l’époque, le début et la fin du mandat.',
+          'Pour un membre qui ne siège plus et n’a jamais eu de compte, créez d’abord sa fiche en décochant « Membre actif » : l’adresse e-mail n’est alors pas exigée.',
+        ],
+        alerte:
+          'Ne créez jamais une fausse AG dans « Assemblées Générales » pour pouvoir la rattacher. La référence en toutes lettres est faite pour ça.',
+      },
+      {
         titre: 'Ajouter un membre',
         pourQui: ['president'],
         resume: 'À l’issue d’une élection.',
         etapes: [
           'Cliquez sur « Ajouter un membre ».',
           'Saisissez le nom, le prénom et l’ADRESSE E-MAIL exacte : c’est elle qui lie la fiche au compte de connexion.',
-          'Renseignez la date d’élection et l’AG qui l’a élu.',
+          'Renseignez la date d’élection et l’AG qui l’a élu. Son premier mandat est inscrit automatiquement dans l’historique.',
           'Créez ensuite son compte de connexion dans Supabase, avec la même adresse.',
+          'Pour un ancien membre inscrit uniquement pour l’historique, décochez « Membre actif » : l’adresse e-mail n’est alors plus exigée, puisqu’il n’a pas de compte.',
         ],
         alerte:
           'L’adresse doit correspondre au caractère près entre la fiche et le compte, sinon la personne se connecte sans être reconnue comme membre.',
@@ -815,9 +852,16 @@ export const PARCOURS = [
           'Transférer le rôle de président transfère les droits d’administration, y compris sur votre propre compte. Le président de l’application suit le mandat, pas la personne.',
       },
       {
+        titre: 'Pour un membre RECONDUIT, inscrire le nouveau mandat',
+        texte:
+          'Ouvrez sa fiche et mettez à jour la date d’élection et l’AG. L’application demande alors s’il s’agit d’un nouveau mandat ou d’une correction : répondez « nouveau mandat », et son mandat précédent est clos la veille au lieu d’être écrasé.',
+        alerte:
+          'C’est la seule étape qui préserve l’historique. Répondre « correction » à une vraie réélection efface définitivement la mandature précédente.',
+      },
+      {
         titre: 'Désactiver les membres sortants',
         texte:
-          'Décochez « actif ». Ils ne comptent plus dans le quorum et ne peuvent plus voter, mais leurs votes passés restent au registre — une délibération ne se réécrit pas.',
+          'Décochez « actif ». Ils ne comptent plus dans le quorum et ne peuvent plus voter, mais leurs votes passés restent au registre — une délibération ne se réécrit pas. Leur mandat en cours est clos automatiquement à ce jour.',
       },
     ],
   },
