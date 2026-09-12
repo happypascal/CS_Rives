@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
 > Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051,
-> ⚠ **ÉCRITE, PAS ENCORE APPLIQUÉE EN PROD** — à passer AVANT de saisir les élus du 15/09).
+> **appliquée en prod et code déployé** le jour même, avant l'AG du 15/09).
 > Avant : **pièces jointes sur les entrées du journal de projet**
 > (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
@@ -36,10 +36,10 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-12 — Historique des mandats du CS (migration 051)
 
-> ⚠ **MIGRATION 051 ÉCRITE, NON APPLIQUÉE.** À passer dans le SQL Editor **avant** de saisir les
-> élus de l'AG du 15 septembre — sinon la saisie écrasera la mandature de juin 2025, exactement ce
-> que cette session corrige. Vérification incluse en fin de migration (autant de mandats que de
-> membres, zéro membre sans mandat).
+> **MIGRATION 051 APPLIQUÉE EN PRODUCTION le 2026-09-12**, avant l'AG du 15 septembre — c'était
+> l'échéance : sans elle, la saisie des nouveaux élus aurait écrasé la mandature de juin 2025.
+> Vérification exécutée : **5 membres, 5 mandats, 0 membre sans mandat**. La reprise a donc bien
+> versé le mandat en cours de chacun des 5 membres du CS. Code déployé dans la foulée (`b3204a9`).
 
 - **Demande de Pascal** : « un historique de toutes les élections (même si c'est une AG ancienne qui
   n'est pas dans l'app) et leur rôle s'il a changé. »
