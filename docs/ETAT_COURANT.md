@@ -1,8 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051, appliquée en
-> prod et déployée), puis **durée votée du mandat + correctif de saisie**
-> (migration 052, ⚠ **ÉCRITE, PAS ENCORE APPLIQUÉE**).
+> Dernière session : **2026-09-12** — **historique des mandats du CS** (migration 051), puis
+> **durée votée du mandat + correctif de saisie** (migration 052). Les deux **appliquées en prod et
+> déployées** le jour même, avant l'AG du 15/09.
 > Avant : **pièces jointes sur les entrées du journal de projet**
 > (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
@@ -37,7 +37,11 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-12 (suite) — Durée votée du mandat + correctif de saisie (migration 052)
 
-> ⚠ **MIGRATION 052 ÉCRITE, NON APPLIQUÉE.** À passer avant de pousser le code.
+> **MIGRATION 052 APPLIQUÉE EN PRODUCTION le 2026-09-12**, code déployé (`e77b2b2`).
+> Vérification : **7 mandats, 0 avec durée** — la colonne vient d'être créée, les durées se
+> saisissent à l'écran. ⚠ **7 et non 5** : Pascal avait déjà inscrit deux mandats en production
+> entre les deux migrations, ce qui est aussi comment le bug de modification a été trouvé. Le
+> registre des mandats est donc **utilisé pour de vrai**, pas seulement installé.
 
 - **Bug signalé par Pascal, corrigé** : « je ne peux pas modifier le mandat une fois inscrit —
   *Cannot read properties of null (reading 'trim')* ». ⚠ **Cause** : `{ ...EMPTY_MANDAT, ...mandat }`
