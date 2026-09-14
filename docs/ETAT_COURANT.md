@@ -1,9 +1,9 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-12** — **historique des mandats du CS** (051), **durée votée +
-> correctif de saisie** (052), toutes deux appliquées en prod et déployées ; puis **fin de mandat
-> calculée et deux listes de membres** (053, ⚠ **commentaires seuls, non appliquée** — sans effet
-> sur les données). Le tout avant l'AG du 15/09.
+> Dernière session : **2026-09-12 / 14** — **historique des mandats du CS** (051), **durée votée +
+> correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
+> **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
+> **15 mandats saisis, tous avec leur durée** : le registre des mandatures est constitué.
 > Avant : **pièces jointes sur les entrées du journal de projet**
 > (migration 050, appliquée en prod et **validée en usage réel** le 2026-09-10).
 > Avant : sauvegarde exécutée + script de restauration (2026-09-04) ; manuel par entrée de menu
@@ -38,8 +38,16 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-12 (fin) — Fin de mandat calculée + deux listes de membres (migration 053)
 
-> **MIGRATION 053 = COMMENTAIRES SEULS**, aucune donnée touchée. Rien ne casse si elle n'est pas
-> appliquée ; elle corrige deux commentaires de la base devenus faux. À passer quand c'est commode.
+> **MIGRATION 053 APPLIQUÉE EN PRODUCTION le 2026-09-14.** Commentaires seuls, aucune donnée ni
+> structure touchée.
+>
+> **✅ Et surtout : le registre des mandats est CONSTITUÉ.** La vérification affiche **15 mandats,
+> 15 avec durée** — contre 7 et 0 le 12. L'écart ne vient pas de la migration mais de la saisie de
+> Pascal entre les deux : huit mandats ajoutés et la durée renseignée sur la totalité. L'historique
+> des mandatures existe donc **avant** l'AG du 15 septembre, ce qui était tout l'objet du chantier.
+> ⚠ Conséquence à garder en tête : toutes les lignes portant désormais une durée, les mandats dont
+> le terme est passé s'affichent « Échu — à renouveler ». C'est un rappel de gouvernance, pas une
+> anomalie — personne ne sort du quorum pour autant.
 
 - **Demande de Pascal** : « la date de fin de mandat doit être calculée automatiquement quand on
   choisit 1, 2 ou 3 ans » et « dans la liste des membres, il faut 2 listes : le conseil syndical
