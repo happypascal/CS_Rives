@@ -84,12 +84,19 @@ export function tauxParticipation(ag, parametreCourant) {
 // et représenté » (Pascal, 2026-09-16). Rapporter une majorité simple au total du
 // lotissement donnerait un pourcentage juste en arithmétique et faux en droit.
 //
-// ⚠ SEULE LA MAJORITÉ SIMPLE A ÉTÉ TRANCHÉE PAR PASCAL. Pour les trois autres, le
-// dénominateur retenu ici est le TOTAL DU LOTISSEMENT — lecture naturelle d'une
-// majorité absolue ou qualifiée, mais lecture seulement. ⚠ À CONFIRMER SUR LES
-// NOUVEAUX STATUTS, qui sont en cours de révision. L'écran AFFICHE toujours le
-// dénominateur employé, en toutes lettres : personne ne doit avoir à deviner sur
-// quoi porte un pourcentage, et le jour où la règle est fixée, l'écart se verra.
+// RÈGLE CONFIRMÉE PAR PASCAL (2026-09-16), en deux temps :
+//   - majorité SIMPLE            → m² présents ou représentés ;
+//   - majorité ABSOLUE           → total des m² du lotissement ;
+//   - DOUBLE MAJORITÉ QUALIFIÉE  → total des m² du lotissement.
+//
+// ⚠ L'UNANIMITÉ N'A PAS ÉTÉ TRANCHÉE. Elle retombe ici sur le total du
+// lotissement, par défaut et non par décision. En pratique la question se pose
+// peu — l'unanimité se constate à l'absence d'opposition, pas à un seuil — mais le
+// jour où une résolution à l'unanimité sera saisie, vérifier avant de s'y fier.
+//
+// L'écran AFFICHE toujours le dénominateur employé, en toutes lettres : personne
+// ne doit avoir à deviner sur quoi porte un pourcentage, et si la règle est un
+// jour fixée autrement par les nouveaux statuts, l'écart se verra tout de suite.
 //
 // Renvoie { base, libelle } — `base` nulle quand la donnée manque : on n'invente
 // pas un dénominateur.

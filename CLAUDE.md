@@ -488,12 +488,12 @@ et **zéro vote**.
     demandé à sortir ; le jour où le total baisse, une AG réputée avoir réuni 52 % en afficherait
     57 % sans que personne n'ait rien fait. Même patron que `composition_snapshot`.
     **Ne jamais « simplifier » en calculant le taux sur le paramètre.**
-  - ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ REQUISE** (`denominateurResolution`) :
-    **majorité simple → m² PRÉSENTS ou représentés** (règle donnée par Pascal) ; les trois autres
-    (absolue, double qualifiée, unanimité) → total du lotissement. ⚠ **Seule la simple a été
-    tranchée** — les autres sont une lecture naturelle, **à confirmer sur les nouveaux statuts**.
-    L'écran **affiche toujours le dénominateur employé en toutes lettres** : un pourcentage dont la
-    base est invisible n'est pas vérifiable.
+  - ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ REQUISE** (`denominateurResolution`), règle confirmée
+    par Pascal (2026-09-16) : **simple → m² PRÉSENTS ou représentés** ; **absolue** et **double
+    qualifiée → TOTAL des m² du lotissement**. ⚠ **L'unanimité n'a pas été tranchée** : elle retombe
+    sur le total **par défaut, pas par décision** — à vérifier le jour où une résolution à
+    l'unanimité sera saisie. L'écran **affiche toujours le dénominateur employé en toutes lettres** :
+    un pourcentage dont la base est invisible n'est pas vérifiable.
   - Les trois pourcentages **ne font pas forcément 100 %** : le reste (`nonExprime`) est montré,
     comme les « non voté » du registre des décisions.
   - **Incohérence SIGNALÉE, pas corrigée** : des m² exprimés supérieurs aux présents est une faute

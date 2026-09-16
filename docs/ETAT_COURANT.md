@@ -2,8 +2,8 @@
 
 > Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
-> ⚠ **Point ouvert** : le dénominateur des majorités **autres que simple** (absolue, double
-> qualifiée, unanimité) est une lecture non confirmée — à vérifier sur les nouveaux statuts.
+> Dénominateurs **confirmés par Pascal** : simple → présents/représentés ; absolue et double
+> qualifiée → total des m². ⚠ Seule l'**unanimité** reste non tranchée (retombe sur le total).
 > Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
@@ -58,10 +58,13 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - ⚠ **PORTÉE DES % : les RÉSOLUTIONS D'AG, pas les décisions du CS** (arbitrage Pascal, question
   posée). L'art. 15 fait voter le conseil **par tête** ; y mêler des m² aurait brouillé la règle la
   plus protégée du dépôt.
-- ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ** — précision de Pascal en cours de route : « pour les
-  résolutions à la majorité simple, le total de m² est le total présent et représenté ». Les trois
-  autres majorités retombent sur le total du lotissement, ⚠ **lecture naturelle NON CONFIRMÉE** : à
-  vérifier sur les nouveaux statuts. L'écran **affiche toujours la base employée en toutes lettres**.
+- **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ**, règle donnée par Pascal en deux temps le 2026-09-16 :
+  « pour les résolutions à la majorité simple, le total de m² est le total présent et représenté »,
+  puis « je confirme pour absolu et double, total des m² au dénominateur ».
+  ⚠ **L'UNANIMITÉ reste non tranchée** : elle retombe sur le total **par défaut, pas par décision**.
+  La question se pose peu (l'unanimité se constate à l'absence d'opposition, pas à un seuil), mais
+  à vérifier le jour où une résolution à l'unanimité sera saisie.
+  L'écran **affiche toujours la base employée en toutes lettres** : un écart se verrait aussitôt.
 - **On enregistre, on ne décide pas** : `statut` reste posé à la main, `majorite_requise` reste un
   libellé sans logique. Coder une majorité qu'on n'a pas lue, ce serait coder une règle fausse.
 - **Les 3 % ne font pas 100 %** : les « non exprimés » sont montrés, comme les « non voté » du CS.
