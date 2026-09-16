@@ -104,6 +104,15 @@ du budget demandé à l'AG et du backlog ci-dessous.
   tout le budget. Vérifié : un apport de 47 000 € sur un projet qui passe de 105 000 à 152 000 €.
 - **✅ Bandeau récapitulatif** : adopté / affecté / restant à affecter. Répond à « où en est-on
   après l'AG ? » sans parcourir les lignes.
+- **✅ LE CADENAS DIT MAINTENANT PAR OÙ SORTIR** (question de Pascal : « pourquoi je ne peux pas
+  rouvrir une résolution adoptée tant que l'AG n'est pas clôturée ? »). Ce n'était pas l'adoption
+  qui bloquait — celle-là se rouvre d'un clic sur « ouvrir » — mais le **rattachement à un projet**,
+  verrou du dépôt antérieur à ces écrans (`updateResolution` refuse dès qu'un projet pointe la
+  résolution). ⚠ **La sortie existait mais n'était écrite nulle part** : `setResolutionProjet` n'a
+  aucune garde, détacher l'enveloppe est toujours possible et rend aussitôt le vote modifiable.
+  L'écran affichait donc un cadenas sans issue, qui donnait à croire qu'une erreur de saisie était
+  définitive avant même la clôture de l'AG. La phrase est désormais sur la ligne.
+  Chaîne vérifiée : détacher → le verrou dur devient souple → « ouvrir » → vote changé en « Rejetée ».
 - ⚠ **DEUX ERREURS DU MANUEL CORRIGÉES AU PASSAGE** : il demandait de « saisir le nombre de voix
   tel qu'il figure au PV » — **ce champ n'existe pas et ne doit pas exister**, l'application
   n'enregistre qu'un résultat, les voix étant au prorata des superficies et affaire du PV. Une

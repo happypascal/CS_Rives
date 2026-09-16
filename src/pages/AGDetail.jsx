@@ -124,8 +124,28 @@ export default function AGDetail() {
   // c'est possible, mais pas d'un coup de menu.
   const voteVerrou = (r) => {
     const n = linkedCount(r.id)
-    if (n > 0) return { dur: true, message: `${n} décision${n > 1 ? 's' : ''} du conseil s’y rattache${n > 1 ? 'nt' : ''}` }
-    if (r.projet_id) return { dur: true, message: 'son enveloppe finance un projet' }
+    if (n > 0) {
+      return {
+        dur: true,
+        message: `${n} décision${n > 1 ? 's' : ''} du conseil s’y rattache${n > 1 ? 'nt' : ''}`,
+        // Seule issue réelle : détacher la décision depuis SA fiche. Ce n'est pas
+        // un geste d'AG, et il n'a rien à faire ici.
+        sortie: 'Le conseil a engagé de l’argent sur cette enveloppe : détachez d’abord la décision depuis sa fiche.',
+      }
+    }
+    if (r.projet_id) {
+      return {
+        dur: true,
+        message: 'son enveloppe finance un projet',
+        // ⚠ LA SORTIE EXISTE ET DOIT ÊTRE DITE. Le verrou vient du dépôt
+        // (`updateResolution` refuse dès qu'un projet pointe la résolution), mais
+        // `setResolutionProjet` n'a AUCUNE garde : détacher est toujours possible,
+        // et rend aussitôt le vote modifiable. Sans cette phrase, l'écran affichait
+        // un cadenas sans issue — et donnait à croire qu'une erreur de saisie était
+        // définitive avant même la clôture de l'AG.
+        sortie: 'Pour revenir sur le vote : « changer » ci-dessous, puis « Aucun » — l’enveloppe quitte le projet et la résolution redevient modifiable.',
+      }
+    }
     if (r.statut === 'adoptee') return { dur: false, message: 'adoptée — à rouvrir pour revenir sur le vote' }
     return null
   }
@@ -443,8 +463,10 @@ export default function AGDetail() {
                       <span className="max-w-[15rem] text-right text-xs text-slate-400">
                         🔒 {v.message}
                         {/* Blocage DUR : ouvrir la modale ne montrerait qu'une
-                            erreur, on ne propose donc rien. */}
+                            erreur. On n'ouvre donc pas — mais on DIT par où sortir,
+                            au lieu d'un cadenas muet. */}
                         {!v.dur && <> · <button onClick={() => setResModal(r)} className="text-navy-600 underline">ouvrir</button></>}
+                        {v.sortie && <span className="mt-0.5 block text-slate-400">{v.sortie}</span>}
                       </span>
                     )
                   })()}
