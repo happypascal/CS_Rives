@@ -456,6 +456,21 @@ et **zéro vote**.
   ferait qu'une rallonge encore `a_voter` gonflerait un budget sans vote de l'AG.
 - Une enveloppe rattachée à un projet y passe **en entier** (indivisible) → son restant côté AG
   est nul et `DecisionForm` ne la propose plus en engagement direct : on engage sur le projet.
+- **RÉSULTAT DU VOTE SAISI DANS LA LISTE** (`AGDetail`, Pascal 2026-09-16, au lendemain de l'AG) :
+  un menu déroulant par ligne. Saisir une AG, c'est renseigner quinze résultats d'affilée ; ouvrir
+  puis refermer une modale pour chacun était le vrai coût de l'écran.
+  - ⚠ **TROIS VERROUS, dont un seul est une friction voulue** (`voteVerrou`, qui renvoie `dur`) :
+    une **décision** rattachée ou une **enveloppe finançant un projet** sont des refus du dépôt
+    (`updateResolution` throw) — ouvrir la modale n'y changerait rien, on ne propose donc même pas
+    le lien. **`adoptee` est la friction demandée** : le résultat reste modifiable, mais il faut
+    **ouvrir la résolution**. Une adoption ouvre un budget ; la défaire d'un coup de menu au milieu
+    d'une liste retirerait une enveloppe sans que personne ne le voie.
+  - ⚠ Un menu qui échouerait en silence serait pire que pas de menu : l'erreur du repo est affichée
+    en clair dans la carte.
+  - **Les deux montants d'une enveloppe affectée** sont montrés : l'**apport de cette résolution**
+    et le **budget total du projet**. Plusieurs résolutions, parfois de plusieurs AG, abondent le
+    même projet — n'afficher que le premier ferait croire que l'enveloppe votée ici est tout le
+    budget. Un bandeau récapitule adopté / affecté / restant à affecter.
 - **Rattachement piloté depuis la fiche AG** (« Ouvrir un projet » / « Rattacher à un projet
   existant »), pas depuis `ProjetForm` — l'AG vote, puis le CS affecte. `resolution_ids` passé à
   `repo.createProjet` est un champ **virtuel** : le repo le retire du payload et pose

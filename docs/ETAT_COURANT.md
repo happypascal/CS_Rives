@@ -1,6 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-12 / 14** — **historique des mandats du CS** (051), **durée votée +
+> Dernière session : **2026-09-16** — **saisie des résultats d'AG directement dans la liste**
+> (aucune migration), au lendemain de l'AG du 15/09.
+> Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
 > **15 mandats saisis, tous avec leur durée** : le registre des mandatures est constitué.
@@ -35,6 +37,33 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-16 — Saisie des résultats d'AG depuis la liste (aucune migration)
+
+> **AUCUNE MIGRATION.** Écran seul (`AGDetail`), déployé directement.
+
+- **Contexte** : l'AG du 15/09 a eu lieu, Pascal saisit les résultats. « Il faut ajouter la dropdown
+  du vote car c'est trop pénible de devoir ouvrir pour modifier chaque résolution. »
+- **✅ Menu déroulant du résultat sur chaque ligne**, enregistré aussitôt. Saisir une AG, c'est
+  quinze résultats d'affilée ; la modale coûtait deux clics de plus par résolution.
+- ⚠ **TROIS VERROUS, dont un seul est une friction voulue** (`voteVerrou`, champ `dur`) :
+  - **décision rattachée** ou **enveloppe finançant un projet** → `updateResolution` refuse déjà.
+    Ouvrir la modale ne montrerait qu'une erreur : on n'offre même pas le lien. Un menu qui échoue
+    en silence est pire qu'un menu absent.
+  - **adoptée** → friction **demandée par Pascal** : « une fois approuvé, il est impossible de
+    changer le vote depuis la liste, il faut obligatoirement ouvrir la résolution ». Une adoption
+    ouvre un budget ; la défaire d'un coup de menu au milieu d'une liste retirerait une enveloppe
+    sans que personne ne s'en aperçoive. Le geste reste possible, il cesse d'être accidentel.
+- **✅ Affectation de l'enveloppe depuis la liste**, et surtout **les DEUX montants** : l'apport de
+  la résolution et le **budget total du projet**. ⚠ Plusieurs résolutions, parfois de plusieurs AG,
+  abondent le même projet — n'afficher que le premier ferait croire que l'enveloppe votée ici est
+  tout le budget. Vérifié : un apport de 47 000 € sur un projet qui passe de 105 000 à 152 000 €.
+- **✅ Bandeau récapitulatif** : adopté / affecté / restant à affecter. Répond à « où en est-on
+  après l'AG ? » sans parcourir les lignes.
+- ⚠ **DEUX ERREURS DU MANUEL CORRIGÉES AU PASSAGE** : il demandait de « saisir le nombre de voix
+  tel qu'il figure au PV » — **ce champ n'existe pas et ne doit pas exister**, l'application
+  n'enregistre qu'un résultat, les voix étant au prorata des superficies et affaire du PV. Une
+  action dédiée dit désormais explicitement ce que l'application ne fait pas.
 
 ## Session 2026-09-12 (fin) — Fin de mandat calculée + deux listes de membres (migration 053)
 

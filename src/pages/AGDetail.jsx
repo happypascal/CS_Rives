@@ -39,6 +39,10 @@ export default function AGDetail() {
   const [loading, setLoading] = useState(true)
   const [resModal, setResModal] = useState(null)
   const [rattachModal, setRattachModal] = useState(null)
+  // Saisie du résultat directement dans la liste : la ligne en cours d'écriture,
+  // et l'échec éventuel — affiché en clair plutôt qu'avalé.
+  const [voteBusy, setVoteBusy] = useState(null)
+  const [voteError, setVoteError] = useState('')
   // Pièces jointes de l'AG (migration 031) : catégorie choisie AVANT l'envoi,
   // c'est ce qui distingue un PV d'un devis dans la liste.
   const [docCategorie, setDocCategorie] = useState('convocation')
@@ -87,6 +91,57 @@ export default function AGDetail() {
   // « AG a eu lieu » (date passée) N'est PAS figée : on y saisit encore les
   // résultats et l'heure de fin avant de clôturer.
   const agFrozen = ag.statut === 'cloturee' || ag.statut === 'annulee'
+
+  // ---------------------------------------------------------- vote en ligne
+  // Saisir les résultats d'une AG, c'est renseigner quinze résultats d'affilée.
+  // Ouvrir puis refermer une modale pour chacun était le vrai coût de l'écran
+  // (Pascal, 2026-09-16, au lendemain de l'AG). Le résultat se choisit donc
+  // directement dans la liste.
+  //
+  // ⚠ CE QUI BLOQUE LE MENU, et pourquoi il faut le dire plutôt que de le griser :
+  //   1. une DÉCISION du CS s'y rattache — `updateResolution` refuse (le budget
+  //      voté porte déjà des engagements) ;
+  //   2. son enveloppe FINANCE UN PROJET — `updateResolution` refuse aussi ;
+  //   3. elle est ADOPTÉE (règle demandée par Pascal) : le résultat ne se change
+  //      plus d'un coup de menu. Une adoption ouvre un budget ; la défaire par
+  //      mégarde en glissant sur une liste de quinze lignes retirerait une
+  //      enveloppe sans que personne ne s'en aperçoive. Il faut ouvrir la
+  //      résolution — le geste reste possible, il cesse d'être accidentel.
+  //
+  // Les deux premiers cas viennent du dépôt (le repo refuserait de toute façon,
+  // et un menu qui échoue en silence est pire qu'un menu absent) ; le troisième
+  // est une friction VOULUE.
+  // `dur: true` = le dépôt refusera l'écriture de toute façon ; ouvrir la modale
+  // ne servirait qu'à montrer une erreur. `dur: false` = la friction voulue :
+  // c'est possible, mais pas d'un coup de menu.
+  const voteVerrou = (r) => {
+    const n = linkedCount(r.id)
+    if (n > 0) return { dur: true, message: `${n} décision${n > 1 ? 's' : ''} du conseil s’y rattache${n > 1 ? 'nt' : ''}` }
+    if (r.projet_id) return { dur: true, message: 'son enveloppe finance un projet' }
+    if (r.statut === 'adoptee') return { dur: false, message: 'adoptée — à rouvrir pour revenir sur le vote' }
+    return null
+  }
+
+  const changerVote = async (r, statut) => {
+    setVoteError('')
+    setVoteBusy(r.id)
+    try {
+      await repo.updateResolution(r.id, { statut })
+      await reload()
+    } catch (e) {
+      setVoteError(`Résolution n° ${numeroResolution(r)} : ${e.message}`)
+    } finally {
+      setVoteBusy(null)
+    }
+  }
+
+  // Récapitulatif des enveloppes ADOPTÉES : ce qui est affecté à un projet et ce
+  // qui ne l'est pas encore. ⚠ C'est la question que l'écran ne répondait pas —
+  // il fallait parcourir les lignes une à une pour savoir ce qui restait à
+  // affecter après une AG.
+  const adoptees = ag.resolutions.filter(peutFinancer)
+  const montantAffecte = adoptees.filter((r) => r.projet_id).reduce((s, r) => s + Number(r.budget_alloue || 0), 0)
+  const montantLibre = adoptees.filter((r) => !r.projet_id).reduce((s, r) => s + Number(r.budget_alloue || 0), 0)
 
   const cloturerAG = async () => {
     if (!(await confirm({ title: `Clôturer l’AG ${ag.numero} ?`, message: 'L’AG et ses résolutions seront FIGÉES (plus modifiables). Seul le rattachement des budgets aux projets restera possible. À faire une fois les résultats et l’heure de fin de séance saisis.', confirmLabel: 'Clôturer', danger: true }))) return
@@ -305,6 +360,19 @@ export default function AGDetail() {
           subtitle="À voter tant que l’AG ne s’est pas tenue, puis résultat du vote (au prorata des superficies — détail au PV)."
           actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: String(nextResolutionNumero(ag.resolutions)), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
         />
+        {/* Récapitulatif des enveloppes votées : ce qui est affecté, ce qui reste
+            à affecter. Répond d'un coup d'œil à « où en est-on après l'AG ? »,
+            qui demandait jusqu'ici de parcourir toutes les lignes. */}
+        {adoptees.length > 0 && (
+          <div className="border-b border-navy-50 bg-navy-50/40 px-5 py-2.5 text-xs text-slate-600">
+            Enveloppes adoptées : <strong className="text-navy-800">{eur(montantAffecte + montantLibre)}</strong>
+            {' '}— dont <strong className="text-emerald-800">{eur(montantAffecte)}</strong> affectés à des projets
+            {montantLibre > 0
+              ? <> et <strong className="text-amber-800">{eur(montantLibre)}</strong> encore à affecter.</>
+              : <> ; tout est affecté.</>}
+          </div>
+        )}
+        {voteError && <p className="border-b border-red-100 bg-red-50 px-5 py-2 text-xs text-red-700">{voteError}</p>}
         <div className="divide-y divide-navy-50">
           {ag.resolutions.length === 0 && <p className="px-5 py-6 text-center text-sm text-slate-500">Aucune résolution.</p>}
           {ag.resolutions.map((r) => (
@@ -323,10 +391,35 @@ export default function AGDetail() {
                   <p className="mt-1 text-sm text-slate-600">{r.description}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <ResolutionStatutBadge statut={r.statut} />
-                  {canManage && !agFrozen && (linkedCount(r.id) > 0
-                    ? <span className="text-xs text-slate-400" title="Verrouillée : décision rattachée">🔒 {linkedCount(r.id)} décision(s)</span>
-                    : <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>)}
+                  {/* Le résultat du vote, modifiable sur place tant que rien ne
+                      s'y oppose. Sinon le badge, plus la RAISON du blocage. */}
+                  {canManage && !agFrozen && !voteVerrou(r) ? (
+                    <select
+                      value={r.statut}
+                      disabled={voteBusy === r.id}
+                      onChange={(e) => changerVote(r, e.target.value)}
+                      aria-label={`Résultat du vote de la résolution n° ${numeroResolution(r)}`}
+                      className="rounded border border-navy-200 bg-white px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                    >
+                      {RESOLUTION_STATUT_VALUES.map((s) => (
+                        <option key={s} value={s}>{RESOLUTION_STATUT_LABELS[s]}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <ResolutionStatutBadge statut={r.statut} />
+                  )}
+                  {canManage && !agFrozen && (() => {
+                    const v = voteVerrou(r)
+                    if (!v) return <button onClick={() => setResModal(r)} className="text-xs text-navy-600 underline">Modifier</button>
+                    return (
+                      <span className="max-w-[15rem] text-right text-xs text-slate-400">
+                        🔒 {v.message}
+                        {/* Blocage DUR : ouvrir la modale ne montrerait qu'une
+                            erreur, on ne propose donc rien. */}
+                        {!v.dur && <> · <button onClick={() => setResModal(r)} className="text-navy-600 underline">ouvrir</button></>}
+                      </span>
+                    )
+                  })()}
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
@@ -337,20 +430,32 @@ export default function AGDetail() {
                 {/* Le rattachement se pilote ICI : l'AG vote l'enveloppe, puis on
                     décide si elle ouvre un projet ou en abonde un existant. */}
                 {peutFinancer(r) && r.projet_id && (
-                  <span className="text-slate-600">
-                    Finance le projet <Link to={`/projets/${r.projet_id}`} className="font-medium text-navy-600 underline">{projetById[r.projet_id]?.nom || 'projet'}</Link>
+                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-emerald-800">
+                    {/* ⚠ DEUX MONTANTS, et ce ne sont pas les mêmes : ce que CETTE
+                        résolution apporte, et le budget TOTAL du projet — plusieurs
+                        résolutions peuvent l'abonder, y compris d'autres AG. Sans le
+                        second, on croit que l'enveloppe votée ici est tout le budget. */}
+                    Finance <Link to={`/projets/${r.projet_id}`} className="font-medium underline">{projetById[r.projet_id]?.nom || 'projet'}</Link>
+                    {' '}· apport <strong>{eur(r.budget_alloue)}</strong>
+                    {projetById[r.projet_id] && <> · budget du projet {eur(projetById[r.projet_id].alloue)}</>}
                     {canManage && (
-                      <button onClick={() => setRattachModal(r)} className="ml-2 text-navy-600 underline">changer</button>
+                      <button onClick={() => setRattachModal(r)} className="ml-2 underline">changer</button>
                     )}
                   </span>
                 )}
-                {canManage && peutFinancer(r) && !r.projet_id && (
-                  <>
-                    <Link to={`/projets/nouveau?resolution=${r.id}`} className="text-navy-600 underline">Ouvrir un projet</Link>
-                    {projets.length > 0 && (
-                      <button onClick={() => setRattachModal(r)} className="text-navy-600 underline">Rattacher à un projet existant</button>
+                {peutFinancer(r) && !r.projet_id && (
+                  <span className="rounded bg-amber-50 px-2 py-0.5 text-amber-800">
+                    Enveloppe <strong>{eur(r.budget_alloue)}</strong> non affectée
+                    {canManage && (
+                      <>
+                        {' '}·{' '}
+                        <Link to={`/projets/nouveau?resolution=${r.id}`} className="underline">ouvrir un projet</Link>
+                        {projets.length > 0 && (
+                          <> ou <button onClick={() => setRattachModal(r)} className="underline">rattacher à un projet</button></>
+                        )}
+                      </>
                     )}
-                  </>
+                  </span>
                 )}
               </div>
               {r.observations && <p className="mt-2 text-xs italic text-slate-400">{r.observations}</p>}

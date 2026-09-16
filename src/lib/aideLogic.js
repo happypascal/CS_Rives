@@ -310,9 +310,10 @@ export const MENUS = [
         pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'L’AG vote, le conseil affecte.',
         etapes: [
-          'Ouvrez l’AG et repérez la résolution dotée d’un budget.',
-          'Cliquez sur « Ouvrir un projet » (le projet est créé et rattaché) ou « Rattacher à un projet existant ».',
-          'Le budget du projet devient la somme des enveloppes qui le pointent.',
+          'Ouvrez l’AG : toute résolution adoptée et dotée affiche son enveloppe directement sur sa ligne.',
+          'Tant qu’elle n’est affectée à rien, elle apparaît en orange « non affectée ».',
+          'Cliquez sur « ouvrir un projet » (le projet est créé et rattaché) ou « rattacher à un projet ».',
+          'La ligne passe alors en vert et indique DEUX montants : l’apport de cette résolution, et le budget total du projet — plusieurs résolutions, parfois de plusieurs AG, peuvent l’abonder.',
         ],
         alerte:
           'Le rattachement se pilote depuis l’AG, jamais depuis le projet : c’est la résolution qui désigne son projet. Une enveloppe rattachée y passe en entier.',
@@ -320,13 +321,25 @@ export const MENUS = [
       {
         titre: 'Saisir les résultats du vote',
         pourQui: ['secretaire'],  // + président, via write_admin
-        resume: 'Après l’assemblée, résolution par résolution.',
+        resume: 'Directement dans la liste, sans ouvrir chaque résolution.',
         etapes: [
-          'Passez chaque résolution en adoptée, rejetée ou retirée.',
-          'Saisissez le nombre de voix tel qu’il figure au PV.',
+          'Ouvrez l’AG : chaque résolution porte un menu déroulant à droite de sa ligne.',
+          'Choisissez le résultat — adoptée, rejetée, sans vote ou retirée. C’est enregistré aussitôt.',
+          'Une résolution ADOPTÉE et dotée fait apparaître son enveloppe, à affecter à un projet.',
+          'Un bandeau récapitule les enveloppes adoptées : ce qui est affecté, et ce qui reste à affecter.',
         ],
         alerte:
-          'L’application ne compte AUCUNE voix d’AG : les votes sont au prorata des superficies et restent l’affaire du PV. Elle n’enregistre que le résultat.',
+          'Une fois ADOPTÉE, le résultat ne se change plus depuis la liste : il faut ouvrir la résolution. Une adoption ouvre un budget, et la défaire d’un coup de menu au milieu d’une liste retirerait une enveloppe sans qu’on s’en aperçoive. Le menu se verrouille aussi, définitivement cette fois, dès qu’une décision du conseil s’y rattache ou que son enveloppe finance un projet.',
+      },
+      {
+        titre: 'Comprendre ce que l’application ne fait PAS pour les votes d’AG',
+        pourQui: TOUS,
+        resume: 'Elle enregistre un résultat, elle ne compte rien.',
+        etapes: [
+          'Les voix d’AG se comptent au prorata des superficies, et ce décompte reste l’affaire du procès-verbal.',
+          'L’application n’a AUCUN champ pour le nombre de voix : n’en cherchez pas.',
+          'Elle n’enregistre que le résultat — adoptée, rejetée, sans vote, retirée — et la majorité qui était requise.',
+        ],
       },
       {
         titre: 'Valider les comptes de l’exercice',
