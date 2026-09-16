@@ -780,9 +780,16 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
             <Input label="m² abstention" type="text" inputMode="decimal" value={form.m2_abstention ?? ''} onChange={set('m2_abstention')} />
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            {form.majorite_requise === 'simple' || form.majorite_requise === 'unanimite'
-              ? `${MAJORITE_LABELS[form.majorite_requise]} : les pourcentages seront calculés sur les m² présents ou représentés de la séance.`
+            {form.majorite_requise === 'simple'
+              ? 'Majorité simple : les pourcentages seront calculés sur les m² présents ou représentés de la séance.'
               : `${MAJORITE_LABELS[form.majorite_requise]} : les pourcentages seront calculés sur le total des m² du lotissement figé pour cette séance.`}
+            {/* La règle de l'unanimité mérite d'être rappelée là où on saisit :
+                l'absence y fait obstacle autant qu'un vote contre, ce qui n'est
+                pas intuitif quand on vient de compter les voix d'une séance. */}
+            {form.majorite_requise === 'unanimite' && (
+              <> <strong>Tous les colotis doivent approuver</strong> : un vote contre, une abstention
+              ou une non-participation suffit à empêcher l’unanimité.</>
+            )}
             {' '}L’application <strong>affiche</strong> ces pourcentages ; elle ne décide pas du résultat,
             que vous posez vous-même ci-dessus.
           </p>

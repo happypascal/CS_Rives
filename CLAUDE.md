@@ -489,11 +489,15 @@ et **zéro vote**.
     57 % sans que personne n'ait rien fait. Même patron que `composition_snapshot`.
     **Ne jamais « simplifier » en calculant le taux sur le paramètre.**
   - ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ REQUISE** (`denominateurResolution`), règle Pascal
-    (2026-09-16) : **simple et unanimité → m² PRÉSENTS ou représentés** ; **absolue** et **double
-    qualifiée → TOTAL des m² du lotissement**. ⚠ **L'unanimité suit la simple parce qu'unanimité veut
-    dire unanimité** : rapportée au total, une résolution votée à l'unanimité d'une séance réunissant
-    54,7 % des m² se serait affichée « 54,7 % pour » — l'écran aurait contredit le mot.
-    L'écran **affiche toujours le dénominateur employé en toutes lettres** : un pourcentage dont la
+    (2026-09-16) : **simple → m² PRÉSENTS ou représentés** ; **absolue**, **double qualifiée** et
+    **unanimité → TOTAL des m² du lotissement**.
+  - ⚠ **L'UNANIMITÉ SE MESURE SUR TOUS LES COLOTIS, PAS SUR LES PRÉSENTS** : « si 1 dit non, ou
+    s'abstient, ou ne participe pas, ce n'est pas approuvé » (Pascal). **L'absence fait obstacle à
+    l'unanimité** au même titre qu'un vote contre. **Ne pas la rapporter aux présents** — l'erreur a
+    été commise et livrée le 2026-09-16 : une résolution approuvée par tous les présents d'une séance
+    à 54,7 % de participation affichait « 100 % », soit une unanimité que 45 % des colotis n'avaient
+    jamais donnée. Rapporté au total, le pourcentage **révèle** au contraire qu'elle n'est pas atteinte.
+  - L'écran **affiche toujours le dénominateur employé en toutes lettres** : un pourcentage dont la
     base est invisible n'est pas vérifiable.
   - Les trois pourcentages **ne font pas forcément 100 %** : le reste (`nonExprime`) est montré,
     comme les « non voté » du registre des décisions.

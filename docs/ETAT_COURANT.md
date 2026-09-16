@@ -2,8 +2,8 @@
 
 > Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
-> Dénominateurs : **simple et unanimité** → présents/représentés ; **absolue et double qualifiée**
-> → total des m².
+> Dénominateurs : **simple** → présents/représentés ; **absolue, double qualifiée et unanimité**
+> → total des m² (l'absence fait obstacle à l'unanimité).
 > Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
@@ -61,10 +61,15 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ**, règle donnée par Pascal en deux temps le 2026-09-16 :
   « pour les résolutions à la majorité simple, le total de m² est le total présent et représenté »,
   puis « je confirme pour absolu et double, total des m² au dénominateur ».
-  ⚠ **L'UNANIMITÉ suit la simple** (m² présents), et la question n'aurait pas dû être posée :
-  « unanimité veut dire unanimité ». Elle cachait cependant un vrai défaut — sur le total du
-  lotissement, une résolution votée à l'unanimité d'une séance à 54,7 % de participation se serait
-  affichée « 54,7 % pour », l'écran contredisant le mot. Sur les présents, elle affiche 100 %.
+  ⚠ **L'UNANIMITÉ se mesure sur le TOTAL**, pas sur les présents : « tous les colotis approuvent ;
+  si 1 dit non, ou s'abstient, ou ne participe pas, ce n'est pas approuvé » (Pascal). **L'absence y
+  fait obstacle** autant qu'un vote contre.
+  ⚠ **ERREUR COMMISE ET LIVRÉE CE JOUR-LÀ, puis corrigée** : j'avais rangé l'unanimité avec la
+  majorité simple, sur le raisonnement — faux — qu'une résolution unanime « devait » afficher 100 %.
+  Une résolution approuvée par tous les présents d'une séance à 54,7 % de participation affichait
+  donc une unanimité que 45 % des colotis n'avaient jamais donnée. **Le bon comportement est
+  l'inverse** : rapporté au total, le pourcentage RÉVÈLE que l'unanimité n'est pas atteinte.
+  Leçon : sur une règle de majorité, ne pas raisonner par vraisemblance d'affichage.
   L'écran **affiche toujours la base employée en toutes lettres** : un écart se verrait aussitôt.
 - **On enregistre, on ne décide pas** : `statut` reste posé à la main, `majorite_requise` reste un
   libellé sans logique. Coder une majorité qu'on n'a pas lue, ce serait coder une règle fausse.

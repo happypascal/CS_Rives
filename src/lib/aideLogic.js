@@ -338,7 +338,8 @@ export const MENUS = [
         etapes: [
           'Les voix d’AG se comptent au prorata des superficies : vous pouvez saisir les m² pour, contre et abstention, et l’application en affiche les pourcentages.',
           'Elle NE CALCULE JAMAIS l’adoption : c’est vous qui posez le résultat, d’après le procès-verbal.',
-          'Le dénominateur dépend de la majorité requise : à la MAJORITÉ SIMPLE et à l’UNANIMITÉ, les m² présents ou représentés ; à la majorité ABSOLUE et à la DOUBLE MAJORITÉ QUALIFIÉE, le total des m² du lotissement. L’écran indique toujours sur quoi le pourcentage est calculé.',
+          'Le dénominateur dépend de la majorité requise : à la MAJORITÉ SIMPLE, les m² présents ou représentés ; à la majorité ABSOLUE, à la DOUBLE MAJORITÉ QUALIFIÉE et à l’UNANIMITÉ, le total des m² du lotissement. L’écran indique toujours sur quoi le pourcentage est calculé.',
+          'L’UNANIMITÉ se mesure sur TOUS les colotis, pas sur les présents : un vote contre, une abstention ou une simple non-participation suffit à l’empêcher. C’est pourquoi son pourcentage se calcule sur le total.',
           'Les trois pourcentages ne font pas forcément 100 % : des m² présents peuvent n’avoir voté sur rien. L’écart est affiché en « non exprimés ».',
         ],
       },

@@ -85,15 +85,23 @@ export function tauxParticipation(ag, parametreCourant) {
 // lotissement donnerait un pourcentage juste en arithmétique et faux en droit.
 //
 // RÈGLE (Pascal, 2026-09-16) :
-//   - SIMPLE et UNANIMITÉ        → m² présents ou représentés ;
+//   - SIMPLE                     → m² présents ou représentés ;
 //   - ABSOLUE                    → total des m² du lotissement ;
-//   - DOUBLE MAJORITÉ QUALIFIÉE  → total des m² du lotissement.
+//   - DOUBLE MAJORITÉ QUALIFIÉE  → total des m² du lotissement ;
+//   - UNANIMITÉ                  → total des m² du lotissement.
 //
-// ⚠ POURQUOI L'UNANIMITÉ SUIT LA SIMPLE : parce qu'unanimité veut dire unanimité.
-// Rapportée au total du lotissement, une résolution votée à l'unanimité d'une
-// séance réunissant 54,7 % des m² se serait affichée « 54,7 % pour » — l'écran
-// aurait contredit le mot. Sur les m² présents, elle affiche 100 %, ce qu'un
-// lecteur attend en lisant « unanimité ».
+// ⚠ L'UNANIMITÉ SE MESURE SUR TOUS LES COLOTIS, PAS SUR LES PRÉSENTS. Règle
+// donnée par Pascal, mot pour mot : « l'unanimité, tous les colotis approuvent ;
+// si 1 dit non, ou s'abstient, ou ne participe pas, ce n'est pas approuvé ».
+// L'ABSENCE FAIT DONC OBSTACLE À L'UNANIMITÉ, au même titre qu'un vote contre.
+//
+// ⚠ NE PAS « CORRIGER » EN RAPPORTANT L'UNANIMITÉ AUX PRÉSENTS. Cette erreur a été
+// commise et livrée le 2026-09-16, sur le raisonnement — faux — qu'une résolution
+// unanime devait afficher 100 %. Conséquence : une résolution approuvée par tous
+// les présents d'une séance réunissant 54,7 % des m² affichait « 100 % », donc une
+// unanimité que 45 % des colotis n'avaient jamais donnée. Dans un registre légal,
+// c'est exactement l'inverse de ce qu'il faut montrer : rapporté au total, le
+// pourcentage RÉVÈLE que l'unanimité n'est pas atteinte.
 //
 // L'écran AFFICHE toujours le dénominateur employé, en toutes lettres : personne
 // ne doit avoir à deviner sur quoi porte un pourcentage, et si la règle est un
@@ -102,7 +110,7 @@ export function tauxParticipation(ag, parametreCourant) {
 // Renvoie { base, libelle } — `base` nulle quand la donnée manque : on n'invente
 // pas un dénominateur.
 export function denominateurResolution(resolution, ag, parametreCourant) {
-  if (resolution?.majorite_requise === 'simple' || resolution?.majorite_requise === 'unanimite') {
+  if (resolution?.majorite_requise === 'simple') {
     const presents = Number(ag?.m2_presents)
     return {
       base: Number.isFinite(presents) && presents > 0 ? presents : null,
