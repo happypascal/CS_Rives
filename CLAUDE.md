@@ -476,8 +476,32 @@ et **zéro vote**.
   `repo.createProjet` est un champ **virtuel** : le repo le retire du payload et pose
   `resolutions_ag.projet_id`. En Supabase c'est **non atomique** (insert + update) : le projet
   est supprimé si le rattachement échoue, pour ne pas laisser de projet à 0 €.
-- **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app stocke
-  **uniquement le résultat**, ne compte jamais de voix d'AG (`agLogic.js`).
+- **Les votes d'AG sont au prorata des superficies et restent dans le PV.** L'app **ne calcule
+  jamais l'adoption** d'une résolution : `statut` est posé à la main et `majorite_requise` reste un
+  libellé qu'aucune logique n'applique (`agLogic.js`). ⚠ Depuis la **migration 054** elle peut
+  **enregistrer et AFFICHER** les m² pour/contre/abstention — elle **constate**, elle ne décide pas.
+  Ne pas en déduire l'adoption sans avoir lu les **nouveaux statuts**.
+- **m² ET POURCENTAGES (migration 054)** — assiette des voix en AG.
+  - ⚠ **LE TOTAL EST FIGÉ SUR CHAQUE AG** (`assemblees_generales.m2_total`), le paramètre
+    `m2_total_lotissement` ne servant qu'à **pré-remplir**. Demande expresse de Pascal
+    (2026-09-16) : « il ne faut pas que ça change les % de participation ». Sept colotis ont
+    demandé à sortir ; le jour où le total baisse, une AG réputée avoir réuni 52 % en afficherait
+    57 % sans que personne n'ait rien fait. Même patron que `composition_snapshot`.
+    **Ne jamais « simplifier » en calculant le taux sur le paramètre.**
+  - ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ REQUISE** (`denominateurResolution`) :
+    **majorité simple → m² PRÉSENTS ou représentés** (règle donnée par Pascal) ; les trois autres
+    (absolue, double qualifiée, unanimité) → total du lotissement. ⚠ **Seule la simple a été
+    tranchée** — les autres sont une lecture naturelle, **à confirmer sur les nouveaux statuts**.
+    L'écran **affiche toujours le dénominateur employé en toutes lettres** : un pourcentage dont la
+    base est invisible n'est pas vérifiable.
+  - Les trois pourcentages **ne font pas forcément 100 %** : le reste (`nonExprime`) est montré,
+    comme les « non voté » du registre des décisions.
+  - **Incohérence SIGNALÉE, pas corrigée** : des m² exprimés supérieurs aux présents est une faute
+    de saisie — l'écran le dit, le PV tranche.
+- **`parametres` (clé/valeur, 054)** : réglages modifiables **sans redéploiement**. ⚠ **Pas la
+  somme des `lots.superficie`** — ce registre est incomplet par construction, et surtout réservé
+  **président/secrétaire** (035) : un trésorier verrait un trou là où les autres voient un taux,
+  alors que la participation figure au PV que tout coloti reçoit. Lu par tous, écrit par le président.
 - **Numéro de résolution SAISISSABLE** (2026-08-26) : il doit reprendre celui de la **convocation**,
   que l'ordre de saisie ne reproduit pas (on entre souvent dans le désordre, ou on insère après
   coup). `nextResolutionNumero` ne sert plus que de valeur par défaut à la création. L'unicité
@@ -690,7 +714,7 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - Le mock reproduit la garde de rôle pour que la démo montre le même refus — il ne **prouve** rien,
   seules les policies ferment. À éprouver sur staging.
 
-Tables : `membres_cs`, `mandats_cs`, `assemblees_generales`, `resolutions_ag`, `projets`,
+Tables : `membres_cs`, `mandats_cs`, `parametres`, `assemblees_generales`, `resolutions_ag`, `projets`,
 `decisions`, `votes`, `questions_reponses`, `signature_batches`, `decision_status_history`,
 `decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`.
 

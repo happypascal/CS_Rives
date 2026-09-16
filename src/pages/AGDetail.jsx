@@ -10,7 +10,7 @@ import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, numeroGarageLibre, estGaree, numeroResolution, parseNumeroResolution, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES } from '../lib/agLogic'
+import { nextResolutionNumero, numeroGarageLibre, estGaree, numeroResolution, parseNumeroResolution, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES, tauxParticipation, totalM2AG, repartitionVote, voteIncoherent, pct } from '../lib/agLogic'
 
 // Catégories de pièces jointes d'une AG. Vivent dans le jsonb, sans contrainte
 // en base : ajouter une 4e catégorie un jour ne demandera aucune migration.
@@ -43,6 +43,10 @@ export default function AGDetail() {
   // et l'échec éventuel — affiché en clair plutôt qu'avalé.
   const [voteBusy, setVoteBusy] = useState(null)
   const [voteError, setVoteError] = useState('')
+  // Total COURANT du lotissement. ⚠ Il ne sert qu'aux AG qui n'ont PAS encore leur
+  // total figé : dès qu'une assemblée porte le sien, c'est celui-là qui compte, et
+  // le paramètre peut changer sans rien déplacer.
+  const [m2TotalCourant, setM2TotalCourant] = useState(null)
   // Pièces jointes de l'AG (migration 031) : catégorie choisie AVANT l'envoi,
   // c'est ce qui distingue un PV d'un devis dans la liste.
   const [docCategorie, setDocCategorie] = useState('convocation')
@@ -51,14 +55,18 @@ export default function AGDetail() {
   const [confirm, confirmModal] = useConfirm()
 
   const reload = useCallback(async () => {
-    const [data, ds, ps] = await Promise.all([
+    const [data, ds, ps, params] = await Promise.all([
       repo.getAG(id),
       repo.listDecisions(),
       repo.listProjets().catch(() => []),
+      // Secondaire : sans le paramètre, une AG déjà dotée de son total figé
+      // affiche quand même son taux — c'est tout l'objet du gel.
+      repo.getParametres().catch(() => ({})),
     ])
     setAg(data)
     setDecisions(ds)
     setProjets(ps)
+    setM2TotalCourant(params.m2_total_lotissement || null)
     setLoading(false)
   }, [id])
 
@@ -139,6 +147,8 @@ export default function AGDetail() {
   // qui ne l'est pas encore. ⚠ C'est la question que l'écran ne répondait pas —
   // il fallait parcourir les lignes une à une pour savoir ce qui restait à
   // affecter après une AG.
+  const taux = tauxParticipation(ag, m2TotalCourant)
+
   const adoptees = ag.resolutions.filter(peutFinancer)
   const montantAffecte = adoptees.filter((r) => r.projet_id).reduce((s, r) => s + Number(r.budget_alloue || 0), 0)
   const montantLibre = adoptees.filter((r) => !r.projet_id).reduce((s, r) => s + Number(r.budget_alloue || 0), 0)
@@ -244,7 +254,25 @@ export default function AGDetail() {
             {ag.quorum_statut && <Badge tone={AG_QUORUM_TONES[ag.quorum_statut] || 'gray'}>{AG_QUORUM_LABELS[ag.quorum_statut]}</Badge>}
           </div>
           {ag.heure_fin && <p className="mt-1 text-xs text-slate-500">Séance close à {ag.heure_fin}</p>}
-          {ag.m2_presents != null && ag.m2_presents !== '' && <p className="mt-0.5 text-xs text-slate-500">{num(ag.m2_presents)} m² présents ou représentés</p>}
+          {ag.m2_presents != null && ag.m2_presents !== '' && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              {num(ag.m2_presents)} m² présents ou représentés
+              {taux != null && (
+                <> — <strong className="text-navy-700">{pct(taux)}</strong> de participation</>
+              )}
+            </p>
+          )}
+          {/* ⚠ On dit sur QUOI le taux est calculé, et s'il est figé. Un
+              pourcentage dont le dénominateur est invisible n'est pas vérifiable —
+              et celui-ci conditionne la validité des délibérations. */}
+          {taux != null && (
+            <p className="mt-0.5 text-xs text-slate-400">
+              sur {num(totalM2AG(ag, m2TotalCourant))} m² au total
+              {ag.m2_total != null
+                ? ' (figé pour cette séance)'
+                : ' (total actuel — sera figé au prochain enregistrement)'}
+            </p>
+          )}
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Président de séance</p>
@@ -358,7 +386,7 @@ export default function AGDetail() {
         <CardHeader
           title="Résolutions"
           subtitle="À voter tant que l’AG ne s’est pas tenue, puis résultat du vote (au prorata des superficies — détail au PV)."
-          actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: String(nextResolutionNumero(ag.resolutions)), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', observations: '' })}>+ Résolution</Button>}
+          actions={canManage && !agFrozen && <Button size="sm" onClick={() => setResModal({ numero: String(nextResolutionNumero(ag.resolutions)), majorite_requise: 'simple', statut: 'a_voter', titre: '', description: '', budget_alloue: '', budget_intitule: '', m2_pour: '', m2_contre: '', m2_abstention: '', observations: '' })}>+ Résolution</Button>}
         />
         {/* Récapitulatif des enveloppes votées : ce qui est affecté, ce qui reste
             à affecter. Répond d'un coup d'œil à « où en est-on après l'AG ? »,
@@ -458,6 +486,45 @@ export default function AGDetail() {
                   </span>
                 )}
               </div>
+              {/* RÉPARTITION DU VOTE au prorata des superficies. Affichée seulement
+                  si le PV en donne le détail — la plupart des résolutions n'en ont
+                  pas, et une ligne vide encombrerait. */}
+              {(() => {
+                const rep = repartitionVote(r, ag, m2TotalCourant)
+                if (!rep) return null
+                const incoherent = voteIncoherent(r, ag, m2TotalCourant)
+                return (
+                  <div className="mt-2 rounded border border-navy-100 bg-navy-50/40 px-3 py-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="text-emerald-800">Pour <strong>{num(rep.pour)} m²</strong>{rep.pourPct != null && <> · {pct(rep.pourPct)}</>}</span>
+                      <span className="text-red-800">Contre <strong>{num(rep.contre)} m²</strong>{rep.contrePct != null && <> · {pct(rep.contrePct)}</>}</span>
+                      <span className="text-slate-600">Abstention <strong>{num(rep.abstention)} m²</strong>{rep.abstentionPct != null && <> · {pct(rep.abstentionPct)}</>}</span>
+                      {/* ⚠ L'écart : des m² qui n'ont pris part à aucun vote sur
+                          cette résolution. Le taire ferait croire que tout le monde
+                          s'est prononcé. */}
+                      {rep.nonExprime > 0 && (
+                        <span className="text-slate-400">Non exprimés {num(rep.nonExprime)} m²</span>
+                      )}
+                    </div>
+                    {/* ⚠ Le dénominateur est DIT, jamais sous-entendu : à la majorité
+                        simple il est le total présent et représenté, ailleurs le
+                        total du lotissement. Un pourcentage dont on ignore la base
+                        n'est pas vérifiable. */}
+                    <p className="mt-1 text-slate-400">
+                      {rep.base
+                        ? <>Pourcentages calculés sur {num(rep.base)} m², soit {rep.libelle}.</>
+                        : <>Pourcentages non calculables : {rep.libelle} non renseigné.</>}
+                    </p>
+                    {incoherent && (
+                      <p className="mt-1 font-medium text-amber-700">
+                        ⚠ Les m² exprimés ({num(rep.exprimes)}) dépassent les m² présents ou
+                        représentés ({num(ag.m2_presents)}). Une des deux saisies est fausse — le
+                        procès-verbal tranche.
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
               {r.observations && <p className="mt-2 text-xs italic text-slate-400">{r.observations}</p>}
               {/* PJ téléchargeables par tout membre (les non-gestionnaires n'ouvrent
                   pas la modale d'édition). */}
@@ -635,6 +702,12 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
       statut: form.statut,
       budget_alloue: parseMontant(form.budget_alloue),
       budget_intitule: form.budget_intitule || null,
+      // m² du vote (054). ⚠ `parseMontant` rend null sur une chaîne vide : un champ
+      // laissé vide reste « non renseigné », il ne devient pas zéro — un zéro
+      // affirmerait que personne n'a voté ainsi, ce que le PV ne dit pas.
+      m2_pour: parseMontant(form.m2_pour),
+      m2_contre: parseMontant(form.m2_contre),
+      m2_abstention: parseMontant(form.m2_abstention),
       observations: form.observations,
       documents: docs,
     }
@@ -695,6 +768,25 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
           <Input label="Budget alloué (€) — optionnel" type="text" inputMode="decimal" value={form.budget_alloue ?? ''} onChange={set('budget_alloue')} placeholder="ex : 20'000" />
           <Input label="Intitulé du budget" value={form.budget_intitule || ''} onChange={set('budget_intitule')} />
         </div>
+        {/* m² du vote — FACULTATIFS. Beaucoup de PV ne donnent pas le détail, et
+            l'application n'a pas à l'exiger : elle constate ce que le PV dit. */}
+        <fieldset className="rounded-md border border-navy-100 p-3">
+          <legend className="px-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+            Détail du vote en m² — optionnel
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input label="m² pour" type="text" inputMode="decimal" value={form.m2_pour ?? ''} onChange={set('m2_pour')} />
+            <Input label="m² contre" type="text" inputMode="decimal" value={form.m2_contre ?? ''} onChange={set('m2_contre')} />
+            <Input label="m² abstention" type="text" inputMode="decimal" value={form.m2_abstention ?? ''} onChange={set('m2_abstention')} />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            {form.majorite_requise === 'simple'
+              ? 'Majorité simple : les pourcentages seront calculés sur les m² présents ou représentés de la séance.'
+              : 'Les pourcentages seront calculés sur le total des m² du lotissement figé pour cette séance.'}
+            {' '}L’application <strong>affiche</strong> ces pourcentages ; elle ne décide pas du résultat,
+            que vous posez vous-même ci-dessus.
+          </p>
+        </fieldset>
         <Textarea label="Observations" value={form.observations || ''} onChange={set('observations')} rows={2} />
         <div>
           <span className="mb-1 block text-sm font-medium text-slate-700">Pièces jointes</span>

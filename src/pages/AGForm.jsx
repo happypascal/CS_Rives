@@ -15,7 +15,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 // ancien texte y est simplement laissé tel quel, jamais réécrit.
 // `repo.getAG()` renvoie EN PLUS un tableau `resolutions` (jointure) : il ne doit
 // jamais repartir dans un update, sinon PostgREST rejette la colonne inconnue.
-const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), heure_planifiee: '', heure_fin: '', lieu: '', president_seance: '', statut: 'preparation', quorum_statut: '', m2_presents: '', pv_url: '' }
+const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), heure_planifiee: '', heure_fin: '', lieu: '', president_seance: '', statut: 'preparation', quorum_statut: '', m2_presents: '', m2_total: '', pv_url: '' }
 
 // Ne garde que les colonnes réelles, et normalise les champs vides en null.
 function toPayload(form) {
@@ -40,6 +40,16 @@ export default function AGForm() {
   const [loading, setLoading] = useState(editing)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Total COURANT des m² du lotissement (paramètre de l'app). Ne sert qu'à
+  // pré-remplir une AG qui n'a pas encore le sien : une fois figé sur la ligne,
+  // c'est celui de l'AG qui fait foi. Cf. migration 054.
+  const [m2TotalCourant, setM2TotalCourant] = useState('')
+
+  useEffect(() => {
+    repo.getParametres()
+      .then((p) => setM2TotalCourant(p.m2_total_lotissement || ''))
+      .catch(() => setM2TotalCourant(''))
+  }, [])
 
   useEffect(() => {
     if (editing) {
@@ -93,6 +103,15 @@ export default function AGForm() {
     setSaving(true)
     try {
       const payload = toPayload(form)
+      // ⚠ FIGER LE TOTAL AU MOMENT OÙ LA PARTICIPATION EST SAISIE. Dès qu'une AG
+      // porte des m² présents, elle doit porter AUSSI le total sur lequel son taux
+      // se calcule. Sans cela, le pourcentage retomberait sur le paramètre courant,
+      // et le jour où des colotis sortent, le taux d'une assemblée déjà tenue
+      // changerait tout seul — « il ne faut pas que ça change les % de
+      // participation » (Pascal). On ne l'écrase jamais s'il est déjà posé.
+      if (payload.m2_presents != null && payload.m2_total == null && m2TotalCourant) {
+        payload.m2_total = Number(m2TotalCourant)
+      }
       if (editing) {
         await repo.updateAG(id, payload)
         navigate(`/ag/${id}`)
@@ -148,6 +167,17 @@ export default function AGForm() {
                 {AG_QUORUM_VALUES.map((v) => <option key={v} value={v}>{AG_QUORUM_LABELS[v]}</option>)}
               </Select>
               <Input label="m² présents ou représentés" type="number" step="0.01" value={form.m2_presents ?? ''} onChange={set('m2_presents')} placeholder="ex : 4250" />
+              {/* Le total figé de CETTE séance. Pré-rempli avec le paramètre de
+                  l'application, puis intangible : c'est lui qui garantit que le
+                  taux de participation ne bougera plus. */}
+              <Input
+                label="Total des m² du lotissement, à la date de cette séance"
+                type="number"
+                step="0.01"
+                value={form.m2_total ?? ''}
+                onChange={set('m2_total')}
+                placeholder={m2TotalCourant ? `par défaut ${m2TotalCourant}` : ''}
+              />
             </div>
           </fieldset>
           {error && <p className="text-sm text-red-600">{error}</p>}

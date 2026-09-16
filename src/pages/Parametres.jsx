@@ -56,6 +56,8 @@ export default function Parametres() {
 
       <div className="mb-6"><ChangePassword /></div>
 
+      {isAdmin && <div className="mb-6"><ReglageLotissement membreId={user?.membre_id} /></div>}
+
       {canNotify && (
         <Card className="mb-6">
           <CardHeader title="Notifications de bureau" subtitle="Réservé au président et au secrétaire." />
@@ -169,6 +171,78 @@ function ChangePassword() {
         {err && <p className="text-sm text-red-600">{err}</p>}
         {msg && <p className="text-sm text-emerald-700">{msg}</p>}
         <Button type="submit" disabled={busy || BACKEND !== 'supabase'}>{busy ? 'Enregistrement…' : 'Changer le mot de passe'}</Button>
+      </form>
+    </Card>
+  )
+}
+
+// ---------------------------------------------------------------- lotissement
+// TOTAL DES m² DU LOTISSEMENT (migration 054) — l'assiette des voix en AG.
+//
+// ⚠ POURQUOI IL EST MODIFIABLE ICI, et pas une constante du code : sept colotis
+// ont demandé à sortir (Pascal, 2026-09-16) et l'issue n'est pas connue. Ce total
+// est une donnée, pas du logiciel ; il ne doit pas exiger un redéploiement.
+//
+// ⚠ POURQUOI LE CHANGER NE RÉÉCRIT RIEN : chaque assemblée porte le total figé le
+// jour de sa séance (`assemblees_generales.m2_total`). Modifier la valeur ici ne
+// touche donc AUCUN taux de participation déjà affiché — c'était la demande
+// expresse. La nouvelle valeur ne servira qu'aux assemblées à venir.
+function ReglageLotissement({ membreId }) {
+  const [valeur, setValeur] = useState('')
+  const [initial, setInitial] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    repo.getParametres()
+      .then((p) => { setValeur(p.m2_total_lotissement || ''); setInitial(p.m2_total_lotissement || '') })
+      .catch(() => setErr('Paramètres illisibles.'))
+  }, [])
+
+  const save = async (e) => {
+    e.preventDefault()
+    setMsg(''); setErr('')
+    const n = Number(String(valeur).replace(',', '.'))
+    if (!Number.isFinite(n) || n <= 0) return setErr('Indiquez une superficie totale supérieure à zéro.')
+    setBusy(true)
+    try {
+      await repo.setParametre('m2_total_lotissement', n, membreId || null)
+      setInitial(String(n))
+      setMsg('Total enregistré. Les assemblées déjà tenues gardent leur propre total.')
+    } catch (e2) {
+      setErr(e2.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Lotissement"
+        subtitle="Assiette des voix en assemblée générale : les votes d’AG sont au prorata des superficies."
+      />
+      <form onSubmit={save} className="space-y-3 p-5">
+        <Input
+          label="Total des m² du lotissement"
+          type="text"
+          inputMode="decimal"
+          value={valeur}
+          onChange={(e) => setValeur(e.target.value)}
+        />
+        <p className="text-xs text-slate-500">
+          Sert à calculer le <strong>taux de participation</strong> d’une assemblée et les
+          pourcentages des votes. ⚠ Le modifier ne change <strong>aucun</strong> pourcentage déjà
+          calculé : chaque assemblée conserve le total figé le jour de sa séance. La nouvelle valeur
+          ne vaudra que pour les assemblées suivantes.
+        </p>
+        {valeur !== initial && (
+          <p className="text-xs text-amber-700">Valeur modifiée, non encore enregistrée.</p>
+        )}
+        {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button type="submit" disabled={busy || valeur === initial}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
       </form>
     </Card>
   )

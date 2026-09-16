@@ -41,6 +41,128 @@ export function agAEuLieu(ag) {
   return ag.statut !== 'cloturee' && ag.statut !== 'annulee' && Boolean(ag.date_ag) && ag.date_ag <= todayISO()
 }
 
+// ============================================================================
+// m² : PARTICIPATION D'UNE SÉANCE ET RÉPARTITION D'UN VOTE (migration 054)
+// ============================================================================
+// L'AG vote au prorata des superficies. L'application peut désormais recevoir les
+// m² présents et les m² pour/contre/abstention, et en afficher les pourcentages.
+//
+// ⚠ ELLE ENREGISTRE, ELLE NE DÉCIDE PAS. Le `statut` d'une résolution reste posé à
+// la main, et `majorite_requise` reste un libellé qu'aucune logique n'applique.
+// Rien ici ne calcule une adoption. Les règles de majorité d'une AG ne se ramènent
+// pas toutes au même dénominateur, et les statuts sont EN COURS DE RÉVISION :
+// coder aujourd'hui une majorité qu'on n'a pas lue, ce serait coder une règle
+// fausse dans un registre légal. Le décompte fait foi au PV.
+
+// Total des m² retenu pour UNE assemblée donnée.
+//
+// ⚠ C'EST LE TOTAL FIGÉ SUR LA LIGNE, pas le paramètre courant. Le jour où des
+// colotis sortent et où le total change, les assemblées déjà tenues doivent garder
+// leur taux — « il ne faut pas que ça change les % de participation » (Pascal,
+// 2026-09-16). Le paramètre ne sert qu'à PRÉ-REMPLIR une AG qui n'a pas encore le
+// sien. Même patron que `composition_snapshot` sur une décision.
+export function totalM2AG(ag, parametreCourant) {
+  const fige = Number(ag?.m2_total)
+  if (Number.isFinite(fige) && fige > 0) return fige
+  const courant = Number(parametreCourant)
+  return Number.isFinite(courant) && courant > 0 ? courant : null
+}
+
+// Taux de participation d'une séance, en %. Null si l'un des deux manque — on
+// n'invente pas un dénominateur.
+export function tauxParticipation(ag, parametreCourant) {
+  const total = totalM2AG(ag, parametreCourant)
+  const presents = Number(ag?.m2_presents)
+  if (!total || !Number.isFinite(presents)) return null
+  return (presents / total) * 100
+}
+
+// DÉNOMINATEUR D'UNE RÉSOLUTION — sur quoi se calculent ses pourcentages.
+//
+// ⚠ IL DÉPEND DE LA MAJORITÉ REQUISE, et c'est tout l'intérêt de la fonction :
+// « pour les résolutions à la majorité simple, le total de m² est le total présent
+// et représenté » (Pascal, 2026-09-16). Rapporter une majorité simple au total du
+// lotissement donnerait un pourcentage juste en arithmétique et faux en droit.
+//
+// ⚠ SEULE LA MAJORITÉ SIMPLE A ÉTÉ TRANCHÉE PAR PASCAL. Pour les trois autres, le
+// dénominateur retenu ici est le TOTAL DU LOTISSEMENT — lecture naturelle d'une
+// majorité absolue ou qualifiée, mais lecture seulement. ⚠ À CONFIRMER SUR LES
+// NOUVEAUX STATUTS, qui sont en cours de révision. L'écran AFFICHE toujours le
+// dénominateur employé, en toutes lettres : personne ne doit avoir à deviner sur
+// quoi porte un pourcentage, et le jour où la règle est fixée, l'écart se verra.
+//
+// Renvoie { base, libelle } — `base` nulle quand la donnée manque : on n'invente
+// pas un dénominateur.
+export function denominateurResolution(resolution, ag, parametreCourant) {
+  if (resolution?.majorite_requise === 'simple') {
+    const presents = Number(ag?.m2_presents)
+    return {
+      base: Number.isFinite(presents) && presents > 0 ? presents : null,
+      libelle: 'des m² présents ou représentés',
+    }
+  }
+  return {
+    base: totalM2AG(ag, parametreCourant),
+    libelle: 'du total des m² du lotissement',
+  }
+}
+
+// Répartition d'un vote de résolution, rapportée au bon dénominateur.
+// Renvoie null si AUCUN des trois m² n'est renseigné — le cas normal des
+// résolutions dont le PV ne donne pas le détail.
+//
+// ⚠ Un champ vide compte pour ZÉRO dès lors qu'un autre est rempli : une
+// résolution avec 8 000 m² pour et rien d'autre a bien 8 000 m² exprimés. Mais
+// tant que les trois sont vides, il n'y a pas de vote saisi, et afficher « 0 % »
+// laisserait croire à une unanimité contre.
+//
+// ⚠ LES TROIS POURCENTAGES NE FONT PAS FORCÉMENT 100 %, et c'est voulu : des m²
+// présents peuvent n'avoir pris part à aucun vote sur cette résolution. Le reste
+// est rendu explicitement (`nonExprime`), comme le registre des décisions montre
+// les « non voté » du conseil. Masquer cet écart laisserait croire que tout le
+// monde s'est prononcé.
+export function repartitionVote(resolution, ag, parametreCourant) {
+  const lire = (v) => (v === null || v === undefined || v === '' ? null : Number(v))
+  const pour = lire(resolution?.m2_pour)
+  const contre = lire(resolution?.m2_contre)
+  const abstention = lire(resolution?.m2_abstention)
+  if (pour === null && contre === null && abstention === null) return null
+  const p = pour || 0
+  const c = contre || 0
+  const a = abstention || 0
+  const exprimes = p + c + a
+  const { base, libelle } = denominateurResolution(resolution, ag, parametreCourant)
+  // Sans dénominateur connu, on rend les m² sans pourcentage : un chiffre brut
+  // reste vrai, un pourcentage sans base serait faux.
+  const part = (x) => (base ? (x / base) * 100 : null)
+  return {
+    pour: p, contre: c, abstention: a, exprimes,
+    base, libelle,
+    pourPct: part(p),
+    contrePct: part(c),
+    abstentionPct: part(a),
+    nonExprime: base ? Math.max(0, base - exprimes) : null,
+  }
+}
+
+// ⚠ INCOHÉRENCE À SIGNALER, pas à corriger : des m² exprimés supérieurs aux m²
+// présents est forcément une erreur de saisie (on ne vote pas plus de surface
+// qu'il n'y en a dans la salle). L'écran le dit ; il ne rectifie rien tout seul,
+// c'est le PV qui tranche.
+export function voteIncoherent(resolution, ag, parametreCourant) {
+  const r = repartitionVote(resolution, ag, parametreCourant)
+  const presents = Number(ag?.m2_presents)
+  if (!r || !Number.isFinite(presents) || presents <= 0) return false
+  // Tolérance d'un m² : les PV arrondissent.
+  return r.exprimes > presents + 1
+}
+
+// Formatage d'un pourcentage, une décimale, virgule française.
+export function pct(valeur) {
+  if (valeur === null || valeur === undefined || !Number.isFinite(valeur)) return '—'
+  return `${valeur.toFixed(1).replace('.', ',')} %`
+}
+
 // Résultat de quorum de la séance, saisi a posteriori. Le vote est au prorata des
 // superficies : on stocke le total des m² présents/représentés, le détail au PV.
 export const AG_QUORUM_VALUES = ['quorum_atteint', 'sans_quorum_accepte', 'sans_quorum_rejete']

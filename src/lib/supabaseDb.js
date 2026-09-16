@@ -105,6 +105,23 @@ export const supabaseRepo = {
     return { ok: true }
   },
 
+  // ---- Paramètres de l'application (migration 054) ----
+  // Renvoie un objet { cle: valeur }. Les valeurs sont du TEXTE : la conversion est
+  // à l'appelant, une table de paramètres qui typerait ses valeurs aurait une
+  // colonne par type.
+  async getParametres() {
+    const rows = must(await supabase.from('parametres').select('cle,valeur'))
+    return Object.fromEntries(rows.map((p) => [p.cle, p.valeur]))
+  },
+  // ⚠ `updated_by` est fourni par l'appelant (`user.membre_id`), comme `auteur_id`
+  // partout ailleurs : le repo ne résout pas l'identité, c'est la page qui la
+  // connaît via `useAuth`.
+  async setParametre(cle, valeur, updated_by = null) {
+    return must(await supabase.from('parametres')
+      .upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString(), updated_by })
+      .select())[0]
+  },
+
   // ---- AG ----
   async listAG() {
     return must(await supabase.from('assemblees_generales').select('*').order('date_ag', { ascending: false }))

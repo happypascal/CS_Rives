@@ -48,6 +48,13 @@ create table if not exists assemblees_generales (
   -- A posteriori (une fois l'AG tenue) : résultat de quorum + m² présents/représentés (migration 023).
   quorum_statut    text check (quorum_statut in ('quorum_atteint','sans_quorum_accepte','sans_quorum_rejete')),
   m2_presents      numeric(10,2),
+  -- ⚠ TOTAL FIGÉ (migration 054) : le total des m² du lotissement TEL QU'IL ÉTAIT
+  -- le jour de cette assemblée. Le taux de participation se calcule sur LUI, jamais
+  -- sur le paramètre courant — sinon, le jour où des colotis sortent et où le total
+  -- change, toutes les AG déjà tenues verraient leur pourcentage bouger tout seuls,
+  -- dans un registre légal et sur un chiffre qui conditionne la validité des
+  -- délibérations. Même patron que `composition_snapshot` sur une décision.
+  m2_total         numeric(10,2),
   pv_url           text,                                  -- lien EXTERNE vers un PV hébergé ailleurs (hérité) ; le PV déposé dans l'app va dans `documents`
   -- Pièces jointes de l'AG elle-même (migration 031) : convocation, PV, autre.
   -- Les deux plus importantes ne se rattachent à AUCUNE résolution — la
@@ -57,6 +64,27 @@ create table if not exists assemblees_generales (
   documents        jsonb not null default '[]',
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------ parametres (054)
+-- Réglages de l'application modifiables SANS redéploiement — aujourd'hui le total
+-- des m² du lotissement, qui va bouger (sept colotis ont demandé à sortir). Une
+-- constante dans `config.js` aurait imposé une modification de code pour un chiffre
+-- qui est une donnée, pas du logiciel.
+--
+-- ⚠ POURQUOI PAS LA SOMME DES `lots.superficie`, qui existe pourtant : le registre
+-- des propriétaires est incomplet par construction, et surtout il n'est lisible que
+-- du président et du secrétaire (migration 035). Un trésorier consultant une AG
+-- verrait un trou là où les autres voient un pourcentage — alors que le taux de
+-- participation figure au procès-verbal que tout coloti reçoit.
+--
+-- Clé/valeur générique : le prochain paramètre n'exigera pas de migration.
+-- `valeur` en texte, convertie à la lecture.
+create table if not exists parametres (
+  cle        text primary key,
+  valeur     text not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references membres_cs(id) on delete set null
 );
 
 -- ------------------------------------------------------------ mandats_cs (051)
@@ -149,6 +177,17 @@ create table if not exists resolutions_ag (
   budget_alloue    numeric(12,2),
   budget_intitule  text,
   observations     text,
+  -- m² du vote (migration 054), tous FACULTATIFS et indépendants : un PV ancien qui
+  -- ne donne pas le détail ne doit pas devenir impossible à saisir. Nul = « non
+  -- renseigné », jamais « zéro m² ».
+  -- ⚠ ON ENREGISTRE, ON NE DÉCIDE PAS : `statut` reste posé à la main et
+  -- `majorite_requise` reste un libellé qu'aucune logique n'applique. Les règles de
+  -- majorité d'une AG ne se ramènent pas toutes au même dénominateur, et les
+  -- statuts sont en cours de révision — coder une majorité qu'on n'a pas lue, ce
+  -- serait coder une règle fausse. Le décompte fait foi au PV ; l'app le constate.
+  m2_pour          numeric(10,2),
+  m2_contre        numeric(10,2),
+  m2_abstention    numeric(10,2),
   documents        jsonb not null default '[]',           -- pièces jointes {path,name,type,size} (migration 025)
   created_at       timestamptz not null default now(),
   unique (ag_id, numero, sous_numero)
@@ -1084,6 +1123,7 @@ grant execute on function ouvrir_decisions_planifiees(text) to authenticated;
 alter table comptes_ag              enable row level security;
 alter table membres_cs              enable row level security;
 alter table mandats_cs              enable row level security;
+alter table parametres              enable row level security;
 alter table assemblees_generales    enable row level security;
 alter table resolutions_ag          enable row level security;
 alter table projets                 enable row level security;
@@ -1118,7 +1158,12 @@ begin
     -- Historique des mandats (051) : lu par TOUS les membres. Ce n'est pas le
     -- registre des propriétaires — la composition du conseil figure déjà au
     -- registre des délibérations, dans les PV d'AG et au bas des PDF signés.
-    'mandats_cs'
+    'mandats_cs',
+    -- Paramètres (054) : lus par TOUS. Le total des m² sert à afficher un taux de
+    -- participation, qui figure au PV — ce n'est pas une donnée personnelle. Le
+    -- réserver au président priverait les autres du chiffre : c'est exactement
+    -- pourquoi on ne le dérive pas de `lots`, réservé président/secrétaire.
+    'parametres'
   ]
   loop
     execute format('drop policy if exists "read_auth" on %I;', t);
@@ -1135,7 +1180,9 @@ begin
     'signature_batches','decision_status_history','audit_log',
     -- Mandats (051) : qui siège et depuis quand est un acte de l'AG constaté par
     -- le président. Un membre ne se réélit pas lui-même dans le registre.
-    'mandats_cs'
+    'mandats_cs',
+    -- Paramètres (054) : le président seul règle l'application.
+    'parametres'
   ]
   loop
     execute format('drop policy if exists "write_admin" on %I;', t);

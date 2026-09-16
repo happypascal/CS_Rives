@@ -367,7 +367,10 @@ function seed() {
     { id: uid(), projet_id: p1, auteur_id: m3, type: 'commentaire', parent_id: null, texte: 'Reconnaissance faite sur place le 5 avril : deux regards à reprendre en plus du devis initial.', created_at: '2026-04-05T17:00:00Z' },
   ]
 
-  return { accounts, membres_cs, mandats_cs, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
+  // Paramètres de l'application (054). Même valeur de départ qu'en base.
+  const parametres = { m2_total_lotissement: '104646' }
+
+  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
 }
 
 // ---------------------------------------------------------------- store
@@ -819,6 +822,29 @@ export const mockRepo = {
     audit(data, 'mandats_cs', id, 'delete', 'Suppression d’un mandat')
     save(data)
     return { ok: true }
+  },
+
+  // ---- Paramètres de l'application (migration 054) ----
+  // ⚠ `||= {}` : un magasin localStorage créé avant la 054 n'a pas la clé, et la
+  // valeur par défaut doit être la même qu'en base — sinon la démo afficherait des
+  // pourcentages de participation calculés sur un autre total que la production.
+  async getParametres() {
+    await delay()
+    const data = load()
+    if (!data.parametres) {
+      data.parametres = { m2_total_lotissement: '104646' }
+      save(data)
+    }
+    return clone(data.parametres)
+  },
+  async setParametre(cle, valeur, updated_by = null) {
+    await delay()
+    const data = load()
+    data.parametres ||= {}
+    data.parametres[cle] = String(valeur)
+    audit(data, 'parametres', cle, 'update', `Paramètre ${cle} = ${valeur}`)
+    save(data)
+    return { cle, valeur: String(valeur), updated_by }
   },
 
   // ---- AG ----

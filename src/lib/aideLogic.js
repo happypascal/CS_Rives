@@ -336,10 +336,23 @@ export const MENUS = [
         pourQui: TOUS,
         resume: 'Elle enregistre un résultat, elle ne compte rien.',
         etapes: [
-          'Les voix d’AG se comptent au prorata des superficies, et ce décompte reste l’affaire du procès-verbal.',
-          'L’application n’a AUCUN champ pour le nombre de voix : n’en cherchez pas.',
-          'Elle n’enregistre que le résultat — adoptée, rejetée, sans vote, retirée — et la majorité qui était requise.',
+          'Les voix d’AG se comptent au prorata des superficies : vous pouvez saisir les m² pour, contre et abstention, et l’application en affiche les pourcentages.',
+          'Elle NE CALCULE JAMAIS l’adoption : c’est vous qui posez le résultat, d’après le procès-verbal.',
+          'Le dénominateur dépend de la majorité requise. À la MAJORITÉ SIMPLE, c’est le total des m² présents ou représentés ; pour les autres majorités, le total du lotissement. L’écran indique toujours sur quoi le pourcentage est calculé.',
+          'Les trois pourcentages ne font pas forcément 100 % : des m² présents peuvent n’avoir voté sur rien. L’écart est affiché en « non exprimés ».',
         ],
+      },
+      {
+        titre: 'Comprendre le taux de participation d’une assemblée',
+        pourQui: TOUS,
+        resume: 'Et pourquoi il ne bougera plus.',
+        etapes: [
+          'Saisissez les m² présents ou représentés dans la fiche de l’AG : le taux de participation apparaît en tête.',
+          'Le total des m² du lotissement est un réglage de l’application (Paramètres), modifiable par le président.',
+          '⚠ Chaque assemblée conserve le total FIGÉ le jour de sa séance. Si le total du lotissement change plus tard — des colotis qui sortent — les taux des assemblées déjà tenues ne bougent pas.',
+        ],
+        alerte:
+          'C’est volontaire et c’est important : un taux de participation qui se recalculerait tout seul ferait dire à une assemblée passée autre chose que ce qu’elle a constaté.',
       },
       {
         titre: 'Valider les comptes de l’exercice',

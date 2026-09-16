@@ -1,7 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-16** — **saisie des résultats d'AG directement dans la liste**
-> (aucune migration), au lendemain de l'AG du 15/09.
+> Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste** (déployé), puis
+> **m², taux de participation et % des votes** (migration 054, ⚠ **NON APPLIQUÉE** — le code en
+> dépend, ne pas pousser avant).
 > Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
@@ -37,6 +38,39 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-16 (suite) — m², taux de participation et % des votes (migration 054)
+
+> ⚠ **MIGRATION 054 ÉCRITE, NON APPLIQUÉE.** Le code en dépend (`parametres`,
+> `assemblees_generales.m2_total`, `resolutions_ag.m2_*`) : **ne pas pousser avant** — un update
+> d'AG serait rejeté par PostgREST sur la colonne inconnue.
+
+- **Demandes de Pascal** : taux de participation dans l'en-tête de l'AG à partir des m² présents,
+  total du lotissement (**104 646**) dans les paramètres « car il y a 7 colotis qui ont demandé à
+  sortir et ce total pourrait changer », **« mais il ne faut pas que ça change les % de
+  participation »**, et % approuvé/refusé/abstention par résolution.
+- ⚠ **LA PHRASE QUI COMMANDE TOUT** : « il ne faut pas que ça change les % ». Un pourcentage calculé
+  à la volée sur un total stocké ailleurs est une bombe à retardement — le jour où le total passe de
+  104 646 à 96 000, une AG réputée avoir réuni 52 % en afficherait 57 %, dans un registre légal, sur
+  un chiffre qui conditionne la validité des délibérations. D'où **`assemblees_generales.m2_total`**,
+  figé à la saisie. Le paramètre ne fait que **pré-remplir**. Même patron que `composition_snapshot`.
+- ⚠ **PORTÉE DES % : les RÉSOLUTIONS D'AG, pas les décisions du CS** (arbitrage Pascal, question
+  posée). L'art. 15 fait voter le conseil **par tête** ; y mêler des m² aurait brouillé la règle la
+  plus protégée du dépôt.
+- ⚠ **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ** — précision de Pascal en cours de route : « pour les
+  résolutions à la majorité simple, le total de m² est le total présent et représenté ». Les trois
+  autres majorités retombent sur le total du lotissement, ⚠ **lecture naturelle NON CONFIRMÉE** : à
+  vérifier sur les nouveaux statuts. L'écran **affiche toujours la base employée en toutes lettres**.
+- **On enregistre, on ne décide pas** : `statut` reste posé à la main, `majorite_requise` reste un
+  libellé sans logique. Coder une majorité qu'on n'a pas lue, ce serait coder une règle fausse.
+- **Les 3 % ne font pas 100 %** : les « non exprimés » sont montrés, comme les « non voté » du CS.
+- **Incohérence signalée** : m² exprimés > m² présents → avertissement, sans rectification.
+- **Table `parametres` (clé/valeur)** plutôt qu'une constante : le total est une donnée, pas du
+  logiciel. ⚠ **Pas la somme des `lots.superficie`** — registre incomplet, et réservé
+  président/secrétaire (035) : un trésorier verrait un trou là où les autres voient un taux.
+- **Vérifié dans le navigateur** : 57 200 m² saisis → **54,7 %** sur 104 646 figés ; résolution à la
+  majorité simple → % calculés sur **57 200** (52,4 / 35,0 / 8,7) avec 2 200 m² non exprimés ;
+  avertissement déclenché en portant les m² pour à 60 000. Aucune erreur de console.
 
 ## Session 2026-09-16 — Saisie des résultats d'AG depuis la liste (aucune migration)
 
