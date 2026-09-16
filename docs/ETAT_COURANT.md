@@ -1,8 +1,9 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste** (déployé), puis
-> **m², taux de participation et % des votes** (migration 054, ⚠ **NON APPLIQUÉE** — le code en
-> dépend, ne pas pousser avant).
+> Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste**, puis **m², taux
+> de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
+> ⚠ **Point ouvert** : le dénominateur des majorités **autres que simple** (absolue, double
+> qualifiée, unanimité) est une lecture non confirmée — à vérifier sur les nouveaux statuts.
 > Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
@@ -41,9 +42,9 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-16 (suite) — m², taux de participation et % des votes (migration 054)
 
-> ⚠ **MIGRATION 054 ÉCRITE, NON APPLIQUÉE.** Le code en dépend (`parametres`,
-> `assemblees_generales.m2_total`, `resolutions_ag.m2_*`) : **ne pas pousser avant** — un update
-> d'AG serait rejeté par PostgREST sur la colonne inconnue.
+> **MIGRATION 054 APPLIQUÉE EN PRODUCTION le 2026-09-16**, code déployé (`4b5778a`).
+> Vérification : paramètre `m2_total_lotissement` = **104646**, **1 AG** avec m² présents saisis,
+> **0 AG sans total figé** — le gel a donc bien pris sur l'assemblée concernée.
 
 - **Demandes de Pascal** : taux de participation dans l'en-tête de l'AG à partir des m² présents,
   total du lotissement (**104 646**) dans les paramètres « car il y a 7 colotis qui ont demandé à
