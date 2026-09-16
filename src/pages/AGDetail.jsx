@@ -780,9 +780,9 @@ function ResolutionModal({ ag, resolution, onClose, onSaved }) {
             <Input label="m² abstention" type="text" inputMode="decimal" value={form.m2_abstention ?? ''} onChange={set('m2_abstention')} />
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            {form.majorite_requise === 'simple'
-              ? 'Majorité simple : les pourcentages seront calculés sur les m² présents ou représentés de la séance.'
-              : 'Les pourcentages seront calculés sur le total des m² du lotissement figé pour cette séance.'}
+            {form.majorite_requise === 'simple' || form.majorite_requise === 'unanimite'
+              ? `${MAJORITE_LABELS[form.majorite_requise]} : les pourcentages seront calculés sur les m² présents ou représentés de la séance.`
+              : `${MAJORITE_LABELS[form.majorite_requise]} : les pourcentages seront calculés sur le total des m² du lotissement figé pour cette séance.`}
             {' '}L’application <strong>affiche</strong> ces pourcentages ; elle ne décide pas du résultat,
             que vous posez vous-même ci-dessus.
           </p>

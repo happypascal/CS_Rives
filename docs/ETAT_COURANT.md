@@ -2,8 +2,8 @@
 
 > Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
-> Dénominateurs **confirmés par Pascal** : simple → présents/représentés ; absolue et double
-> qualifiée → total des m². ⚠ Seule l'**unanimité** reste non tranchée (retombe sur le total).
+> Dénominateurs : **simple et unanimité** → présents/représentés ; **absolue et double qualifiée**
+> → total des m².
 > Avant, le **2026-09-12 / 14** : **historique des mandats du CS** (051), **durée votée +
 > correctif de saisie** (052), **fin de mandat calculée et deux listes de membres** (053).
 > **Les trois appliquées en prod et le code déployé**, avant l'AG du 15/09.
@@ -61,9 +61,10 @@ du budget demandé à l'AG et du backlog ci-dessous.
 - **LE DÉNOMINATEUR DÉPEND DE LA MAJORITÉ**, règle donnée par Pascal en deux temps le 2026-09-16 :
   « pour les résolutions à la majorité simple, le total de m² est le total présent et représenté »,
   puis « je confirme pour absolu et double, total des m² au dénominateur ».
-  ⚠ **L'UNANIMITÉ reste non tranchée** : elle retombe sur le total **par défaut, pas par décision**.
-  La question se pose peu (l'unanimité se constate à l'absence d'opposition, pas à un seuil), mais
-  à vérifier le jour où une résolution à l'unanimité sera saisie.
+  ⚠ **L'UNANIMITÉ suit la simple** (m² présents), et la question n'aurait pas dû être posée :
+  « unanimité veut dire unanimité ». Elle cachait cependant un vrai défaut — sur le total du
+  lotissement, une résolution votée à l'unanimité d'une séance à 54,7 % de participation se serait
+  affichée « 54,7 % pour », l'écran contredisant le mot. Sur les présents, elle affiche 100 %.
   L'écran **affiche toujours la base employée en toutes lettres** : un écart se verrait aussitôt.
 - **On enregistre, on ne décide pas** : `statut` reste posé à la main, `majorite_requise` reste un
   libellé sans logique. Coder une majorité qu'on n'a pas lue, ce serait coder une règle fausse.

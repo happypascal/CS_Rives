@@ -84,15 +84,16 @@ export function tauxParticipation(ag, parametreCourant) {
 // et représenté » (Pascal, 2026-09-16). Rapporter une majorité simple au total du
 // lotissement donnerait un pourcentage juste en arithmétique et faux en droit.
 //
-// RÈGLE CONFIRMÉE PAR PASCAL (2026-09-16), en deux temps :
-//   - majorité SIMPLE            → m² présents ou représentés ;
-//   - majorité ABSOLUE           → total des m² du lotissement ;
+// RÈGLE (Pascal, 2026-09-16) :
+//   - SIMPLE et UNANIMITÉ        → m² présents ou représentés ;
+//   - ABSOLUE                    → total des m² du lotissement ;
 //   - DOUBLE MAJORITÉ QUALIFIÉE  → total des m² du lotissement.
 //
-// ⚠ L'UNANIMITÉ N'A PAS ÉTÉ TRANCHÉE. Elle retombe ici sur le total du
-// lotissement, par défaut et non par décision. En pratique la question se pose
-// peu — l'unanimité se constate à l'absence d'opposition, pas à un seuil — mais le
-// jour où une résolution à l'unanimité sera saisie, vérifier avant de s'y fier.
+// ⚠ POURQUOI L'UNANIMITÉ SUIT LA SIMPLE : parce qu'unanimité veut dire unanimité.
+// Rapportée au total du lotissement, une résolution votée à l'unanimité d'une
+// séance réunissant 54,7 % des m² se serait affichée « 54,7 % pour » — l'écran
+// aurait contredit le mot. Sur les m² présents, elle affiche 100 %, ce qu'un
+// lecteur attend en lisant « unanimité ».
 //
 // L'écran AFFICHE toujours le dénominateur employé, en toutes lettres : personne
 // ne doit avoir à deviner sur quoi porte un pourcentage, et si la règle est un
@@ -101,7 +102,7 @@ export function tauxParticipation(ag, parametreCourant) {
 // Renvoie { base, libelle } — `base` nulle quand la donnée manque : on n'invente
 // pas un dénominateur.
 export function denominateurResolution(resolution, ag, parametreCourant) {
-  if (resolution?.majorite_requise === 'simple') {
+  if (resolution?.majorite_requise === 'simple' || resolution?.majorite_requise === 'unanimite') {
     const presents = Number(ag?.m2_presents)
     return {
       base: Number.isFinite(presents) && presents > 0 ? presents : null,
