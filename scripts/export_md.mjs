@@ -346,6 +346,7 @@ async function main() {
     votes: ['decision_id', 'membre_id', 'vote'],
     questions_reponses: ['decision_id', 'auteur_id', 'type', 'texte', 'created_at'],
     sujets: ['titre', 'categorie', 'resume', 'contenu', 'documents'],
+    decisions_historique: ['decision_id', 'version', 'titre', 'contenu', 'modifie_par', 'modifie_le'],
     sujet_entrees: ['sujet_id', 'date_evenement', 'titre', 'contenu', 'auteur_id', 'documents'],
     lots: ['numero', 'numero_syndic', 'adresse_lotissement', 'superficie', 'nombre_lots', 'observations'],
     proprietaires: ['lot_id', 'nom', 'nom_2', 'est_societe', 'est_indivision', 'email', 'email_2', 'telephone', 'telephone_2', 'adresse_communication', 'dirigeant_nom', 'dirigeant_fonction', 'dirigeant_email', 'dirigeant_telephone', 'dirigeant_nom_2', 'dirigeant_fonction_2', 'dirigeant_email_2', 'dirigeant_telephone_2', 'adresse_dirigeant', 'mandataire_nom', 'mandataire_email', 'mandataire_telephone', 'contacts_officiels', 'date_acquisition', 'date_cession', 'observations'],
@@ -572,6 +573,19 @@ async function main() {
       champ('Votes', detailVotes),
       piecesJointes(d.documents, fichiers),
     ]))
+    // ⚠ VERSIONS SUCCESSIVES DU TEXTE — ce n'est PAS un journal technique.
+    // `decisions_historique` garde le texte tel qu'il était à chaque version
+    // d'une délibération : c'est du contenu de registre, et il était jusqu'ici
+    // relégué en JSON brut à la fin du fichier, balises comprises.
+    const versions = parCle(db.decisions_historique, 'decision_id', d.id)
+      .sort((a, b) => (a.version || 0) - (b.version || 0))
+    if (versions.length) {
+      W(`- **Versions successives du texte** (${versions.length}) :`)
+      for (const v of versions) {
+        const qui = nomMembre(v.modifie_par)
+        W(`  - v${v.version} — ${texte(v.titre)}${v.contenu ? ` : ${texte(v.contenu)}` : ''} _(${date(v.modifie_le)}${qui ? `, ${qui}` : ''})_`)
+      }
+    }
     const qa = parCle(db.questions_reponses, 'decision_id', d.id)
     if (qa.length) {
       W(`- **Questions / réponses** (${qa.length}) :`)
@@ -754,7 +768,7 @@ async function main() {
   const rendues = new Set([
     'parametres', 'membres_cs', 'mandats_cs', 'assemblees_generales', 'comptes_ag',
     'resolutions_ag', 'projets', 'journal_projet', 'questions_reponses_projet',
-    'decisions', 'votes', 'questions_reponses', 'sujets', 'sujet_entrees',
+    'decisions', 'votes', 'questions_reponses', 'decisions_historique', 'sujets', 'sujet_entrees',
     'lots', 'proprietaires',
   ])
   const restantes = tables.filter((t) => !rendues.has(t) && db[t].length)
