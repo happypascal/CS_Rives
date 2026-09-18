@@ -612,7 +612,6 @@ async function main() {
     if (Array.isArray(row.documents)) for (const d of row.documents) if (d.path) cites.add(d.path)
   }
   const orphelins = [...fichiers].filter((f) => !cites.has(f) && !f.endsWith('.emptyFolderPlaceholder'))
-  if (orphelins.length) alertes.push(`${orphelins.length} fichier(s) dans le Storage ne sont cités par aucune ligne : ${orphelins.slice(0, 10).join(', ')}${orphelins.length > 10 ? '…' : ''}`)
 
   if (!alertes.length) W('_Rien à signaler : aucun manque détecté par les contrôles ci-dessus._')
   else for (const a of alertes) W(`- ${a}`)
@@ -621,6 +620,35 @@ async function main() {
   W('> pensé à leur demander. Une information absente d’une colonne qu’ils n’examinent')
   W('> pas ne sera pas signalée.')
   W('')
+
+  // ⚠ LES ORPHELINS NE SONT PAS UNE ALERTE — ils l'étaient, à tort.
+  //
+  // « Retirer » une pièce jointe dans un formulaire n'efface PAS l'objet du
+  // bucket : c'est un choix documenté de l'application (annuler ensuite aurait
+  // laissé la ligne avec un chemin mort, et quelques Mo perdus valent mieux qu'un
+  // devis introuvable dans un registre légal). Supprimer une entité laisse de même
+  // ses fichiers derrière elle.
+  //
+  // Les ranger sous « ce qui semble manquer » faisait passer un comportement
+  // voulu pour un défaut — et il ne manque rien : ces fichiers sont EN TROP. On
+  // les liste pour mémoire, en disant d'où ils viennent.
+  if (orphelins.length) {
+    W('### Pour mémoire — fichiers du Storage cités par aucune ligne')
+    W('')
+    W(`${orphelins.length} fichier(s). **Ce n'est pas une anomalie** : retirer une pièce jointe d'un`)
+    W('formulaire, ou supprimer l’entité qui la portait, laisse le fichier dans le Storage.')
+    W('L’application ne l’efface jamais, délibérément. Rien ne manque au registre.')
+    W('')
+    for (const f of orphelins) {
+      // Dire si l'entité qui portait ce fichier existe encore : le chemin porte
+      // son id (`<prefixe>/<id>/<fichier>`, migration 012). Deux situations très
+      // différentes à l'œil, une seule sans le dire.
+      const [, id] = f.split('/')
+      const existe = tables.some((t) => db[t].some((r) => r.id === id))
+      W(`- \`${f}\` — ${existe ? 'l’entité existe toujours : pièce retirée d’un formulaire' : 'entité supprimée depuis'}`)
+    }
+    W('')
+  }
 
   // ------------------------------------------------------------- reste
   // ⚠ TOUTE TABLE NON RENDUE CI-DESSUS EST DUMPÉE ICI, brute. C'est le filet :
