@@ -107,6 +107,16 @@ src/
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
 scripts/
+  export_md.mjs       EXPORT LISIBLE de toute la base en UN fichier Markdown, pour qu'un
+                      assistant relise l'état du registre d'un bloc et réponde à « qu'est-ce
+                      qui manque ? ». Résout les UUID en NOMS, omet les champs vides, nomme
+                      les pièces jointes, signale les chemins morts et les orphelins du
+                      Storage, et termine par « points d'attention » (ce qui manque).
+                      ⚠ Ce N'EST PAS une sauvegarde : il omet et interprète — ne jamais
+                      restaurer depuis lui. ⚠ Contient les 50 propriétaires en clair :
+                      `export/` est git-ignoré, `--sans-perso` produit une version partageable.
+                      Toute table non mise en forme est dumpée brute en fin de fichier, pour
+                      qu'une table future n'en disparaisse pas en silence.
   backup.mjs          sauvegarde de la base (tables découvertes via l'OpenAPI PostgREST)
   restore.mjs         restauration — ⚠ ordre d'insertion NON codé en dur : insertion par
                       PASSES, ce qui échoue sur une clé étrangère repasse au tour suivant.

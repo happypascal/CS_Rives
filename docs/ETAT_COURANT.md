@@ -1,6 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-16** — **saisie des résultats d'AG dans la liste**, puis **m², taux
+> Dernière session : **2026-09-18** — **export Markdown de toute la base**
+> (`scripts/export_md.mjs`), pour vérifier d'un bloc que tout le lotissement est dans l'app.
+> Avant, le **2026-09-16** : **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
 > Dénominateurs : **simple** → présents/représentés ; **absolue, double qualifiée et unanimité**
 > → total des m² (l'absence fait obstacle à l'unanimité).
@@ -39,6 +41,36 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-18 — Export Markdown de toute la base (`scripts/export_md.mjs`)
+
+> **Aucune migration.** Script seul, exécuté à la main comme `backup.mjs`.
+
+- **Demande de Pascal** : « Claude m'aide à assurer que toutes les informations concernant le
+  lotissement sont bien dans l'app. Mais cette méthode par SQL rend ceci impraticable. Il faut une
+  fonction qui exporte toutes les données de la base de manière ordonnée dans un fichier MD en
+  spécifiant le nom des pièces attachées. »
+- **La cible n'est ni un humain ni une sauvegarde : c'est un assistant** qui doit relire l'état
+  complet d'un bloc. D'où trois choix de forme qui distinguent ce script de `backup.mjs` :
+  - ⚠ **les UUID sont RÉSOLUS en noms** — un export brut est une mer d'identifiants sur laquelle on
+    ne peut rien conclure. C'est le vrai travail du script ;
+  - **les champs vides sont omis** — un `null` par ligne × 40 colonnes noie le signal ;
+  - **l'ordre suit le métier** (AG → résolutions → projets → décisions), la chaîne de l'argent.
+- **✅ Section « points d'attention »**, qui sert le but réel : parcelle sans superficie, lot sans
+  propriétaire actuel, propriétaire injoignable, AG clôturée sans PV ou sans convocation, enveloppe
+  adoptée non affectée, membre actif sans mandat, fichiers du Storage cités par aucune ligne.
+  ⚠ Le fichier dit lui-même que ces contrôles ne garantissent rien : ils ne vérifient que ce qu'on a
+  pensé à leur demander.
+- **Pièces jointes nommées**, avec leur chemin, et **marquées quand le fichier est introuvable** dans
+  le Storage — un chemin mort ne se voit pas autrement.
+- ⚠ **Toute table non mise en forme est dumpée brute en fin de fichier** : c'est le filet. Une table
+  ajoutée par une migration future apparaîtra, même mal présentée, au lieu de disparaître en
+  silence — le mode de ruine dont `backup.mjs` avait déjà souffert (11 tables figées sur 17).
+- ⚠ **DONNÉES PERSONNELLES** : les 50 propriétaires en clair. `export/` ajouté au `.gitignore`.
+  Un texte destiné à être relu par un assistant est d'autant plus facile à coller ailleurs par
+  mégarde — d'où `--sans-perso`, qui produit une version partageable.
+- ⚠ **Non exécuté contre la production** : je n'ai pas la `service_role`. Syntaxe et lint vérifiés
+  seulement. Premier lancement à faire par Pascal.
 
 ## Session 2026-09-16 (suite) — m², taux de participation et % des votes (migration 054)
 

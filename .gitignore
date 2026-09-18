@@ -21,6 +21,12 @@ dist-ssr
 # légal + pièces jointes. Jamais dans l'historique.
 backup/
 
+# Exports Markdown de la base (scripts/export_md.mjs) : MÊME CONTENU SENSIBLE que
+# backup/ — les 50 propriétaires avec noms, adresses, e-mails et téléphones, en
+# clair et en texte lisible. Un export destiné à être relu par un assistant est
+# d'autant plus facile à coller quelque part par mégarde. Jamais dans l'historique.
+export/
+
 # Exports produits par l'app (PDF registre, CSV Foncia) : des sorties, pas des
 # sources. On en dépose à la racine pour juger un rendu — ils n'ont rien à faire
 # dans l'historique.
