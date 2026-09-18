@@ -7,10 +7,10 @@ import { useConfirm } from '../components/useConfirm'
 import { MAX_DOC_BYTES, BACKEND } from '../lib/config'
 import { downloadDocument } from '../lib/documents'
 import { AGStatutBadge, ResolutionStatutBadge } from '../components/badges'
-import { formatDate, parseMontant } from '../lib/format'
+import { formatDate, parseMontant, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { nextResolutionNumero, numeroGarageLibre, estGaree, numeroResolution, parseNumeroResolution, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES, tauxParticipation, totalM2AG, repartitionVote, voteIncoherent, pct } from '../lib/agLogic'
+import { nextResolutionNumero, numeroGarageLibre, estGaree, numeroResolution, parseNumeroResolution, MAJORITE_VALUES, MAJORITE_LABELS, RESOLUTION_STATUT_VALUES, RESOLUTION_STATUT_LABELS, effectiveAGStatut, agAEuLieu, AG_QUORUM_LABELS, AG_QUORUM_TONES, agFigee, echeanceContestation, closeDePleinDroit, DELAI_CONTESTATION_DEFAUT, tauxParticipation, totalM2AG, repartitionVote, voteIncoherent, pct } from '../lib/agLogic'
 
 // Catégories de pièces jointes d'une AG. Vivent dans le jsonb, sans contrainte
 // en base : ajouter une 4e catégorie un jour ne demandera aucune migration.
@@ -41,12 +41,16 @@ export default function AGDetail() {
   const [rattachModal, setRattachModal] = useState(null)
   // Saisie du résultat directement dans la liste : la ligne en cours d'écriture,
   // et l'échec éventuel — affiché en clair plutôt qu'avalé.
+  const [pvModal, setPvModal] = useState(null)
   const [voteBusy, setVoteBusy] = useState(null)
   const [voteError, setVoteError] = useState('')
   // Total COURANT du lotissement. ⚠ Il ne sert qu'aux AG qui n'ont PAS encore leur
   // total figé : dès qu'une assemblée porte le sien, c'est celui-là qui compte, et
   // le paramètre peut changer sans rien déplacer.
   const [m2TotalCourant, setM2TotalCourant] = useState(null)
+  // Délai de contestation (055), en mois. Paramétrable : les statuts en révision
+  // peuvent le fixer autrement, et ce n'est pas à un fichier source d'en décider.
+  const [delaiContestation, setDelaiContestation] = useState(DELAI_CONTESTATION_DEFAUT)
   // Pièces jointes de l'AG (migration 031) : catégorie choisie AVANT l'envoi,
   // c'est ce qui distingue un PV d'un devis dans la liste.
   const [docCategorie, setDocCategorie] = useState('convocation')
@@ -67,6 +71,7 @@ export default function AGDetail() {
     setDecisions(ds)
     setProjets(ps)
     setM2TotalCourant(params.m2_total_lotissement || null)
+    setDelaiContestation(Number(params.delai_contestation_mois) || DELAI_CONTESTATION_DEFAUT)
     setLoading(false)
   }, [id])
 
@@ -98,7 +103,11 @@ export default function AGDetail() {
   // d'une enveloppe à un projet reste possible (acte administratif post-AG).
   // « AG a eu lieu » (date passée) N'est PAS figée : on y saisit encore les
   // résultats et l'heure de fin avant de clôturer.
-  const agFrozen = ag.statut === 'cloturee' || ag.statut === 'annulee'
+  // ⚠ FIGÉE inclut désormais la CLÔTURE DE PLEIN DROIT (055) : passé le délai de
+  // contestation sans contestation inscrite, le procès-verbal est définitif et
+  // l'assemblée se ferme d'elle-même. Dérivé, jamais écrit.
+  const agFrozen = agFigee(ag, delaiContestation)
+  const echeancePV = echeanceContestation(ag, delaiContestation)
 
   // ---------------------------------------------------------- vote en ligne
   // Saisir les résultats d'une AG, c'est renseigner quinze résultats d'affilée.
@@ -250,6 +259,23 @@ export default function AGDetail() {
     }
   }
 
+  // ---------------------------------------------------- PV envoyé (055)
+  // ⚠ LA DATE EST L'ACTE, pas le statut. C'est l'envoi du procès-verbal qui fait
+  // courir le délai de contestation, et c'est sa date officielle qui compte — ni
+  // celle de la séance, ni celle de la rédaction. D'où une saisie de date, dans
+  // une vraie modale : `window.prompt` aurait été hors du style de l'application,
+  // et surtout non testable.
+  const leverContestation = async () => {
+    if (!(await confirm({
+      title: 'Retirer la contestation inscrite ?',
+      message: 'Le délai de contestation reprend son cours à partir de la date d’envoi du PV. À faire si la contestation a été inscrite par erreur, ou si elle est éteinte.',
+      confirmLabel: 'Retirer',
+      danger: true,
+    }))) return
+    await repo.updateAG(id, { contestation_le: null, contestation_objet: null })
+    await reload()
+  }
+
   return (
     <div>
       <PageHeader
@@ -259,7 +285,24 @@ export default function AGDetail() {
           {canManage && !agFrozen && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
           {/* Clôturer = FIGER l'AG. Président seul, et seulement une fois l'AG TENUE
               (date passée) ET l'heure de fin saisie. Avant la date, pas de clôture. */}
-          {isAdmin && !isMobile && agAEuLieu(ag) && (
+          {/* PV envoyé : l'étape qui manquait entre la séance et la clôture (055).
+              Proposée tant que l'AG n'est pas figée et qu'elle a eu lieu. */}
+          {isAdmin && !isMobile && agAEuLieu(ag) && ag.statut !== 'pv_envoye' && (
+            <Button variant="secondary" onClick={() => setPvModal('envoi')}>PV envoyé…</Button>
+          )}
+          {/* ⚠ PROPOSÉE MÊME SUR UNE AG CLOSE DE PLEIN DROIT, et c'est nécessaire :
+              une contestation déposée le dernier jour du délai sera inscrite le
+              lendemain, alors que l'assemblée s'est déjà fermée toute seule. La
+              refuser alors gèlerait une clôture que le droit ne connaît pas. La
+              modale demande la DATE de la contestation, qui seule compte — et
+              l'inscrire rouvre l'assemblée, puisqu'elle suspend la clôture. */}
+          {isAdmin && !isMobile && ag.statut === 'pv_envoye' && !ag.contestation_le && (
+            <Button variant="secondary" onClick={() => setPvModal('contestation')}>Inscrire une contestation</Button>
+          )}
+          {isAdmin && !isMobile && ag.contestation_le && (
+            <Button variant="ghost" onClick={leverContestation}>Retirer la contestation</Button>
+          )}
+          {isAdmin && !isMobile && agAEuLieu(ag) && !agFrozen && (
             <Button onClick={cloturerAG} disabled={!ag.heure_fin} title={!ag.heure_fin ? 'Renseignez d’abord l’heure de fin de séance (Modifier)' : ''}>Clôturer l’AG</Button>
           )}
           {canDelete && !agFrozen && <Button variant="danger" onClick={deleteAG} disabled={agLocked} title={agLocked ? 'Des décisions sont rattachées à cette AG' : ''}>Supprimer</Button>}
@@ -270,10 +313,23 @@ export default function AGDetail() {
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Statut</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <AGStatutBadge statut={effectiveAGStatut(ag)} />
+            <AGStatutBadge statut={effectiveAGStatut(ag, delaiContestation)} />
             {ag.quorum_statut && <Badge tone={AG_QUORUM_TONES[ag.quorum_statut] || 'gray'}>{AG_QUORUM_LABELS[ag.quorum_statut]}</Badge>}
           </div>
           {ag.heure_fin && <p className="mt-1 text-xs text-slate-500">Séance close à {ag.heure_fin}</p>}
+          {/* ⚠ On DIT la règle et la date, pas seulement l'état : « clôturée » sans
+              expliquer d'où vient la fermeture serait illisible dans un registre. */}
+          {ag.date_envoi_pv && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              PV envoyé le <strong>{formatDate(ag.date_envoi_pv)}</strong>
+              {ag.contestation_le
+                ? <> — contestation inscrite le {formatDate(ag.contestation_le)}, le délai est suspendu.</>
+                : closeDePleinDroit(ag, delaiContestation)
+                  ? <> — délai de {delaiContestation} mois écoulé le {formatDate(echeancePV)} sans contestation : <strong className="text-emerald-700">close de plein droit</strong>.</>
+                  : <> — contestable jusqu’au <strong>{formatDate(echeancePV)}</strong> ({delaiContestation} mois).</>}
+            </p>
+          )}
+          {ag.contestation_objet && <p className="mt-0.5 text-xs text-red-700">Objet : {ag.contestation_objet}</p>}
           {ag.m2_presents != null && ag.m2_presents !== '' && (
             <p className="mt-0.5 text-xs text-slate-500">
               {num(ag.m2_presents)} m² présents ou représentés
@@ -574,8 +630,85 @@ export default function AGDetail() {
           onSaved={async () => { setRattachModal(null); await reload() }}
         />
       )}
+      {pvModal && (
+        <PVModal
+          mode={pvModal}
+          ag={ag}
+          delaiMois={delaiContestation}
+          onClose={() => setPvModal(null)}
+          onSaved={async () => { setPvModal(null); await reload() }}
+        />
+      )}
       {confirmModal}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------- PV / contestation
+// Deux actes distincts, une seule modale : ils portent tous deux une DATE et une
+// conséquence sur le délai, et les séparer aurait dupliqué l'explication qui les
+// rend compréhensibles.
+function PVModal({ mode, ag, delaiMois, onClose, onSaved }) {
+  const envoi = mode === 'envoi'
+  const [dateISO, setDateISO] = useState(envoi ? (ag.date_envoi_pv || todayISO()) : todayISO())
+  const [objet, setObjet] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // Échéance recalculée à chaque frappe : on montre la conséquence AVANT de
+  // valider, parce que c'est elle qui figera l'assemblée.
+  const echeance = echeanceContestation({ date_envoi_pv: dateISO }, delaiMois)
+
+  const save = async () => {
+    setError('')
+    if (!dateISO) return setError('La date est obligatoire.')
+    setSaving(true)
+    try {
+      if (envoi) await repo.updateAG(ag.id, { statut: 'pv_envoye', date_envoi_pv: dateISO })
+      else await repo.updateAG(ag.id, { contestation_le: dateISO, contestation_objet: objet.trim() || null })
+      await onSaved()
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={envoi ? 'Envoi officiel du procès-verbal' : 'Inscrire une contestation'}
+      footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={save} disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button></>}
+    >
+      <div className="space-y-3">
+        <Input
+          label={envoi ? 'Date d’envoi officiel' : 'Date de la contestation'}
+          type="date"
+          value={dateISO}
+          onChange={(e) => setDateISO(e.target.value)}
+          required
+        />
+        {envoi ? (
+          <p className="text-xs text-slate-600">
+            C’est cette date qui fait courir le délai de contestation, <strong>pas celle de la
+            séance</strong>. L’assemblée sera contestable jusqu’au{' '}
+            <strong>{echeance ? formatDate(echeance) : '…'}</strong> ({delaiMois} mois).
+            {' '}Passé ce terme sans contestation inscrite, elle sera <strong>close de plein droit</strong>
+            {' '}et <strong>figée</strong> : ni l’AG ni ses résolutions ne seront plus modifiables.
+          </p>
+        ) : (
+          <>
+            <Input label="Objet (bref)" value={objet} onChange={(e) => setObjet(e.target.value)} placeholder="ex : contestation de la résolution n° 3" />
+            <p className="text-xs text-slate-600">
+              L’inscription d’une contestation <strong>suspend la clôture de plein droit</strong>, sans
+              limite de temps. L’application ne se prononce pas sur son bien-fondé : quand l’affaire est
+              vidée, le président clôture à la main ou retire la contestation.
+            </p>
+          </>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
+    </Modal>
   )
 }
 

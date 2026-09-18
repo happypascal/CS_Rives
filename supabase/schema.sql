@@ -43,8 +43,22 @@ create table if not exists assemblees_generales (
   lieu             text,
   president_seance text,                                  -- désigné EN séance : inconnu à la planification
   ordre_du_jour    text,
-  -- Cycle : preparation → convoquee → (a eu lieu : DÉRIVÉ de la date, non stocké) → cloturee. + annulee (migration 023).
-  statut           text not null default 'preparation' check (statut in ('preparation','convoquee','cloturee','annulee')),
+  -- Cycle : preparation → convoquee → (a eu lieu : DÉRIVÉ de la date, non stocké)
+  --   → pv_envoye → (clôturée de plein droit : DÉRIVÉE du délai, non stockée)
+  --   → cloturee (acte manuel du président). + annulee (migrations 023 et 055).
+  statut           text not null default 'preparation'
+                   check (statut in ('preparation','convoquee','pv_envoye','cloturee','annulee')),
+  -- ⚠ DATE D'ENVOI OFFICIEL DU PV (055) : c'est ELLE qui fait courir le délai de
+  -- contestation, pas la date de séance ni celle de rédaction. Passé ce délai
+  -- (paramètre `delai_contestation_mois`) et à défaut de contestation inscrite,
+  -- l'assemblée est réputée CLOSE DE PLEIN DROIT — calcul fait à la lecture,
+  -- jamais écrit : une date d'envoi corrigée doit corriger la clôture.
+  date_envoi_pv    date,
+  -- Une contestation inscrite SUSPEND la clôture de plein droit, indéfiniment.
+  -- L'application ne juge pas la contestation ; le président clôture à la main
+  -- quand l'affaire est vidée.
+  contestation_le     date,
+  contestation_objet  text,
   -- A posteriori (une fois l'AG tenue) : résultat de quorum + m² présents/représentés (migration 023).
   quorum_statut    text check (quorum_statut in ('quorum_atteint','sans_quorum_accepte','sans_quorum_rejete')),
   m2_presents      numeric(10,2),
@@ -63,7 +77,11 @@ create table if not exists assemblees_generales (
   -- le jsonb (aucune contrainte à écrire pour une 4e catégorie un jour).
   documents        jsonb not null default '[]',
   created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now()
+  updated_at       timestamptz not null default now(),
+  -- Sans date d'envoi, le délai ne court pas : l'état « PV envoyé » serait un
+  -- statut dont la conséquence ne peut pas être calculée. On le refuse (055).
+  constraint ag_pv_envoye_exige_une_date
+    check (statut <> 'pv_envoye' or date_envoi_pv is not null)
 );
 
 -- ------------------------------------------------------------ parametres (054)

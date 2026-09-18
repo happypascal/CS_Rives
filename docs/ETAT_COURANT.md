@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-18** — **export Markdown de toute la base**
-> (`scripts/export_md.mjs`), pour vérifier d'un bloc que tout le lotissement est dans l'app.
+> Dernière session : **2026-09-18** — **export Markdown de toute la base** (`scripts/export_md.mjs`),
+> puis **statut « PV envoyé » et clôture de plein droit** (migration 055, ⚠ **NON APPLIQUÉE**).
 > Avant, le **2026-09-16** : **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
 > Dénominateurs : **simple** → présents/représentés ; **absolue, double qualifiée et unanimité**
@@ -41,6 +41,37 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-18 (suite) — Statut « PV envoyé » et clôture de plein droit (migration 055)
+
+> ⚠ **MIGRATION 055 ÉCRITE, NON APPLIQUÉE.** Le code en dépend (nouveau statut dans la contrainte,
+> `date_envoi_pv`, `contestation_le`, `contestation_objet`, paramètre `delai_contestation_mois`) :
+> **ne pas pousser avant de l'avoir passée** — un update d'AG serait rejeté.
+
+- **Demande de Pascal** : « il manque un statut à une AG : le statut PV envoyé, avec la date d'envoi
+  officielle, avant la clôture automatique s'il n'y a pas eu de contestation dans les 12 mois après
+  la date d'envoi. »
+- **Ce qui manquait au cycle** : le fait juridique entre la séance et la clôture. C'est **l'envoi du
+  PV** qui fait courir le délai, et c'est **sa date** qui compte — ni celle de la séance, ni celle
+  de la rédaction.
+- ⚠ **LA CLÔTURE AUTOMATIQUE EST DÉRIVÉE, JAMAIS ÉCRITE.** Aucun pg_cron, aucun trigger. Trois
+  raisons : une date d'envoi corrigée doit corriger la clôture ; une contestation inscrite après
+  coup doit rouvrir l'assemblée ; et rien ne s'écrit dans un registre sans que quelqu'un l'ait
+  décidé — ici personne ne décide, c'est le temps qui passe. Même patron que « AG a eu lieu » (023).
+- **Elle FIGE l'AG** autant qu'une clôture manuelle — c'est son objet : passé le délai, le PV est
+  définitif. `agFigee` remplace le test `statut === 'cloturee'` partout, formulaire compris.
+- ⚠ **Une contestation reste inscriptible APRÈS la fermeture automatique** — défaut que j'avais
+  introduit et corrigé avant livraison : une contestation déposée le dernier jour s'inscrit le
+  lendemain, et la refuser aurait gelé une clôture que le droit ne connaît pas. L'inscrire rouvre
+  l'assemblée.
+- ⚠ **`window.prompt` remplacé par une vraie modale** avant livraison : hors du style de
+  l'application, et l'échéance doit se calculer **sous les yeux** avant validation, puisque c'est
+  elle qui figera l'assemblée.
+- **Délai en paramètre** (`delai_contestation_mois`, défaut 12) : les statuts sont en révision.
+- **Vérifié dans le navigateur, cycle complet** : PV envoyé au 01/03/2025 → badge « Clôturée de
+  plein droit », AG figée (plus aucun bouton d'écriture, menus de vote disparus) ; contestation
+  inscrite → badge « PV contesté », délai suspendu, AG de nouveau modifiable. Zéro erreur console.
+- **Export aligné** sur le nouveau cycle (statuts, date d'envoi, échéance, contestation).
 
 ## Session 2026-09-18 — Export Markdown de toute la base (`scripts/export_md.mjs`)
 

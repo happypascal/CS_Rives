@@ -14,6 +14,12 @@ export const AG_STATUT_LABELS = {
   preparation: 'En préparation',
   convoquee: 'Convocations envoyées',
   tenue: 'AG a eu lieu',
+  // PV envoyé (migration 055) : le délai de contestation court.
+  pv_envoye: 'PV envoyé — délai de contestation en cours',
+  // Clôturée DE PLEIN DROIT : dérivée, jamais stockée. Distincte de la clôture
+  // manuelle — on doit pouvoir lire d'où vient la fermeture.
+  cloturee_de_plein_droit: 'Clôturée de plein droit',
+  contestee: 'PV contesté',
   cloturee: 'Clôturée',
   annulee: 'Annulée',
 }
@@ -21,17 +27,65 @@ export const AG_STATUT_TONES = {
   preparation: 'gray',
   convoquee: 'blue',
   tenue: 'amber',
+  pv_envoye: 'blue',
+  cloturee_de_plein_droit: 'green',
+  contestee: 'red',
   cloturee: 'green',
   annulee: 'red',
+}
+
+// Délai de contestation, en mois. ⚠ 12 est la valeur donnée par Pascal
+// (2026-09-18) et vit dans `parametres` : les statuts sont en cours de révision
+// et ce délai est exactement le genre de chiffre qu'ils peuvent fixer autrement.
+export const DELAI_CONTESTATION_DEFAUT = 12
+
+// Échéance du délai de contestation : date d'envoi du PV + N mois.
+// ⚠ C'est la date d'ENVOI qui fait courir le délai, pas celle de la séance.
+export function echeanceContestation(ag, delaiMois) {
+  if (!ag?.date_envoi_pv) return null
+  const mois = Number(delaiMois) || DELAI_CONTESTATION_DEFAUT
+  const d = new Date(`${ag.date_envoi_pv}T12:00:00`)
+  d.setMonth(d.getMonth() + mois)
+  return d.toISOString().slice(0, 10)
+}
+
+// L'assemblée est-elle close DE PLEIN DROIT ? PV envoyé, délai expiré, aucune
+// contestation inscrite.
+//
+// ⚠ DÉRIVÉ, JAMAIS ÉCRIT. Une date d'envoi corrigée doit corriger la clôture, et
+// une contestation inscrite après coup doit la rouvrir — ce qu'un statut écrit
+// aurait figé à l'envers. Rien ne s'écrit ici : c'est le temps qui passe.
+export function closeDePleinDroit(ag, delaiMois) {
+  if (ag?.statut !== 'pv_envoye') return false
+  if (ag.contestation_le) return false
+  const echeance = echeanceContestation(ag, delaiMois)
+  return Boolean(echeance) && echeance <= todayISO()
 }
 
 // Statut AFFICHÉ : dérive « tenue » (AG a eu lieu) de la date passée. Une AG
 // clôturée ou annulée garde son statut ; sinon, si la date est aujourd'hui ou
 // passée, elle « a eu lieu » ; sinon on affiche le statut stocké (prep/convoquee).
-export function effectiveAGStatut(ag) {
+export function effectiveAGStatut(ag, delaiMois) {
   if (ag.statut === 'cloturee' || ag.statut === 'annulee') return ag.statut
+  // ⚠ L'ORDRE COMPTE. Une contestation prime sur l'expiration du délai : c'est
+  // elle qui empêche la clôture, et l'afficher d'abord évite de montrer une
+  // assemblée « close » que quelqu'un conteste.
+  if (ag.statut === 'pv_envoye') {
+    if (ag.contestation_le) return 'contestee'
+    if (closeDePleinDroit(ag, delaiMois)) return 'cloturee_de_plein_droit'
+    return 'pv_envoye'
+  }
   if (ag.date_ag && ag.date_ag <= todayISO()) return 'tenue'
   return ag.statut
+}
+
+// FIGÉE : plus aucune modification de l'AG ni de ses résolutions.
+// ⚠ La clôture de plein droit fige AUTANT que la clôture manuelle — c'est tout
+// son objet : passé le délai, le procès-verbal est définitif. Une AG contestée,
+// elle, reste modifiable : l'affaire n'est pas vidée.
+export function agFigee(ag, delaiMois) {
+  const eff = effectiveAGStatut(ag, delaiMois)
+  return eff === 'cloturee' || eff === 'annulee' || eff === 'cloturee_de_plein_droit'
 }
 
 // L'AG a eu lieu (date passée) et n'est ni clôturée ni annulée : c'est le seul

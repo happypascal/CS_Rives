@@ -173,7 +173,7 @@ async function listerFichiers(prefix = '') {
 // as mis convoquée ». L'export doit montrer CE QUE L'APPLICATION MONTRE, sinon il
 // ne sert pas à vérifier l'application — il fait douter d'elle à tort.
 const ROLE_LABELS = { president: 'Président', tresorier: 'Trésorier', secretaire: 'Secrétaire', membre: 'Membre' }
-const AG_STATUT_LABELS = { preparation: 'En préparation', convoquee: 'Convocations envoyées', tenue: 'AG a eu lieu', cloturee: 'Clôturée', annulee: 'Annulée' }
+const AG_STATUT_LABELS = { preparation: 'En préparation', convoquee: 'Convocations envoyées', tenue: 'AG a eu lieu', pv_envoye: 'PV envoyé — délai de contestation en cours', cloturee_de_plein_droit: 'Clôturée de plein droit', contestee: 'PV contesté', cloturee: 'Clôturée', annulee: 'Annulée' }
 const AG_QUORUM_LABELS = { quorum_atteint: 'Quorum atteint', sans_quorum_accepte: 'Vote sans quorum accepté', sans_quorum_rejete: 'Vote sans quorum rejeté' }
 const RESOLUTION_STATUT_LABELS = { a_voter: 'À voter', adoptee: 'Adoptée', rejetee: 'Rejetée', sans_vote: 'Sans vote', retiree: 'Retirée' }
 const MAJORITE_LABELS = { simple: 'Majorité simple', absolue: 'Majorité absolue', double_qualifiee: 'Double majorité qualifiée', unanimite: 'Unanimité' }
@@ -191,10 +191,26 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
 // ⚠ « AG A EU LIEU » EST DÉRIVÉ DE LA DATE, JAMAIS STOCKÉ (migration 023). La
 // colonne `statut` reste à `convoquee` — c'est exactement ce qui a produit
 // l'incohérence signalée. Copie de `effectiveAGStatut`.
-function statutAGEffectif(ag) {
+function statutAGEffectif(ag, delaiMois) {
   if (ag.statut === 'cloturee' || ag.statut === 'annulee') return ag.statut
+  // PV envoyé (055) : une contestation prime sur l'expiration du délai.
+  if (ag.statut === 'pv_envoye') {
+    if (ag.contestation_le) return 'contestee'
+    const e = echeanceContestationExport(ag, delaiMois)
+    if (e && e <= aujourdhui) return 'cloturee_de_plein_droit'
+    return 'pv_envoye'
+  }
   if (ag.date_ag && ag.date_ag <= aujourdhui) return 'tenue'
   return ag.statut
+}
+
+// ⚠ Copie de `echeanceContestation` (agLogic.js) — MODIFIER L'UN OBLIGE À
+// MODIFIER L'AUTRE. C'est la date d'ENVOI du PV qui fait courir le délai.
+function echeanceContestationExport(ag, delaiMois) {
+  if (!ag?.date_envoi_pv) return null
+  const d = new Date(`${ag.date_envoi_pv}T12:00:00`)
+  d.setMonth(d.getMonth() + (Number(delaiMois) || 12))
+  return d.toISOString().slice(0, 10)
 }
 
 // ⚠ LE STATUT D'UN PROJET EST ENTIÈREMENT DÉRIVÉ — la colonne `projets.statut` a
@@ -336,7 +352,7 @@ async function main() {
     parametres: ['cle', 'valeur'],
     membres_cs: ['nom', 'prenom', 'email', 'role', 'date_election', 'date_fin', 'ag_election', 'actif', 'registre_rgpd_accepte_le'],
     mandats_cs: ['membre_id', 'role', 'origine', 'date_debut', 'date_fin', 'duree_annees', 'ag_id', 'ag_libelle', 'observations'],
-    assemblees_generales: ['numero', 'type', 'date_ag', 'statut', 'lieu', 'heure_planifiee', 'heure_fin', 'president_seance', 'quorum_statut', 'm2_presents', 'm2_total', 'pv_url', 'documents'],
+    assemblees_generales: ['numero', 'type', 'date_ag', 'statut', 'lieu', 'heure_planifiee', 'heure_fin', 'president_seance', 'quorum_statut', 'm2_presents', 'm2_total', 'date_envoi_pv', 'contestation_le', 'contestation_objet', 'pv_url', 'documents'],
     comptes_ag: ['ag_id', 'role', 'approuve_par', 'approuve_le'],
     resolutions_ag: ['ag_id', 'numero', 'sous_numero', 'titre', 'description', 'statut', 'majorite_requise', 'budget_alloue', 'budget_intitule', 'projet_id', 'm2_pour', 'm2_contre', 'm2_abstention', 'observations', 'documents'],
     projets: ['nom', 'description', 'chef_projet_id', 'adjoint_projet_id', 'date_ouverture', 'date_cloture', 'documents'],
@@ -367,6 +383,8 @@ async function main() {
     console.error('   Corrigez scripts/export_md.mjs avant de vous fier à ce fichier.')
     console.error('')
   }
+
+  const delaiContestation = Number((db.parametres || []).find((x) => x.cle === 'delai_contestation_mois')?.valeur) || 12
 
   const fichiers = new Set(await listerFichiers())
 
@@ -453,7 +471,10 @@ async function main() {
       ? `${m2(ag.m2_presents)} sur ${m2(ag.m2_total)} — ${((ag.m2_presents / ag.m2_total) * 100).toFixed(1).replace('.', ',')} %`
       : m2(ag.m2_presents)
     W(champs([
-      champ('Statut', lib(AG_STATUT_LABELS, statutAGEffectif(ag))),
+      champ('Statut', lib(AG_STATUT_LABELS, statutAGEffectif(ag, delaiContestation))),
+      champ('PV envoyé le', date(ag.date_envoi_pv)),
+      champ('Contestable jusqu’au', ag.date_envoi_pv && !ag.contestation_le ? `${date(echeanceContestationExport(ag, delaiContestation))} (délai de ${delaiContestation} mois)` : null),
+      champ('Contestation inscrite le', ag.contestation_le ? `${date(ag.contestation_le)}${ag.contestation_objet ? ` — ${texte(ag.contestation_objet)}` : ''} (suspend la clôture de plein droit)` : null),
       champ('Lieu', ag.lieu),
       champ('Heure', [ag.heure_planifiee, ag.heure_fin].filter(Boolean).join(' → ')),
       champ('Président de séance', ag.president_seance),

@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, DesktopOnly } from '../components/ui'
 import { todayISO } from '../lib/format'
-import { AG_QUORUM_VALUES, AG_QUORUM_LABELS } from '../lib/agLogic'
+import { AG_QUORUM_VALUES, AG_QUORUM_LABELS, agFigee, DELAI_CONTESTATION_DEFAUT } from '../lib/agLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 
@@ -15,7 +15,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 // ancien texte y est simplement laissé tel quel, jamais réécrit.
 // `repo.getAG()` renvoie EN PLUS un tableau `resolutions` (jointure) : il ne doit
 // jamais repartir dans un update, sinon PostgREST rejette la colonne inconnue.
-const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), heure_planifiee: '', heure_fin: '', lieu: '', president_seance: '', statut: 'preparation', quorum_statut: '', m2_presents: '', m2_total: '', pv_url: '' }
+const EMPTY = { numero: '', type: 'AGO', date_ag: todayISO(), heure_planifiee: '', heure_fin: '', lieu: '', president_seance: '', statut: 'preparation', quorum_statut: '', m2_presents: '', m2_total: '', date_envoi_pv: '', contestation_le: '', contestation_objet: '', pv_url: '' }
 
 // Ne garde que les colonnes réelles, et normalise les champs vides en null.
 function toPayload(form) {
@@ -44,10 +44,14 @@ export default function AGForm() {
   // pré-remplir une AG qui n'a pas encore le sien : une fois figé sur la ligne,
   // c'est celui de l'AG qui fait foi. Cf. migration 054.
   const [m2TotalCourant, setM2TotalCourant] = useState('')
+  const [delaiContestation, setDelaiContestation] = useState(DELAI_CONTESTATION_DEFAUT)
 
   useEffect(() => {
     repo.getParametres()
-      .then((p) => setM2TotalCourant(p.m2_total_lotissement || ''))
+      .then((p) => {
+        setM2TotalCourant(p.m2_total_lotissement || '')
+        setDelaiContestation(Number(p.delai_contestation_mois) || DELAI_CONTESTATION_DEFAUT)
+      })
       .catch(() => setM2TotalCourant(''))
   }, [])
 
@@ -80,11 +84,18 @@ export default function AGForm() {
 
   // AG clôturée/annulée = figée : on ne l'édite plus (le rattachement d'un budget
   // à un projet se fait depuis la fiche AG, resté actif — pas ici).
-  if (editing && (form.statut === 'cloturee' || form.statut === 'annulee')) {
+  // ⚠ Inclut la CLÔTURE DE PLEIN DROIT (055) : passé le délai de contestation, le
+  // procès-verbal est définitif, et le formulaire doit refuser autant que sur une
+  // clôture manuelle. Sans ce test, on aurait pu rouvrir par le formulaire une AG
+  // que la fiche déclarait close.
+  if (editing && agFigee(form, delaiContestation)) {
+    const cause = form.statut === 'annulee' ? 'annulée'
+      : form.statut === 'cloturee' ? 'clôturée'
+      : 'close de plein droit (délai de contestation écoulé)'
     return (
       <div>
         <PageHeader title={`AG ${form.numero}`} />
-        <Card className="p-6 text-sm text-slate-600">Cette AG est {form.statut === 'cloturee' ? 'clôturée' : 'annulée'} : elle n’est plus modifiable. <Link to={`/ag/${id}`} className="text-navy-600 underline">Retour à la fiche</Link></Card>
+        <Card className="p-6 text-sm text-slate-600">Cette AG est {cause} : elle n’est plus modifiable. <Link to={`/ag/${id}`} className="text-navy-600 underline">Retour à la fiche</Link></Card>
       </div>
     )
   }
@@ -146,9 +157,14 @@ export default function AGForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             {/* « Clôturée » n'est PAS proposée ici : la clôture (qui FIGE l'AG) est une
                 action dédiée sur la fiche, exigeant l'heure de fin de séance. */}
+            {/* ⚠ « PV envoyé » est AFFICHÉ mais non sélectionnable : il se pose
+                depuis la fiche, avec sa DATE d'envoi, qui fait courir le délai.
+                L'omettre de la liste aurait affiché un statut vide sur une AG qui
+                en porte un — le genre d'écran qui fait douter de la donnée. */}
             <Select label="Statut" value={form.statut} onChange={set('statut')}>
               <option value="preparation">En préparation</option>
               <option value="convoquee">Convocations envoyées</option>
+              {form.statut === 'pv_envoye' && <option value="pv_envoye" disabled>PV envoyé (se modifie depuis la fiche)</option>}
               <option value="annulee">Annulée</option>
             </Select>
             <Input label="Lien PV signé (optionnel)" value={form.pv_url || ''} onChange={set('pv_url')} placeholder="https://…" />

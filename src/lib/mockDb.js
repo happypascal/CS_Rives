@@ -368,7 +368,7 @@ function seed() {
   ]
 
   // Paramètres de l'application (054). Même valeur de départ qu'en base.
-  const parametres = { m2_total_lotissement: '104646' }
+  const parametres = { m2_total_lotissement: '104646', delai_contestation_mois: '12' }
 
   return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
 }
@@ -832,7 +832,7 @@ export const mockRepo = {
     await delay()
     const data = load()
     if (!data.parametres) {
-      data.parametres = { m2_total_lotissement: '104646' }
+      data.parametres = { m2_total_lotissement: '104646', delai_contestation_mois: '12' }
       save(data)
     }
     return clone(data.parametres)

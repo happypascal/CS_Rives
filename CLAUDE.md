@@ -437,6 +437,23 @@ et **zéro vote**.
 - **« Terminé » est RÉVERSIBLE** (choix explicite de Pascal) : la dernière décision enregistrée
   l'emporte, donc le CS peut rouvrir — et cette réouverture est elle-même une délibération tracée.
   Ne pas confondre avec l'enregistrement d'une décision, lui définitif.
+- **CYCLE D'UNE AG** (023 puis 055) : `preparation` → `convoquee` → **« a eu lieu »** *(dérivé de la
+  date)* → **`pv_envoye`** → **« clôturée de plein droit »** *(dérivée du délai)* → `cloturee`
+  *(acte manuel)*. + `annulee`. ⚠ **Deux des cinq états ne sont pas stockés.**
+  - **`date_envoi_pv`** : c'est **l'envoi du PV** qui fait courir le délai de contestation, **pas la
+    date de séance** ni celle de rédaction. Contrainte `ag_pv_envoye_exige_une_date` : sans elle, le
+    statut serait un état dont la conséquence ne peut pas être calculée.
+  - ⚠ **LA CLÔTURE DE PLEIN DROIT EST DÉRIVÉE, JAMAIS ÉCRITE** (`closeDePleinDroit`) — aucun
+    pg_cron, aucun trigger. Une date d'envoi corrigée doit corriger la clôture, et une contestation
+    inscrite après coup doit rouvrir l'assemblée : un statut écrit aurait figé l'inverse. Elle
+    **FIGE** l'AG autant qu'une clôture manuelle (`agFigee`) — c'est son objet.
+  - **Une contestation SUSPEND la clôture**, sans limite de temps, et rouvre l'AG. ⚠ Elle reste
+    **inscriptible après la fermeture automatique** : une contestation déposée le dernier jour
+    s'inscrit le lendemain, et la refuser gèlerait une clôture que le droit ne connaît pas.
+    ⚠ L'application **ne juge jamais** du bien-fondé : elle constate, et n'en tire que la seule
+    conséquence qu'elle sache tirer.
+  - **Délai en paramètre** (`delai_contestation_mois`, défaut **12**). ⚠ 12 est la valeur donnée par
+    Pascal (2026-09-18), **pas une règle lue** — les statuts en révision peuvent la fixer autrement.
 - **Une AG se planifie avant d'avoir lieu.** À la convocation, le **président de séance est
   inconnu** (il est désigné *en* séance) → jamais obligatoire. Ne pas le rendre requis « pour
   la propreté de la donnée » : cela force à inventer un nom, donc à écrire une information

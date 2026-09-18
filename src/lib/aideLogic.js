@@ -294,6 +294,32 @@ export const MENUS = [
           'Seule une résolution ADOPTÉE alloue réellement un budget. Une résolution à voter, rejetée ou retirée n’alloue rien : son montant n’est qu’une proposition.',
       },
       {
+        titre: 'Marquer le PV comme envoyé, et laisser courir le délai',
+        pourQui: ['president'],
+        resume: 'L’étape entre la séance et la clôture.',
+        etapes: [
+          'Sur la fiche de l’AG, cliquez sur « PV envoyé… » et saisissez la DATE D’ENVOI OFFICIEL du procès-verbal.',
+          '⚠ C’est cette date qui fait courir le délai de contestation — pas la date de séance, pas celle de rédaction.',
+          'L’écran affiche alors jusqu’à quand l’assemblée est contestable.',
+          'Passé ce délai SANS contestation inscrite, l’assemblée se ferme toute seule : elle devient « clôturée de plein droit » et n’est plus modifiable, ni elle ni ses résolutions.',
+        ],
+        alerte:
+          'Vous n’avez rien à faire le jour de l’échéance : la clôture se calcule, elle n’est pas enregistrée. Si vous corrigez la date d’envoi, l’échéance suit.',
+      },
+      {
+        titre: 'Inscrire une contestation',
+        pourQui: ['president'],
+        resume: 'Elle suspend la clôture automatique.',
+        etapes: [
+          'Sur la fiche de l’AG, « Inscrire une contestation » : indiquez sa date et, brièvement, son objet.',
+          'La clôture de plein droit est alors SUSPENDUE, sans limite de temps, et l’assemblée redevient modifiable.',
+          'Reste possible même si l’assemblée s’est déjà fermée : une contestation déposée le dernier jour s’inscrit souvent le lendemain.',
+          'Quand l’affaire est vidée : « Retirer la contestation » (le délai reprend son cours) ou « Clôturer l’AG » à la main.',
+        ],
+        alerte:
+          'L’application ne se prononce JAMAIS sur le bien-fondé d’une contestation. Elle constate qu’il y en a une, et en tire la seule conséquence qu’elle sache tirer : ne pas fermer l’assemblée toute seule.',
+      },
+      {
         titre: 'Joindre la convocation ou le procès-verbal',
         pourQui: ['secretaire'],  // + président, via write_admin
         resume: 'Les pièces de l’assemblée elle-même.',
