@@ -289,6 +289,54 @@ async function main() {
   const db = {}
   for (const t of tables) db[t] = await lire(t)
 
+  // ⚠ AUTO-CONTRÔLE : les colonnes que ce script LIT existent-elles vraiment ?
+  //
+  // Quatre bugs successifs, tous identiques et tous trouvés par Pascal et non par
+  // moi : `comptes_ag.approuve_tresorier_le`, `lots.adresse`,
+  // `proprietaires.adresse`, `sujet_entrees.texte` — des noms plausibles, aucun
+  // n'existe. JavaScript rend `undefined` sans broncher, `champ()` omet les
+  // valeurs vides, et le champ DISPARAÎT SILENCIEUSEMENT de l'export. Un outil
+  // censé dire ce qui manque taisait donc lui-même des informations présentes.
+  //
+  // Une relecture attentive ne suffit pas : c'est une faute qu'on refait. Le
+  // script confronte donc ce qu'il lit aux colonnes RÉELLEMENT renvoyées par
+  // l'API, et hurle. Ajouter un champ ici est obligatoire quand on en lit un —
+  // c'est le prix, et il est bas comparé à une information perdue en silence.
+  const CHAMPS_LUS = {
+    parametres: ['cle', 'valeur'],
+    membres_cs: ['nom', 'prenom', 'email', 'role', 'date_election', 'date_fin', 'ag_election', 'actif', 'registre_rgpd_accepte_le'],
+    mandats_cs: ['membre_id', 'role', 'origine', 'date_debut', 'date_fin', 'duree_annees', 'ag_id', 'ag_libelle', 'observations'],
+    assemblees_generales: ['numero', 'type', 'date_ag', 'statut', 'lieu', 'heure_planifiee', 'heure_fin', 'president_seance', 'quorum_statut', 'm2_presents', 'm2_total', 'pv_url', 'documents'],
+    comptes_ag: ['ag_id', 'role', 'approuve_par', 'approuve_le'],
+    resolutions_ag: ['ag_id', 'numero', 'sous_numero', 'titre', 'description', 'statut', 'majorite_requise', 'budget_alloue', 'budget_intitule', 'projet_id', 'm2_pour', 'm2_contre', 'm2_abstention', 'observations', 'documents'],
+    projets: ['nom', 'description', 'chef_projet_id', 'adjoint_projet_id', 'date_ouverture', 'date_cloture', 'documents'],
+    journal_projet: ['projet_id', 'date_action', 'texte', 'auteur_id', 'documents'],
+    questions_reponses_projet: ['projet_id', 'auteur_id', 'type', 'texte', 'created_at'],
+    decisions: ['numero', 'titre', 'description', 'phase', 'statut', 'enregistree', 'date_enregistrement', 'date_publication', 'date_limite_reponse', 'montant_engage', 'tva_taux', 'tva_incluse', 'projet_id', 'resolution_id', 'projet_action', 'created_by', 'quorum_atteint', 'visibilite', 'motif_annulation', 'documents'],
+    votes: ['decision_id', 'membre_id', 'vote'],
+    questions_reponses: ['decision_id', 'auteur_id', 'type', 'texte', 'created_at'],
+    sujets: ['titre', 'categorie', 'resume', 'contenu', 'documents'],
+    sujet_entrees: ['sujet_id', 'date_evenement', 'titre', 'contenu', 'auteur_id', 'documents'],
+    lots: ['numero', 'numero_syndic', 'adresse_lotissement', 'superficie', 'nombre_lots', 'observations'],
+    proprietaires: ['lot_id', 'nom', 'nom_2', 'est_societe', 'est_indivision', 'email', 'email_2', 'telephone', 'telephone_2', 'adresse_communication', 'dirigeant_nom', 'dirigeant_fonction', 'dirigeant_email', 'dirigeant_telephone', 'dirigeant_nom_2', 'dirigeant_fonction_2', 'dirigeant_email_2', 'dirigeant_telephone_2', 'adresse_dirigeant', 'mandataire_nom', 'mandataire_email', 'mandataire_telephone', 'contacts_officiels', 'date_acquisition', 'date_cession', 'observations'],
+  }
+  const fantomes = []
+  for (const [table, champsLus] of Object.entries(CHAMPS_LUS)) {
+    const lignes = db[table]
+    // Table vide : on ne peut rien conclure de ses colonnes, et l'API ne les
+    // renvoie pas. On le dit plutôt que de laisser croire au contrôle effectué.
+    if (!lignes || !lignes.length) continue
+    const reelles = new Set(Object.keys(lignes[0]))
+    for (const c of champsLus) if (!reelles.has(c)) fantomes.push(`${table}.${c}`)
+  }
+  if (fantomes.length) {
+    console.error('')
+    console.error('⚠⚠ COLONNES LUES QUI N’EXISTENT PAS — des champs manquent SILENCIEUSEMENT dans l’export :')
+    for (const f of fantomes) console.error(`   ${f}`)
+    console.error('   Corrigez scripts/export_md.mjs avant de vous fier à ce fichier.')
+    console.error('')
+  }
+
   const fichiers = new Set(await listerFichiers())
 
   // Index par id, pour résoudre les références en NOMS.
@@ -383,9 +431,19 @@ async function main() {
       champ('Lien PV externe', ag.pv_url),
       piecesJointes(ag.documents, fichiers),
     ]))
+    // ⚠ UNE LIGNE PAR APPROBATION, pas une ligne par AG : `comptes_ag` porte
+    // `role` ('tresorier' | 'president'), `approuve_par` et `approuve_le`, avec un
+    // unique (ag_id, role). La PRÉSENCE de la ligne EST l'approbation.
     const comptes = parCle(db.comptes_ag, 'ag_id', ag.id)
-    for (const c of comptes) {
-      W(champ('Comptes de l’exercice', `trésorier ${c.approuve_tresorier_le ? `approuvé le ${date(c.approuve_tresorier_le)}` : 'non approuvé'}, président ${c.approuve_president_le ? `approuvé le ${date(c.approuve_president_le)}` : 'non approuvé'}`))
+    if (comptes.length) {
+      const etat = (role) => {
+        const c = comptes.find((x) => x.role === role)
+        if (!c) return 'non approuvé'
+        const qui = nomMembre(c.approuve_par)
+        return `approuvé le ${date(c.approuve_le)}${qui ? ` par ${qui}` : ''}`
+      }
+      const valides = comptes.some((c) => c.role === 'tresorier') && comptes.some((c) => c.role === 'president')
+      W(champ('Comptes de l’exercice', `${valides ? '**validés**' : 'non validés'} — trésorier : ${etat('tresorier')} · président : ${etat('president')}`))
     }
     const res = parCle(db.resolutions_ag, 'ag_id', ag.id)
       .sort((a, b) => a.numero - b.numero || (a.sous_numero || 0) - (b.sous_numero || 0))
@@ -501,6 +559,7 @@ async function main() {
     for (const s of db.sujets.sort((a, b) => a.titre.localeCompare(b.titre))) {
       W(`### ${s.titre}${s.categorie ? ` _(${s.categorie})_` : ''}`)
       W(champs([
+        champ('Résumé', s.resume),
         champ('Synthèse', s.contenu),
         piecesJointes(s.documents, fichiers),
       ]))
@@ -510,7 +569,7 @@ async function main() {
         W('')
         W(`#### Chronologie (${entrees.length})`)
         for (const e of entrees) {
-          W(`- **${date(e.date_evenement)}** — ${e.texte} _(${nomMembre(e.auteur_id)})_`)
+          W(`- **${date(e.date_evenement)}** — ${[e.titre, e.contenu].filter(Boolean).join(' : ')} _(${nomMembre(e.auteur_id)})_`)
           const pj = piecesJointes(e.documents, fichiers)
           if (pj) W(pj.split('\n').slice(1).join('\n'))
         }
@@ -534,7 +593,7 @@ async function main() {
         : null
       W(champs([
         champ('Référence syndic', l.numero_syndic),
-        champ('Adresse dans le lotissement', l.adresse),
+        champ('Adresse dans le lotissement', l.adresse_lotissement),
         champ('Superficie', m2(l.superficie)),
         champ('Tantième', part),
         champ('Nombre de lots', l.nombre_lots),
@@ -550,7 +609,8 @@ async function main() {
           champ('  Indivision déclarée', p.est_indivision ? 'oui' : null),
           champ('  E-mail', [p.email, p.email_2].filter(Boolean).join(', ')),
           champ('  Téléphone', [p.telephone, p.telephone_2].filter(Boolean).join(', ')),
-          champ('  Adresse', p.adresse),
+          champ('  Adresse de communication', p.adresse_communication),
+          champ('  Société', p.est_societe ? 'oui' : null),
           champ('  Dirigeant', [p.dirigeant_nom && `${p.dirigeant_nom} (${p.dirigeant_fonction || 'fonction non précisée'})`, p.dirigeant_nom_2 && `${p.dirigeant_nom_2} (${p.dirigeant_fonction_2 || 'fonction non précisée'})`].filter(Boolean).join(' · ')),
           champ('  Adresse du dirigeant', p.adresse_dirigeant),
           champ('  Mandataire', p.mandataire_nom && `${p.mandataire_nom}${p.mandataire_email ? ` — ${p.mandataire_email}` : ''}${p.mandataire_telephone ? ` — ${p.mandataire_telephone}` : ''}`),
@@ -572,6 +632,12 @@ async function main() {
   // celle-ci nomme ce qui MANQUE, ce qui est la question posée.
   W('## Points d’attention — ce qui semble manquer')
   W('')
+  if (fantomes.length) {
+    W(`> ⚠⚠ **EXPORT INCOMPLET** : ce script lit ${fantomes.length} colonne(s) qui n’existent pas`)
+    W(`> (${fantomes.join(', ')}). Les champs correspondants sont ABSENTS de ce fichier`)
+    W('> sans que rien ne l’indique ailleurs. Ne pas conclure « il ne manque rien ».')
+    W('')
+  }
   const alertes = []
   for (const l of db.lots || []) {
     if (vide(l.superficie)) alertes.push(`Parcelle **${l.numero}** : superficie absente — elle porte le poids de vote et la répartition des charges.`)
