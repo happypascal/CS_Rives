@@ -159,6 +159,61 @@ async function listerFichiers(prefix = '') {
   return files
 }
 
+// ================================================================ libellés
+// ⚠ CE BLOC RECOPIE `src/lib/agLogic.js`, `rolesLogic.js` ET `mandatLogic.js`.
+// MODIFIER L'UN OBLIGE À MODIFIER L'AUTRE.
+//
+// On aimerait les importer. On ne peut pas : ces modules font des imports sans
+// extension (`from './format'`), que Vite résout et que Node refuse. Plutôt
+// qu'un chargeur sur mesure pour un script lancé deux fois par mois, on duplique
+// — comme le mock duplique les règles SQL — et on le dit en majuscules.
+//
+// ⚠ POURQUOI DES LIBELLÉS, ET PAS LES CODES DE LA BASE. Signalé par Pascal
+// (2026-09-18) : « l'export de l'AG semble faux, elle a eu lieu dans l'app et tu
+// as mis convoquée ». L'export doit montrer CE QUE L'APPLICATION MONTRE, sinon il
+// ne sert pas à vérifier l'application — il fait douter d'elle à tort.
+const ROLE_LABELS = { president: 'Président', tresorier: 'Trésorier', secretaire: 'Secrétaire', membre: 'Membre' }
+const AG_STATUT_LABELS = { preparation: 'En préparation', convoquee: 'Convocations envoyées', tenue: 'AG a eu lieu', cloturee: 'Clôturée', annulee: 'Annulée' }
+const AG_QUORUM_LABELS = { quorum_atteint: 'Quorum atteint', sans_quorum_accepte: 'Vote sans quorum accepté', sans_quorum_rejete: 'Vote sans quorum rejeté' }
+const RESOLUTION_STATUT_LABELS = { a_voter: 'À voter', adoptee: 'Adoptée', rejetee: 'Rejetée', sans_vote: 'Sans vote', retiree: 'Retirée' }
+const MAJORITE_LABELS = { simple: 'Majorité simple', absolue: 'Majorité absolue', double_qualifiee: 'Double majorité qualifiée', unanimite: 'Unanimité' }
+const ORIGINE_LABELS = { election: 'Élu par l’AG', designation: 'Désigné par le président', cooptation: 'Coopté en cours de mandature' }
+const PHASE_LABELS = { brouillon: 'Brouillon', planifiee: 'Soumission planifiée', ouverte_au_vote: 'Ouverte au vote', annulee: 'Annulée' }
+const DECISION_STATUT_LABELS = { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }
+const PROJET_STATUT_LABELS = { en_preparation: 'En préparation', en_cours: 'En cours', suspendu: 'Suspendu', termine: 'Terminé' }
+
+// Un code inconnu est rendu TEL QUEL plutôt que masqué : si une migration ajoute
+// une valeur et qu'on oublie ce fichier, on doit le voir, pas lire un blanc.
+const lib = (table, code) => (code ? table[code] || `${code} (libellé inconnu)` : null)
+
+const aujourdhui = new Date().toISOString().slice(0, 10)
+
+// ⚠ « AG A EU LIEU » EST DÉRIVÉ DE LA DATE, JAMAIS STOCKÉ (migration 023). La
+// colonne `statut` reste à `convoquee` — c'est exactement ce qui a produit
+// l'incohérence signalée. Copie de `effectiveAGStatut`.
+function statutAGEffectif(ag) {
+  if (ag.statut === 'cloturee' || ag.statut === 'annulee') return ag.statut
+  if (ag.date_ag && ag.date_ag <= aujourdhui) return 'tenue'
+  return ag.statut
+}
+
+// ⚠ LE STATUT D'UN PROJET EST ENTIÈREMENT DÉRIVÉ — la colonne `projets.statut` a
+// été SUPPRIMÉE (migration 011). Deux couches, comme `computeProjectBudgets` :
+// le statut naturel (date d'ouverture à venir → en préparation, sinon en cours),
+// puis l'effet de la DERNIÈRE décision ENREGISTRÉE ET ADOPTÉE portant un
+// `projet_action`. Une décision rejetée ou non enregistrée n'a aucun effet.
+function statutProjet(projet, decisions) {
+  const naturel = projet.date_ouverture && projet.date_ouverture > aujourdhui ? 'en_preparation' : 'en_cours'
+  const actions = decisions
+    .filter((d) => d.projet_id === projet.id && d.enregistree && d.statut === 'adoptee' && d.projet_action)
+    .sort((a, b) => String(a.date_enregistrement).localeCompare(String(b.date_enregistrement)))
+  const derniere = actions[actions.length - 1]
+  if (!derniere) return naturel
+  if (derniere.projet_action === 'suspendre') return 'suspendu'
+  if (derniere.projet_action === 'terminer') return 'termine'
+  return naturel // « reprendre » rend la main au statut naturel.
+}
+
 // ---------------------------------------------------------------- formatage
 const eur = (v) =>
   v === null || v === undefined || v === '' ? null : `${Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
@@ -254,7 +309,7 @@ async function main() {
     W('')
     if (!liste.length) W('_Aucun._')
     for (const m of liste.sort((a, b) => a.nom.localeCompare(b.nom))) {
-      W(`#### ${m.prenom} ${m.nom} — ${m.role}`)
+      W(`#### ${m.prenom} ${m.nom} — ${lib(ROLE_LABELS, m.role)}`)
       W(champs([
         champ('E-mail', m.email),
         champ('Élu le', date(m.date_election)),
@@ -269,7 +324,7 @@ async function main() {
         for (const x of mandats) {
           const duree = x.duree_annees ? `, élu pour ${x.duree_annees} an${x.duree_annees > 1 ? 's' : ''}` : ''
           const ref = x.ag_id ? nomAG(x.ag_id) : x.ag_libelle
-          W(`  - ${x.role} · ${date(x.date_debut)} → ${date(x.date_fin) || 'sans terme'} · ${x.origine}${duree}${ref ? ` · ${ref}` : ''}${x.observations ? ` · ${x.observations}` : ''}`)
+          W(`  - ${lib(ROLE_LABELS, x.role)} · ${date(x.date_debut)} → ${date(x.date_fin) || 'sans terme'} · ${lib(ORIGINE_LABELS, x.origine)}${duree}${ref ? ` · ${ref}` : ''}${x.observations ? ` · ${x.observations}` : ''}`)
         }
       }
       W('')
@@ -286,11 +341,11 @@ async function main() {
       ? `${m2(ag.m2_presents)} sur ${m2(ag.m2_total)} — ${((ag.m2_presents / ag.m2_total) * 100).toFixed(1).replace('.', ',')} %`
       : m2(ag.m2_presents)
     W(champs([
-      champ('Statut', ag.statut),
+      champ('Statut', lib(AG_STATUT_LABELS, statutAGEffectif(ag))),
       champ('Lieu', ag.lieu),
       champ('Heure', [ag.heure_planifiee, ag.heure_fin].filter(Boolean).join(' → ')),
       champ('Président de séance', ag.president_seance),
-      champ('Quorum', ag.quorum_statut),
+      champ('Quorum', lib(AG_QUORUM_LABELS, ag.quorum_statut)),
       champ('Participation', participation),
       champ('Lien PV externe', ag.pv_url),
       piecesJointes(ag.documents, fichiers),
@@ -312,8 +367,8 @@ async function main() {
         ? `pour ${m2(r.m2_pour || 0)}, contre ${m2(r.m2_contre || 0)}, abstention ${m2(r.m2_abstention || 0)}`
         : null
       W(champs([
-        champ('Statut', r.statut),
-        champ('Majorité requise', r.majorite_requise),
+        champ('Statut', lib(RESOLUTION_STATUT_LABELS, r.statut)),
+        champ('Majorité requise', lib(MAJORITE_LABELS, r.majorite_requise)),
         champ('Description', r.description),
         champ('Budget alloué', eur(r.budget_alloue)),
         champ('Intitulé du budget', r.budget_intitule),
@@ -336,6 +391,7 @@ async function main() {
       .filter((r) => r.projet_id === p.id)
       .map((r) => `${nomAG(r.ag_id)} n° ${r.sous_numero ? `${r.numero}-${r.sous_numero}` : r.numero} (${eur(r.budget_alloue)}, ${r.statut})`)
     W(champs([
+      champ('Statut', `${lib(PROJET_STATUT_LABELS, statutProjet(p, db.decisions || []))} _(dérivé, jamais stocké)_`),
       champ('Description', p.description),
       champ('Chef de projet', nomMembre(p.chef_projet_id)),
       champ('Adjoint', nomMembre(p.adjoint_projet_id)),
@@ -377,8 +433,8 @@ async function main() {
       ? votes.map((v) => `${nomMembre(v.membre_id)} : ${v.vote}`).join(' · ')
       : null
     W(champs([
-      champ('Phase', d.phase),
-      champ('Statut', d.statut),
+      champ('Phase', lib(PHASE_LABELS, d.phase)),
+      champ('Statut', lib(DECISION_STATUT_LABELS, d.statut)),
       champ('Enregistrée', d.enregistree ? `oui, le ${date(d.date_enregistrement)}` : 'non'),
       champ('Publication', date(d.date_publication)),
       champ('Date limite de réponse', d.enregistree ? null : date(d.date_limite_reponse)),
