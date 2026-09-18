@@ -1,7 +1,7 @@
 # État courant / point de reprise — Registre CS Rives
 
 > Dernière session : **2026-09-18** — **export Markdown de toute la base** (`scripts/export_md.mjs`),
-> puis **statut « PV envoyé » et clôture de plein droit** (migration 055, ⚠ **NON APPLIQUÉE**).
+> puis **statut « PV envoyé » et clôture de plein droit** (migration 055, appliquée et déployée).
 > Avant, le **2026-09-16** : **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
 > Dénominateurs : **simple** → présents/représentés ; **absolue, double qualifiée et unanimité**
@@ -44,9 +44,9 @@ du budget demandé à l'AG et du backlog ci-dessous.
 
 ## Session 2026-09-18 (suite) — Statut « PV envoyé » et clôture de plein droit (migration 055)
 
-> ⚠ **MIGRATION 055 ÉCRITE, NON APPLIQUÉE.** Le code en dépend (nouveau statut dans la contrainte,
-> `date_envoi_pv`, `contestation_le`, `contestation_objet`, paramètre `delai_contestation_mois`) :
-> **ne pas pousser avant de l'avoir passée** — un update d'AG serait rejeté.
+> **MIGRATION 055 APPLIQUÉE EN PRODUCTION le 2026-09-18**, code déployé (`75df5b4`).
+> Vérification : `delai_mois` = **12**, **1 AG** en base, **0** au statut « PV envoyé »,
+> **0 incohérente** (aucune AG avec le statut sans date d'envoi — l'état que la contrainte interdit).
 
 - **Demande de Pascal** : « il manque un statut à une AG : le statut PV envoyé, avec la date d'envoi
   officielle, avant la clôture automatique s'il n'y a pas eu de contestation dans les 12 mois après
