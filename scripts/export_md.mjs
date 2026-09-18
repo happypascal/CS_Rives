@@ -214,6 +214,39 @@ function statutProjet(projet, decisions) {
   return naturel // « reprendre » rend la main au statut naturel.
 }
 
+// ⚠ « INJOIGNABLE » SE CALCULE COMME DANS L'APP, pas à l'estime.
+//
+// Copie de `contactIncomplet` / `destinataires` (src/lib/proprietaireLogic.js).
+// MODIFIER L'UN OBLIGE À MODIFIER L'AUTRE.
+//
+// La première version de ce contrôle ne regardait que l'e-mail, l'adresse et le
+// mandataire du propriétaire. Elle a donc déclaré injoignables DOUZE sociétés
+// dont on a pourtant le dirigeant — c'est lui qu'on convoque pour une SCI, et
+// c'est ce que `contacts_officiels` sert à désigner. Douze fausses alertes sur
+// treize : un outil de vérification qui crie à tort n'est pas lu deux fois.
+//
+// La règle vraie : on ne retient QUE les sources cochées (le propriétaire par
+// défaut), et une source cochée mais vide n'est pas un destinataire. Aucune
+// retombée sur une source non cochée — désigner le mandataire puis afficher
+// l'adresse du propriétaire ferait croire à un envoi possible.
+const SOURCES_CONTACT = {
+  proprietaire: (p) => [{ email: p.email, telephone: p.telephone }],
+  proprietaire_2: (p) => [{ email: p.email_2, telephone: p.telephone_2 }],
+  dirigeant: (p) => [
+    { email: p.dirigeant_email, telephone: p.dirigeant_telephone },
+    { email: p.dirigeant_email_2, telephone: p.dirigeant_telephone_2 },
+  ],
+  mandataire: (p) => [{ email: p.mandataire_email, telephone: p.mandataire_telephone }],
+}
+
+function destinatairesDe(p) {
+  const brut = Array.isArray(p?.contacts_officiels)
+    ? p.contacts_officiels.filter((c) => SOURCES_CONTACT[c])
+    : []
+  const sources = brut.length ? brut : ['proprietaire']
+  return sources.flatMap((s) => SOURCES_CONTACT[s](p).filter((d) => d.email || d.telephone))
+}
+
 // ---------------------------------------------------------------- formatage
 const eur = (v) =>
   v === null || v === undefined || v === '' ? null : `${Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
@@ -545,8 +578,13 @@ async function main() {
     if (!parCle(db.proprietaires, 'lot_id', l.id).some((p) => !p.date_cession)) alertes.push(`Parcelle **${l.numero}** : aucun propriétaire actuel.`)
   }
   for (const p of db.proprietaires || []) {
-    if (!p.date_cession && vide(p.email) && vide(p.adresse) && vide(p.mandataire_email)) {
-      alertes.push(`Propriétaire **${p.nom}** : ni e-mail, ni adresse, ni mandataire — injoignable pour une convocation.`)
+    // Propriétaire ACTUEL seulement : un ancien n'a plus à être convoqué.
+    if (p.date_cession) continue
+    if (!destinatairesDe(p).length) {
+      const cochees = Array.isArray(p.contacts_officiels) && p.contacts_officiels.length
+        ? p.contacts_officiels.join(', ')
+        : 'propriétaire (par défaut)'
+      alertes.push(`Propriétaire **${p.nom}** : aucun destinataire joignable — injoignable pour une convocation. Sources désignées : ${cochees}.`)
     }
   }
   for (const ag of db.assemblees_generales || []) {
@@ -573,7 +611,7 @@ async function main() {
   for (const t of tables) for (const row of db[t]) {
     if (Array.isArray(row.documents)) for (const d of row.documents) if (d.path) cites.add(d.path)
   }
-  const orphelins = [...fichiers].filter((f) => !cites.has(f))
+  const orphelins = [...fichiers].filter((f) => !cites.has(f) && !f.endsWith('.emptyFolderPlaceholder'))
   if (orphelins.length) alertes.push(`${orphelins.length} fichier(s) dans le Storage ne sont cités par aucune ligne : ${orphelins.slice(0, 10).join(', ')}${orphelins.length > 10 ? '…' : ''}`)
 
   if (!alertes.length) W('_Rien à signaler : aucun manque détecté par les contrôles ci-dessus._')
