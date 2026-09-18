@@ -31,10 +31,14 @@
 // par `restore.mjs`. Celui-là écrit un texte pour être LU : il omet, il résume, il
 // interprète. Ne jamais restaurer depuis ce Markdown.
 //
-// Usage (jamais committer la clé — service_role contourne la RLS) :
-//   SUPABASE_URL="https://<ref>.supabase.co" \
-//   SUPABASE_SERVICE_ROLE_KEY="<clé service_role>" \
-//   node scripts/export_md.mjs
+// Usage : créer UNE FOIS un fichier `.env.export` à la racine (git-ignoré) —
+//
+//   SUPABASE_URL=https://<ref>.supabase.co
+//   SUPABASE_SERVICE_ROLE_KEY=<clé service_role>
+//
+// puis, à chaque export :   node scripts/export_md.mjs
+//
+// Les variables d'environnement restent acceptées et prioritaires.
 //
 // Options :
 //   --tout        n'écrête aucun journal technique (audit_log complet)
@@ -43,15 +47,56 @@
 // Sortie : export/registre-<horodatage>.md (dossier git-ignoré).
 
 import { createClient } from '@supabase/supabase-js'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import process from 'node:process'
 
-const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+// ⚠ LA CLÉ SE LIT DANS UN FICHIER, PAS SUR LA LIGNE DE COMMANDE.
+//
+// La première version n'acceptait que des variables d'environnement, donc une
+// ligne de commande d'environ 200 caractères contenant un secret. Deux défauts
+// constatés à l'usage (2026-09-18) : un caractère invisible collé depuis une
+// conversation (U+2028) a suffi à la casser avec un message incompréhensible
+// (« no such file or directory »), et un secret tapé dans un terminal finit dans
+// l'historique du shell.
+//
+// `.env.export` est couvert par la règle `.env.*` du .gitignore. On le crée une
+// fois, on relance ensuite avec `node scripts/export_md.mjs` tout court.
+//
+// Les variables d'environnement restent prioritaires : elles servent si un jour
+// ce script tourne ailleurs qu'à la main.
+async function lireEnvFichier() {
+  try {
+    const texte = await readFile('.env.export', 'utf8')
+    const out = {}
+    for (const ligne of texte.split('\n')) {
+      // Tolérant à dessein : espaces, guillemets, BOM et caractères de séparation
+      // Unicode invisibles — c'est précisément ce qui a cassé la ligne de commande.
+      const propre = ligne.replace(/[\u2028\u2029\uFEFF\u00A0\u200B]/g, '').trim()
+      if (!propre || propre.startsWith('#')) continue
+      const i = propre.indexOf('=')
+      if (i < 1) continue
+      out[propre.slice(0, i).trim()] = propre.slice(i + 1).trim().replace(/^["']|["']$/g, '')
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+const fichier = await lireEnvFichier()
+const url = (process.env.SUPABASE_URL || fichier.SUPABASE_URL || '').trim()
+const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || fichier.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 if (!url || !key) {
-  console.error('❌ Manque SUPABASE_URL et/ou SUPABASE_SERVICE_ROLE_KEY dans l’environnement.')
+  console.error('❌ Clé Supabase introuvable.')
+  console.error('')
+  console.error('   Créez un fichier .env.export à la racine du projet, avec ces deux lignes :')
+  console.error('')
+  console.error('     SUPABASE_URL=https://aitqnonioyhurbystfnk.supabase.co')
+  console.error('     SUPABASE_SERVICE_ROLE_KEY=<votre clé service_role>')
+  console.error('')
   console.error('   La clé est dans : Supabase → Settings → API → service_role (secret).')
+  console.error('   Ce fichier est git-ignoré : il ne partira jamais sur GitHub.')
   process.exit(1)
 }
 
