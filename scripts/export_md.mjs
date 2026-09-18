@@ -254,6 +254,36 @@ const m2 = (v) => (v === null || v === undefined || v === '' ? null : `${Number(
 const date = (v) => (v ? String(v).slice(0, 10).split('-').reverse().join('/') : null)
 const vide = (v) => v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)
 
+// ⚠ LE TEXTE RICHE EST DU HTML, ET IL LE RESTE EN BASE.
+//
+// `RichTextEditor` (contentEditable) stocke des balises : descriptions de
+// décisions, synthèses de sujets, entrées de chronologie. Rendues telles quelles,
+// elles donnent des lignes comme
+//   « <font color="oklch(0.446 0.043 257.281)">participation — 42 colotis</font> »
+// où le code couleur pèse plus que l'information. Pour un fichier fait pour être
+// RELU, c'est du bruit qui masque le fond.
+//
+// On convertit en texte : les sauts de ligne HTML deviennent « · » plutôt que de
+// vrais retours, qui casseraient la puce Markdown au milieu d'une phrase.
+// ⚠ On ne « nettoie » rien d'autre : le texte lui-même n'est jamais réécrit.
+function texte(v) {
+  if (v === null || v === undefined) return v
+  return String(v)
+    .replace(/<\s*br\s*\/?>/gi, ' · ')
+    .replace(/<\/\s*(div|p|li)\s*>/gi, ' · ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '’')
+    .replace(/\s*·\s*(·\s*)+/g, ' · ')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s*·\s*|\s*·\s*$/g, '')
+    .trim()
+}
+
 // Une ligne « **clé** : valeur », omise si la valeur est vide.
 function champ(cle, valeur) {
   return vide(valeur) ? null : `- **${cle}** : ${valeur}`
@@ -460,12 +490,12 @@ async function main() {
       W(champs([
         champ('Statut', lib(RESOLUTION_STATUT_LABELS, r.statut)),
         champ('Majorité requise', lib(MAJORITE_LABELS, r.majorite_requise)),
-        champ('Description', r.description),
+        champ('Description', texte(r.description)),
         champ('Budget alloué', eur(r.budget_alloue)),
         champ('Intitulé du budget', r.budget_intitule),
         champ('Projet financé', nomProjet(r.projet_id)),
         champ('Détail du vote', votes),
-        champ('Observations', r.observations),
+        champ('Observations', texte(r.observations)),
         piecesJointes(r.documents, fichiers),
       ]))
       W('')
@@ -483,7 +513,7 @@ async function main() {
       .map((r) => `${nomAG(r.ag_id)} n° ${r.sous_numero ? `${r.numero}-${r.sous_numero}` : r.numero} (${eur(r.budget_alloue)}, ${r.statut})`)
     W(champs([
       champ('Statut', `${lib(PROJET_STATUT_LABELS, statutProjet(p, db.decisions || []))} _(dérivé, jamais stocké)_`),
-      champ('Description', p.description),
+      champ('Description', texte(p.description)),
       champ('Chef de projet', nomMembre(p.chef_projet_id)),
       champ('Adjoint', nomMembre(p.adjoint_projet_id)),
       champ('Ouverture', date(p.date_ouverture)),
@@ -497,7 +527,7 @@ async function main() {
       W('')
       W(`#### Journal de bord (${journal.length})`)
       for (const j of journal) {
-        W(`- **${date(j.date_action)}** — ${j.texte} _(${nomMembre(j.auteur_id)})_`)
+        W(`- **${date(j.date_action)}** — ${texte(j.texte)} _(${nomMembre(j.auteur_id)})_`)
         const pj = piecesJointes(j.documents, fichiers)
         if (pj) W(pj.split('\n').slice(1).join('\n'))
       }
@@ -507,7 +537,7 @@ async function main() {
       W('')
       W(`#### Échanges (${qa.length})`)
       for (const q of qa.sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-        W(`- [${q.type}] ${q.texte} _(${nomMembre(q.auteur_id)}, ${date(q.created_at)})_`)
+        W(`- [${q.type}] ${texte(q.texte)} _(${nomMembre(q.auteur_id)}, ${date(q.created_at)})_`)
       }
     }
     W('')
@@ -529,7 +559,7 @@ async function main() {
       champ('Enregistrée', d.enregistree ? `oui, le ${date(d.date_enregistrement)}` : 'non'),
       champ('Publication', date(d.date_publication)),
       champ('Date limite de réponse', d.enregistree ? null : date(d.date_limite_reponse)),
-      champ('Description', d.description),
+      champ('Description', texte(d.description)),
       champ('Montant engagé', eur(d.montant_engage)),
       champ('TVA', d.tva_taux ? `${d.tva_taux} %${d.tva_incluse ? ' (incluse)' : ''}` : null),
       champ('Projet', nomProjet(d.projet_id)),
@@ -538,7 +568,7 @@ async function main() {
       champ('Auteur', nomMembre(d.created_by)),
       champ('Quorum atteint', d.quorum_atteint === null ? null : d.quorum_atteint ? 'oui' : 'non'),
       champ('Visibilité', d.visibilite),
-      champ('Motif d’annulation', d.motif_annulation),
+      champ('Motif d’annulation', texte(d.motif_annulation)),
       champ('Votes', detailVotes),
       piecesJointes(d.documents, fichiers),
     ]))
@@ -546,7 +576,7 @@ async function main() {
     if (qa.length) {
       W(`- **Questions / réponses** (${qa.length}) :`)
       for (const q of qa.sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-        W(`  - [${q.type}] ${q.texte} _(${nomMembre(q.auteur_id)}, ${date(q.created_at)})_`)
+        W(`  - [${q.type}] ${texte(q.texte)} _(${nomMembre(q.auteur_id)}, ${date(q.created_at)})_`)
       }
     }
     W('')
@@ -559,8 +589,8 @@ async function main() {
     for (const s of db.sujets.sort((a, b) => a.titre.localeCompare(b.titre))) {
       W(`### ${s.titre}${s.categorie ? ` _(${s.categorie})_` : ''}`)
       W(champs([
-        champ('Résumé', s.resume),
-        champ('Synthèse', s.contenu),
+        champ('Résumé', texte(s.resume)),
+        champ('Synthèse', texte(s.contenu)),
         piecesJointes(s.documents, fichiers),
       ]))
       const entrees = parCle(db.sujet_entrees, 'sujet_id', s.id)
@@ -569,7 +599,7 @@ async function main() {
         W('')
         W(`#### Chronologie (${entrees.length})`)
         for (const e of entrees) {
-          W(`- **${date(e.date_evenement)}** — ${[e.titre, e.contenu].filter(Boolean).join(' : ')} _(${nomMembre(e.auteur_id)})_`)
+          W(`- **${date(e.date_evenement)}** — ${[texte(e.titre), texte(e.contenu)].filter(Boolean).join(' : ')} _(${nomMembre(e.auteur_id)})_`)
           const pj = piecesJointes(e.documents, fichiers)
           if (pj) W(pj.split('\n').slice(1).join('\n'))
         }
