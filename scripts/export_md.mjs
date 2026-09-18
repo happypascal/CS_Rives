@@ -48,8 +48,17 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+
+// ⚠ TOUS LES CHEMINS SONT ANCRÉS À LA RACINE DU PROJET, jamais au répertoire
+// courant. Lancé depuis le dossier parent, le script échouait sur un
+// « Cannot find module » (2026-09-18) ; lancé depuis un sous-dossier, il aurait
+// fait pire — chercher `.env.export` au mauvais endroit et écrire l'export
+// ailleurs, sans rien dire. Un outil qu'on lance à la main deux fois par mois ne
+// doit pas dépendre de l'endroit d'où on l'appelle.
+const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // ⚠ LA CLÉ SE LIT DANS UN FICHIER, PAS SUR LA LIGNE DE COMMANDE.
 //
@@ -67,7 +76,7 @@ import process from 'node:process'
 // ce script tourne ailleurs qu'à la main.
 async function lireEnvFichier() {
   try {
-    const texte = await readFile('.env.export', 'utf8')
+    const texte = await readFile(join(RACINE, '.env.export'), 'utf8')
     const out = {}
     for (const ligne of texte.split('\n')) {
       // Tolérant à dessein : espaces, guillemets, BOM et caractères de séparation
@@ -547,8 +556,8 @@ async function main() {
   }
 
   const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-')
-  await mkdir('export', { recursive: true })
-  const chemin = join('export', `registre-${stamp}${SANS_PERSO ? '-sans-perso' : ''}.md`)
+  await mkdir(join(RACINE, 'export'), { recursive: true })
+  const chemin = join(RACINE, 'export', `registre-${stamp}${SANS_PERSO ? '-sans-perso' : ''}.md`)
   await writeFile(chemin, out.join('\n'))
 
   console.log(`✅ ${chemin}`)
