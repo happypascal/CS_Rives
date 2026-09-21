@@ -843,6 +843,14 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     existe toujours au moment de l'envoi, l'entrée pas encore. **Aucune policy de Storage à
     ajouter** — vérifié : `documents_insert_membre` ouvre à tout membre actif,
     `documents_brouillon_prive` ne vise que le préfixe `decisions`.
+  - **REPRENDRE UNE PIÈCE DÉJÀ DANS LE DOSSIER** (`disponibles` de `PiecesJointes`, 2026-09-21).
+    ⚠ Question de Pascal : « comment je fais pour sélectionner un document déjà en base ? ». On ne
+    pouvait pas — le composant n'avait qu'un envoi de fichier, donc mettre le même document sur deux
+    entrées obligeait à le **retéléverser**, créant deux objets identiques dans le bucket.
+    Le sélecteur ajoute une **nouvelle référence au MÊME `path`** (id neuf) : le fichier n'existe
+    qu'une fois, il est cité deux fois. ⚠ Retirer l'une ne touche pas l'autre — « Retirer » n'efface
+    jamais l'objet du Storage, et c'est ce qui rend le partage sûr.
+    ⚠ Dédoublonné sur le **chemin**, pas le nom : deux noms identiques peuvent désigner deux fichiers.
   - **CE QUI RESTE À COMPLÉTER** (`elementsACompleter`, écran Mémoire, 2026-09-21) : un bandeau
     compte les manques, un bouton les déplie, chacun avec **la phrase qui dit ce qui manque**.
     ⚠ Né de l'import du 2026-09-21, qui a introduit 13 entrées sans date connue : **une chronologie

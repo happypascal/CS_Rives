@@ -603,6 +603,18 @@ export const MENUS = [
       'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
     actions: [
       {
+        titre: 'Mettre la même pièce sur deux entrées',
+        pourQui: TOUS,
+        resume: 'Sans la téléverser deux fois.',
+        etapes: [
+          'Ouvrez l’entrée à compléter (« Corriger »), ou créez-en une nouvelle.',
+          'Sous « Pièces jointes », cliquez sur « Reprendre une pièce du dossier ».',
+          'Choisissez le document dans la liste : ce sont les pièces déjà présentes ailleurs dans ce sujet.',
+        ],
+        alerte:
+          'Aucun fichier n’est recopié : le même document est simplement cité à deux endroits. Le retirer d’une entrée ne l’enlève pas de l’autre. Le bouton n’apparaît que s’il y a quelque chose à reprendre.',
+      },
+      {
         titre: 'Voir ce qui reste à compléter',
         pourQui: TOUS,
         resume: 'Les dates manquantes, les résumés et les synthèses à écrire.',

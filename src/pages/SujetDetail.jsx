@@ -171,6 +171,29 @@ export default function SujetDetail() {
 
   // de période ni d'ancienneté.
 
+  // ⚠ TOUTES LES PIÈCES DU DOSSIER — celles du sujet ET de ses entrées.
+
+  // Sert au sélecteur « reprendre une pièce » : sans lui, mettre un même
+
+  // document sur deux entrées obligeait à le retéléverser depuis le disque,
+
+  // ce qui créait deux objets identiques dans le bucket.
+
+  // Dédoublonné sur le CHEMIN, qui identifie l'objet — deux noms identiques
+
+  // peuvent désigner deux fichiers différents.
+
+  const piecesDuDossier = Object.values(Object.fromEntries(
+
+    [...(sujet?.documents || []), ...entrees.flatMap((e) => e.documents || [])]
+
+      .filter((d) => d?.path)
+
+      .map((d) => [d.path, d]),
+
+  ))
+
+
   const datees = entrees.filter((e) => !estDateInconnue(e.date_evenement))
 
   const sansDate = entrees.filter((e) => estDateInconnue(e.date_evenement))
@@ -253,6 +276,7 @@ export default function SujetDetail() {
                   entityId={id}
                   documents={form.documents || []}
                   onChange={(documents) => setForm((f) => ({ ...f, documents }))}
+                  disponibles={piecesDuDossier}
                   label="Pièces jointes du sujet"
                 />
                 <div className="flex justify-end gap-2">
@@ -332,6 +356,7 @@ export default function SujetDetail() {
                   entityId={id}
                   documents={nouvelle.documents || []}
                   onChange={(documents) => setNouvelle((n) => ({ ...n, documents }))}
+                  disponibles={piecesDuDossier}
                   label="Joindre le courrier, le devis, la photo"
                 />
                 <div className="flex justify-end gap-2">
@@ -378,6 +403,7 @@ export default function SujetDetail() {
                           entityId={id}
                           documents={editee.documents || []}
                           onChange={(documents) => setEditee((x) => ({ ...x, documents }))}
+                          disponibles={piecesDuDossier}
                         />
                         <div className="flex justify-end gap-2">
                           <Button variant="secondary" onClick={() => setEditee(null)}>Annuler</Button>
