@@ -121,7 +121,10 @@ export const SUJETS = [
       { date: D, titre: 'Lettre du maire sur le réseau EP', contenu: '⚠ Date à renseigner.' },
     ],
     // Le dossier EP est parcouru en entier par le script (voir DOSSIERS_PIECES).
-    pieces: ['4_ASL/Questions pour le maitre d’oeuvre.pdf'],
+    // ⚠ Apostrophe DROITE (U+0027) : c'est celle du nom de fichier sur le disque.
+    // Le brief employait l'apostrophe typographique, et le fichier était introuvable.
+    // Dans un chemin, la typographie n'est pas une préférence de style.
+    pieces: ["4_ASL/Questions pour le maitre d'oeuvre.pdf"],
     dossiers: ['2_Réseau EP'],
   },
 
