@@ -11,7 +11,12 @@
 > `export/brief_urbanisme_et_corrections_2026-09-21_2026-09-21T11-0*.md`). Ne rejoue que la mise à jour
 > PLUi-HM : remplace le contenu du sujet « Urbanisme et servitudes » par la section 1.2, corrige le
 > contenu de l'entrée du 22 avril 2013, ajoute l'entrée du 16 décembre 2025 avec ses pièces
-> et déplace sur elle la pièce `PLU/code civil art 671.png` si elle est ailleurs. Rien d'autre.
+> et déplace sur elle la pièce `PLU/code civil art 671.png` si elle est ailleurs.
+> Deux corrections en plus : dans l'entrée du 10 février 1956 (Urbanisme et servitudes), remplace
+> « E4 à E8 » par « E1 à E8 » (l'additif crée les lots E1 à E8, erreur de lecture de ma part) ; l'entrée
+> « Modifications parcellaires Luscher / Van Den Berg » du 21 février 1961 EST l'arrêté préfectoral
+> n° 5835-61 (vérifié sur la pièce) : renomme-la « Arrêté préfectoral n° 5835-61 — modification
+> parcellaire (lots E, Luscher / Van Den Berg) », ne crée pas de doublon. Rien d'autre.
 
 ---
 
@@ -95,7 +100,7 @@ Le plan porte aussi un emplacement réservé n° 534 sur la route de Messery, au
 | date_evenement | titre | contenu | pièce |
 |---|---|---|---|
 | 1955-08-22 | Arrêté préfectoral n° 3164-55 autorisant le lotissement de Rives | 43 lots sur environ 10 ha, section B n° 122, 123, 129 et 130, au lieu-dit Rives. Le cahier des charges, déposé chez Me André Naz le 5 septembre 1955, fixe les servitudes de destination, de non aedificandi, de clôture et de plantation, et l'usage privé de la voie. | `4_ASL/3-cahier des charges/1955 août-cahier des charges.pdf` |
-| 1956-02-10 | Arrêté préfectoral — extension et premier additif | Extension au lieu-dit Champ Catin, lots A14 à A16 et E4 à E8. L'additif remplace l'article 15 sur les plantations, institue une aisance de 3 m de part et d'autre des collecteurs d'eau et d'égout, et crée la plage commune le long de la limite ouest. Acte de dépôt chez Me Naz le 26 mars 1956, transcrit le 8 mai 1956, volume 612 n° 55. | fichier de l'annexe I de 1956 dans `4_ASL/3-cahier des charges/` (nom réel : `1956 février-Annexe I (plage).pdf`) |
+| 1956-02-10 | Arrêté préfectoral — extension et premier additif | Extension au lieu-dit Champ Catin, lots A14 à A16 et E1 à E8. L'additif remplace l'article 15 sur les plantations, institue une aisance de 3 m de part et d'autre des collecteurs d'eau et d'égout, et crée la plage commune le long de la limite ouest. Acte de dépôt chez Me Naz le 26 mars 1956, transcrit le 8 mai 1956, volume 612 n° 55. | fichier de l'annexe I de 1956 dans `4_ASL/3-cahier des charges/` (nom réel : `1956 février-Annexe I (plage).pdf`) |
 | 1961-02-21 | Arrêté préfectoral — modification du plan parcellaire | Modification du plan parcellaire du lotissement, visée par l'arrêté du 5 mai 1961. | — |
 | 1961-05-05 | Arrêté préfectoral — cession de la plage communale et droit de passage | À la demande du maire de Nernier, l'article 5 de l'arrêté de 1955 est remplacé : le lotisseur cède gratuitement à la commune une partie du lot n° 13 — un carré de 20 m sur 20 m au bord du lac et un couloir d'accès de 3 m côté levant —, à condition qu'elle serve exclusivement de plage aux acquéreurs du lotissement comme aux habitants de Nernier. Le lotisseur et ses acquéreurs doivent consentir aux usagers de cette plage un droit de passage sur la partie de la voie reliant le lot n° 13 à la route de Messery. Arrêté publié au bureau des hypothèques. | `4_ASL/2-documents mairie/cession de la plage.pdf` |
 | 1999-09-09 | Lettre du maire au sous-préfet sur le recours de Mme de Leusse | Mme de Leusse a formé un recours gracieux contre l'arrêté du 5 mai 1961. Le maire rapporte que les acquéreurs préfèrent entretenir leurs routes pour conserver au lotissement son caractère privé, et refuse d'abandonner la propriété du chemin d'accès à la plage contre un simple droit de passage. Lettre postérieure au 11 juillet 1961. ⚠ Date exacte à renseigner ; suite donnée au recours inconnue. | `4_ASL/2-documents mairie/1961 - Décision des colotis de garder les allées privées.pdf` |

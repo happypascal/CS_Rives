@@ -113,6 +113,29 @@ export const ENTREES_MAJ_2 = [
   },
 ]
 
+// ============================================================================
+// Révision du brief, 3e passage — deux corrections nommément demandées.
+// ============================================================================
+export const ENTREES_MAJ_3 = [
+  {
+    // « l'additif crée les lots E1 à E8, erreur de lecture de ma part » (brief).
+    sujet: 'Urbanisme et servitudes',
+    titreActuel: 'Arrêté préfectoral n° 7955-56 — extension et premier additif',
+    contenu: 'Extension au lieu-dit Champ Catin, lots A14 à A16 et E1 à E8. L’additif remplace l’article 15 sur les plantations, institue une aisance de 3 m de part et d’autre des collecteurs d’eau et d’égout, et crée la plage commune le long de la limite ouest. Acte de dépôt chez Me Naz le 26 mars 1956, transcrit le 8 mai 1956, volume 612 n° 55.',
+  },
+  {
+    // ⚠ CECI CLÔT LE CONFLIT N° 3 du passage précédent. Je refusais de créer une
+    // seconde entrée au 21 février 1961 tant qu'on ignorait si c'était le même
+    // acte que celle de Pascal. Le brief l'a vérifié SUR LA PIÈCE : c'est bien
+    // l'arrêté n° 5835-61. On renomme donc l'existante — aucun doublon.
+    sujet: 'Urbanisme et servitudes',
+    titreActuel: 'Modifications parcellaires Luscher / Van Den Berg',
+    titre: 'Arrêté préfectoral n° 5835-61 — modification parcellaire (lots E, Luscher / Van Den Berg)',
+    // Le contenu était vide (« <br> ») : on le renseigne, on n'écrase rien.
+    contenu: 'Modification du plan parcellaire du lotissement, visée par l’arrêté du 5 mai 1961.',
+  },
+]
+
 export const ENTREES_NOUVELLES = [
   {
     sujet: 'Urbanisme et servitudes',
@@ -205,12 +228,16 @@ export const CONFLITS = [
     fait: 'NON CRÉÉE — elle aurait fait deux fois le même acte dans deux dossiers, sans que rien ne le signale.',
     aTrancher: 'Faut-il la dupliquer volontairement dans Urbanisme, ou le renvoi depuis la synthèse suffit-il ?',
   },
+  // ⚠ Le troisième conflit est CLOS : le brief a vérifié sur la pièce qu'il
+  // s'agit du même acte. L'entrée existante est renommée (ENTREES_MAJ_3), aucun
+  // doublon n'a été créé. Conservé ici pour mémoire de la façon dont il s'est
+  // résolu — par une vérification, pas par un arbitrage.
   {
-    quoi: 'Entrée « Arrêté préfectoral n° 5835-61 » au 21 février 1961 (brief §1.3)',
-    brief: 'La créer dans « Urbanisme et servitudes ».',
-    base: 'Une entrée existe déjà à cette date exacte : « Modifications parcellaires Luscher / Van Den Berg ».',
-    fait: 'NON CRÉÉE — même date, même objet probable, sous deux titres.',
-    aTrancher: 'S’agit-il du même acte ? Si oui, renommer l’entrée existante ; sinon, je crée la seconde.',
+    quoi: 'Numéro de l’arrêté de 1955 — ÉCART NON RÉSOLU',
+    brief: 'La révision du 21 septembre écrit « n° 3164-55 ».',
+    base: 'Le registre porte « n° 5184-55 », d’après la première version du même brief.',
+    fait: 'RIEN CHANGÉ. Le numéro a été modifié en silence entre deux révisions, sans figurer dans les consignes. J’ai cherché à trancher sur les actes : le PDF est un scan sans couche texte, et le .docx du dépôt notarié ne cite que la DATE (22 août 1955), sans numéro.',
+    aTrancher: 'Lequel est le bon ? Il est lisible sur le scan de l’arrêté lui-même. Un numéro d’arrêté faux dans un registre légal se recopie ensuite partout.',
   },
 ]
 
