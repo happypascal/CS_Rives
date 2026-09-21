@@ -26,16 +26,40 @@
 // Sortie : backup/<horodatage>/  (dossier git-ignoré).
 
 import { createClient } from '@supabase/supabase-js'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdir, writeFile, readFile } from 'node:fs/promises'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 // Import explicite plutôt que le global Node : oxlint (env navigateur) ne connaît
 // pas `process`, et un import en fait une liaison propre — pas de no-undef.
 import process from 'node:process'
 
-const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+// ⚠ REPLI SUR `.env.export`, comme export_md.mjs et import_memoire.mjs (ajouté le
+// 2026-09-21). La sauvegarde est le PRÉALABLE OBLIGATOIRE de l'import de la
+// mémoire : la rendre plus pénible à lancer que l'écriture qu'elle protège serait
+// exactement le mauvais dosage. Les variables d'environnement restent prioritaires.
+async function lireEnvFichier() {
+  try {
+    const racine = join(dirname(fileURLToPath(import.meta.url)), '..')
+    const texte = await readFile(join(racine, '.env.export'), 'utf8')
+    const out = {}
+    for (const ligne of texte.split('\n')) {
+      const propre = ligne.replace(/[\u2028\u2029\uFEFF\u00A0\u200B]/g, '').trim()
+      if (!propre || propre.startsWith('#')) continue
+      const i = propre.indexOf('=')
+      if (i < 1) continue
+      out[propre.slice(0, i).trim()] = propre.slice(i + 1).trim().replace(/^["']|["']$/g, '')
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+const fichierEnv = await lireEnvFichier()
+const url = (process.env.SUPABASE_URL || fichierEnv.SUPABASE_URL || '').trim()
+const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || fichierEnv.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 if (!url || !key) {
-  console.error('❌ Manque SUPABASE_URL et/ou SUPABASE_SERVICE_ROLE_KEY dans l’environnement.')
+  console.error('❌ Manque SUPABASE_URL et/ou SUPABASE_SERVICE_ROLE_KEY — dans l’environnement ou dans .env.export à la racine.')
   process.exit(1)
 }
 
