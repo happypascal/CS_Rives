@@ -906,6 +906,28 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     membre porte sur une limite prise pour une panne.
 - **Mobile** : `useIsMobile()` (<768px) → mobile = **consultation + vote seulement**. Création et
   gestion derrière `!isMobile` et `<DesktopOnly>`.
+  - ⚠ **LA GARDE ANTI-DÉBORDEMENT D'`index.css` CACHE LES PANNES QU'ELLE NE RÉPARE PAS**
+    (2026-09-21, signalé par Pascal sur la mémoire du lotissement). `overflow-x: hidden/clip` sur
+    `html`/`body`/`#root` empêche la page de défiler latéralement — donc **coupe** ce qui dépasse,
+    sans barre de défilement et **sans rien qui signale qu'il manque du texte**. Un écran amputé a
+    l'air normal : c'est le pire mode de panne pour un registre.
+  - **Cause unique des trois écrans coupés** (mémoire, tableau de bord, fiche projet) : un enfant
+    de grille garde `min-width: auto`, donc la piste est dimensionnée sur sa largeur de **contenu
+    minimal** (un nom de fichier, un montant, un badge insécable) — 476, 630 et 720 px dans une
+    colonne de 343. Réglé en un point : `:where(.grid) > * { min-width: 0 }` dans `index.css`.
+    ⚠ `:where()` annule la spécificité, donc un `min-w-*` explicite l'emporte toujours.
+  - **UN TABLEAU LARGE DEVIENT DES CARTES, il ne défile pas** (`isMobile ? cartes : table`) :
+    `RegistreCS`, `Membres`, `ProprietairesList`, puis `ProjetList`, `AGList` et
+    `BudgetsConsolidated` (2026-09-21). Le `.overflow-x-auto` **fonctionne** — mais rien n'indique
+    qu'il y a quelque chose à droite, et ce sont les colonnes de MONTANTS qui tombent : sur
+    Budgets, « Voté », « Projets », « Engagé direct » et « Restant » étaient tous hors cadre.
+  - ⚠ **Les montants `fr-FR` ne se coupent JAMAIS en deux lignes** : le séparateur de milliers est
+    une espace insécable. Un `text-2xl` déborde de sa carte en portrait (148 px pour 132) → `text-lg
+    sm:text-*` sur les chiffres des cartes de synthèse.
+  - **Comment vérifier** : le navigateur piloté fige son viewport ; charger l'app dans une
+    **iframe** de 390 px donne au document interne son vrai viewport (media queries et `matchMedia`
+    s'y résolvent). Mesurer l'amputation, et **ignorer ce qui a un ancêtre en `overflow-x: auto`** —
+    sinon tout le contenu d'un tableau qui défile remonte en faux positif.
 
 ---
 

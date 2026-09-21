@@ -35,6 +35,29 @@ export default function AGList() {
       />
       {ags.length === 0 ? (
         <EmptyState title="Aucune AG" hint="Créez la première assemblée générale." action={canManage && <Link to="/ag/nouvelle"><Button>Créer une AG</Button></Link>} />
+      ) : isMobile ? (
+        /* Mobile : une carte par assemblée. Le tableau tenait à 40 px près, et
+           c'est « Statut » qui tombait — la seule colonne qui n'est pas déjà dans
+           le numéro. Un état invisible vaut un état faux. */
+        <ul className="space-y-3">
+          {ags.map((ag) => (
+            <li key={ag.id}>
+              <Link
+                to={`/ag/${ag.id}`}
+                className="block rounded-lg border border-navy-100 bg-white p-4 shadow-sm active:bg-navy-50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-navy-800">{ag.numero}</p>
+                  <AGStatutBadge statut={effectiveAGStatut(ag)} />
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <Badge tone={ag.type === 'AGO' ? 'navy' : 'blue'}>{ag.type}</Badge>
+                  <span>{formatDate(ag.date_ag)}</span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

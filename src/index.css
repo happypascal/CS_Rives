@@ -45,6 +45,29 @@ body {
   overflow-x: clip;
 }
 
+/* ⚠ CE QUI PRÉCÈDE NE SUFFIT PAS — ET PIRE, ÇA CACHE LA PANNE.
+   Un enfant de grille garde `min-width: auto` : sa piste est dimensionnée sur sa
+   largeur de CONTENU MINIMAL, pas sur celle du conteneur. Un nom de fichier long
+   (« Chronologie_ASL_Rives_officielle_v4.pdf »), un montant ou un badge qui ne se
+   coupe pas suffit à faire une piste de 476 px dans une colonne de 343 : la carte
+   déborde, et la garde ci-dessus la COUPE au lieu de la faire défiler. Résultat en
+   portrait : du texte amputé à droite, sans barre de défilement, sans rien qui
+   signale qu'il manque quelque chose. Constaté le 2026-09-21 sur la mémoire du
+   lotissement (signalé par Pascal), le tableau de bord et la fiche projet — trois
+   écrans, une seule cause.
+
+   `min-width: 0` rend la main au conteneur : l'enfant se range dans sa colonne, et
+   ce qui est vraiment trop large (un tableau) défile dans son propre
+   `.overflow-x-auto`, comme prévu.
+
+   ⚠ `:where()` est délibéré : il annule la spécificité, donc un `min-w-*` posé
+   explicitement sur un élément l'emporte toujours. La règle ne vise QUE les
+   grilles — les enfants de flex ne sont pas touchés, ceux qui en ont besoin
+   portent déjà `min-w-0` (c'est l'idiome du dépôt, ex. `Layout.jsx`). */
+:where(.grid) > * {
+  min-width: 0;
+}
+
 /* Tailwind v4 remet les <button> à `cursor: default` (v3 mettait `pointer`).
    Conséquence visible : un <button> stylé en lien n'a pas la main au survol,
    alors qu'un <Link> (donc une <a>) l'a — deux actions côte à côte, deux

@@ -5,8 +5,34 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Spinner, EmptyState, eur } from '../components/ui'
 import { ProjetStatutBadge } from '../components/badges'
 import { budgetsToCSV, downloadCSV } from '../lib/csv'
+import { useIsMobile } from '../lib/useIsMobile'
+
+/**
+ * Les montants d'une ligne, en portrait.
+ *
+ * ⚠ UN SEUL composant pour les deux tableaux de l'écran. Les dupliquer ferait
+ * qu'une colonne ajoutée un jour n'existerait que d'un côté — même raison que
+ * `SectionMembres` rendu deux fois plutôt que deux tableaux copiés.
+ *
+ * Les libellés sont ceux des en-têtes du tableau, et les couleurs les mêmes :
+ * on doit reconnaître au téléphone ce qu'on a lu sur l'ordinateur.
+ */
+function Montants({ items }) {
+  return (
+    <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
+      {items.map((i) => (
+        <span key={i.label} className="text-slate-500">
+          {i.label} <span className={`font-medium ${i.ton || 'text-slate-700'}`}>{eur(i.valeur)}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+const tonRestant = (v) => (v < 0 ? 'text-red-700' : 'text-emerald-700')
 
 export default function BudgetsConsolidated() {
+  const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [envelopes, setEnvelopes] = useState([]) // résolutions AG (enveloppes votées)
   const [projets, setProjets] = useState([])
@@ -43,10 +69,10 @@ export default function BudgetsConsolidated() {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Voté en AG</p><p className="mt-1 text-xl font-semibold text-navy-800">{eur(totalVote)}</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Alloué aux projets</p><p className="mt-1 text-xl font-semibold text-navy-600">{eur(totalProjetsAlloue)}</p><p className="mt-0.5 text-xs text-slate-400">affecté, pas encore dépensé</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Engagé direct</p><p className="mt-1 text-xl font-semibold text-amber-700">{eur(totalEngageDirect)}</p><p className="mt-0.5 text-xs text-slate-400">décisions hors projet</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant disponible</p><p className="mt-1 text-xl font-semibold text-emerald-700">{eur(totalRestantDispo)}</p><p className="mt-0.5 text-xs text-slate-400">{totalRestantProjets > 0 ? `dont ${eur(totalRestantProjets)} sur les projets` : 'non affecté à un projet'}</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Voté en AG</p><p className="mt-1 text-lg font-semibold text-navy-800 sm:text-xl">{eur(totalVote)}</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Alloué aux projets</p><p className="mt-1 text-lg font-semibold text-navy-600 sm:text-xl">{eur(totalProjetsAlloue)}</p><p className="mt-0.5 text-xs text-slate-400">affecté, pas encore dépensé</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Engagé direct</p><p className="mt-1 text-lg font-semibold text-amber-700 sm:text-xl">{eur(totalEngageDirect)}</p><p className="mt-0.5 text-xs text-slate-400">décisions hors projet</p></Card>
+        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-slate-500">Restant disponible</p><p className="mt-1 text-lg font-semibold text-emerald-700 sm:text-xl">{eur(totalRestantDispo)}</p><p className="mt-0.5 text-xs text-slate-400">{totalRestantProjets > 0 ? `dont ${eur(totalRestantProjets)} sur les projets` : 'non affecté à un projet'}</p></Card>
       </div>
 
       {/* Enveloppes votées en AG */}
@@ -54,6 +80,28 @@ export default function BudgetsConsolidated() {
         <CardHeader title="Enveloppes votées en AG" subtitle="Par résolution : voté, part allouée aux projets, engagements directs, restant." />
         {envelopes.length === 0 ? (
           <div className="p-6"><EmptyState title="Aucune enveloppe" hint="Dote une résolution d’AG d’un budget." /></div>
+        ) : isMobile ? (
+          /* ⚠ Mobile : cartes, pas tableau. Les six colonnes faisaient 664 px dans
+             un écran de 390 — « Voté », « Projets », « Engagé direct » et
+             « Restant » tombaient hors du cadre, sans barre de défilement ni
+             aucun signe qu'il manquait quelque chose. Sur un écran qui n'existe
+             que pour montrer des montants, c'était tout le contenu qui manquait. */
+          <ul className="divide-y divide-navy-50">
+            {envelopes.map((b) => (
+              <li key={b.resolution_id} className="px-4 py-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-medium text-slate-700">{b.intitule}</p>
+                  <Link to={`/ag/${b.ag_id}`} className="shrink-0 text-xs text-slate-500 underline">{b.ag_numero}</Link>
+                </div>
+                <Montants items={[
+                  { label: 'Voté', valeur: b.alloue },
+                  { label: 'Projets', valeur: b.projets_alloue, ton: 'text-slate-600' },
+                  { label: 'Engagé direct', valeur: b.engage_direct, ton: 'text-amber-700' },
+                  { label: 'Restant', valeur: b.restant, ton: tonRestant(b.restant) },
+                ]} />
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -89,6 +137,23 @@ export default function BudgetsConsolidated() {
         <CardHeader title="Projets" subtitle="Budget par projet : alloué, engagé par les décisions, restant." actions={<Link to="/projets"><Button variant="ghost" size="sm">Tous les projets</Button></Link>} />
         {projets.length === 0 ? (
           <div className="p-6"><EmptyState title="Aucun projet" hint="Ouvre un projet depuis une résolution d’AG." /></div>
+        ) : isMobile ? (
+          <ul className="divide-y divide-navy-50">
+            {projets.map((p) => (
+              <li key={p.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <Link to={`/projets/${p.id}`} className="font-medium text-navy-700 underline">{p.nom}</Link>
+                  <ProjetStatutBadge statut={p.statut} />
+                </div>
+                {p.chef_nom && <p className="mt-0.5 text-xs text-slate-500">{p.chef_nom}</p>}
+                <Montants items={[
+                  { label: 'Alloué', valeur: p.alloue },
+                  { label: 'Engagé', valeur: p.engage, ton: 'text-amber-700' },
+                  { label: 'Restant', valeur: p.restant, ton: tonRestant(p.restant) },
+                ]} />
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -105,7 +105,11 @@ export default function Dashboard() {
         {stats.map((s) => (
           <Card key={s.label} className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{s.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-navy-800">{s.value}</p>
+            {/* ⚠ Plus petit en portrait : à 24 px, « 105 000,00 € » fait 148 px
+                dans une carte qui en offre 132, et débordait de son cadre. Le
+                séparateur de milliers de `fr-FR` est une espace INSÉCABLE — un
+                montant ne se coupe jamais en deux lignes, il déborde. */}
+            <p className="mt-1 text-lg font-semibold text-navy-800 sm:text-2xl">{s.value}</p>
             <p className="mt-0.5 text-xs text-slate-500">{s.sub}</p>
           </Card>
         ))}

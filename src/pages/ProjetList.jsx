@@ -39,6 +39,48 @@ export default function ProjetList() {
           hint="Crée un projet ; son budget viendra d’une résolution d’AG rattachée ensuite."
           action={canCreate && <Link to="/projets/nouveau"><Button>Créer un projet</Button></Link>}
         />
+      ) : isMobile ? (
+        /* Mobile : une carte par projet. Le tableau à 8 colonnes faisait 781 px
+           dans un écran de 390 : « Statut », « Alloué », « Engagé » et « Restant »
+           tombaient hors du cadre, et rien ne signalait qu'il fallait faire défiler
+           le tableau latéralement — soit exactement ce qu'on vient consulter.
+           Même hiérarchie que le tableau : le nom, puis l'équipe et les dates, puis
+           l'argent sur une ligne à trois montants. */
+        <ul className="space-y-3">
+          {projets.map((p) => (
+            <li key={p.id}>
+              <Link
+                to={`/projets/${p.id}`}
+                className="block rounded-lg border border-navy-100 bg-white p-4 shadow-sm active:bg-navy-50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-navy-800">{p.nom}</p>
+                  <ProjetStatutBadge statut={p.statut} />
+                </div>
+                {p.ags?.length > 0 && <p className="mt-0.5 text-xs text-slate-400">{p.ags.map((a) => a.numero).join(' · ')}</p>}
+                <p className="mt-1 text-xs text-slate-500">
+                  {p.chef_nom || 'Chef non désigné'}
+                  {p.adjoint_nom && ` · adjoint : ${p.adjoint_nom}`}
+                </p>
+                {/* ⚠ Pas de « du … au — » : une date de clôture vide est le cas
+                    NORMAL d'un projet en cours (cf. le commentaire du tableau),
+                    et un tiret en fin de phrase se lit comme une donnée manquante. */}
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {p.date_cloture
+                    ? `Du ${formatDate(p.date_ouverture)} au ${formatDate(p.date_cloture)}`
+                    : `Depuis le ${formatDate(p.date_ouverture)}`}
+                </p>
+                {/* Les trois montants tiennent sur une ligne et gardent leurs
+                    couleurs du tableau : le restant est ce qu'on vient vérifier. */}
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
+                  <span className="text-slate-500">Alloué <span className="font-medium text-slate-700">{eur(p.alloue)}</span></span>
+                  <span className="text-slate-500">Engagé <span className="font-medium text-amber-700">{eur(p.engage)}</span></span>
+                  <span className="text-slate-500">Restant <span className={`font-medium ${p.restant < 0 ? 'text-red-700' : 'text-emerald-700'}`}>{eur(p.restant)}</span></span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
