@@ -56,6 +56,8 @@ export default function Parametres() {
 
       <div className="mb-6"><ChangePassword /></div>
 
+      {isAdmin && <div className="mb-6"><ReglageGestionnaire membreId={user?.membre_id} /></div>}
+
       {isAdmin && <div className="mb-6"><ReglageLotissement membreId={user?.membre_id} /></div>}
 
       {canNotify && (
@@ -243,6 +245,96 @@ function ReglageLotissement({ membreId }) {
         {msg && <p className="text-sm text-emerald-700">{msg}</p>}
         {err && <p className="text-sm text-red-600">{err}</p>}
         <Button type="submit" disabled={busy || valeur === initial}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
+      </form>
+    </Card>
+  )
+}
+
+// ---------------------------------------------------------------- gestionnaire
+// COORDONNÉES DU SYNDIC, affichées en haut de la barre latérale sur tous les
+// écrans (demande de Pascal, 2026-09-21).
+//
+// ⚠ EN PARAMÈTRES ET NON EN DUR. Le gestionnaire change : la convention Foncia
+// court du 1er janvier au 31 décembre 2027, et un changement de syndic figure au
+// backlog. Un nom codé dans le source survivrait à la personne, et il faudrait
+// un déploiement pour corriger un numéro de téléphone.
+//
+// ⚠ Champs tous facultatifs : on affiche ce qui est renseigné et rien d'autre.
+// Une ligne « Téléphone : — » n'apprend rien ; une ligne absente se voit.
+function ReglageGestionnaire({ membreId }) {
+  const CHAMPS = [
+    { cle: 'gestionnaire_societe', label: 'Société', exemple: 'Foncia Lemanique' },
+    { cle: 'gestionnaire_nom', label: 'Nom du gestionnaire', exemple: 'Prénom Nom' },
+    { cle: 'gestionnaire_email', label: 'E-mail', exemple: 'prenom.nom@foncia.fr' },
+    { cle: 'gestionnaire_telephone', label: 'Téléphone', exemple: '+33 4 50 00 00 00' },
+  ]
+  const [form, setForm] = useState(null)
+  const [initial, setInitial] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    repo.getParametres()
+      .then((p) => {
+        const v = Object.fromEntries(CHAMPS.map((c) => [c.cle, p[c.cle] || '']))
+        setForm(v)
+        setInitial(v)
+      })
+      .catch(() => setErr('Paramètres illisibles.'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const modifie = form && initial && CHAMPS.some((c) => form[c.cle] !== initial[c.cle])
+
+  const save = async (e) => {
+    e.preventDefault()
+    setMsg(''); setErr('')
+    setBusy(true)
+    try {
+      // ⚠ Un appel par clé modifiée SEULEMENT : réécrire les quatre à chaque fois
+      // changerait `updated_at` de champs auxquels personne n'a touché, et
+      // l'historique dirait que le numéro a bougé alors que seul le nom a changé.
+      for (const c of CHAMPS) {
+        if (form[c.cle] !== initial[c.cle]) await repo.setParametre(c.cle, form[c.cle].trim(), membreId || null)
+      }
+      setInitial({ ...form })
+      setMsg('Enregistré. La barre latérale se met à jour au prochain chargement de l’application.')
+    } catch (e2) {
+      setErr(e2.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!form) return null
+
+  return (
+    <Card>
+      <CardHeader
+        title="Gestionnaire (syndic)"
+        subtitle="Affiché en haut de la barre de gauche, sur tous les écrans."
+      />
+      <form onSubmit={save} className="space-y-3 p-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {CHAMPS.map((c) => (
+            <Input
+              key={c.cle}
+              label={c.label}
+              value={form[c.cle]}
+              placeholder={c.exemple}
+              onChange={(e) => setForm((f) => ({ ...f, [c.cle]: e.target.value }))}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-slate-500">
+          Tous les champs sont facultatifs : seul ce qui est renseigné s’affiche. L’e-mail et le
+          téléphone deviennent des liens cliquables — un appel ou un message partent d’un clic,
+          depuis n’importe quel écran.
+        </p>
+        {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button type="submit" disabled={busy || !modifie}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
       </form>
     </Card>
   )

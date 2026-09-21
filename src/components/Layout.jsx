@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { repo } from '../lib/api'
 import { useAuth } from '../lib/AuthContext'
 import { BACKEND } from '../lib/config'
 import { ORG } from '../lib/config'
@@ -7,6 +8,17 @@ import ForcePasswordChange from '../pages/ForcePasswordChange'
 import { ROLE_LABELS } from '../lib/rolesLogic'
 import { useActivityNotifications } from '../lib/useActivityNotifications'
 import { useOuvertureAutomatique } from '../lib/useOuvertureAutomatique'
+
+// ⚠ COORDONNÉES DU GESTIONNAIRE, en haut de la barre (demande de Pascal,
+// 2026-09-21). Le syndic est l'interlocuteur qu'on cherche le plus souvent et
+// qu'on retrouve le moins vite : son nom vit dans un mail, sa ligne directe sur
+// un papier. Les mettre sous les yeux, sur chaque écran, c'est supprimer une
+// recherche qui revient toutes les semaines.
+//
+// ⚠ En PARAMÈTRES et non en dur : le gestionnaire change — la convention Foncia
+// court du 1er janvier au 31 décembre 2027, et un changement de syndic est au
+// backlog. Un nom codé dans le source survivrait à la personne.
+const CLES_GESTIONNAIRE = ['gestionnaire_societe', 'gestionnaire_nom', 'gestionnaire_email', 'gestionnaire_telephone']
 
 // Cœur de l'app, mis en avant et séparé du reste.
 const NAV_PRIMARY = [{ to: '/registre', label: 'Décisions CS' }]
@@ -69,6 +81,15 @@ export default function Layout() {
   const { user, isAdmin, isSecretaire, signOut } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  // Chargé une fois : le Layout est la coquille, il ne se remonte pas à chaque
+  // navigation. Échec silencieux — une barre latérale sans le gestionnaire
+  // reste utilisable, une barre qui plante ne l'est pas.
+  const [gestionnaire, setGestionnaire] = useState(null)
+  useEffect(() => {
+    repo.getParametres()
+      .then((p) => setGestionnaire(Object.fromEntries(CLES_GESTIONNAIRE.map((c) => [c, p[c] || '']))))
+      .catch(() => setGestionnaire(null))
+  }, [])
   // Notifications de bureau (président/secrétaire) : sondage 30 s des nouveaux
   // votes/questions tant que l'app est ouverte. Activation dans Paramètres.
   useActivityNotifications()
@@ -132,6 +153,44 @@ export default function Layout() {
             ☰
           </button>
         </div>
+        {/* Coordonnées du gestionnaire. Repliées avec le menu sur mobile, pour ne
+            pas manger l'écran quand la barre est fermée. */}
+        {gestionnaire && (gestionnaire.gestionnaire_nom || gestionnaire.gestionnaire_societe) && (
+          <div className={`${menuOpen ? 'block' : 'hidden'} mx-3 mb-3 rounded-md bg-navy-700/50 px-3 py-2 md:block`}>
+            <p className="text-[0.65rem] uppercase tracking-wide text-navy-400">Gestionnaire</p>
+            {gestionnaire.gestionnaire_nom && (
+              <p className="truncate text-sm font-medium text-white">{gestionnaire.gestionnaire_nom}</p>
+            )}
+            {gestionnaire.gestionnaire_societe && (
+              <p className="truncate text-xs text-navy-300">{gestionnaire.gestionnaire_societe}</p>
+            )}
+            {/* ⚠ De vrais liens `mailto:` et `tel:` : sur mobile, appeler le
+                syndic depuis la fiche est le geste le plus fréquent, et recopier
+                un numéro à la main est ce qu'on fait quand l'application ne le
+                fait pas pour nous. */}
+            {gestionnaire.gestionnaire_email && (
+              <a href={`mailto:${gestionnaire.gestionnaire_email}`} className="mt-1 block truncate text-xs text-navy-200 underline hover:text-white">
+                {gestionnaire.gestionnaire_email}
+              </a>
+            )}
+            {gestionnaire.gestionnaire_telephone && (
+              <a href={`tel:${gestionnaire.gestionnaire_telephone.replace(/[^+0-9]/g, '')}`} className="block truncate text-xs text-navy-200 underline hover:text-white">
+                {gestionnaire.gestionnaire_telephone}
+              </a>
+            )}
+          </div>
+        )}
+        {/* Rien de renseigné : on ne le dit qu'à celui qui peut le corriger. Un
+            membre ordinaire n'a pas à lire un rappel qui ne le concerne pas. */}
+        {gestionnaire && !gestionnaire.gestionnaire_nom && !gestionnaire.gestionnaire_societe && isAdmin && (
+          <NavLink
+            to="/parametres"
+            onClick={() => setMenuOpen(false)}
+            className={`${menuOpen ? 'block' : 'hidden'} mx-3 mb-3 rounded-md border border-dashed border-navy-600 px-3 py-2 text-xs text-navy-300 hover:text-white md:block`}
+          >
+            Gestionnaire — à renseigner
+          </NavLink>
+        )}
         <nav className={`${menuOpen ? 'block' : 'hidden'} px-3 pb-4 md:block`}>
           {NAV_PRIMARY.map((item) => (
             <NavLink

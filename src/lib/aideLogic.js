@@ -665,7 +665,9 @@ export const MENUS = [
     cle: 'parametres',
     menu: 'Paramètres',
     visiblePar: TOUS,
-    aQuoi: 'Votre compte et vos préférences.',
+    aQuoi: 'Votre compte, et les quelques réglages de l’application.',
+    noteAcces:
+      'Vous pouvez changer votre mot de passe. Les réglages de l’association — gestionnaire, total des m² — sont réservés au président : ils valent pour tout le monde et s’affichent sur tous les écrans.',
     actions: [
       {
         titre: 'Changer votre mot de passe',
@@ -675,6 +677,30 @@ export const MENUS = [
           'Saisissez le nouveau mot de passe et confirmez-le.',
           'À la première connexion, ce changement est obligatoire avant d’accéder au reste.',
         ],
+      },
+      {
+        titre: 'Renseigner le gestionnaire (syndic)',
+        pourQui: ['president'],
+        resume: 'Ses coordonnées s’affichent en haut de la barre de gauche, sur tous les écrans.',
+        etapes: [
+          'Ouvrez Paramètres, carte « Gestionnaire (syndic) ».',
+          'Les quatre champs sont facultatifs : société, nom, e-mail, téléphone. Seul ce qui est renseigné s’affiche.',
+          'Enregistrez. Le bloc apparaît aussitôt en haut de la barre de gauche, pour tous les membres.',
+          'L’e-mail et le téléphone y deviennent cliquables : un message ou un appel part d’un clic, depuis n’importe quel écran.',
+        ],
+        alerte:
+          'Tant que rien n’est renseigné, seul le président voit un bouton « à renseigner ». Les autres membres ne voient rien — mieux vaut un blanc qu’un bloc vide.',
+      },
+      {
+        titre: 'Corriger le total des m² du lotissement',
+        pourQui: ['president'],
+        resume: 'L’assiette des voix en assemblée. À ne changer qu’avec une pièce à l’appui.',
+        etapes: [
+          'Ouvrez Paramètres, carte « Lotissement ».',
+          'Saisissez le total des superficies et enregistrez.',
+        ],
+        alerte:
+          'Ce total ne modifie JAMAIS les pourcentages d’une assemblée déjà renseignée : chacune fige le sien dès qu’on y saisit les m² présents. Le changer ici ne vaut que pour les assemblées à venir.',
       },
     ],
   },]

@@ -534,6 +534,14 @@ et **zéro vote**.
   somme des `lots.superficie`** — ce registre est incomplet par construction, et surtout réservé
   **président/secrétaire** (035) : un trésorier verrait un trou là où les autres voient un taux,
   alors que la participation figure au PV que tout coloti reçoit. Lu par tous, écrit par le président.
+  - **GESTIONNAIRE (syndic) en haut de la barre de gauche** (`gestionnaire_societe` / `_nom` /
+    `_email` / `_telephone`, aucune migration — la table existait). **Aucune colonne, aucune
+    table** : c'est un contact unique, qui change à chaque changement de syndic, et qu'on appelle
+    depuis n'importe quel écran. Les quatre champs sont **facultatifs et indépendants** : seul ce
+    qui est renseigné s'affiche. ⚠ **Rien n'est affiché aux non-présidents quand tout est vide** —
+    seul le président voit alors un « à renseigner » vers Paramètres : un cadre vide en haut de la
+    barre dirait qu'il manque quelque chose à quelqu'un qui n'y peut rien. `Parametres.jsx`
+    n'écrit que les **clés modifiées**, pour que les autres gardent leur `updated_at`.
 - **Numéro de résolution SAISISSABLE** (2026-08-26) : il doit reprendre celui de la **convocation**,
   que l'ordre de saisie ne reproduit pas (on entre souvent dans le désordre, ou on insère après
   coup). `nextResolutionNumero` ne sert plus que de valeur par défaut à la création. L'unicité
