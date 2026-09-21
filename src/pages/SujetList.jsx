@@ -4,7 +4,7 @@ import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Button, Input, Select, Spinner, EmptyState, Badge } from '../components/ui'
 import { useIsMobile } from '../lib/useIsMobile'
-import { grouperParCategorie, categoriesConnues, CATEGORIE_AUTRE } from '../lib/sujetLogic'
+import { grouperParCategorie, categoriesConnues, CATEGORIE_AUTRE, elementsACompleter, DATE_INCONNUE } from '../lib/sujetLogic'
 
 // LA MÉMOIRE DU LOTISSEMENT — liste par sujet.
 //
@@ -21,11 +21,21 @@ export default function SujetList() {
   const [titre, setTitre] = useState('')
   const [categorie, setCategorie] = useState('')
   const [busy, setBusy] = useState(false)
+  // Entrées dont la date est inconnue. ⚠ Chargées à part : `listSujets` ne
+  // renvoie qu'un compteur d'entrées, et l'écran n'a besoin que de celles-là.
+  const [entreesSansDate, setEntreesSansDate] = useState([])
+  const [voirACompleter, setVoirACompleter] = useState(false)
 
   const reload = async () => {
     setError('')
     try {
-      setSujets(await repo.listSujets())
+      const [liste, sansDate] = await Promise.all([
+        repo.listSujets(),
+        // Idiome de résilience : un échec ici ne doit pas vider la mémoire.
+        repo.listEntreesDateInconnue(DATE_INCONNUE).catch(() => []),
+      ])
+      setSujets(liste)
+      setEntreesSansDate(sansDate)
     } catch (e) {
       setError(e?.message || 'Chargement impossible.')
     } finally {
@@ -47,6 +57,11 @@ export default function SujetList() {
         .filter(Boolean).join(' ').toLowerCase().includes(terme),
     )
   }, [sujets, q])
+
+  const aCompleter = useMemo(
+    () => elementsACompleter(sujets, entreesSansDate),
+    [sujets, entreesSansDate],
+  )
 
   const creer = async () => {
     if (!titre.trim()) return
@@ -86,6 +101,41 @@ export default function SujetList() {
           corrige ses propres entrées.
         </p>
       </Card>
+
+      {/* ⚠ CE QUI RESTE À COMPLÉTER — demandé par Pascal (2026-09-21).
+          Une chronologie fausse à un endroit ne se voit PAS en la lisant : elle
+          se range simplement au mauvais moment et paraît normale. Il faut une
+          liste qui rassemble ces manques, sinon ils restent. */}
+      {aCompleter.length > 0 && (
+        <Card className="mb-4 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-700">
+              <strong className="text-amber-700">{aCompleter.length}</strong> élément
+              {aCompleter.length > 1 ? 's' : ''} de la mémoire {aCompleter.length > 1 ? 'attendent' : 'attend'} encore
+              quelque chose — une date, un résumé, une synthèse.
+            </p>
+            <Button variant="secondary" onClick={() => setVoirACompleter((v) => !v)}>
+              {voirACompleter ? 'Masquer' : 'Voir ce qui manque'}
+            </Button>
+          </div>
+
+          {voirACompleter && (
+            <ul className="mt-4 divide-y divide-navy-50 border-t border-navy-50">
+              {aCompleter.map((x) => (
+                <li key={x.cle} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-2 text-sm">
+                  <Link to={`/memoire/${x.sujetId}`} className="font-medium text-navy-700 underline">
+                    {x.sujetTitre}
+                  </Link>
+                  <span className="text-slate-500">· {x.quoi}</span>
+                  {/* Le COMMENTAIRE qui dit ce qui manque : sans lui, une liste de
+                      titres n'apprend rien sur ce qu'il faut faire. */}
+                  <span className="text-xs text-amber-700">⚠ {x.manque}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       {error && (
         <Card className="mb-4 p-4">

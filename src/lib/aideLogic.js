@@ -603,6 +603,18 @@ export const MENUS = [
       'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
     actions: [
       {
+        titre: 'Voir ce qui reste à compléter',
+        pourQui: TOUS,
+        resume: 'Les dates manquantes, les résumés et les synthèses à écrire.',
+        etapes: [
+          'En haut de l’écran « Mémoire de l’ASL », un bandeau compte les éléments incomplets.',
+          'Cliquez sur « Voir ce qui manque » : chaque ligne dit quel sujet, quel élément, et CE QUI MANQUE.',
+          'Le titre du sujet est un lien : il vous y emmène directement.',
+        ],
+        alerte:
+          'Une entrée dont la date est inconnue porte la mention « Date à renseigner » au lieu d’une date. Tant qu’elle l’a, elle se range au mauvais endroit de la chronologie — c’est le manque le plus gênant, et c’est pourquoi ces entrées sont listées en premier.',
+      },
+      {
         titre: 'Créer un sujet',
         pourQui: TOUS,
         resume: 'Un par dossier qui revient d’une année sur l’autre.',

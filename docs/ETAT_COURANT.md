@@ -1,6 +1,8 @@
 # État courant / point de reprise — Registre CS Rives
 
-> Dernière session : **2026-09-18** — **export Markdown de toute la base** (`scripts/export_md.mjs`),
+> Dernière session : **2026-09-21** — **mémoire de l'ASL saisie en production** (10 sujets,
+> 59 entrées, 32 pièces) et écran **« Voir ce qui manque »**.
+> Avant, le **2026-09-18** : **export Markdown de toute la base** (`scripts/export_md.mjs`),
 > puis **statut « PV envoyé » et clôture de plein droit** (migration 055, appliquée et déployée).
 > Avant, le **2026-09-16** : **saisie des résultats d'AG dans la liste**, puis **m², taux
 > de participation et % des votes** (migration 054). Les deux **appliquées en prod et déployées**.
@@ -41,6 +43,28 @@ groupes homogènes, rôles du bureau. La base live contient les **5 vrais membre
 
 La fiabilisation (Supabase Pro + sauvegardes, signature réelle, transfert à l'ASL) fait l'objet
 du budget demandé à l'AG et du backlog ci-dessous.
+
+## Session 2026-09-21 — Mémoire de l'ASL saisie, et l'écran qui dit ce qui manque
+
+> **Aucune migration.** Import de données (exécuté) + écran.
+
+- **✅ SAISIE INITIALE DE LA MÉMOIRE EXÉCUTÉE EN PRODUCTION**, d'après
+  `BRIEF_saisie_memoire_ASL.md` : 6 sujets créés, 2 complétés, 36 entrées, 30 pièces téléversées,
+  1 coquille corrigée. Sauvegarde du jour faite avant (271 lignes, 44 fichiers).
+  Registre après import : **10 sujets, 59 entrées, 32 pièces**.
+- ⚠ **DEUX PIÈGES ÉVITÉS PAR L'ESSAI À BLANC** : la base contenait déjà « Biens communs et
+  indivis » quand le brief demandait « Biens communs et indivi**sion** » — l'unicité du titre
+  n'aurait rien empêché et un second sujet quasi homonyme serait né, le mode de ruine même que
+  cette unicité combat. Et deux sujets existants avaient des champs vides que le script ignorait.
+- **Idempotence prouvée par l'usage** : seconde exécution en `--go` → 0 sujet, 0 entrée, 36 ignorées.
+- **✅ « Voir ce qui manque »** (demande de Pascal) : bandeau + panneau listant dates inconnues,
+  résumés, synthèses et catégories absentes, **chacun avec la phrase qui dit ce qui manque**, du
+  plus grave au moins grave. ⚠ Sans cet écran, les 13 dates inconnues seraient restées : une
+  chronologie fausse à un endroit ne se voit pas en la lisant.
+- ⚠ **La sentinelle ne s'affiche jamais comme une date** : badge « Date à renseigner », et exclue
+  du calcul de la période couverte — sinon un dossier de 2019 à 2026 s'annonçait « 09/09/1999 → … ».
+- **Vérifié dans le navigateur** : panneau, libellés, lien vers le sujet, badge dans la chronologie,
+  « Entrées : 1 dont 1 sans date », période couverte masquée. Zéro erreur console.
 
 ## Session 2026-09-18 (suite) — Statut « PV envoyé » et clôture de plein droit (migration 055)
 

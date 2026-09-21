@@ -251,6 +251,15 @@ export const supabaseRepo = {
     }))
   },
 
+  // Les entrées dont la date est inconnue (sentinelle). Une requête dédiée
+  // plutôt qu'un chargement de toute la chronologie : l'écran n'a besoin que de
+  // celles-là, et la mémoire grossira.
+  async listEntreesDateInconnue(dateInconnue) {
+    return must(await supabase.from('sujet_entrees')
+      .select('id,sujet_id,titre,date_evenement')
+      .eq('date_evenement', dateInconnue))
+  },
+
   async getSujet(id) {
     const s = must(await supabase.from('sujets').select('*').eq('id', id).maybeSingle())
     if (!s) return null

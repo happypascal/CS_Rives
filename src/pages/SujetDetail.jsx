@@ -9,7 +9,7 @@ import { useConfirm } from '../components/useConfirm'
 import { formatDate, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { categoriesConnues, trierEntrees } from '../lib/sujetLogic'
+import { categoriesConnues, trierEntrees, estDateInconnue } from '../lib/sujetLogic'
 
 // Fiche d'un sujet : la SYNTHÈSE (où en est-on) puis la CHRONOLOGIE (comment y
 // est-on arrivé). Deux questions différentes, deux zones distinctes.
@@ -166,6 +166,14 @@ export default function SujetDetail() {
   }
 
   const entrees = trierEntrees(sujet.entrees || [])
+
+  // Séparées une fois pour toutes : la sentinelle ne doit entrer dans aucun calcul
+
+  // de période ni d'ancienneté.
+
+  const datees = entrees.filter((e) => !estDateInconnue(e.date_evenement))
+
+  const sansDate = entrees.filter((e) => estDateInconnue(e.date_evenement))
   // L'auteur corrige les siennes ; le président garde tout. Même règle que le
   // journal de projet, et même raison : ce n'est pas une délibération.
   const peutModifier = (e) => isAdmin || e.auteur_id === user?.membre_id
@@ -380,7 +388,19 @@ export default function SujetDetail() {
                       <>
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
                           <p className="text-sm font-medium text-navy-800">
-                            <span className="mr-2 text-slate-500">{formatDate(e.date_evenement)}</span>
+                            {/* ⚠ LA DATE SENTINELLE NE S'AFFICHE PAS COMME UNE DATE.
+                                « 09/09/1999 » se lit comme un vrai jour et se range
+                                dans la chronologie comme tel. Le dire en toutes
+                                lettres est la seule façon qu'un lecteur ne s'y
+                                trompe pas — et que celui qui peut la corriger le
+                                sache en passant. */}
+                            {estDateInconnue(e.date_evenement) ? (
+                              <span className="mr-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                                Date à renseigner
+                              </span>
+                            ) : (
+                              <span className="mr-2 text-slate-500">{formatDate(e.date_evenement)}</span>
+                            )}
                             {e.titre}
                           </p>
                           {peutSaisir && peutModifier(e) && (
@@ -424,13 +444,23 @@ export default function SujetDetail() {
             <div className="space-y-3 px-5 py-4 text-sm">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Entrées</p>
-                <p className="text-slate-700">{entrees.length}</p>
+                <p className="text-slate-700">
+                  {entrees.length}
+                  {sansDate.length > 0 && (
+                    <span className="ml-2 text-xs text-amber-700">dont {sansDate.length} sans date</span>
+                  )}
+                </p>
               </div>
-              {entrees.length > 0 && (
+              {/* ⚠ LA PÉRIODE SE CALCULE SUR LES DATES CONNUES SEULEMENT. Avec la
+                  sentinelle dedans, une chronologie de 2019 à 2026 s'annonçait
+                  « 09/09/1999 → … » : un repère faux, et d'autant plus trompeur
+                  qu'il a l'air d'un fait. Les entrées sans date sont comptées à
+                  part, en toutes lettres. */}
+              {datees.length > 0 && (
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">Période couverte</p>
                   <p className="text-slate-700">
-                    {formatDate(entrees[entrees.length - 1].date_evenement)} → {formatDate(entrees[0].date_evenement)}
+                    {formatDate(datees[datees.length - 1].date_evenement)} → {formatDate(datees[0].date_evenement)}
                   </p>
                 </div>
               )}

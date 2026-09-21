@@ -1419,6 +1419,13 @@ export const mockRepo = {
     }))
   },
 
+  async listEntreesDateInconnue(dateInconnue) {
+    await delay()
+    const data = load()
+    return clone((data.sujet_entrees || []).filter((e) => e.date_evenement === dateInconnue))
+      .map((e) => ({ id: e.id, sujet_id: e.sujet_id, titre: e.titre, date_evenement: e.date_evenement }))
+  },
+
   async getSujet(id) {
     await delay()
     const data = load()

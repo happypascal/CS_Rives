@@ -843,6 +843,20 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     existe toujours au moment de l'envoi, l'entrée pas encore. **Aucune policy de Storage à
     ajouter** — vérifié : `documents_insert_membre` ouvre à tout membre actif,
     `documents_brouillon_prive` ne vise que le préfixe `decisions`.
+  - **CE QUI RESTE À COMPLÉTER** (`elementsACompleter`, écran Mémoire, 2026-09-21) : un bandeau
+    compte les manques, un bouton les déplie, chacun avec **la phrase qui dit ce qui manque**.
+    ⚠ Né de l'import du 2026-09-21, qui a introduit 13 entrées sans date connue : **une chronologie
+    fausse à un endroit ne se voit pas en la lisant** — elle se range au mauvais moment et paraît
+    normale. Sans liste qui les rassemble, ces dates restent.
+  - ⚠ **DATE SENTINELLE `1999-09-09` = « date inconnue »** (`DATE_INCONNUE`, `sujetLogic.js`).
+    `date_evenement` est `not null` et la chronologie se trie dessus : il n'existe aucun autre moyen
+    d'exprimer « je ne sais pas ». Choisie **absurde** pour ne jamais être lue comme une vraie date.
+    ⚠ Elle est **dupliquée dans `scripts/data/memoire_asl_*.mjs`** — modifier l'une oblige à
+    modifier l'autre. ⚠ Elle ne s'affiche **jamais comme une date** : badge « Date à renseigner »
+    dans la chronologie, et elle est **exclue de la période couverte** (sinon un dossier de 2019 à
+    2026 s'annonçait « 09/09/1999 → … », un repère faux qui a l'air d'un fait).
+  - ⚠ **Ne signaler QUE ce qu'on peut nommer** : un sujet sans pièce jointe n'est pas incomplet. Le
+    bruit tue la liste — leçon des fausses alertes « injoignable » de l'export.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
