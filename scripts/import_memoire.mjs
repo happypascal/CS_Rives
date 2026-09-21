@@ -322,12 +322,15 @@ async function televerser(sujet, chemins) {
     compteurs.piecesEnvoyees += chemins.length
     return
   }
-  const deja = new Set((sujet.documents || []).map((d) => d.name))
+  // ⚠ Normalisation Unicode : macOS écrit les noms de fichiers en forme
+  // décomposée (NFD), un nom recopié à la main est composé (NFC). Sans cela, une
+  // pièce accentuée se retéléverserait à chaque exécution sans qu'on le voie.
+  const deja = new Set((sujet.documents || []).map((d) => String(d.name).normalize('NFC')))
   const ajouts = []
   for (const rel of chemins) {
     const abs = join(DOSSIER_LOTISSEMENT, rel)
     const nom = basename(rel)
-    if (deja.has(nom)) { compteurs.piecesIgnorees++; continue }
+    if (deja.has(nom.normalize('NFC'))) { compteurs.piecesIgnorees++; continue }
     let contenu, taille
     try {
       contenu = await readFile(abs)
