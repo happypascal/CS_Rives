@@ -101,7 +101,36 @@ async function pieceVersDoc(sujetId, rel, dossierLot) {
   return { id: randomUUID(), path: chemin, name: nom, type: MIME[ext] || 'application/octet-stream', size: taille, uploaded_at: new Date().toISOString() }
 }
 
+// ⚠ UNE PIÈCE NE PEUT ÊTRE REVENDIQUÉE QUE PAR UNE SEULE ENTRÉE.
+//
+// Le script DÉPLACE une pièce trouvée sur une autre entrée du même sujet. Si deux
+// entrées la réclament, chaque exécution la reprend à l'autre : un aller-retour
+// sans fin, qui ne se voit qu'en comparant deux rapports successifs. Arrivé pour
+// de vrai le 2026-09-21 avec `code civil art 671.png`, entre l'entrée du PLU de
+// 2013 et celle du PLUi-HM.
+//
+// On refuse de partir plutôt que d'écrire un état qui oscille.
+function verifierPiecesUniques(entreesNouvelles = []) {
+  const par = new Map()
+  for (const e of entreesNouvelles) {
+    for (const f of e.pieces || []) {
+      const cle = `${e.sujet}::${basename(f).normalize('NFC')}`
+      if (!par.has(cle)) par.set(cle, [])
+      par.get(cle).push(e.titre)
+    }
+  }
+  const doubles = [...par.entries()].filter(([, v]) => v.length > 1)
+  if (!doubles.length) return
+  console.error('')
+  console.error('❌ DONNÉES INCOHÉRENTES : une même pièce est revendiquée par plusieurs entrées.')
+  console.error('   Chaque exécution la reprendrait à l’autre, sans fin.')
+  for (const [cle, titres] of doubles) console.error(`   ${cle.split('::')[1]} → ${titres.join(' / ')}`)
+  console.error('')
+  process.exit(1)
+}
+
 async function main() {
+  verifierPiecesUniques(D.ENTREES_NOUVELLES)
   W(`# ${basename(cible)} — ${GO ? 'ÉCRITURE' : 'ESSAI À BLANC'}`)
   W('')
   if (!GO) W('> ⚠ **Aucune écriture.** Relancer avec `--go` pour appliquer.\n')
@@ -141,10 +170,14 @@ async function main() {
   }
 
   // ------------------------------------------------- 2. entrées corrigées
-  if (D.ENTREES_MAJ?.length) {
+  // Plusieurs lots de corrections peuvent cohabiter dans un même fichier de
+  // données (ENTREES_MAJ, ENTREES_MAJ_2…) : un brief révisé ajoute ses
+  // corrections sans qu'on ait à retoucher celles déjà appliquées.
+  const lotsMaj = Object.keys(D).filter((k) => k.startsWith('ENTREES_MAJ')).sort().flatMap((k) => D[k] || [])
+  if (lotsMaj.length) {
     W('## Entrées corrigées')
     W('')
-    for (const m of D.ENTREES_MAJ) {
+    for (const m of lotsMaj) {
       const s = parTitre[m.sujet]
       let e = entrees.find((x) => x.sujet_id === s?.id && x.titre === m.titreActuel)
       // ⚠ UNE ENTRÉE RENOMMÉE N'EST PAS UNE ENTRÉE PERDUE. À la relance, son
@@ -199,14 +232,10 @@ async function main() {
       }
       // Les pièces vont SUR L'ENTRÉE, jamais sur le sujet (leçon du brief n° 1).
       if (!a.pieces?.length) continue
-      const dejaSurEntree = deja ? (deja.documents || []) : []
-      // ⚠ Une pièce déjà présente AILLEURS dans le même sujet (sur le sujet ou sur
-      // une autre entrée) n'est pas retéléversée : c'est la garde qui manquait au
-      // premier import, et qui avait laissé naître sept doublons entre deux niveaux.
-      const ailleurs = new Set([
-        ...(s.documents || []).map((d) => String(d.name).normalize('NFC')),
-        ...entrees.filter((x) => x.sujet_id === s.id).flatMap((x) => (x.documents || []).map((d) => String(d.name).normalize('NFC'))),
-      ])
+      // ⚠ Relu depuis `entrees` et non depuis `deja` : une exécution précédente a
+      // pu y attacher des pièces, et `deja` est l'instantané d'avant.
+      const courante = entrees.find((x) => x.id === entreeId)
+      const dejaSurEntree = courante ? (courante.documents || []) : []
       const ajouts = []
       let docsSujet = [...(s.documents || [])]
       let sujetModifie = false
@@ -226,7 +255,25 @@ async function main() {
           W(`  - 📎 ${nom} ${GO ? 'déplacée' : 'à déplacer'} du sujet vers cette entrée`)
           continue
         }
-        if (ailleurs.has(nom.normalize('NFC'))) { n.piecesDejaLa++; W(`  - ${nom} : déjà sur une autre entrée de ce sujet, non dupliquée.`); continue }
+        // ⚠ DÉJÀ SUR UNE AUTRE ENTRÉE → ON LA DÉPLACE. Une pièce rangée au
+        // mauvais endroit doit pouvoir bouger sans repasser par le disque : ici
+        // le fichier de 2026 n'est même plus sur le disque (dossier réorganisé),
+        // il n'existe que dans le Storage. La sauter aurait laissé le document
+        // sur l'entrée de 2013, qui n'est plus celle qu'il illustre.
+        const autre = entrees.find((x) => x.sujet_id === s.id && x.id !== entreeId && (x.documents || []).some((d) => memeNom(d.name, nom)))
+        if (autre) {
+          const doc2 = (autre.documents || []).find((d) => memeNom(d.name, nom))
+          const reste = (autre.documents || []).filter((d) => d !== doc2)
+          if (GO) {
+            const { error } = await supabase.from('sujet_entrees').update({ documents: reste }).eq('id', autre.id)
+            if (error) throw new Error(`retrait de ${nom} sur « ${autre.titre} » : ${error.message}`)
+          }
+          autre.documents = reste
+          ajouts.push(doc2)
+          n.pieces++
+          W(`  - 📎 ${nom} ${GO ? 'déplacée' : 'à déplacer'} depuis l’entrée « ${autre.titre} »`)
+          continue
+        }
         const doc = await pieceVersDoc(s.id, rel, dossierLot)
         if (doc) { ajouts.push(doc); n.pieces++; W(`  - 📎 ${nom} ${GO ? 'attachée' : 'à attacher'}`) }
       }

@@ -33,8 +33,25 @@ export const SUJETS_MAJ = [
       '<p>Les actes connaissent <strong>deux plages</strong>. La <strong>plage commune</strong>, créée par l’additif de 1956 le long de la limite ouest du lotissement, est un bien commun ; l’Addendum III du 19 juin 2025 l’a rangée parmi les biens indivis de tous les colotis. La <strong>plage communale</strong>, sur le lot n° 13, devait être cédée gratuitement à la commune pour servir aux acquéreurs comme aux habitants de Nernier : l’arrêté préfectoral du 5 mai 1961 impose cette cession et un droit de passage au profit des usagers de cette plage sur la partie de la voie reliant le lot n° 13 à la route de Messery. Le cahier des charges de 1955 accordait en outre un droit de passage à MM. Charles et Clet, riverains à l’est du lot n° 13, sur la même portion de voie.</p>' +
       '<p>Le lotissement n’est donc <strong>pas entièrement fermé au public en droit</strong>. Deux points restent à établir : si la cession de la plage communale a été réalisée par acte, et quelle suite a été donnée au recours gracieux formé par Mme de Leusse contre l’arrêté de 1961.</p>' +
       '<p><strong>Règles d’urbanisme</strong></p>' +
-      '<p>Selon le PLU communal (révision n° 2, approuvée le 22 avril 2013), les lots riverains du lac étaient classés en zone UCh — habitat diffus en bordure des rives, hauteurs limitées —, leur frange littorale en zone Nl — bande des 100 m de la loi Littoral, où seules les installations nécessaires aux services publics ou aux activités exigeant la proximité de l’eau sont admises —, et les lots intérieurs en zone UC. Clôtures de 1,60 m au plus, à claire-voie ; haies d’essences locales, thuyas interdits, 2 m au plus ; eaux pluviales raccordées au collecteur public après rétention, avec un débit de fuite d’environ 3 l/s/ha. Deux emplacements réservés au profit de la commune concernent le lotissement : le n° 4, « création d’un accès piéton au lac à l’entrée du lotissement de Rives et sur le chemin piéton longeant le parc » (700 m²), et le n° 15 bis, élargissement de la route de Messery avec une plateforme de 8 m.</p>' +
-      '<p>⚠ <strong>Ce PLU n’est plus en vigueur.</strong> Il a été remplacé par le PLUi du Bas-Chablais, puis par le PLUi-HM de Thonon Agglomération. Le classement et les règles ci-dessus sont à vérifier sur le document en vigueur, sur le Géoportail de l’urbanisme, avant toute démarche.</p>',
+      '<p>Le document en vigueur est le <strong>PLUi-HM de Thonon Agglomération</strong>, approuvé par délibération du conseil communautaire du 16 décembre 2025 (DEL_CC2025_00312). Sur le règlement graphique de Nernier, le lotissement relève de deux zones :</p>' +
+      '<ul>' +
+      '<li>les <strong>lots riverains du lac</strong>, le long de l’allée de Rives (parcelles 0196 à 0212 environ), sont en <strong>zone NL</strong> — zone naturelle littorale, bande des 100 m de la loi Littoral dans ses parties considérées comme non urbanisées. Les habitations existantes d’au moins 50 m² de surface de plancher peuvent y être refaites, réhabilitées et aménagées, sans modification de volume ; les annexes existantes peuvent être réhabilitées, sans modification de volume. Hauteur maximale 7 m, emprise au sol 0,20 au plus ;</li>' +
+      '<li>les <strong>lots intérieurs</strong>, entre l’allée de Rives et la route de Messery (Champ Catin), sont en <strong>zone UCp</strong> — centralité des villages avec enjeux paysagers. Hauteur maximale des constructions principales 7 m, ou 6 m en toiture-terrasse ; emprise au sol 0,25 au plus ; 55 % d’espaces perméables, dont 35 % du tènement en pleine terre ; un arbre de haute tige pour 100 m² de pleine terre ; recul d’au moins 3 m des limites séparatives, et d’au moins la moitié de la différence d’altitude.</li>' +
+      '</ul>' +
+      '<p><strong>Clôtures et haies</strong> (art. UC.II.4.c-d et N II.4.c-d, rédaction identique pour l’essentiel) :</p>' +
+      '<ul>' +
+      '<li>les clôtures ne sont pas obligatoires ; leur édification est soumise à <strong>déclaration préalable</strong> ;</li>' +
+      '<li><strong>hauteur maximale 1,60 m</strong>, sur le domaine public comme en limite séparative ;</li>' +
+      '<li>composition : soit une clôture à claire-voie (lattes, grilles, grillages) ajourée à 20 % au moins, doublée ou non d’une haie, sur un mur bahut de 0,60 m au plus ; soit <strong>une haie végétalisée d’essences locales et variées</strong>. Une palissade opaque n’est admise en limite séparative qu’entre constructions mitoyennes, sur 5 m au plus de part et d’autre. Canisses, brandes, bâches, films et toiles sont interdits ;</li>' +
+      '<li><strong>la haie qui tient lieu de clôture est donc limitée à 1,60 m.</strong> Le règlement ne fixe pas de hauteur propre aux haies plantées à l’intérieur du terrain ;</li>' +
+      '<li>les <strong>haies monovégétales disposées en mur rideau</strong> sur le pourtour des limites parcellaires sont interdites (fin des haies de thuyas ou de laurier en continu) ; renvoi à l’OAP « Biodiversité et continuités écologiques » ;</li>' +
+      '<li><strong>en zone NL</strong>, les clôtures doivent en outre laisser passer la petite faune : un passage libre d’au moins 20 cm de haut sur 30 cm de large, tous les 5 m au plus ; le mur bahut n’y est admis que pour prolonger un mur bahut existant ;</li>' +
+      '<li>portails : 1,80 m au plus ;</li>' +
+      '<li>la restauration ou la reconstruction d’une clôture existante peut conserver la hauteur de l’existant, même supérieure.</li>' +
+      '</ul>' +
+      '<p>⚠ Ces règles <strong>se cumulent</strong> avec le cahier des charges (clôture à grille de 1,50 m au plus, art. 12) et avec le Code civil : une plantation de plus de 2 m doit être à 2 m au moins de la limite, une plantation plus basse à 0,50 m (art. 671). <strong>La règle la plus stricte s’applique</strong> : 1,50 m pour une grille, 1,60 m pour une haie de clôture.</p>' +
+      '<p>Le plan porte aussi un <strong>emplacement réservé n° 534</strong> sur la route de Messery, au droit de l’entrée du lotissement ; son objet est à vérifier dans la liste des emplacements réservés, qui ne figure pas dans le dossier.</p>' +
+      '<p><em>Historique.</em> Le PLU communal de 2013 (révision n° 2, approuvée le 22 avril 2013) classait les lots riverains en zone UCh, leur frange littorale en zone Nl et les lots intérieurs en zone UC ; il limitait les haies à 2 m et prévoyait les emplacements réservés n° 4 (accès piéton au lac à l’entrée du lotissement) et n° 15 bis (élargissement de la route de Messery). Il a été remplacé par le PLUi du Bas-Chablais, puis par le PLUi-HM.</p>',
   },
   {
     titre: 'Contentieux SCI Villa Aysha',
@@ -85,6 +102,17 @@ export const ENTREES_MAJ = [
 // ============================================================================
 // 3. ENTRÉES NOUVELLES
 // ============================================================================
+// ⚠ Entrée du PLU de 2013 : elle n'est plus « à vérifier », elle est ABROGÉE, et
+// le document qui l'a remplacée est nommé. Un registre qui laisse un document
+// d'urbanisme sans dire ce qui lui succède envoie consulter un texte mort.
+export const ENTREES_MAJ_2 = [
+  {
+    sujet: 'Urbanisme et servitudes',
+    titreActuel: 'Approbation de la révision n° 2 du PLU de Nernier',
+    contenu: 'Classement du lotissement en zones UCh, UC et Nl ; emplacements réservés n° 4 (accès piéton au lac à l’entrée du lotissement) et n° 15 bis (élargissement de la route de Messery). ⚠ Document ABROGÉ : remplacé par le PLUi du Bas-Chablais, puis par le PLUi-HM de Thonon Agglomération (voir l’entrée du 16 décembre 2025).',
+  },
+]
+
 export const ENTREES_NOUVELLES = [
   {
     sujet: 'Urbanisme et servitudes',
@@ -112,7 +140,11 @@ export const ENTREES_NOUVELLES = [
     date: '2013-04-22',
     titre: 'Approbation de la révision n° 2 du PLU de Nernier',
     contenu: 'Classement du lotissement en zones UCh, UC et Nl ; emplacements réservés n° 4 (accès piéton au lac à l’entrée du lotissement) et n° 15 bis (élargissement de la route de Messery). ⚠ Document remplacé depuis par le PLUi du Bas-Chablais puis par le PLUi-HM de Thonon Agglomération : à vérifier sur le Géoportail de l’urbanisme avant toute démarche.',
-    pieces: ['PLU/reglement PLU.pdf', 'PLU/plan_zonage.pdf', 'PLU/code civil art 671.png'],
+    // ⚠ `code civil art 671.png` n'est PLUS ici : le brief révisé la range sur
+    // l'entrée du PLUi-HM. La laisser dans les deux listes faisait que chaque
+    // exécution la reprenait à l'autre — un aller-retour sans fin, invisible
+    // autrement qu'en comparant deux rapports.
+    pieces: ['PLU/reglement PLU.pdf', 'PLU/plan_zonage.pdf'],
   },
   {
     sujet: 'Urbanisme et servitudes',
@@ -120,6 +152,21 @@ export const ENTREES_NOUVELLES = [
     titre: 'Addendum III, article 4 — servitude d’accès aux réseaux d’eaux pluviales',
     contenu: 'Les propriétaires des parcelles où passent ou doivent passer les canalisations d’eaux pluviales biens communs consentent au profit du lotissement une servitude perpétuelle et irrévocable d’accès, sans indemnité, pour leur réalisation, leur entretien et leur réparation. Préavis écrit de trente jours avant travaux, sauf urgence ; remise en état à la charge du lotissement.',
     pieces: [],
+  },
+  {
+    sujet: 'Urbanisme et servitudes',
+    date: '2025-12-16',
+    titre: 'Approbation du PLUi-HM de Thonon Agglomération',
+    contenu: 'Délibération DEL_CC2025_00312. Lots riverains du lac en zone NL (naturelle littorale, bande des 100 m), lots intérieurs en zone UCp. Clôtures soumises à déclaration préalable, 1,60 m au plus, à claire-voie ou en haie d’essences locales et variées ; haies monovégétales en mur rideau interdites ; en NL, passages pour la petite faune tous les 5 m au plus ; portails 1,80 m. Emplacement réservé n° 534 sur la route de Messery, objet à vérifier. ⚠ C’est le document EN VIGUEUR : c’est lui qu’il faut consulter avant toute demande d’autorisation.',
+    pieces: [
+      'PLU/PLU 2026/0_Actes administratifs/DEL_CC2025_00312_Approbation_PLUiHM.pdf',
+      'PLU/PLU 2026/3_REGLEMENT/200067551_reglement_20251216.pdf',
+      'PLU/PLU 2026/3_REGLEMENT/Règlement graphique/200067551_reglement_graphique_38_nernier_2500_20251216.pdf',
+      // ⚠ Ce fichier n'est plus sur le disque (Pascal a rangé PLU/ dans _OLD/),
+      // mais il est DÉJÀ dans le Storage, attaché à l'entrée de 2013. Le script
+      // le déplace depuis cette entrée : aucun accès disque, aucun retéléversement.
+      'PLU/code civil art 671.png',
+    ],
   },
   {
     sujet: 'Biens communs et indivis',
