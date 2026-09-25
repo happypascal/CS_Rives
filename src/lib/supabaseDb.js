@@ -763,6 +763,50 @@ export const supabaseRepo = {
       .update({ commentaire: commentaire || null }).eq('id', id).select())[0]
   },
 
+  // ---- Archives des PV (migration 057) ----
+  //
+  // ⚠ `texte_ocr` EST EXCLU DE LA LISTE. Soixante-dix procès-verbaux océrisés
+  // font plusieurs mégaoctets que l'écran de liste n'affiche jamais : les
+  // charger à chaque ouverture coûterait cher pour rien. Seules la recherche et
+  // la fiche le rapatrient, et la recherche ne ramène que ce qui correspond.
+  async listPVArchives() {
+    return must(await supabase.from('pv_archives')
+      .select('id, date_ag, annee, type_ag, intitule, lieu, syndic, resume, mots_cles, document, nb_pages, source, qualite, assemblee_id, commentaire, created_at')
+      .order('annee', { ascending: false })
+      .order('date_ag', { ascending: false, nullsFirst: false }))
+  },
+
+  async getPVArchive(id) {
+    return must(await supabase.from('pv_archives').select('*').eq('id', id).maybeSingle())
+  },
+
+  // Recherche plein texte française sur intitulé + résumé + mots-clés + OCR.
+  //
+  // ⚠ La colonne `recherche` est GÉNÉRÉE en base (migration 057) précisément
+  // pour cet appel : PostgREST ne sait interroger que des colonnes, un index
+  // d'expression aurait imposé une fonction RPC. `websearch` accepte ce qu'un
+  // humain tape (guillemets, `or`, `-mot`) sans lever sur une syntaxe invalide,
+  // contrairement à `plainto`/`to_tsquery`.
+  async searchPVArchives(q) {
+    const requete = String(q || '').trim()
+    if (!requete) return []
+    return must(await supabase.from('pv_archives')
+      .select('id, date_ag, annee, type_ag, intitule, resume, mots_cles, document, nb_pages, qualite, texte_ocr')
+      .textSearch('recherche', requete, { type: 'websearch', config: 'french' })
+      .order('annee', { ascending: false }))
+  },
+
+  // ⚠ Payload explicite : `getPVArchive` renvoie aussi `recherche`, colonne
+  // GÉNÉRÉE — PostgREST refuse qu'on y écrive, et le mock l'avalerait sans rien
+  // dire. Le texte océrisé et l'empreinte ne se modifient pas non plus à la
+  // main : ce sont des constats d'import.
+  async updatePVArchive(id, patch) {
+    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire']
+    const payload = Object.fromEntries(Object.entries(patch).filter(([k]) => champs.includes(k)))
+    return must(await supabase.from('pv_archives')
+      .update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
+  },
+
   // ---- Audit ----
   async listAudit(limit = 100) {
     return must(await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit))

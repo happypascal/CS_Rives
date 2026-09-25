@@ -27,6 +27,8 @@ import SujetList from './pages/SujetList'
 import SujetDetail from './pages/SujetDetail'
 import CommunicationsList from './pages/CommunicationsList'
 import CommunicationDetail from './pages/CommunicationDetail'
+import PVArchivesList from './pages/PVArchivesList'
+import PVArchiveDetail from './pages/PVArchiveDetail'
 
 export default function App() {
   return (
@@ -71,6 +73,10 @@ export default function App() {
                 des destinataires est fermée par la RLS — pas par la route. */}
             <Route path="/envois" element={<CommunicationsList />} />
             <Route path="/envois/:id" element={<CommunicationDetail />} />
+            {/* Archives des PV (057) : un FONDS DOCUMENTAIRE, pas des AG. Elles
+                ne créent aucune ligne dans `assemblees_generales`. */}
+            <Route path="/archives-pv" element={<PVArchivesList />} />
+            <Route path="/archives-pv/:id" element={<PVArchiveDetail />} />
             <Route path="/comment-faire" element={<CommentFaire />} />
             <Route path="/aide" element={<Aide />} />
           </Route>

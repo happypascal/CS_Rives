@@ -58,6 +58,10 @@ const SECTIONS = [
       { to: '/envois', label: 'Envois aux colotis' },
       { to: '/membres', label: 'Membres du CS' },
       { to: '/memoire', label: 'Mémoire de l’ASL' },
+      // ⚠ Sous « Données » et non sous « Gestion », à côté de la Mémoire : c'est
+      // un fonds documentaire consultable, pas un écran de gestion. Le ranger
+      // près des Assemblées Générales laisserait croire qu'on y crée des AG.
+      { to: '/archives-pv', label: 'Archives des PV' },
     ],
   },
   {

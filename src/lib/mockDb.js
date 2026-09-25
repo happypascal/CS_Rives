@@ -15,10 +15,11 @@ import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 // v14 : numéro attribué à la soumission (migration 034) — les brouillons de
 // démo n'ont plus de numéro. Le numéro de version force le reseed.
 // (v13 : sous-numéros de résolutions, 032. v12 : PJ sur l'AG, 031. v11 : 029.)
-// v16 : arrivée des envois aux colotis (056). Le numéro est incrémenté pour que
-// la démo reparte sur un jeu complet — un magasin v15 n'a pas les deux nouvelles
-// tables et l'écran s'y afficherait vide, ce qui n'est pas ce qu'on veut montrer.
-const STORAGE_KEY = 'cs_rives_mockdb_v16'
+// v17 : envois aux colotis (056) et archives des PV (057). Le numéro est
+// incrémenté pour que la démo reparte sur un jeu complet — un magasin plus
+// ancien n'a pas les nouvelles tables et les écrans s'y afficheraient vides,
+// ce qui n'est pas ce qu'on veut montrer.
+const STORAGE_KEY = 'cs_rives_mockdb_v17'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -402,7 +403,53 @@ function seed() {
     { id: uid(), communication_id: envoi1, nom: 'Martin Claire', email: 'claire.martin@example.com', langue: 'FR', statut: 'erreur', message_erreur: 'Mail n’a pas pu remettre le message : adresse refusée par le serveur distant.', proprietaire_id: null, rang: 3, created_at: '2026-09-25T13:10:00Z' },
   ]
 
-  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log, communications, communication_destinataires }
+  // Archives des PV (057). Trois documents qui couvrent les trois cas que
+  // l'écran doit savoir montrer : un scan ancien océrisé, un PV récent dont le
+  // texte est exact, et un document dont la date de séance est inconnue. Une
+  // démo où tout est complet ne montrerait jamais ce qu'il reste à faire.
+  const pv_archives = [
+    {
+      id: uid(), date_ag: null, annee: 1957, type_ag: 'AGO',
+      intitule: 'Assemblée générale ordinaire de 1957',
+      lieu: null, syndic: null,
+      resume: 'Première assemblée après l’annexe II. Discussion sur l’entretien des allées.',
+      mots_cles: ['allées', 'entretien'],
+      document: { path: 'pv-archives/1957/demo-1957.pdf', name: '1957_AGO.pdf', type: 'application/pdf', size: 482113, sha256: 'demo1957' },
+      nb_pages: 3,
+      texte_ocr: 'ASSEMBLEE GENERALE des coloti du lotissement de Rives. Il est décidé que l entretien des allées reste à la charge des colotis, conformément à l annexe II au cahier des charges.',
+      source: 'Scan importé depuis archives-voisin', qualite: 'moyenne',
+      assemblee_id: null, commentaire: null, cree_par: mPresident,
+      created_at: '2026-09-25T09:00:00Z', updated_at: '2026-09-25T09:00:00Z',
+    },
+    {
+      id: uid(), date_ag: '1961-05-05', annee: 1961, type_ag: 'AGE',
+      intitule: 'Assemblée générale extraordinaire du 5/05/1961',
+      lieu: 'Mairie de Nernier', syndic: null,
+      resume: 'Refus du classement du chemin d’accès à la plage dans la voirie communale.',
+      mots_cles: ['plage', 'chemin', 'voirie'],
+      document: { path: 'pv-archives/1961/demo-1961.pdf', name: '1961-05-05_AGE.pdf', type: 'application/pdf', size: 918402, sha256: 'demo1961' },
+      nb_pages: 2,
+      texte_ocr: 'A la suite du recours gracieux formulé contre l arrêté préfectoral du 5 Mai 1961, il a été demandé le classement du chemin d accès à la plage dans les voies communales.',
+      source: 'Scan importé depuis archives-voisin', qualite: 'moyenne',
+      assemblee_id: null, commentaire: null, cree_par: mPresident,
+      created_at: '2026-09-25T09:00:00Z', updated_at: '2026-09-25T09:00:00Z',
+    },
+    {
+      id: uid(), date_ag: null, annee: 1978, type_ag: 'inconnu',
+      intitule: 'Assemblée de 1978',
+      lieu: null, syndic: null, resume: null, mots_cles: null,
+      document: { path: 'pv-archives/1978/demo-1978.pdf', name: '1978_assemblee.pdf', type: 'application/pdf', size: 1204553, sha256: 'demo1978' },
+      nb_pages: 5,
+      // ⚠ Pas de texte : c'est le cas qu'il faut voir à l'écran — le document
+      // est consultable mais la recherche ne le trouvera jamais.
+      texte_ocr: null,
+      source: 'Scan importé depuis archives-voisin', qualite: 'illisible_partiel',
+      assemblee_id: null, commentaire: null, cree_par: mPresident,
+      created_at: '2026-09-25T09:00:00Z', updated_at: '2026-09-25T09:00:00Z',
+    },
+  ]
+
+  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log, communications, communication_destinataires, pv_archives }
 }
 
 // ---------------------------------------------------------------- store
@@ -1880,6 +1927,59 @@ export const mockRepo = {
     c.commentaire = commentaire || null
     save(data)
     return clone(c)
+  },
+
+  // ---- Archives des PV (migration 057) ----
+  async listPVArchives() {
+    await delay()
+    const data = load()
+    return clone(data.pv_archives || [])
+      // Même ordre que la base : année décroissante, puis date de séance.
+      .sort((a, b) => (b.annee - a.annee) || String(b.date_ag || '').localeCompare(String(a.date_ag || '')))
+      // ⚠ Miroir de Supabase, qui ne renvoie PAS le texte océrisé dans la liste.
+      // Sans cette omission, le mock afficherait un écran que la prod ne peut
+      // pas alimenter — le genre de divergence qui ne se voit qu'au déploiement.
+      .map(({ texte_ocr: _texte, ...reste }) => reste)
+  },
+
+  async getPVArchive(id) {
+    await delay()
+    return clone((load().pv_archives || []).find((x) => x.id === id)) || null
+  },
+
+  // Recherche naïve : le mock n'a pas de `tsvector`. ⚠ Il ne PROUVE donc rien
+  // sur la recherche réelle (racinisation française, pondération) — il permet
+  // seulement de construire l'écran sans base.
+  async searchPVArchives(q) {
+    await delay()
+    const requete = String(q || '').trim().toLowerCase()
+    if (!requete) return []
+    const mots = requete.split(/\s+/).filter(Boolean)
+    const plat = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase()
+    return clone(load().pv_archives || [])
+      .filter((a) => {
+        const foin = plat(`${a.intitule} ${a.resume || ''} ${(a.mots_cles || []).join(' ')} ${a.texte_ocr || ''}`)
+        return mots.every((m) => foin.includes(plat(m)))
+      })
+      .sort((a, b) => b.annee - a.annee)
+  },
+
+  async updatePVArchive(id, patch) {
+    await delay()
+    const data = load()
+    const a = (data.pv_archives || []).find((x) => x.id === id)
+    if (!a) throw new Error('Document introuvable')
+    const user = getSessionUser()
+    if (!(user?.role === 'admin' || user?.membre_role === 'secretaire')) {
+      throw new Error('Seuls le président et le secrétaire complètent une archive.')
+    }
+    // ⚠ Mêmes champs que le repo Supabase, et pas un de plus : `texte_ocr`,
+    // l'empreinte et la colonne générée `recherche` sont des constats d'import.
+    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire']
+    for (const [k, v] of Object.entries(patch)) if (champs.includes(k)) a[k] = v
+    a.updated_at = nowISO()
+    save(data)
+    return clone(a)
   },
 
   // ---- Audit ----

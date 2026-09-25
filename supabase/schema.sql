@@ -754,6 +754,91 @@ create index if not exists communications_date_idx
 create index if not exists communication_destinataires_comm_idx
   on communication_destinataires (communication_id);
 
+-- =============================================================================
+-- ARCHIVES DES PROCÈS-VERBAUX D'ASSEMBLÉE DEPUIS 1955 (migration 057)
+--
+-- ⚠ UN FONDS DOCUMENTAIRE, PAS DES ASSEMBLÉES. On ne crée SURTOUT PAS de lignes
+-- `assemblees_generales` pour ces archives : cette table porte un cycle de vie,
+-- des résolutions, des votes et des comptes, et y verser soixante-dix ans
+-- d'assemblées fantômes ferait apparaître dans les écrans de gestion des AG sans
+-- résolution ni quorum, et fausserait les budgets consolidés. Le lien vers une
+-- AG de l'application est FACULTATIF, pour celles qui y existent.
+--
+-- ⚠ `annee` obligatoire, `date_ag` facultative : sur un document de 1957 le jour
+-- est souvent illisible. Exiger la date complète obligerait à inventer un jour.
+--
+-- ⚠ `texte_ocr` est APPROXIMATIF et le restera : il sert à CHERCHER, jamais à
+-- citer. C'est le scan qui fait foi, et l'écran doit continuer de le dire.
+-- =============================================================================
+create table if not exists pv_archives (
+  id            uuid primary key default gen_random_uuid(),
+  date_ag       date,
+  annee         integer not null check (annee between 1955 and 2100),
+  type_ag       text check (type_ag is null or type_ag in ('AGO','AGE','reunion_syndicat','inconnu')),
+  intitule      text not null,
+  lieu          text,
+  syndic        text,
+  resume        text,
+  mots_cles     text[],
+  -- {path,name,type,size,sha256} — préfixe `pv-archives/<annee>/` dans le bucket
+  -- privé `documents`. ⚠ Aucune policy de Storage à ajouter : vérifié —
+  -- `documents_brouillon_prive` ne vise que le préfixe `decisions`, et
+  -- `documents_insert_membre` ouvre à tout membre actif.
+  document      jsonb not null,
+  nb_pages      integer,
+  texte_ocr     text,
+  source        text,
+  qualite       text check (qualite is null or qualite in ('bonne','moyenne','illisible_partiel')),
+  assemblee_id  uuid references assemblees_generales(id),
+  commentaire   text,
+  cree_par      uuid references membres_cs(id),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  -- Une date complète qui ne tombe pas dans son année de classement rangerait le
+  -- document à un endroit et l'afficherait à un autre.
+  constraint pv_archives_annee_coherente
+    check (date_ag is null or extract(year from date_ag) = annee)
+);
+
+-- ⚠ Colonne GÉNÉRÉE plutôt qu'index d'expression : PostgREST ne sait interroger
+-- que des colonnes, un index d'expression aurait imposé une RPC dédiée — ou
+-- serait resté inutilisé.
+--
+-- ⚠ ET L'EXPRESSION DOIT PASSER PAR UNE FONCTION. Écrite directement, Postgres
+-- la refuse : « generation expression is not immutable » (constaté le
+-- 2026-09-25). `array_to_string` est STABLE — elle passe par la fonction de
+-- sortie du type d'élément — et `to_tsvector` avec une configuration nommée
+-- dépend du `search_path`. La promesse d'immutabilité ci-dessous est sûre parce
+-- que la configuration est figée, les deux fonctions sont qualifiées par
+-- `pg_catalog`, et `mots_cles` est un `text[]` dont la sortie est déterministe.
+-- ⚠ `coalesce` N'EST PAS qualifiable : c'est une construction du langage.
+create or replace function pv_archives_vecteur(
+  p_intitule text, p_resume text, p_mots text[], p_texte text
+) returns tsvector
+language sql immutable parallel safe
+as $vecteur$
+  select pg_catalog.to_tsvector('french'::pg_catalog.regconfig,
+    coalesce(p_intitule, '') || ' ' ||
+    coalesce(p_resume, '') || ' ' ||
+    coalesce(pg_catalog.array_to_string(p_mots, ' '), '') || ' ' ||
+    coalesce(p_texte, ''))
+$vecteur$;
+
+alter table pv_archives drop column if exists recherche;
+
+alter table pv_archives
+  add column recherche tsvector
+  generated always as (pv_archives_vecteur(intitule, resume, mots_cles, texte_ocr)) stored;
+
+create index if not exists pv_archives_recherche_idx on pv_archives using gin (recherche);
+create index if not exists pv_archives_annee_idx on pv_archives (annee desc);
+
+-- Idempotence de l'import : la clé est le CONTENU du fichier, pas son nom (qui
+-- se renomme) ni sa date (deux PV peuvent partager une année).
+create unique index if not exists pv_archives_empreinte_idx
+  on pv_archives ((document ->> 'sha256'))
+  where (document ->> 'sha256') is not null;
+
 -- ------------------------------------------- acceptation de la mention RGPD
 -- Portée par le membre : c'est un fait le concernant, et il n'a à l'accepter
 -- qu'une fois. Horodatée pour pouvoir dire QUAND elle a été acceptée — une
@@ -1597,6 +1682,23 @@ create policy "communications_bureau_write" on communications
 
 drop policy if exists "communication_destinataires_bureau" on communication_destinataires;
 create policy "communication_destinataires_bureau" on communication_destinataires
+  for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+-- Archives des PV (057) — lues par TOUS les membres, comme la mémoire du
+-- lotissement (045). ⚠ Ce n'est pas le registre des propriétaires : un PV nomme
+-- des personnes, mais il a été adressé en son temps à tous les colotis.
+-- Écriture au bureau : le chemin normal reste le script d'import, l'écran ne
+-- sert qu'à compléter ce que le nom de fichier n'a pas permis de déduire.
+alter table pv_archives enable row level security;
+
+drop policy if exists "read_auth" on pv_archives;
+create policy "read_auth" on pv_archives
+  for select to authenticated using (true);
+
+drop policy if exists "pv_archives_bureau_write" on pv_archives;
+create policy "pv_archives_bureau_write" on pv_archives
   for all to authenticated
   using (is_admin() or is_secretaire())
   with check (is_admin() or is_secretaire());

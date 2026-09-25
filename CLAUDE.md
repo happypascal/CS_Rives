@@ -85,6 +85,8 @@ src/
                       l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
     pdf.js            PDF registre + décision unique, lignes de signature
+    pvArchiveLogic.js  ARCHIVES DES PV : lecture des noms de fichiers (PARTAGÉE avec le script
+                      d'ingestion), frise et années manquantes, extraits de recherche
     communicationLogic.js  ENVOIS AUX COLOTIS : libellés de canal/statut, découpage du corps
                       (texte brut, jamais du HTML) et repérage des destinataires non rapprochés
     share.js          texte WhatsApp + URL wa.me (notification manuelle)
@@ -108,7 +110,8 @@ src/
                       SujetList/SujetDetail (mémoire du lotissement),
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
                       ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres,
-                      CommunicationsList/CommunicationDetail (envois aux colotis)
+                      CommunicationsList/CommunicationDetail (envois aux colotis),
+                      PVArchivesList/PVArchiveDetail (archives des PV depuis 1955)
 scripts/
   export_md.mjs       EXPORT LISIBLE de toute la base en UN fichier Markdown, pour qu'un
                       assistant relise l'état du registre d'un bloc et réponde à « qu'est-ce
@@ -128,6 +131,13 @@ scripts/
                       ⚠ **N'a PAS de garde de sauvegarde** : il n'insère que dans deux tables
                       neuves. `--archiver` copie les trois textes dans `_OLD/`, **l'AppleScript
                       n'est pas modifié**.
+  importer_pv_archives.mjs  INGESTION DES PV SCANNÉS (057) : empreinte SHA-256, déduction du
+                      nom de fichier, dépôt dans le bucket, extraction du texte, rapport avec les
+                      ANNÉES MANQUANTES — c'est cette liste qui dit ce qu'il reste à scanner.
+                      ⚠ `--hors-ligne` éprouve le nommage SANS base.
+  lire_pdf.swift      COUCHE TEXTE puis OCR français (PDFKit + Vision de macOS). ⚠ Ni tesseract,
+                      ni ocrmypdf, ni pdftotext, ni Homebrew sur ce Mac — vérifié. Un seul appel
+                      pour tous les fichiers : `swift x.swift` recompile à chaque exécution.
   journal_envoi.mjs   ANALYSE PURE du journal d'envoi, SANS Supabase — donc vérifiable avant
                       que la migration ne soit passée. ⚠ Le journal est en **retours chariot
                       seuls** (`\r`) : un découpage sur `\n` rend UNE ligne. ⚠ La date suit la
@@ -807,10 +817,55 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   avec elle) : à côté d'« Envois aux colotis », deux entrées aux noms voisins dont une morte
   désorientent au lieu de guider.
 
+### Archives des PV depuis 1955 (migration 057) — un FONDS, pas des assemblées
+> Un voisin a conservé **tous les procès-verbaux depuis 1955**. L'application les conserve et les
+> rend cherchables, pour que la mémoire du lotissement ne dépende plus d'un carton chez un
+> particulier.
+
+- ⚠ **ON NE CRÉE AUCUNE LIGNE `assemblees_generales`.** Cette table porte un cycle de vie, des
+  résolutions, des votes, des m² et des comptes : y verser soixante-dix ans d'assemblées fantômes
+  ferait apparaître des AG sans résolution ni quorum dans les écrans de gestion, et fausserait les
+  budgets consolidés. `pv_archives.assemblee_id` est un lien **facultatif**, pour les AG qui
+  existent dans l'app — même raisonnement que `mandats_cs.ag_id` (051).
+- ⚠ **`annee` obligatoire, `date_ag` facultative** : sur un document de 1957 le jour est souvent
+  illisible. Exiger la date complète obligerait à **inventer un jour**. Contrainte
+  `pv_archives_annee_coherente` : une date complète doit tomber dans son année de classement.
+- ⚠ **`texte_ocr` SERT À CHERCHER, JAMAIS À CITER**, et l'écran le dit **au-dessus** du texte, pas
+  en note de bas de page. Une recherche sans résultat ne prouve rien : c'est un constat, pas une
+  conclusion. **Le scan fait foi.**
+- ⚠ **OCR : ni `tesseract`, ni `ocrmypdf`, ni `pdftotext`, ni Homebrew sur ce Mac** — vérifié.
+  `scripts/lire_pdf.swift` utilise **PDFKit + Vision**, livrés avec macOS : couche texte du PDF
+  d'abord (résultat EXACT), reconnaissance française ensuite. Éprouvé sur un scan dactylographié de
+  1961 et sur le cahier des charges de 1955 (19 pages). **Un seul appel pour tous les fichiers** :
+  `swift x.swift` recompile à chaque exécution.
+  - `qualite = bonne` est **réservé au PDF qui portait déjà son texte** ; tout ce qui sort d'une
+    reconnaissance est au mieux `moyenne`.
+  - **L'OCR n'est jamais bloquant** : un document illisible entre au fonds sans texte. Une archive
+    qu'on ne peut pas chercher vaut mieux qu'une archive qui n'existe pas.
+- ⚠ **ÉCART ASSUMÉ : colonne GÉNÉRÉE `recherche` au lieu de l'index d'expression de la spec.**
+  PostgREST ne sait interroger que des **colonnes** — un index sur `to_tsvector(...)` aurait imposé
+  une RPC dédiée, ou serait resté inutilisé. `textSearch(..., { type: 'websearch' })` accepte ce
+  qu'un humain tape sans lever sur une syntaxe invalide.
+- **Idempotence par EMPREINTE du fichier** (SHA-256 dans `document`, index unique) : ni le nom (qui
+  se renomme) ni la date (deux PV par an). Les doublons **dans un même lot** sont écartés avant
+  l'insert — sinon l'unique ferait échouer l'import au milieu, la moitié des fichiers déposés.
+- ⚠ **`--hors-ligne`** éprouve la convention de nommage **sans base** : renommer soixante-dix
+  fichiers après coup coûte plus cher que de vérifier sur les cinq premiers.
+- ⚠ **Pas de `\b` autour des sigles** dans la lecture des noms (`pvArchiveLogic.js`) : le trait bas
+  est un caractère de mot, donc `\bAGO\b` ne trouve rien dans `2016-09-03_AGO.pdf` — c'est-à-dire
+  dans la convention elle-même. Défaut trouvé **en éprouvant** la fonction, pas en la relisant.
+- **La frise des années manquantes est le cœur de l'écran**, pas une décoration : une archive qui
+  montre seulement ce qu'elle contient laisse croire qu'elle est complète.
+- **Lue par tous** (comme la mémoire, 045), **écrite par le bureau**. Ce n'est pas le registre des
+  propriétaires : un PV nomme des personnes, mais il a été adressé en son temps à tous les colotis.
+- ⚠ **`Input` enveloppe TOUJOURS son champ dans un `<label>`** : une classe `flex-1` passée à
+  `Input` atterrit sur le champ, pas sur l'enfant flex. `Textarea` a été corrigé de ce piège (rendu
+  nu sans `label`), **`Input` non** — envelopper l'appel dans un `div` porteur du `flex-1`.
+
 Tables : `membres_cs`, `mandats_cs`, `parametres`, `assemblees_generales`, `resolutions_ag`, `projets`,
 `decisions`, `votes`, `questions_reponses`, `signature_batches`, `decision_status_history`,
 `decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`,
-`communications`, `communication_destinataires`.
+`communications`, `communication_destinataires`, `pv_archives`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`

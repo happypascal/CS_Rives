@@ -546,6 +546,50 @@ export const MENUS = [
   },
 
   {
+    cle: 'archives_pv',
+    menu: 'Archives des PV',
+    visiblePar: TOUS,
+    aQuoi: 'Les procès-verbaux d’assemblée depuis 1955, scannés et cherchables.',
+    noteAcces:
+      'Vous pouvez consulter et rechercher dans tous les documents. Seuls le président et le secrétaire complètent les informations d’un document (date, type, résumé, mots-clés).',
+    actions: [
+      {
+        titre: 'Retrouver ce qui a été décidé sur un sujet',
+        pourQui: TOUS,
+        resume: 'Recherche dans le texte de tous les procès-verbaux.',
+        etapes: [
+          'Ouvrez « Archives des PV » et tapez un mot dans la recherche : plage, portail, canalisations…',
+          'Les documents trouvés s’affichent par décennie, avec un extrait autour du mot cherché.',
+          'Ouvrez la fiche, puis « Ouvrir le procès-verbal » pour lire le document d’origine.',
+        ],
+        alerte:
+          'La recherche porte sur un texte reconnu automatiquement sur des scans, parfois vieux de soixante-dix ans : il comporte des erreurs. Une absence de résultat ne prouve pas qu’un sujet n’a jamais été traité, et ce texte ne se cite pas — le document scanné fait foi.',
+      },
+      {
+        titre: 'Savoir quelles années manquent encore',
+        pourQui: TOUS,
+        resume: 'La frise dit d’un coup d’œil ce qui reste à retrouver.',
+        etapes: [
+          'En haut de l’écran, une case par année depuis 1955 : les cases claires n’ont aucun procès-verbal.',
+          'Le bouton « Voir les périodes manquantes » en donne la liste, regroupée par intervalle.',
+        ],
+      },
+      {
+        titre: 'Compléter les informations d’un document',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Ce que le nom du fichier ne disait pas est resté vide.',
+        etapes: [
+          'Ouvrez la fiche du document : date de séance, type, lieu, gestionnaire de l’époque, résumé, mots-clés.',
+          'Vous pouvez aussi le rattacher à une assemblée de l’application, quand elle y existe.',
+          'Enregistrez.',
+        ],
+        alerte:
+          'Laissez la date de séance vide si le jour est illisible : l’année suffit à classer le document. Inventer un jour écrirait une information fausse dans une archive que plus personne ne pourra recouper.',
+      },
+    ],
+  },
+
+  {
     cle: 'membres',
     menu: 'Membres du CS',
     visiblePar: TOUS,
