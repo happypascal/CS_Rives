@@ -856,6 +856,18 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   dans la convention elle-même. Défaut trouvé **en éprouvant** la fonction, pas en la relisant.
 - **La frise des années manquantes est le cœur de l'écran**, pas une décoration : une archive qui
   montre seulement ce qu'elle contient laisse croire qu'elle est complète.
+- ⚠ **AUCUNE ENTRÉE DE MENU** (arbitrage Pascal, 2026-09-25 — elle y a figuré une journée). Le fonds
+  se rejoint par un **bouton en tête de l'écran Assemblées Générales** : on ne cherche pas le PV de
+  1978 en parcourant un menu, on le cherche en pensant aux assemblées. En entrée distincte, il
+  devenait un second registre concurrent du premier.
+  - ⚠ Les routes sont donc **`/ag/archives`** et `/ag/archives/:id`, et pas seulement par élégance :
+    c'est cette URL qui garde l'entrée « Assemblées Générales » **active** dans la barre de gauche
+    pendant la consultation. Avec `/archives-pv`, aucune entrée ne s'allumait — on ne savait plus où
+    l'on était. `/ag/archives` n'est pas capturé par `/ag/:id` : react-router classe par
+    **spécificité**, un segment littéral l'emportant sur un segment dynamique.
+  - ⚠ **Le manuel suit** : les trois actions des archives sont rattachées à l'entrée « Assemblées
+    Générales » d'`aideLogic.js`, pas à une section propre — le manuel est organisé par entrée de
+    menu, lui en donner une décrirait un menu qui n'existe pas.
 - **Lue par tous** (comme la mémoire, 045), **écrite par le bureau**. Ce n'est pas le registre des
   propriétaires : un PV nomme des personnes, mais il a été adressé en son temps à tous les colotis.
 - ⚠ **`Input` enveloppe TOUJOURS son champ dans un `<label>`** : une classe `flex-1` passée à

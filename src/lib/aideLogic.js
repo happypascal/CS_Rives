@@ -254,7 +254,7 @@ export const MENUS = [
     menu: 'Assemblées Générales',
     visiblePar: TOUS,
     aQuoi:
-      'Les assemblées et leurs résolutions. C’est l’AG qui vote les budgets ; le conseil ne fait que les engager.',
+      'Les assemblées et leurs résolutions. C’est l’AG qui vote les budgets ; le conseil ne fait que les engager. Les procès-verbaux depuis 1955 se consultent depuis cet écran, par le bouton « Archives des PV depuis 1955 ».',
     noteAcces:
       'Cet écran est en lecture seule pour vous. Le président et le secrétaire tiennent les assemblées — convocation, résolutions, numérotation, résultats — parce que ces éléments doivent correspondre au procès-verbal, dont le secrétaire répond.',
     actions: [
@@ -390,6 +390,45 @@ export const MENUS = [
           'Approuvez les comptes.',
           'Ils ne sont réputés validés que lorsque le trésorier ET le président l’ont fait.',
         ],
+      },
+      // ------------------------------------------------ archives des PV (057)
+      // ⚠ RATTACHÉES À CETTE ENTRÉE DE MENU, et non à la leur (arbitrage
+      // Pascal, 2026-09-25) : le fonds se rejoint par un bouton en tête de cet
+      // écran. Le manuel est organisé par entrée de menu — lui donner une
+      // section propre décrirait un menu qui n'existe pas.
+      {
+        titre: 'Retrouver ce qui a été décidé dans une assemblée ancienne',
+        pourQui: TOUS,
+        resume: 'Les procès-verbaux depuis 1955, cherchables par mot.',
+        etapes: [
+          'En haut de cet écran, cliquez sur « Archives des PV depuis 1955 ».',
+          'Tapez un mot dans la recherche : plage, portail, canalisations…',
+          'Les documents trouvés s’affichent par décennie, avec un extrait autour du mot cherché.',
+          'Ouvrez la fiche, puis « Ouvrir le procès-verbal » pour lire le document d’origine.',
+        ],
+        alerte:
+          'La recherche porte sur un texte reconnu automatiquement sur des scans, parfois vieux de soixante-dix ans : il comporte des erreurs. Une absence de résultat ne prouve pas qu’un sujet n’a jamais été traité, et ce texte ne se cite pas — le document scanné fait foi.',
+      },
+      {
+        titre: 'Savoir quels procès-verbaux manquent encore',
+        pourQui: TOUS,
+        resume: 'La frise dit d’un coup d’œil ce qui reste à retrouver.',
+        etapes: [
+          'Ouvrez les archives : une case par année depuis 1955, les cases claires n’ont aucun procès-verbal.',
+          'Le bouton « Voir les périodes manquantes » en donne la liste, regroupée par intervalle.',
+        ],
+      },
+      {
+        titre: 'Compléter les informations d’un procès-verbal archivé',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Ce que le nom du fichier ne disait pas est resté vide.',
+        etapes: [
+          'Ouvrez la fiche du document : date de séance, type, lieu, gestionnaire de l’époque, résumé, mots-clés.',
+          'Vous pouvez aussi le rattacher à une assemblée de l’application, quand elle y existe.',
+          'Enregistrez.',
+        ],
+        alerte:
+          'Laissez la date de séance vide si le jour est illisible : l’année suffit à classer le document. Inventer un jour écrirait une information fausse dans une archive que plus personne ne pourra recouper.',
       },
     ],
   },
@@ -541,50 +580,6 @@ export const MENUS = [
           'Ouvrez la campagne, saisissez le commentaire, enregistrez.',
           'Écrivez-y ce qu’il faudra savoir en relisant cet envoi dans deux ans : une relance, une réponse reçue hors application, une erreur constatée après coup.',
         ],
-      },
-    ],
-  },
-
-  {
-    cle: 'archives_pv',
-    menu: 'Archives des PV',
-    visiblePar: TOUS,
-    aQuoi: 'Les procès-verbaux d’assemblée depuis 1955, scannés et cherchables.',
-    noteAcces:
-      'Vous pouvez consulter et rechercher dans tous les documents. Seuls le président et le secrétaire complètent les informations d’un document (date, type, résumé, mots-clés).',
-    actions: [
-      {
-        titre: 'Retrouver ce qui a été décidé sur un sujet',
-        pourQui: TOUS,
-        resume: 'Recherche dans le texte de tous les procès-verbaux.',
-        etapes: [
-          'Ouvrez « Archives des PV » et tapez un mot dans la recherche : plage, portail, canalisations…',
-          'Les documents trouvés s’affichent par décennie, avec un extrait autour du mot cherché.',
-          'Ouvrez la fiche, puis « Ouvrir le procès-verbal » pour lire le document d’origine.',
-        ],
-        alerte:
-          'La recherche porte sur un texte reconnu automatiquement sur des scans, parfois vieux de soixante-dix ans : il comporte des erreurs. Une absence de résultat ne prouve pas qu’un sujet n’a jamais été traité, et ce texte ne se cite pas — le document scanné fait foi.',
-      },
-      {
-        titre: 'Savoir quelles années manquent encore',
-        pourQui: TOUS,
-        resume: 'La frise dit d’un coup d’œil ce qui reste à retrouver.',
-        etapes: [
-          'En haut de l’écran, une case par année depuis 1955 : les cases claires n’ont aucun procès-verbal.',
-          'Le bouton « Voir les périodes manquantes » en donne la liste, regroupée par intervalle.',
-        ],
-      },
-      {
-        titre: 'Compléter les informations d’un document',
-        pourQui: ['president', 'secretaire'],
-        resume: 'Ce que le nom du fichier ne disait pas est resté vide.',
-        etapes: [
-          'Ouvrez la fiche du document : date de séance, type, lieu, gestionnaire de l’époque, résumé, mots-clés.',
-          'Vous pouvez aussi le rattacher à une assemblée de l’application, quand elle y existe.',
-          'Enregistrez.',
-        ],
-        alerte:
-          'Laissez la date de séance vide si le jour est illisible : l’année suffit à classer le document. Inventer un jour écrirait une information fausse dans une archive que plus personne ne pourra recouper.',
       },
     ],
   },

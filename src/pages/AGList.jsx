@@ -31,7 +31,22 @@ export default function AGList() {
       <PageHeader
         title="Assemblées Générales"
         subtitle="AGO / AGE — résolutions et budgets votés par les colotis."
-        actions={canManage && <Link to="/ag/nouvelle"><Button>+ Nouvelle AG</Button></Link>}
+        actions={
+          <>
+            {/* ⚠ LES ARCHIVES SE REJOIGNENT D'ICI, pas par le menu (arbitrage
+                Pascal, 2026-09-25) : on ne cherche pas le PV de 1978 en
+                parcourant un menu, on le cherche en pensant aux assemblées. En
+                entrée de menu distincte, le fonds devenait un second registre
+                concurrent du premier.
+                ⚠ Ouvert à TOUS, y compris à qui ne peut pas créer d'AG : c'est
+                une consultation, pas une gestion — d'où sa place hors du test
+                `canManage`. */}
+            <Link to="/ag/archives">
+              <Button variant="secondary">Archives des PV depuis 1955</Button>
+            </Link>
+            {canManage && <Link to="/ag/nouvelle"><Button>+ Nouvelle AG</Button></Link>}
+          </>
+        }
       />
       {ags.length === 0 ? (
         <EmptyState title="Aucune AG" hint="Créez la première assemblée générale." action={canManage && <Link to="/ag/nouvelle"><Button>Créer une AG</Button></Link>} />

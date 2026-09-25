@@ -119,7 +119,7 @@ export default function PVArchiveDetail() {
       <PageHeader
         title={pv.intitule}
         subtitle={`${pv.date_ag ? formatDate(pv.date_ag) : `${pv.annee} — jour inconnu`}${pv.type_ag ? ` · ${TYPE_LABELS[pv.type_ag] || pv.type_ag}` : ''}`}
-        actions={<Link to="/archives-pv" className="text-sm text-navy-600 underline">Retour aux archives</Link>}
+        actions={<Link to="/ag/archives" className="text-sm text-navy-600 underline">Retour aux archives</Link>}
       />
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}

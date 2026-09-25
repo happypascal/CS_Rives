@@ -58,10 +58,13 @@ const SECTIONS = [
       { to: '/envois', label: 'Envois aux colotis' },
       { to: '/membres', label: 'Membres du CS' },
       { to: '/memoire', label: 'Mémoire de l’ASL' },
-      // ⚠ Sous « Données » et non sous « Gestion », à côté de la Mémoire : c'est
-      // un fonds documentaire consultable, pas un écran de gestion. Le ranger
-      // près des Assemblées Générales laisserait croire qu'on y crée des AG.
-      { to: '/archives-pv', label: 'Archives des PV' },
+      // ⚠ PAS D'ENTRÉE « Archives des PV » ICI (arbitrage Pascal, 2026-09-25).
+      // Elle y a figuré une journée. Le fonds se rejoint par un BOUTON en tête
+      // de l'écran Assemblées Générales : on ne cherche pas le PV de 1978 en
+      // parcourant un menu, on le cherche en pensant aux assemblées. Une entrée
+      // de menu distincte en faisait un second registre, concurrent du premier.
+      // ⚠ La route `/ag/archives` existe toujours — c'est le CHEMIN D'ACCÈS qui
+      // change, pas l'écran.
     ],
   },
   {

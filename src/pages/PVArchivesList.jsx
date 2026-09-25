@@ -55,7 +55,7 @@ function LigneArchive({ a, requete }) {
     <li className="px-5 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link to={`/archives-pv/${a.id}`} className="font-medium text-navy-700 hover:underline">
+          <Link to={`/ag/archives/${a.id}`} className="font-medium text-navy-700 hover:underline">
             {a.intitule}
           </Link>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -123,6 +123,11 @@ export default function PVArchivesList() {
       <PageHeader
         title="Archives des procès-verbaux"
         subtitle="Les assemblées du lotissement depuis 1955, telles qu’elles ont été consignées."
+        // ⚠ Ce retour n'est pas décoratif : l'écran n'a plus d'entrée de menu
+        // (arbitrage Pascal, 2026-09-25), on y vient depuis les Assemblées
+        // Générales. Sans ce lien, on n'en ressort que par le bouton du
+        // navigateur — et le menu de gauche ne montre alors aucune page active.
+        actions={<Link to="/ag" className="text-sm text-navy-600 underline">Retour aux assemblées</Link>}
       />
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}

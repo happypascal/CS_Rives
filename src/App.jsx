@@ -55,6 +55,18 @@ export default function App() {
             <Route path="/ag/nouvelle" element={<AGForm />} />
             <Route path="/ag/:id" element={<AGDetail />} />
             <Route path="/ag/:id/modifier" element={<AGForm />} />
+            {/* Archives des PV (057) — SOUS `/ag`, et c'est voulu : le fonds se
+                rejoint par un bouton en tête des Assemblées Générales (arbitrage
+                Pascal, 2026-09-25), et cette URL fait que l'entrée de menu
+                « Assemblées Générales » reste active quand on le consulte.
+                ⚠ Un FONDS DOCUMENTAIRE malgré l'URL : aucune ligne n'est créée
+                dans `assemblees_generales`.
+                ⚠ `/ag/archives` n'est pas capturé par `/ag/:id` — react-router
+                classe par SPÉCIFICITÉ, un segment littéral l'emportant sur un
+                segment dynamique. Ce n'est donc pas l'ordre des lignes qui les
+                départage, et les intervertir ne casserait rien. */}
+            <Route path="/ag/archives" element={<PVArchivesList />} />
+            <Route path="/ag/archives/:id" element={<PVArchiveDetail />} />
             <Route path="/projets" element={<ProjetList />} />
             <Route path="/projets/nouveau" element={<ProjetForm />} />
             <Route path="/projets/:id" element={<ProjetDetail />} />
@@ -73,10 +85,6 @@ export default function App() {
                 des destinataires est fermée par la RLS — pas par la route. */}
             <Route path="/envois" element={<CommunicationsList />} />
             <Route path="/envois/:id" element={<CommunicationDetail />} />
-            {/* Archives des PV (057) : un FONDS DOCUMENTAIRE, pas des AG. Elles
-                ne créent aucune ligne dans `assemblees_generales`. */}
-            <Route path="/archives-pv" element={<PVArchivesList />} />
-            <Route path="/archives-pv/:id" element={<PVArchiveDetail />} />
             <Route path="/comment-faire" element={<CommentFaire />} />
             <Route path="/aide" element={<Aide />} />
           </Route>
