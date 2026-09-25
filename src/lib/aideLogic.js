@@ -543,7 +543,7 @@ export const MENUS = [
     cle: 'envois',
     menu: 'Envois aux colotis',
     visiblePar: TOUS,
-    aQuoi: 'Ce qui a été adressé aux propriétaires : le texte exact, la date, et à qui.',
+    aQuoi: 'Ce qui a été adressé aux propriétaires : le texte exact, la date, et à qui — y compris les campagnes antérieures, retrouvées après coup.',
     // ⚠ La note d'accès dit les DEUX limites de l'écran, parce que les deux se
     // prennent pour des pannes : on n'y envoie rien, et la liste nominative
     // n'est pas ouverte à tous.
@@ -561,6 +561,19 @@ export const MENUS = [
         ],
         alerte:
           'Le texte n’est pas modifiable, par personne. C’est un fait survenu : corriger un message déjà parti réécrirait l’histoire.',
+      },
+      {
+        titre: 'Distinguer une campagne certaine d’une campagne reconstituée',
+        pourQui: TOUS,
+        resume: 'Toutes les campagnes ne se valent pas, et l’écran le dit.',
+        etapes: [
+          'Dans la liste, la colonne « Fiabilité » porte « Journal d’envoi » ou « Reconstituée ».',
+          'Une campagne « Journal d’envoi » est adossée au journal du script : chaque destinataire y est nommé, avec le sort de son message.',
+          'Une campagne « Reconstituée » a été retrouvée après coup — le journal est écrasé à chaque envoi. Sa date et sa liste ont été établies par recoupement, et la fiche dit à partir de quoi.',
+          'Sur une campagne reconstituée, chaque destinataire porte « Supposé envoyé » : il figurait sur la liste, aucun envoi vers lui n’a été constaté.',
+        ],
+        alerte:
+          'Les colonnes « Envoyés » et « Erreurs » affichent un tiret sur une campagne reconstituée, et non zéro : rien n’a été constaté, ce qui n’est pas la même chose qu’un échec.',
       },
       {
         titre: 'Vérifier qui a reçu le message, et qui ne l’a pas reçu',

@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, Spinner, EmptyState, Badge } from '../components/ui'
 import { formatDateTime } from '../lib/format'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CANAL_LABELS } from '../lib/communicationLogic'
+import { CANAL_LABELS, FIABILITE_LABELS, FIABILITE_TONES, estReconstituee } from '../lib/communicationLogic'
 
 // HISTORIQUE DES ENVOIS AUX COLOTIS (migration 056).
 //
@@ -67,14 +67,27 @@ export default function CommunicationsList() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-navy-800">{e.objet}</p>
-                  {e.mode_test && <Badge tone="amber">essai</Badge>}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {e.mode_test && <Badge tone="amber">essai</Badge>}
+                    {estReconstituee(e) && <Badge tone={FIABILITE_TONES.reconstitue}>reconstituée</Badge>}
+                  </div>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">{formatDateTime(e.date_envoi)}</p>
                 <p className="mt-1 text-xs text-slate-500">
                   {e.nb_destinataires} destinataire{e.nb_destinataires > 1 ? 's' : ''}
-                  {' · '}
-                  <span className="text-emerald-700">{e.nb_envoyes} envoyé{e.nb_envoyes > 1 ? 's' : ''}</span>
-                  {e.nb_erreurs > 0 && <span className="text-red-700"> · {e.nb_erreurs} erreur{e.nb_erreurs > 1 ? 's' : ''}</span>}
+                  {/* ⚠ Une campagne reconstituée n'a AUCUN envoi constaté :
+                      afficher « 0 envoyés » à côté de 50 destinataires se
+                      lirait comme un échec total. On dit ce qui est vrai —
+                      l'envoi n'a pas été journalisé. */}
+                  {estReconstituee(e) ? (
+                    <span className="text-amber-700"> · envoi non journalisé</span>
+                  ) : (
+                    <>
+                      {' · '}
+                      <span className="text-emerald-700">{e.nb_envoyes} envoyé{e.nb_envoyes > 1 ? 's' : ''}</span>
+                      {e.nb_erreurs > 0 && <span className="text-red-700"> · {e.nb_erreurs} erreur{e.nb_erreurs > 1 ? 's' : ''}</span>}
+                    </>
+                  )}
                 </p>
               </Link>
             </li>
@@ -91,6 +104,7 @@ export default function CommunicationsList() {
                   <th className="px-4 py-2.5 text-right font-medium">Destinataires</th>
                   <th className="px-4 py-2.5 text-right font-medium">Envoyés</th>
                   <th className="px-4 py-2.5 text-right font-medium">Erreurs</th>
+                  <th className="px-4 py-2.5 font-medium">Fiabilité</th>
                   <th className="px-4 py-2.5 font-medium">Canal</th>
                 </tr>
               </thead>
@@ -103,11 +117,21 @@ export default function CommunicationsList() {
                       {e.mode_test && <span className="ml-2"><Badge tone="amber">essai</Badge></span>}
                     </td>
                     <td className="px-4 py-3 text-right text-slate-600">{e.nb_destinataires}</td>
-                    <td className="px-4 py-3 text-right text-emerald-700">{e.nb_envoyes}</td>
+                    {/* ⚠ Un tiret, pas un zéro, quand rien n'a été journalisé :
+                        « 0 envoyés » sur 50 destinataires se lirait comme un
+                        échec total, alors que le message est bien parti. */}
+                    <td className={`px-4 py-3 text-right ${estReconstituee(e) ? 'text-slate-400' : 'text-emerald-700'}`}>
+                      {estReconstituee(e) ? '—' : e.nb_envoyes}
+                    </td>
                     {/* Zéro erreur en gris : un zéro en rouge attire l'œil sur
                         une bonne nouvelle, et on finit par ne plus voir les vraies. */}
                     <td className={`px-4 py-3 text-right ${e.nb_erreurs > 0 ? 'font-medium text-red-700' : 'text-slate-400'}`}>
-                      {e.nb_erreurs}
+                      {estReconstituee(e) ? '—' : e.nb_erreurs}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge tone={FIABILITE_TONES[e.fiabilite] || 'gray'}>
+                        {FIABILITE_LABELS[e.fiabilite] || e.fiabilite}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500">{CANAL_LABELS[e.canal] || e.canal}</td>
                   </tr>

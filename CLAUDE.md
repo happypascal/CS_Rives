@@ -138,6 +138,11 @@ scripts/
   lire_pdf.swift      COUCHE TEXTE puis OCR français (PDFKit + Vision de macOS). ⚠ Ni tesseract,
                       ni ocrmypdf, ni pdftotext, ni Homebrew sur ce Mac — vérifié. Un seul appel
                       pour tous les fichiers : `swift x.swift` recompile à chaque exécution.
+  lire_eml.py         LECTURE D'UN .eml (en-têtes, destinataires, corps texte) par le module
+                      `email` de Python. ⚠ Un parseur maison rendrait du charabia : en-têtes
+                      repliés, noms en RFC 2047, corps multipart en quoted-printable.
+                      ⚠ Lit `To` + `Cc` + `Bcc` — s'en tenir au `Bcc` effaçait 14 destinataires
+                      réels du message du 18/08.
   journal_envoi.mjs   ANALYSE PURE du journal d'envoi, SANS Supabase — donc vérifiable avant
                       que la migration ne soit passée. ⚠ Le journal est en **retours chariot
                       seuls** (`\r`) : un découpage sur `\n` rend UNE ligne. ⚠ La date suit la
@@ -816,6 +821,40 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - ⚠ **L'entrée grisée « Messages aux propriétaires » a été RETIRÉE du menu** (et le rendu « à venir »
   avec elle) : à côté d'« Envois aux colotis », deux entrées aux noms voisins dont une morte
   désorientent au lieu de guider.
+
+#### Campagnes reconstituées (migration 058) — dire ce qu'on sait, et **comment**
+- ⚠ **TOUTES LES CAMPAGNES NE SE VALENT PAS.** Celle du 25/09 est adossée à un journal qui nomme
+  chaque destinataire et son sort ; les trois antérieures ont été **retrouvées après coup** (journal
+  écrasé), leur date et leur liste établies par recoupement. Les inscrire à l'identique ferait du
+  registre un menteur poli : tout y aurait l'air également certain.
+  - `communications.fiabilite` = `journal` | `reconstitue` (défaut `journal` — vrai de l'existant).
+  - `communication_destinataires.statut` gagne **`suppose_envoye`**. ⚠ Ce n'est **pas** un `envoye`
+    dégradé : la personne **figurait sur la liste**, aucun envoi vers elle n'a été constaté. La
+    différence compte le jour où quelqu'un affirme n'avoir rien reçu.
+  - **`nb_envoyes = 0` sur une reconstituée**, et l'écran affiche un **tiret**, pas un zéro : « 0
+    envoyés » sur 50 destinataires se lirait comme un échec total. Mettre 50 affirmerait 50 remises
+    vérifiées.
+  - Le `certitude` du manifeste finit dans `commentaire` et **s'affiche dans le bandeau** : c'est le
+    seul endroit qui dise à partir de quoi la date et la liste ont été établies.
+- **Mode reprise** : `importer_envois.mjs --campagnes "<_campagnes>"`, un sous-dossier par campagne
+  (`manifeste.json` + textes + liste, ou `message.eml`, ou un journal). Un journal présent **fait
+  foi** et rend la campagne `journal`.
+- ⚠ **LE `.eml` DU 18/08 PORTE AUSSI UN `To` DE 14 ADRESSES**, disjointes des 36 du `Bcc`. La spec
+  ne parlait que du `Bcc` : s'y tenir aurait **effacé 14 destinataires réels** sans que rien ne le
+  signale. On lit `To` + `Cc` + `Bcc`, dédoublonnés → **50 uniques** (le manifeste en annonçait
+  « 59 environ »). Les comptes par en-tête figurent au rapport.
+- ⚠ **Le `.eml` est lu par PYTHON** (`scripts/lire_eml.py`) : en-têtes repliés, noms en RFC 2047,
+  corps multipart en quoted-printable. Un parseur maison rend du charabia — ou pire, du texte
+  partiel qui a l'air correct. Même raisonnement que `lire_pdf.swift`.
+- ⚠ **LE FILET BILINGUE N'EST PAS LE MÊME PARTOUT** : le script écrit 60 tirets, le message du 18/08
+  — écrit à la main — sépare par `————`. `couperBilingue` coupe sur toute ligne de traits ; coder
+  celui du script aurait rangé tout l'anglais du 18/08 dans le corps français.
+- ⚠ **Les noms sont conservés TELS QUELS, mojibake comprise.** « M. Mme Hartwig Jean-Fran√ßois » est
+  correctement encodé dans le message : la corruption est dans la **fiche de contact au moment de
+  l'envoi**. La réparer ici écrirait autre chose que ce qui est parti, et masquerait une fiche à
+  corriger.
+- ⚠ **Tout canal doit avoir son libellé** dans `CANAL_LABELS` : sans lui, l'écran affiche la valeur
+  brute de la base (« mail_bcc ») au milieu de libellés français. Constaté, puis corrigé.
 
 ### Archives des PV depuis 1955 (migration 057) — un FONDS, pas des assemblées
 > Un voisin a conservé **tous les procès-verbaux depuis 1955**. L'application les conserve et les

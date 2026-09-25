@@ -119,6 +119,30 @@ export function parserJournal(texte, soucis = []) {
   }
 }
 
+// ------------------------------------------------- couper un corps bilingue
+//
+// Les messages partent en UN seul envoi contenant les deux langues, séparées
+// par un filet. ⚠ LE FILET N'EST PAS LE MÊME PARTOUT : le script d'envoi écrit
+// soixante tirets `-`, le message du 18 août — écrit à la main dans Mail —
+// sépare par quatre cadratins `————`. Coder le filet du script aurait rangé
+// tout le message du 18 août en français, anglais compris.
+//
+// On coupe donc sur la PREMIÈRE ligne composée uniquement de traits (au moins
+// trois), quel que soit le trait employé. Sans filet, tout reste en français :
+// mieux vaut un corps anglais vide qu'un découpage inventé au milieu d'une
+// phrase.
+const LIGNE_FILET = /^[\s]*[-—–_=]{3,}[\s]*$/
+
+export function couperBilingue(texte) {
+  const lignes = String(texte || '').replace(/\r\n?/g, '\n').split('\n')
+  const i = lignes.findIndex((l) => LIGNE_FILET.test(l))
+  if (i === -1) return { fr: String(texte || ''), en: null }
+  return {
+    fr: lignes.slice(0, i).join('\n').trimEnd(),
+    en: lignes.slice(i + 1).join('\n').trim() || null,
+  }
+}
+
 // ---------------------------------------------------------------- le TSV
 // nom <TAB> adresse <TAB> langue. Le script d'envoi n'utilise que les deux
 // premiers champs ; la langue ne sert qu'ici, à dire qui a reçu quoi.

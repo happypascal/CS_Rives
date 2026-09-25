@@ -717,8 +717,12 @@ create table if not exists communications (
   objet            text not null,
   corps_fr         text not null,
   corps_en         text,
+  -- ⚠ `mail_bcc` (058) : la campagne du 18 août est partie directement depuis
+  -- Mail, en copie cachée, hors script. Ce n'est pas un détail d'outil — c'est
+  -- ce qui explique qu'elle n'ait pas de journal et que ses destinataires se
+  -- lisent dans l'en-tête du message conservé.
   canal            text not null default 'applescript_mail'
-                   check (canal in ('applescript_mail','app')),
+                   check (canal in ('applescript_mail','mail_bcc','app')),
   mode_test        boolean not null default false,
   expediteur       text,
   nb_destinataires integer not null default 0,
@@ -726,6 +730,13 @@ create table if not exists communications (
   nb_erreurs       integer not null default 0,
   -- Le chemin du journal importé : la PIÈCE dont l'historique est tiré.
   source_fichier   text,
+  -- ⚠ TOUTES LES CAMPAGNES NE SE VALENT PAS, et le registre doit le dire (058).
+  -- `journal` = adossée à un journal qui nomme chaque destinataire et son sort ;
+  -- `reconstitue` = retrouvée après coup, date et liste établies par recoupement.
+  -- Les inscrire à l'identique ferait du registre un menteur poli : tout y
+  -- aurait l'air également certain.
+  fiabilite        text not null default 'journal'
+                   check (fiabilite in ('journal','reconstitue')),
   commentaire      text,
   cree_par         uuid references membres_cs(id),
   created_at       timestamptz not null default now(),
@@ -738,7 +749,10 @@ create table if not exists communication_destinataires (
   nom              text,
   email            text not null,
   langue           text,
-  statut           text not null check (statut in ('envoye','erreur')),
+  -- ⚠ `suppose_envoye` (058) n'est PAS un `envoye` dégradé : il dit que la
+  -- personne FIGURAIT SUR LA LISTE, pas qu'un envoi vers elle a été constaté.
+  -- La différence compte le jour où quelqu'un affirme n'avoir rien reçu.
+  statut           text not null check (statut in ('envoye','erreur','suppose_envoye')),
   message_erreur   text,
   -- ⚠ NULLABLE à dessein : une adresse sans correspondance dans le registre est
   -- soit un contact périmé, soit quelqu'un qui n'est pas coloti. Les deux cas

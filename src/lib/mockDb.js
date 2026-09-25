@@ -15,11 +15,11 @@ import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 // v14 : numéro attribué à la soumission (migration 034) — les brouillons de
 // démo n'ont plus de numéro. Le numéro de version force le reseed.
 // (v13 : sous-numéros de résolutions, 032. v12 : PJ sur l'AG, 031. v11 : 029.)
-// v17 : envois aux colotis (056) et archives des PV (057). Le numéro est
-// incrémenté pour que la démo reparte sur un jeu complet — un magasin plus
-// ancien n'a pas les nouvelles tables et les écrans s'y afficheraient vides,
-// ce qui n'est pas ce qu'on veut montrer.
-const STORAGE_KEY = 'cs_rives_mockdb_v17'
+// v18 : envois aux colotis (056), archives des PV (057), campagnes
+// reconstituées (058). Le numéro est incrémenté pour que la démo reparte sur un
+// jeu complet — un magasin plus ancien n'a pas les nouvelles tables ni la
+// colonne `fiabilite`, et les écrans s'y afficheraient vides ou incomplets.
+const STORAGE_KEY = 'cs_rives_mockdb_v18'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -378,6 +378,7 @@ function seed() {
   // un destinataire non rapproché : ce sont les deux cas que l'écran doit
   // savoir montrer, et une démo où tout est vert ne les montrerait jamais.
   const envoi1 = uid()
+  const envoi2 = uid()
   const communications = [
     {
       id: envoi1,
@@ -386,6 +387,7 @@ function seed() {
       corps_fr: 'Bonjour à tous,\n\nLe procès-verbal de notre assemblée générale est disponible. Comme voté au point 15, chaque coloti doit envoyer copie de son acte de vente au notaire.\n\nDate limite : 31 octobre 2026.\n\nCordialement,\nPascal Favre\nPour le Conseil Syndical',
       corps_en: 'Dear all,\n\nThe minutes of our general meeting are available. As voted under item 15, each co-owner must send a copy of their deed of sale to the notary.\n\nDeadline: 31 October 2026.\n\nKind regards,\nPascal Favre\nFor the Conseil Syndical',
       canal: 'applescript_mail',
+      fiabilite: 'journal',
       mode_test: false,
       expediteur: null,
       nb_destinataires: 3,
@@ -396,11 +398,39 @@ function seed() {
       cree_par: mPresident,
       created_at: '2026-09-25T13:10:00Z',
     },
+    // ⚠ UNE CAMPAGNE RECONSTITUÉE dans la démo (058), parce que c'est la
+    // distinction que l'écran existe pour montrer : sans elle, on ne verrait
+    // jamais ni le bandeau d'avertissement, ni le statut « supposé envoyé »,
+    // ni les tirets à la place des compteurs.
+    {
+      id: envoi2,
+      date_envoi: '2026-08-18T18:36:33.000Z',
+      objet: 'Lotissement de Rives — avez-vous vu ou entendu ?',
+      corps_fr: 'Chères et chers colotis,\n\nDeux d’entre nous ont entendu, dans la nuit du 7 au 8 août, un véhicule très bruyant dans l’allée.\n\nAvez-vous entendu ce véhicule vous aussi ?\n\nCordialement,\nPascal Favre',
+      corps_en: 'Dear fellow owners,\n\nTwo of us heard a very loud vehicle in the lane during the night of 7 to 8 August.\n\nDid you hear it too?\n\nKind regards,\nPascal Favre',
+      canal: 'mail_bcc',
+      fiabilite: 'reconstitue',
+      mode_test: false,
+      expediteur: 'Pascal Favre <pfa@example.ch>',
+      nb_destinataires: 2,
+      // ⚠ Zéro envoi CONSTATÉ, et ce n'est pas un échec : il n'y a pas eu de
+      // journal. L'écran affiche un tiret, pas un zéro.
+      nb_envoyes: 0,
+      nb_erreurs: 0,
+      source_fichier: '/Users/.../_campagnes/2026-08-18_.../message.eml',
+      commentaire: 'date, objet et destinataires certains — envoi direct depuis Mail, pas par le script',
+      cree_par: mPresident,
+      created_at: '2026-09-25T16:00:00Z',
+    },
   ]
   const communication_destinataires = [
     { id: uid(), communication_id: envoi1, nom: 'Dubois Henri', email: 'henri.dubois@example.com', langue: 'FR', statut: 'envoye', message_erreur: null, proprietaire_id: null, rang: 1, created_at: '2026-09-25T13:10:00Z' },
     { id: uid(), communication_id: envoi1, nom: 'Allen Peregrine', email: 'allen@example.co.uk', langue: 'EN', statut: 'envoye', message_erreur: null, proprietaire_id: null, rang: 2, created_at: '2026-09-25T13:10:00Z' },
     { id: uid(), communication_id: envoi1, nom: 'Martin Claire', email: 'claire.martin@example.com', langue: 'FR', statut: 'erreur', message_erreur: 'Mail n’a pas pu remettre le message : adresse refusée par le serveur distant.', proprietaire_id: null, rang: 3, created_at: '2026-09-25T13:10:00Z' },
+    // Campagne reconstituée : `suppose_envoye`, jamais `envoye`. Ils figuraient
+    // sur la liste — aucun envoi vers eux n'a été constaté.
+    { id: uid(), communication_id: envoi2, nom: 'Dubois Henri', email: 'henri.dubois@example.com', langue: null, statut: 'suppose_envoye', message_erreur: null, proprietaire_id: null, rang: 1, created_at: '2026-09-25T16:00:00Z' },
+    { id: uid(), communication_id: envoi2, nom: 'Allen Peregrine', email: 'allen@example.co.uk', langue: null, statut: 'suppose_envoye', message_erreur: null, proprietaire_id: null, rang: 2, created_at: '2026-09-25T16:00:00Z' },
   ]
 
   // Archives des PV (057). Trois documents qui couvrent les trois cas que

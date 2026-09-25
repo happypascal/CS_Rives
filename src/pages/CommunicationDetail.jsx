@@ -8,6 +8,7 @@ import { useAuth } from '../lib/AuthContext'
 import { formatDateTime } from '../lib/format'
 import {
   CANAL_LABELS, STATUT_LABELS, STATUT_TONES, LANGUE_LABELS,
+  FIABILITE_LABELS, FIABILITE_TONES, estReconstituee,
   nonRapproches, paragraphes,
 } from '../lib/communicationLogic'
 
@@ -128,6 +129,23 @@ export default function CommunicationDetail() {
         </Card>
       )}
 
+      {/* ⚠ CE BANDEAU EST LA RAISON D'ÊTRE DE LA MIGRATION 058. Sans lui, une
+          campagne retrouvée après coup aurait exactement l'allure d'une campagne
+          journalisée, et le registre affirmerait plus qu'il ne sait. Le
+          commentaire porte le « comment on le sait » — d'où le rappel ici même,
+          plutôt que relégué dans la colonne de droite. */}
+      {estReconstituee(envoi) && (
+        <Card className="mb-4 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p>
+            Campagne <strong>reconstituée</strong> : elle a été retrouvée après coup, le journal d’envoi
+            ayant été écrasé depuis. Sa date et sa liste de destinataires ont été établies par recoupement —
+            <strong> aucun envoi n’a été constaté destinataire par destinataire</strong>, d’où la mention
+            « supposé envoyé » sur chaque ligne.
+          </p>
+          {envoi.commentaire && <p className="mt-2 italic">{envoi.commentaire}</p>}
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card>
@@ -149,7 +167,9 @@ export default function CommunicationDetail() {
           <Card className="overflow-hidden">
             <CardHeader
               title="Destinataires"
-              subtitle={`${envoi.nb_destinataires} au total · ${envoi.nb_envoyes} envoyé(s) · ${envoi.nb_erreurs} erreur(s)`}
+              subtitle={estReconstituee(envoi)
+                ? `${envoi.nb_destinataires} au total · envoi non journalisé`
+                : `${envoi.nb_destinataires} au total · ${envoi.nb_envoyes} envoyé(s) · ${envoi.nb_erreurs} erreur(s)`}
             />
             {/* ⚠ `destinataires === null` ne veut pas dire « aucun » mais
                 « vous n'avez pas à les voir » : le distinguer est indispensable,
@@ -179,6 +199,14 @@ export default function CommunicationDetail() {
               <div>
                 <dt className="text-xs uppercase tracking-wide text-slate-500">Canal</dt>
                 <dd className="text-slate-700">{CANAL_LABELS[envoi.canal] || envoi.canal}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-slate-500">Fiabilité</dt>
+                <dd>
+                  <Badge tone={FIABILITE_TONES[envoi.fiabilite] || 'gray'}>
+                    {FIABILITE_LABELS[envoi.fiabilite] || envoi.fiabilite}
+                  </Badge>
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-slate-500">Expéditeur</dt>
