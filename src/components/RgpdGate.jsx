@@ -27,7 +27,26 @@ import {
   RGPD_RAPPEL_COURT,
 } from '../lib/rgpdRegistre'
 
-export function RgpdGate({ children }) {
+/**
+ * @param quoi   Ce qui est protégé, au singulier et sans article — « Le registre
+ *               des propriétaires » par défaut. Sert au refus adressé aux
+ *               non-bureau : nommer le mauvais écran ferait chercher ailleurs.
+ *
+ * ⚠ L'ACCEPTATION EST COMMUNE À TOUS LES ÉCRANS QU'ELLE PROTÈGE, et c'est
+ * voulu : la liste des destinataires d'un envoi (056) porte exactement les
+ * adresses électroniques du registre des propriétaires, donc la même obligation
+ * sur les mêmes personnes. La redemander écran par écran transformerait une
+ * mention qu'on lit en une case qu'on clique.
+ *
+ * @param compact  Rendu SANS en-tête de page ni cadre propre, pour un usage à
+ *                 l'intérieur d'une carte (la liste des destinataires d'un
+ *                 envoi, 056). ⚠ Ce n'est pas une variante cosmétique : la
+ *                 version pleine page affichée dans une carte produisait un
+ *                 titre de page au milieu d'un écran, et annonçait « avant
+ *                 d'accéder au registre » alors qu'on ouvrait un envoi. La
+ *                 mention et l'acceptation, elles, sont exactement les mêmes.
+ */
+export function RgpdGate({ children, quoi = 'Le registre des propriétaires', compact = false }) {
   const { user, isAdmin, isSecretaire, marquerRgpdAccepte } = useAuth()
   const bureau = isAdmin || isSecretaire
   // `null` tant qu'on n'a rien accepté dans CETTE session : la valeur de départ
@@ -37,15 +56,19 @@ export function RgpdGate({ children }) {
   const [error, setError] = useState('')
 
   if (!bureau) {
+    const refus = (
+      <p>
+        {quoi} est réservé au <strong>président</strong> et au{' '}
+        <strong>secrétaire</strong>. Il contient des données personnelles de tiers — noms, adresses privées,
+        coordonnées — que les autres membres du Conseil Syndical n’ont pas à consulter.
+      </p>
+    )
+    if (compact) return <div className="p-5 text-sm text-slate-600">{refus}</div>
     return (
       <div>
         <PageHeader title="Accès restreint" />
         <Card className="p-6 text-sm text-slate-600">
-          <p>
-            Le registre des propriétaires est réservé au <strong>président</strong> et au{' '}
-            <strong>secrétaire</strong>. Il contient des données personnelles de tiers — noms, adresses privées,
-            coordonnées — que les autres membres du Conseil Syndical n’ont pas à consulter.
-          </p>
+          {refus}
           <p className="mt-3"><Link to="/registre" className="text-navy-600 underline">← Retour aux décisions</Link></p>
         </Card>
       </div>
@@ -70,27 +93,35 @@ export function RgpdGate({ children }) {
         setBusy(false)
       }
     }
+    const mention = (
+      <>
+        <div className="space-y-3 text-sm text-slate-700">
+          {compact && <p className="font-semibold text-navy-800">{RGPD_REGISTRE_TITRE}</p>}
+          {RGPD_REGISTRE_PARAGRAPHES.map((p) => <p key={p.slice(0, 30)}>{p}</p>)}
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-semibold text-amber-900">Communicable à un tiers, et rien d’autre :</p>
+            <ul className="mt-1 list-disc pl-5 text-sm text-amber-900">
+              {RGPD_COMMUNICABLE.map((c) => <li key={c}>{c}</li>)}
+            </ul>
+          </div>
+        </div>
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+          {/* ⚠ Pas de « Ne pas accéder » en compact : il renverrait au registre
+              des décisions depuis le milieu d'un écran déjà ouvert. Ne rien
+              cliquer suffit — la mention reste à la place des données. */}
+          {!compact && <Link to="/registre"><Button variant="ghost">Ne pas accéder</Button></Link>}
+          <Button onClick={accepter} disabled={busy}>
+            {busy ? 'Enregistrement…' : 'J’ai lu et j’accepte ces obligations'}
+          </Button>
+        </div>
+      </>
+    )
+    if (compact) return <div className="p-5">{mention}</div>
     return (
       <div>
         <PageHeader title={RGPD_REGISTRE_TITRE} subtitle="À lire avant d’accéder au registre." />
-        <Card className="p-6">
-          <div className="space-y-3 text-sm text-slate-700">
-            {RGPD_REGISTRE_PARAGRAPHES.map((p) => <p key={p.slice(0, 30)}>{p}</p>)}
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-              <p className="text-sm font-semibold text-amber-900">Communicable à un tiers, et rien d’autre :</p>
-              <ul className="mt-1 list-disc pl-5 text-sm text-amber-900">
-                {RGPD_COMMUNICABLE.map((c) => <li key={c}>{c}</li>)}
-              </ul>
-            </div>
-          </div>
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-          <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-            <Link to="/registre"><Button variant="ghost">Ne pas accéder</Button></Link>
-            <Button onClick={accepter} disabled={busy}>
-              {busy ? 'Enregistrement…' : 'J’ai lu et j’accepte ces obligations'}
-            </Button>
-          </div>
-        </Card>
+        <Card className="p-6">{mention}</Card>
       </div>
     )
   }
@@ -99,7 +130,9 @@ export function RgpdGate({ children }) {
     <>
       {/* Rappel permanent : la mention longue n'est lue qu'une fois, la règle
           s'applique à chaque consultation. */}
-      <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+      <div className={compact
+        ? 'border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs text-amber-900'
+        : 'mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900'}>
         {RGPD_RAPPEL_COURT}
       </div>
       {children}

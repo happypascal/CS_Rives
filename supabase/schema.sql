@@ -697,6 +697,63 @@ create trigger trg_proprietaires_normalize_email
   on proprietaires
   for each row execute function proprietaires_normalize_email();
 
+-- =============================================================================
+-- HISTORIQUE DES ENVOIS AUX COLOTIS (migration 056)
+--
+-- Les messages collectifs partent par un AppleScript depuis Mail, et son journal
+-- est ÉCRASÉ à chaque campagne. Convoquer, relancer, informer sont des actes de
+-- gestion : le registre garde qui a été destinataire, quel texte exact, quand.
+--
+-- ⚠ DEUX TABLES POUR DEUX DROITS D'ACCÈS, pas par goût de la normalisation :
+-- la campagne se lit par tous les membres, la liste des adresses non (cf. la
+-- section RLS). Les fondre en un seul jsonb aurait rendu ce partage impossible.
+--
+-- ⚠ RIEN QUI SOIT PROPRE À MAIL : la phase 2 fera partir les messages depuis
+-- l'application, et `canal` est la seule colonne qui connaisse l'outil.
+-- =============================================================================
+create table if not exists communications (
+  id               uuid primary key default gen_random_uuid(),
+  date_envoi       timestamptz not null,
+  objet            text not null,
+  corps_fr         text not null,
+  corps_en         text,
+  canal            text not null default 'applescript_mail'
+                   check (canal in ('applescript_mail','app')),
+  mode_test        boolean not null default false,
+  expediteur       text,
+  nb_destinataires integer not null default 0,
+  nb_envoyes       integer not null default 0,
+  nb_erreurs       integer not null default 0,
+  -- Le chemin du journal importé : la PIÈCE dont l'historique est tiré.
+  source_fichier   text,
+  commentaire      text,
+  cree_par         uuid references membres_cs(id),
+  created_at       timestamptz not null default now(),
+  unique (date_envoi, objet)
+);
+
+create table if not exists communication_destinataires (
+  id               uuid primary key default gen_random_uuid(),
+  communication_id uuid not null references communications(id) on delete cascade,
+  nom              text,
+  email            text not null,
+  langue           text,
+  statut           text not null check (statut in ('envoye','erreur')),
+  message_erreur   text,
+  -- ⚠ NULLABLE à dessein : une adresse sans correspondance dans le registre est
+  -- soit un contact périmé, soit quelqu'un qui n'est pas coloti. Les deux cas
+  -- doivent rester VISIBLES. On ne crée jamais un propriétaire à cette occasion.
+  proprietaire_id  uuid references proprietaires(id),
+  rang             integer,
+  created_at       timestamptz not null default now(),
+  unique (communication_id, email)
+);
+
+create index if not exists communications_date_idx
+  on communications (date_envoi desc);
+create index if not exists communication_destinataires_comm_idx
+  on communication_destinataires (communication_id);
+
 -- ------------------------------------------- acceptation de la mention RGPD
 -- Portée par le membre : c'est un fait le concernant, et il n'a à l'accepter
 -- qu'une fois. Horodatée pour pouvoir dire QUAND elle a été acceptée — une
@@ -1510,6 +1567,39 @@ create policy "comptes_ag_tresorier_delete" on comptes_ag for delete to authenti
 drop policy if exists "comptes_ag_president_delete" on comptes_ag;
 create policy "comptes_ag_president_delete" on comptes_ag for delete to authenticated
   using (is_admin() and role = 'president');
+
+-- Envois aux colotis (migration 056) — DEUX RÉGIMES, ET C'EST LE POINT.
+--
+-- ⚠ La campagne se lit par TOUS les membres : c'est un acte de gestion, et le
+-- texte a de toute façon été envoyé à cinquante-cinq personnes. Un trésorier
+-- doit pouvoir vérifier qu'une information a été diffusée.
+--
+-- ⚠ Les DESTINATAIRES suivent `lots` et `proprietaires` (035) : président et
+-- secrétaire uniquement, lecture comme écriture — ce sont exactement les
+-- adresses que la 035 a fermées, et les rouvrir ici les ferait fuir par la porte
+-- de derrière. Une seule policy `for all` : une lecture ouverte posée par
+-- distraction à côté d'une écriture fermée serait invisible.
+--
+-- Conséquence assumée : les autres membres voient qu'une campagne est partie,
+-- son texte et le NOMBRE de destinataires, mais pas à qui.
+alter table communications              enable row level security;
+alter table communication_destinataires enable row level security;
+
+drop policy if exists "read_auth" on communications;
+create policy "read_auth" on communications
+  for select to authenticated using (true);
+
+drop policy if exists "communications_bureau_write" on communications;
+create policy "communications_bureau_write" on communications
+  for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+drop policy if exists "communication_destinataires_bureau" on communication_destinataires;
+create policy "communication_destinataires_bureau" on communication_destinataires
+  for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
 
 -- =============================================================================
 -- Storage — bucket privé `documents` (voir migration 012 pour le raisonnement)

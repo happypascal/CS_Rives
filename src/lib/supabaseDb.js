@@ -730,6 +730,39 @@ export const supabaseRepo = {
     return must(await supabase.rpc('accepter_rgpd_registre'))
   },
 
+  // ---- Envois aux colotis (migration 056) ----
+  //
+  // Un HISTORIQUE, pas un outil d'envoi : rien ne part d'ici en phase 1. Le
+  // script `scripts/importer_envois.mjs` est le seul à écrire ces lignes.
+  async listCommunications() {
+    return must(await supabase.from('communications').select('*').order('date_envoi', { ascending: false }))
+  },
+
+  async getCommunication(id) {
+    const c = must(await supabase.from('communications').select('*').eq('id', id).maybeSingle())
+    if (!c) return null
+    // ⚠ LA RLS DES DESTINATAIRES NE RENVOIE PAS D'ERREUR À UN NON-BUREAU : un
+    // select filtré par policy rend simplement zéro ligne. Or « zéro
+    // destinataire » et « vous n'avez pas à les voir » sont deux choses
+    // opposées, et la première ferait dire à l'écran qu'un message n'est parti
+    // à personne. On tranche sur `nb_destinataires`, qui est porté par la
+    // campagne elle-même et lisible par tous : une liste vide alors que la
+    // campagne en annonce est une RESTRICTION, pas un envoi à vide.
+    const lignes = must(await supabase.from('communication_destinataires')
+      .select('*').eq('communication_id', id).order('rang', { ascending: true }))
+    const restreint = lignes.length === 0 && (c.nb_destinataires || 0) > 0
+    return { ...c, destinataires: restreint ? null : lignes }
+  },
+
+  // ⚠ Payload limité au SEUL champ modifiable. Le reste est un fait survenu :
+  // corriger le texte d'un message déjà parti réécrirait l'histoire, et
+  // `communications` n'a d'ailleurs aucune policy qui l'autoriserait à un autre
+  // que le bureau.
+  async updateCommunicationCommentaire(id, commentaire) {
+    return must(await supabase.from('communications')
+      .update({ commentaire: commentaire || null }).eq('id', id).select())[0]
+  },
+
   // ---- Audit ----
   async listAudit(limit = 100) {
     return must(await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit))

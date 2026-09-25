@@ -15,7 +15,10 @@ import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 // v14 : numéro attribué à la soumission (migration 034) — les brouillons de
 // démo n'ont plus de numéro. Le numéro de version force le reseed.
 // (v13 : sous-numéros de résolutions, 032. v12 : PJ sur l'AG, 031. v11 : 029.)
-const STORAGE_KEY = 'cs_rives_mockdb_v15'
+// v16 : arrivée des envois aux colotis (056). Le numéro est incrémenté pour que
+// la démo reparte sur un jeu complet — un magasin v15 n'a pas les deux nouvelles
+// tables et l'écran s'y afficherait vide, ce qui n'est pas ce qu'on veut montrer.
+const STORAGE_KEY = 'cs_rives_mockdb_v16'
 const SESSION_KEY = 'cs_rives_session'
 
 const uid = () =>
@@ -370,7 +373,36 @@ function seed() {
   // Paramètres de l'application (054). Même valeur de départ qu'en base.
   const parametres = { m2_total_lotissement: '104646', delai_contestation_mois: '12' }
 
-  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log }
+  // Envois aux colotis (056). Une campagne de démonstration, avec un échec et
+  // un destinataire non rapproché : ce sont les deux cas que l'écran doit
+  // savoir montrer, et une démo où tout est vert ne les montrerait jamais.
+  const envoi1 = uid()
+  const communications = [
+    {
+      id: envoi1,
+      date_envoi: '2026-09-25T12:49:00.000Z',
+      objet: 'ASL Rives — transmission de votre titre de propriété avant le 31 octobre',
+      corps_fr: 'Bonjour à tous,\n\nLe procès-verbal de notre assemblée générale est disponible. Comme voté au point 15, chaque coloti doit envoyer copie de son acte de vente au notaire.\n\nDate limite : 31 octobre 2026.\n\nCordialement,\nPascal Favre\nPour le Conseil Syndical',
+      corps_en: 'Dear all,\n\nThe minutes of our general meeting are available. As voted under item 15, each co-owner must send a copy of their deed of sale to the notary.\n\nDeadline: 31 October 2026.\n\nKind regards,\nPascal Favre\nFor the Conseil Syndical',
+      canal: 'applescript_mail',
+      mode_test: false,
+      expediteur: null,
+      nb_destinataires: 3,
+      nb_envoyes: 2,
+      nb_erreurs: 1,
+      source_fichier: '/Users/.../7-contacts/Envoi_colotis.log',
+      commentaire: null,
+      cree_par: mPresident,
+      created_at: '2026-09-25T13:10:00Z',
+    },
+  ]
+  const communication_destinataires = [
+    { id: uid(), communication_id: envoi1, nom: 'Dubois Henri', email: 'henri.dubois@example.com', langue: 'FR', statut: 'envoye', message_erreur: null, proprietaire_id: null, rang: 1, created_at: '2026-09-25T13:10:00Z' },
+    { id: uid(), communication_id: envoi1, nom: 'Allen Peregrine', email: 'allen@example.co.uk', langue: 'EN', statut: 'envoye', message_erreur: null, proprietaire_id: null, rang: 2, created_at: '2026-09-25T13:10:00Z' },
+    { id: uid(), communication_id: envoi1, nom: 'Martin Claire', email: 'claire.martin@example.com', langue: 'FR', statut: 'erreur', message_erreur: 'Mail n’a pas pu remettre le message : adresse refusée par le serveur distant.', proprietaire_id: null, rang: 3, created_at: '2026-09-25T13:10:00Z' },
+  ]
+
+  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log, communications, communication_destinataires }
 }
 
 // ---------------------------------------------------------------- store
@@ -1797,6 +1829,57 @@ export const mockRepo = {
     // Renvoie la DATE, comme `accepter_rgpd_registre` côté Supabase — l'écran
     // la reporte dans le contexte d'auth pour ne pas redemander l'acceptation.
     return m.registre_rgpd_accepte_le
+  },
+
+  // ---- Envois aux colotis (migration 056) ----
+  //
+  // Un HISTORIQUE, pas un outil d'envoi : l'application n'expédie rien en phase
+  // 1, elle enregistre ce qui est parti par ailleurs. Le script
+  // `scripts/importer_envois.mjs` est le seul à écrire ici.
+  //
+  // ⚠ Le mock ne prouve RIEN sur le partage des droits (campagne lue par tous,
+  // destinataires réservés au bureau) : seules les policies ferment. Il le
+  // reproduit pour que la démo montre le même refus.
+  async listCommunications() {
+    await delay()
+    const data = load()
+    return clone(data.communications || []).sort(byDateDesc('date_envoi'))
+  },
+
+  async getCommunication(id) {
+    await delay()
+    const data = load()
+    const c = (data.communications || []).find((x) => x.id === id)
+    if (!c) return null
+    const user = getSessionUser()
+    const bureau = user?.role === 'admin' || user?.membre_role === 'secretaire'
+    return {
+      ...clone(c),
+      // ⚠ `destinataires: null` ne veut PAS dire « aucun destinataire » mais
+      // « vous n'avez pas à les voir ». L'écran doit distinguer les deux, sinon
+      // il annoncerait un envoi à personne.
+      destinataires: bureau
+        ? clone((data.communication_destinataires || []).filter((d) => d.communication_id === id))
+            .sort((a, b) => (a.rang || 0) - (b.rang || 0))
+        : null,
+    }
+  },
+
+  // Le SEUL champ modifiable depuis l'application : ce sont des faits survenus,
+  // pas des brouillons. Corriger le texte d'un message déjà parti réécrirait
+  // l'histoire.
+  async updateCommunicationCommentaire(id, commentaire) {
+    await delay()
+    const data = load()
+    const c = (data.communications || []).find((x) => x.id === id)
+    if (!c) throw new Error('Campagne introuvable')
+    const user = getSessionUser()
+    if (!(user?.role === 'admin' || user?.membre_role === 'secretaire')) {
+      throw new Error('Seuls le président et le secrétaire annotent un envoi.')
+    }
+    c.commentaire = commentaire || null
+    save(data)
+    return clone(c)
   },
 
   // ---- Audit ----

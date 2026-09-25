@@ -501,6 +501,51 @@ export const MENUS = [
   },
 
   {
+    cle: 'envois',
+    menu: 'Envois aux colotis',
+    visiblePar: TOUS,
+    aQuoi: 'Ce qui a été adressé aux propriétaires : le texte exact, la date, et à qui.',
+    // ⚠ La note d'accès dit les DEUX limites de l'écran, parce que les deux se
+    // prennent pour des pannes : on n'y envoie rien, et la liste nominative
+    // n'est pas ouverte à tous.
+    noteAcces:
+      'Vous pouvez lire toutes les campagnes et leur texte intégral. La liste nominative des destinataires est réservée au président et au secrétaire : ce sont les adresses du registre des propriétaires. Le nombre de destinataires, lui, reste visible.',
+    actions: [
+      {
+        titre: 'Relire un message envoyé aux colotis',
+        pourQui: TOUS,
+        resume: 'Le texte exact qui est parti, français et anglais.',
+        etapes: [
+          'Ouvrez « Envois aux colotis » : les campagnes sont rangées de la plus récente à la plus ancienne.',
+          'Cliquez sur l’objet pour ouvrir la fiche.',
+          'Le message y figure dans sa forme reçue : la version française, puis la version anglaise. Chaque destinataire n’a reçu qu’un seul message, contenant les deux.',
+        ],
+        alerte:
+          'Le texte n’est pas modifiable, par personne. C’est un fait survenu : corriger un message déjà parti réécrirait l’histoire.',
+      },
+      {
+        titre: 'Vérifier qui a reçu le message, et qui ne l’a pas reçu',
+        pourQui: ['president', 'secretaire'],
+        resume: 'La liste nominative, avec les échecs d’envoi.',
+        etapes: [
+          'Ouvrez la campagne : les destinataires sont listés dans l’ordre réel de l’envoi.',
+          'Un échec porte le message renvoyé par Mail, tel quel.',
+          'Les adresses signalées « hors registre » ne correspondent à aucun contact officiel du registre des propriétaires : contact périmé, ou destinataire qui n’est pas coloti. Vérifiez la fiche concernée — le prochain envoi manquerait la même personne.',
+        ],
+      },
+      {
+        titre: 'Annoter une campagne',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Le seul champ modifiable de l’écran.',
+        etapes: [
+          'Ouvrez la campagne, saisissez le commentaire, enregistrez.',
+          'Écrivez-y ce qu’il faudra savoir en relisant cet envoi dans deux ans : une relance, une réponse reçue hors application, une erreur constatée après coup.',
+        ],
+      },
+    ],
+  },
+
+  {
     cle: 'membres',
     menu: 'Membres du CS',
     visiblePar: TOUS,

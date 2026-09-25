@@ -85,6 +85,8 @@ src/
                       l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
     pdf.js            PDF registre + décision unique, lignes de signature
+    communicationLogic.js  ENVOIS AUX COLOTIS : libellés de canal/statut, découpage du corps
+                      (texte brut, jamais du HTML) et repérage des destinataires non rapprochés
     share.js          texte WhatsApp + URL wa.me (notification manuelle)
     signatureProvider.js  couche signature : provider mock + stub yousign
     useIsMobile.js    matchMedia <768px
@@ -105,7 +107,8 @@ src/
                       Aide (manuel écran par écran) + CommentFaire (parcours transversaux),
                       SujetList/SujetDetail (mémoire du lotissement),
                       DecisionForm/Detail, Signatures, AGList/Form/Detail,
-                      ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres
+                      ProjetList/Form/Detail, BudgetsConsolidated, Membres, Parametres,
+                      CommunicationsList/CommunicationDetail (envois aux colotis)
 scripts/
   export_md.mjs       EXPORT LISIBLE de toute la base en UN fichier Markdown, pour qu'un
                       assistant relise l'état du registre d'un bloc et réponde à « qu'est-ce
@@ -117,6 +120,19 @@ scripts/
                       `export/` est git-ignoré, `--sans-perso` produit une version partageable.
                       Toute table non mise en forme est dumpée brute en fin de fichier, pour
                       qu'une table future n'en disparaisse pas en silence.
+  importer_envois.mjs IMPORT DE LA DERNIÈRE CAMPAGNE d'envoi aux colotis (056). Essai à blanc
+                      par défaut, `--go` pour écrire, idempotent sur `(date_envoi, objet)`.
+                      ⚠ **REFUSE l'import** si l'objet du journal ne correspond plus à
+                      `Message_objet.txt` : les textes auraient changé depuis l'envoi, et on
+                      inscrirait au registre un texte qui n'est pas celui qui est parti.
+                      ⚠ **N'a PAS de garde de sauvegarde** : il n'insère que dans deux tables
+                      neuves. `--archiver` copie les trois textes dans `_OLD/`, **l'AppleScript
+                      n'est pas modifié**.
+  journal_envoi.mjs   ANALYSE PURE du journal d'envoi, SANS Supabase — donc vérifiable avant
+                      que la migration ne soit passée. ⚠ Le journal est en **retours chariot
+                      seuls** (`\r`) : un découpage sur `\n` rend UNE ligne. ⚠ La date suit la
+                      **locale du Mac** (anglais ou français) et n'est **jamais devinée** : un
+                      format non reconnu fait échouer l'import, il ne retombe pas sur aujourd'hui.
   backup.mjs          sauvegarde de la base (tables découvertes via l'OpenAPI PostgREST)
   restore.mjs         restauration — ⚠ ordre d'insertion NON codé en dur : insertion par
                       PASSES, ce qui échoue sur une clé étrangère repasse au tour suivant.
@@ -754,9 +770,47 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - Le mock reproduit la garde de rôle pour que la démo montre le même refus — il ne **prouve** rien,
   seules les policies ferment. À éprouver sur staging.
 
+### Envois aux colotis (migration 056) — un HISTORIQUE, pas un outil d'envoi
+> Les messages collectifs partent d'un **AppleScript**, depuis Mail, sur le Mac de Pascal, et son
+> journal est **écrasé à chaque campagne**. Convoquer, relancer, informer sont des actes de gestion :
+> le registre garde qui a été destinataire, quel texte exact, à quelle date.
+
+- ⚠ **L'APPLICATION N'ENVOIE RIEN** (phase 1). `scripts/importer_envois.mjs` lit le dossier d'envoi
+  après chaque campagne et inscrit la dernière. La phase 2 fera partir les messages d'ici — d'ici là,
+  promettre un bouton d'envoi serait un mensonge d'interface. **`canal` est la SEULE colonne qui
+  connaisse l'outil** (`applescript_mail` / `app`), pour que la bascule n'impose aucune migration.
+- ⚠ **IL NE RECONSTITUE QUE LA DERNIÈRE CAMPAGNE** : le journal est réécrit à chaque exécution.
+  À lancer **après chaque envoi**. Les antérieures ne survivent que dans `_OLD/`. Accepté.
+- ⚠ **DEUX TABLES POUR DEUX DROITS D'ACCÈS**, pas par goût de la normalisation. `communications`
+  suit `sujet_entrees` (**lue par tous** : un acte de gestion, et le texte a été adressé à 55
+  personnes) ; `communication_destinataires` suit `proprietaires` (**président et secrétaire
+  seuls** : ce sont exactement les adresses que la 035 a fermées, les rouvrir ici les ferait fuir
+  par la porte de derrière). Les fondre en un seul jsonb aurait rendu ce partage impossible.
+  - ⚠ **La spécification demandait les deux à la fois** — « lecture pour tout membre authentifié »
+    *et* « même régime que `proprietaires` », qui sont opposés. Tranché par la **nature de la
+    donnée**. Écart assumé, à confirmer avec Pascal.
+  - ⚠ **Côté Supabase, la RLS ne renvoie pas d'erreur** à un non-bureau : le select rend zéro ligne.
+    `getCommunication` tranche sur `nb_destinataires` (porté par la campagne, lisible par tous) et
+    renvoie `destinataires: null` — **« vous n'avez pas à les voir », pas « envoyé à personne »**.
+    Confondre les deux ferait dire à l'écran qu'un message n'est parti à personne.
+- **`RgpdGate` a un mode `compact`** (dans une carte, sans en-tête de page) et un libellé `quoi`.
+  L'**acceptation est commune** à tous les écrans qu'il protège : ce sont les mêmes adresses, donc la
+  même obligation. La redemander écran par écran transformerait une mention qu'on lit en une case
+  qu'on clique.
+- **Rien n'est modifiable depuis l'app, sauf `commentaire`** : ce sont des faits survenus, pas des
+  brouillons. Corriger le texte d'un message déjà parti réécrirait l'histoire.
+- ⚠ **`proprietaire_id` nullable, et c'est un SIGNALEMENT** : une adresse sans correspondance est
+  soit un contact périmé — le prochain envoi manquera la même personne — soit quelqu'un qui n'est
+  pas coloti. Le script **ne crée jamais** de propriétaire à cette occasion, et l'écran affiche
+  « hors registre ».
+- ⚠ **L'entrée grisée « Messages aux propriétaires » a été RETIRÉE du menu** (et le rendu « à venir »
+  avec elle) : à côté d'« Envois aux colotis », deux entrées aux noms voisins dont une morte
+  désorientent au lieu de guider.
+
 Tables : `membres_cs`, `mandats_cs`, `parametres`, `assemblees_generales`, `resolutions_ag`, `projets`,
 `decisions`, `votes`, `questions_reponses`, `signature_batches`, `decision_status_history`,
-`decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`.
+`decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`,
+`communications`, `communication_destinataires`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`

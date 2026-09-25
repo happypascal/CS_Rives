@@ -39,18 +39,23 @@ const SECTIONS = [
       { to: '/ag', label: 'Assemblées Générales' },
       { to: '/budgets', label: 'Budgets' },
       { to: '/signatures', label: 'Signatures légales', visible: (a) => a.isAdmin || a.isSecretaire },
-      // ⚠ Annoncé mais PAS ENCORE CONSTRUIT : l'envoi groupé aux colotis attend
-      // l'adresse de l'ASL et un service d'envoi (cf. docs/ETAT_COURANT.md). On
-      // le montre grisé plutôt que de le taire — l'entrée dit où la fonction
-      // arrivera, et évite qu'on la cherche ailleurs. Réservé au bureau, comme le
-      // registre dont il tirera les adresses.
-      { label: 'Messages aux propriétaires', bientot: true, visible: (a) => a.isAdmin || a.isSecretaire },
+      // ⚠ « Messages aux propriétaires » A ÉTÉ RETIRÉ D'ICI (056). C'était une
+      // entrée grisée qui annonçait l'envoi groupé à venir. Maintenant qu'il
+      // existe « Envois aux colotis » dans la section Données, deux entrées aux
+      // noms voisins — dont une morte — désorientent au lieu de guider : on ne
+      // saurait plus laquelle regarder. L'envoi DEPUIS l'application reste à
+      // faire (phase 2), et c'est l'écran des envois qui le dit, à sa place.
     ],
   },
   {
     titre: 'Données',
     items: [
       { to: '/proprietaires', label: 'Registre des propriétaires', visible: (a) => a.isAdmin || a.isSecretaire },
+      // ⚠ Ouvert à TOUS, contrairement au registre des propriétaires juste
+      // au-dessus : ce qu'on y lit est un acte de gestion et le texte d'un
+      // message déjà adressé à cinquante-cinq personnes. Seule la liste
+      // nominative des destinataires est fermée, sur la fiche elle-même.
+      { to: '/envois', label: 'Envois aux colotis' },
       { to: '/membres', label: 'Membres du CS' },
       { to: '/memoire', label: 'Mémoire de l’ASL' },
     ],
@@ -225,30 +230,22 @@ export default function Layout() {
                   <span className="h-px flex-1 bg-navy-600" />
                 </div>
                 <div className="space-y-1">
-                  {items.map((item) =>
-                    item.bientot ? (
-                      // Grisé et non cliquable : l'entrée annonce où la fonction
-                      // arrivera, sans faire croire qu'elle existe.
-                      <span
-                        key={item.label}
-                        title="À venir : nécessite l’adresse de l’ASL et un service d’envoi."
-                        className="flex cursor-not-allowed items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-navy-400/70"
-                      >
-                        {item.label}
-                        <span className="text-[10px] uppercase tracking-wide">à venir</span>
-                      </span>
-                    ) : (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.end}
-                        className={linkClass}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        {item.label}
-                      </NavLink>
-                    ),
-                  )}
+                  {/* ⚠ Le rendu « à venir » (entrée grisée, non cliquable) a été
+                      retiré avec sa dernière entrée, en 056 : une branche que
+                      plus rien n'emprunte finit par mentir sur ce que l'écran
+                      sait faire. Elle se réécrira le jour où une entrée en aura
+                      de nouveau besoin. */}
+                  {items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={linkClass}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
                 </div>
               </div>
             )
