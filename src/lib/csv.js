@@ -46,9 +46,62 @@ export function budgetsToCSV(rows) {
 //
 // Restent EXCLUS : les adresses de communication et les numéros de téléphone.
 //
-// Format Foncia réutilisé (';', BOM UTF-8) : c'est celui qu'Excel ouvre sans
-// poser de question sur un poste français.
+// ⚠ LE SÉPARATEUR : VIRGULE, ET DÉCLARÉE. Ce fichier est d'abord sorti
+// en point-virgule, par simple recopie du format Foncia — et Pascal l'a vu
+// s'ouvrir en UNE SEULE COLONNE (2026-09-26). Le point-virgule n'a rien d'une
+// convention universelle : Excel découpe sur le séparateur de liste du SYSTÈME,
+// qui est la virgule en `en_CH` (le réglage de ce Mac) et le point-virgule en
+// `fr_FR`. Un fichier destiné à la fois au conseil et à une étude notariale
+// tombe donc forcément du mauvais côté pour l'un des deux.
+//
+// La ligne `sep=` en tête lève l'ambiguïté pour Excel, qui l'honore quelle que
+// soit la locale. ⚠ Elle doit venir APRÈS le BOM et AVANT l'en-tête, sinon elle
+// est lue comme une donnée. ⚠ Et elle ne suffit pas : LibreOffice, ÉPROUVÉ ICI,
+// l'ignore et découpe sur la virgule.
+//
+// D'où le choix de la VIRGULE plutôt que du point-virgule. Les deux options ne
+// sont pas symétriques :
+//   - `sep=;` → si la directive est honorée, correct ; sinon, une seule colonne
+//     sur ce Mac (`en_CH`), c'est-à-dire chez celui qui doit RELIRE le fichier
+//     avant de l'envoyer ;
+//   - `sep=,` → si la directive est honorée, correct ; sinon, on retombe sur le
+//     séparateur natif de ce poste, et c'est encore correct.
+// La virgule échoue dans un seul cas : un outil qui ignore la directive ET
+// attend le point-virgule. Excel ne l'ignore pas.
+//
+// ⚠ CE QUI A ÉTÉ ÉPROUVÉ (2026-09-26), et non supposé : le fichier a été ouvert
+// par LibreOffice, qui IGNORE la directive — sept colonnes correctes, guillemets
+// respectés sur une adresse double et sur une observation contenant `;` et `,`.
+// Le seul reliquat est une PREMIÈRE LIGNE `sep=` visible dans les outils qui
+// ignorent la directive (Excel, lui, la consomme). Une ligne parasite en tête
+// vaut mieux qu'un fichier en une seule colonne.
+//
+// ⚠ Le BOM sert à Excel, pas au découpage : LibreOffice en ligne de commande
+// suppose du latin-1 et abîme les accents tant qu'on ne lui déclare pas l'UTF-8.
+// C'est un défaut de SON convertisseur, pas du fichier — vérifié en le relançant
+// avec l'encodage explicite, les accents étaient alors intacts.
+//
+// ⚠ CONSÉQUENCE : les cellules doivent être protégées des VIRGULES, ce que
+// l'échappement de l'export Foncia ne fait pas (il ne connaît que `;`). D'où un
+// échappement propre à ce fichier — les partager aurait fait qu'une correction
+// ici casserait l'autre.
+//
+// ⚠ Le CSV des budgets (`budgetsToCSV`) n'a PAS été modifié : il part chez
+// Foncia, peut-être vers un import automatique qu'une ligne inattendue
+// casserait. Le même symptôme s'y produira sur ce Mac — c'est un arbitrage à
+// prendre, pas un oubli.
 // ============================================================================
+const SEP = ','
+const DIRECTIVE_SEP = 'sep=' + SEP
+
+// ⚠ Guillemets, virgules, points-virgules ET sauts de ligne. Le point-virgule
+// n'est pas le séparateur de ce fichier, mais une observation du notaire peut en
+// contenir un — et le fichier doit rester lisible par un outil qui, lui, découpe
+// dessus.
+const cellule = (v) => {
+  const t = String(v ?? '')
+  return /[",;\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t
+}
 export function colotisNotaireToCSV(lots) {
   const headers = ['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie (m²)', 'Acte reçu le', 'Observations']
   const body = lots.map((l) => {
@@ -74,8 +127,8 @@ export function colotisNotaireToCSV(lots) {
       p?.acte_observations || '',
     ]
   })
-  const lines = [headers, ...body].map((r) => r.map(escapeCell).join(';'))
-  return '\ufeff' + lines.join('\r\n')
+  const lines = [DIRECTIVE_SEP, ...[headers, ...body].map((r) => r.map(cellule).join(SEP))]
+  return '\ufeff' + lines.join('\r\n') + '\r\n'
 }
 
 export function downloadCSV(filename, content) {

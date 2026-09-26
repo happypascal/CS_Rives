@@ -817,6 +817,19 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     décision** : officier public tenu au secret, mandaté par l'AG. La même liste à un coloti, au
     syndic ou à un prestataire serait une divulgation. **Ne pas étendre sans un nouvel arbitrage.**
   - **Restent exclus** : adresses de communication (domiciles hors lotissement) et téléphones.
+  - ⚠ **LE CSV EST EN VIRGULE, AVEC `sep=,` EN TÊTE** — pas en point-virgule. Sorti d'abord au
+    format Foncia (`;`) par simple recopie, il s'ouvrait **en une seule colonne** (signalé le
+    2026-09-26) : Excel découpe sur le séparateur de liste du **système**, qui est la virgule en
+    `en_CH`, le réglage de ce Mac. Les deux options ne sont pas symétriques — avec `;`, l'échec
+    frappe celui qui doit RELIRE le fichier avant de l'envoyer ; avec `,`, on retombe sur le
+    réglage natif d'ici. Éprouvé sous LibreOffice, **qui ignore la directive** : sept colonnes
+    correctes, guillemets respectés. Reliquat assumé : une ligne `sep=` en tête dans les outils qui
+    l'ignorent (Excel la consomme).
+  - ⚠ **Échappement PROPRE à ce fichier** (`cellule`) : celui de l'export Foncia ne connaît que
+    `;`. Les partager ferait qu'une correction ici casserait l'autre.
+  - ⚠ **`budgetsToCSV` n'a PAS été changé** : il part chez Foncia, peut-être vers un import
+    automatique qu'une ligne inattendue casserait. Le même symptôme s'y produira sur ce Mac — c'est
+    un arbitrage à prendre, pas un oubli.
   - Les adresses sont les **CONTACTS OFFICIELS** (044), pas la colonne `email` : dirigeant de SCI et
     mandataire compris. `email` seul aurait privé le notaire de l'interlocuteur réel de la moitié
     des sociétés.
