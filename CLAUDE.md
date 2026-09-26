@@ -84,6 +84,8 @@ src/
     aideLogic.js      MANUEL par rôle — contenu VERSIONNÉ, jamais en base : il décrit ce que
                       l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
+    xlsx.js           ÉCRITURE D'UN .xlsx sans dépendance (ZIP stocké + CRC-32, chaînes en
+                      ligne) — le CSV ne décrivant ni son encodage ni son séparateur
     pdf.js            PDF registre + décision unique + ÉTAT DES COLOTIS pour le notaire
                       (paysage, colonnes à remplir vides) — voir §Registre des propriétaires
     pvArchiveLogic.js  ARCHIVES DES PV : lecture des noms de fichiers (PARTAGÉE avec le script
@@ -817,19 +819,26 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     décision** : officier public tenu au secret, mandaté par l'AG. La même liste à un coloti, au
     syndic ou à un prestataire serait une divulgation. **Ne pas étendre sans un nouvel arbitrage.**
   - **Restent exclus** : adresses de communication (domiciles hors lotissement) et téléphones.
-  - ⚠ **LE CSV EST EN VIRGULE, AVEC `sep=,` EN TÊTE** — pas en point-virgule. Sorti d'abord au
-    format Foncia (`;`) par simple recopie, il s'ouvrait **en une seule colonne** (signalé le
-    2026-09-26) : Excel découpe sur le séparateur de liste du **système**, qui est la virgule en
-    `en_CH`, le réglage de ce Mac. Les deux options ne sont pas symétriques — avec `;`, l'échec
-    frappe celui qui doit RELIRE le fichier avant de l'envoyer ; avec `,`, on retombe sur le
-    réglage natif d'ici. Éprouvé sous LibreOffice, **qui ignore la directive** : sept colonnes
-    correctes, guillemets respectés. Reliquat assumé : une ligne `sep=` en tête dans les outils qui
-    l'ignorent (Excel la consomme).
-  - ⚠ **Échappement PROPRE à ce fichier** (`cellule`) : celui de l'export Foncia ne connaît que
-    `;`. Les partager ferait qu'une correction ici casserait l'autre.
-  - ⚠ **`budgetsToCSV` n'a PAS été changé** : il part chez Foncia, peut-être vers un import
-    automatique qu'une ligne inattendue casserait. Le même symptôme s'y produira sur ce Mac — c'est
-    un arbitrage à prendre, pas un oubli.
+  - ⚠ **LE TABLEUR EST UN VRAI `.xlsx`, PLUS UN CSV** — et c'est le troisième essai. Le CSV est
+    sorti deux fois de travers : en point-virgule il s'ouvrait **en une seule colonne** (Excel
+    découpe sur le séparateur de liste du SYSTÈME — virgule en `en_CH`, le réglage de ce Mac,
+    point-virgule en `fr_FR` chez l'étude) ; corrigé par une ligne `sep=,`, les colonnes sont
+    revenues mais **les accents ont cassé** (« All√©e de Rives »), la directive faisant basculer
+    Excel sur un import ancien qui **ignore le BOM**. Un format qui ne décrit ni son encodage ni
+    son séparateur ne peut pas satisfaire deux locales à la fois.
+  - **`src/lib/xlsx.js`** écrit le classeur **sans aucune dépendance** : entrées ZIP *stockées*
+    (méthode 0 — un ZIP valide n'exige pas `deflate`, seulement un CRC-32 juste) et chaînes en
+    ligne (`inlineStr`), donc pas de table partagée à tenir. ⚠ **Tout en TEXTE** : « 0B 220 »
+    perdrait son zéro de tête et « 1 240,50 » sa virgule selon la locale d'ouverture — un état à
+    annoter n'a rien à calculer.
+  - ⚠ **Vérifié de bout en bout** : ZIP et CRC validés par `zipfile`, puis relu par LibreOffice
+    **sans rien lui déclarer** — sept colonnes, accents intacts, `&` et `<>` préservés.
+    ⚠ Le convertisseur LibreOffice en ligne de commande applique des **réglages fixes** (virgule,
+    latin-1) : il n'est **pas** un témoin fiable de ce que fait un tableur à l'ouverture. Deux
+    conclusions fausses en sont venues.
+  - ⚠ **`budgetsToCSV` (Foncia) n'a PAS été touché** : il part vers un tiers, peut-être vers un
+    import automatique. Le même symptôme de colonne unique s'y produira sur ce Mac — c'est un
+    arbitrage à prendre, pas un oubli.
   - Les adresses sont les **CONTACTS OFFICIELS** (044), pas la colonne `email` : dirigeant de SCI et
     mandataire compris. `email` seul aurait privé le notaire de l'interlocuteur réel de la moitié
     des sociétés.

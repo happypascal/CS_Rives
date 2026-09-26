@@ -9,7 +9,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 import { destinataires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
 import { formatDate } from '../lib/format'
 import { downloadRegistreNotairePDF } from '../lib/pdf'
-import { colotisNotaireToCSV, downloadCSV } from '../lib/csv'
+import { classeurXLSX, colotisNotaireLignes, COLOTIS_LARGEURS, downloadXLSX } from '../lib/xlsx'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -463,9 +463,20 @@ function ExportNotaireModal({ open, onClose, lots }) {
         <>
           <Button
             variant="secondary"
-            onClick={() => { downloadCSV(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.csv`, colotisNotaireToCSV(lots)); onClose() }}
+            // ⚠ UN VRAI CLASSEUR, PAS UN CSV. Le CSV ne décrit ni son encodage
+            // ni son séparateur : il est sorti deux fois de travers (une seule
+            // colonne, puis accents cassés) selon la locale de qui l'ouvre. Le
+            // raisonnement complet est en tête de `xlsx.js`.
+            onClick={() => {
+              const octets = classeurXLSX(colotisNotaireLignes(lots), {
+                feuille: 'État des colotis',
+                largeurs: COLOTIS_LARGEURS,
+              })
+              downloadXLSX(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.xlsx`, octets)
+              onClose()
+            }}
           >
-            Tableur (CSV)
+            Tableur (Excel)
           </Button>
           <Button onClick={() => { downloadRegistreNotairePDF(lots); onClose() }}>
             Document (PDF)

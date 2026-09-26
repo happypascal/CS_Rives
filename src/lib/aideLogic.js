@@ -558,7 +558,7 @@ export const MENUS = [
         etapes: [
           'Cliquez sur « Export pour le notaire » en haut du registre.',
           'L’écran rappelle ce que le fichier contient et à qui il peut être adressé. Lisez-le : c’est vous qui engagez votre responsabilité en l’envoyant.',
-          '« Document (PDF) » pour l’envoyer tel quel, « Tableur (CSV) » si le notaire préfère l’annoter dans Excel.',
+          '« Document (PDF) » pour l’envoyer tel quel, « Tableur (Excel) » si le notaire préfère l’annoter et vous le retourner.',
           'Les colonnes « Acte reçu le » et « Observations » reprennent ce que le notaire vous a déjà signalé, et restent vides pour le reste : au second envoi, il voit d’un coup d’œil ce qui manque encore.',
         ],
         alerte:
