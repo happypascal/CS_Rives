@@ -66,11 +66,12 @@ export function colotisNotaireToCSV(lots) {
       emailsOfficiels(p).join(', '),
       l.adresse_lotissement || '',
       l.superficie != null ? frNumber(l.superficie) : '',
-      // Les deux dernières colonnes sont VIDES : c'est le notaire qui sait ce
-      // qu'il a reçu. Y mettre quoi que ce soit ferait dire au fichier le
-      // contraire de ce qu'il vient chercher.
-      '',
-      '',
+      // ⚠ On REPORTE ce que le notaire nous a déjà communiqué (059), et on
+      // laisse vide le reste : c'est ce qui fait d'un second envoi une relance
+      // plutôt qu'un nouveau pointage. Au premier envoi, les deux colonnes sont
+      // entièrement vides — le registre ne sait rien encore.
+      p?.acte_transmis_le ? formatDate(p.acte_transmis_le) : '',
+      p?.acte_observations || '',
     ]
   })
   const lines = [headers, ...body].map((r) => r.map(escapeCell).join(';'))

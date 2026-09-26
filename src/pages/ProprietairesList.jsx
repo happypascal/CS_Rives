@@ -7,6 +7,7 @@ import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { destinataires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import { formatDate } from '../lib/format'
 import { downloadRegistreNotairePDF } from '../lib/pdf'
 import { colotisNotaireToCSV, downloadCSV } from '../lib/csv'
 
@@ -66,6 +67,7 @@ function Contenu() {
   const [nouveau, setNouveau] = useState('')
   const [busy, setBusy] = useState(false)
   const [exportOuvert, setExportOuvert] = useState(false)
+  const [seulementSansActe, setSeulementSansActe] = useState(false)
 
   const reload = async () => {
     setError('')
@@ -87,18 +89,21 @@ function Contenu() {
 
   const filtres = useMemo(() => {
     const terme = q.trim().toLowerCase()
+    const base = seulementSansActe
+      ? lots.filter((l) => l.proprietaire && !l.proprietaire.acte_transmis_le)
+      : lots
     const liste = terme
-      ? lots.filter((l) =>
+      ? base.filter((l) =>
           [l.numero, l.numero_syndic, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
            l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
            l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
         )
-      : [...lots]
+      : [...base]
     // ⚠ Même fonction que celle dont se sert la navigation de la fiche : c'est
     // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
     return trierLots(liste, tri)
-  }, [lots, q, tri])
+  }, [lots, q, tri, seulementSansActe])
 
   // ⚠ L'EXPORT PORTE SUR TOUT LE REGISTRE, jamais sur la recherche en cours.
   // Un « état des colotis » amputé des lignes qui ne correspondaient pas au
@@ -119,6 +124,15 @@ function Contenu() {
   // Somme des `nombre_lots`, jamais un compte de lignes — cf. le commentaire des
   // totaux ci-dessous.
   const totalLots = lots.reduce((s2, l) => s2 + (Number(l.nombre_lots) || 0), 0)
+
+  // SUIVI DES TITRES (059) — la question que l'écran doit trancher d'un coup
+  // d'œil : qui n'a pas encore transmis ?
+  //
+  // ⚠ Le dénominateur est le nombre de PROPRIÉTAIRES, pas de parcelles : on ne
+  // réclame pas un titre à une parcelle vacante, et l'y compter ferait croire à
+  // un retard qui n'existe pas.
+  const avecActe = lots.filter((l) => l.proprietaire?.acte_transmis_le).length
+  const sansActe = lots.filter((l) => l.proprietaire && !l.proprietaire.acte_transmis_le).length
 
   const trierPar = (cle) =>
     setTri((t) => {
@@ -173,7 +187,7 @@ function Contenu() {
           des parts calculées sur un registre incomplet ne passent pas pour
           définitives. */}
       {lots.length > 0 && (
-        <Card className="mb-4 grid gap-3 px-5 py-3 sm:grid-cols-3">
+        <Card className="mb-4 grid gap-3 px-5 py-3 sm:grid-cols-4">
           <Total
             valeur={proprietaires}
             libelle="propriétaire(s) actuel(s)"
@@ -187,6 +201,15 @@ function Contenu() {
             detail={`sur ${lots.filter((l) => l.superficie).length} superficie(s) renseignée(s)`}
             alerte={lots.some((l) => !l.superficie) ? 'parts provisoires' : null}
           />
+          {/* ⚠ Le suivi des titres a sa case parce que c'est une ÉCHÉANCE, pas
+              une statistique : au 31 octobre, chaque titre manquant devient une
+              recherche facturée 100 € au propriétaire (résolution n° 15). */}
+          <Total
+            valeur={`${avecActe} / ${proprietaires}`}
+            libelle="titre(s) reçu(s) par le notaire"
+            detail={sansActe === 0 && proprietaires > 0 ? 'tous transmis' : null}
+            alerte={sansActe > 0 ? `${sansActe} manquant(s)` : null}
+          />
         </Card>
       )}
 
@@ -199,7 +222,22 @@ function Contenu() {
 
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input placeholder="Rechercher (parcelle, n° Foncia, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="flex items-center gap-2">
+            <Input placeholder="Rechercher (parcelle, n° Foncia, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} className="min-w-0 flex-1" />
+            {/* ⚠ Bouton plutôt que case à cocher : c'est la question qu'on vient
+                poser à cet écran en octobre, elle doit se déclencher d'un clic et
+                se voir enfoncée. Masqué s'il n'y a rien à relancer — un filtre
+                qui ne filtrerait rien est du bruit. */}
+            {sansActe > 0 && (
+              <Button
+                variant={seulementSansActe ? 'primary' : 'secondary'}
+                onClick={() => setSeulementSansActe((v) => !v)}
+                title="N’afficher que les propriétaires dont le notaire n’a pas encore reçu le titre"
+              >
+                Sans titre ({sansActe})
+              </Button>
+            )}
+          </div>
           {/* La création d'un lot se fait ici parce qu'un lot n'est qu'un
               numéro : tout le reste — propriétaire, adresses, coordonnées — se
               saisit sur la fiche, comme demandé. */}
@@ -306,6 +344,20 @@ function Contenu() {
                         pour reconstituer un interlocuteur. */}
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
+                      {/* ⚠ L'état du titre SOUS le nom, pas en colonne : une
+                          sixième colonne aurait élargi un tableau déjà dense,
+                          alors que l'information se lit avec la personne à qui
+                          on va la réclamer. Rien n'est affiché sur une parcelle
+                          vacante — on ne réclame pas un titre à personne. */}
+                      {l.proprietaire && (
+                        l.proprietaire.acte_transmis_le ? (
+                          <span className="block text-xs text-emerald-700" title={l.proprietaire.acte_observations || undefined}>
+                            titre reçu le {formatDate(l.proprietaire.acte_transmis_le)}
+                          </span>
+                        ) : (
+                          <span className="block text-xs text-amber-700">titre non reçu</span>
+                        )
+                      )}
                       {/* Le dirigeant sous la raison sociale : pour une SCI, le
                           nom seul ne dit pas à qui l'on s'adresse. */}
                       {l.proprietaire?.dirigeant_nom && (

@@ -534,9 +534,14 @@ export function downloadRegistrePDF(decisions, opts = {}) {
 // mandataire compris. Prendre `email` seul aurait privé le notaire de
 // l'interlocuteur réel de la moitié des sociétés.
 //
-// ⚠ LES COLONNES À REMPLIR SONT VIDES, ET C'EST TOUT L'OBJET. L'application ne
-// sait pas qui a transmis son acte — c'est le notaire qui le sait. Pré-cocher
-// quoi que ce soit ferait dire au document l'inverse de ce qu'il vient chercher.
+// ⚠ LA COLONNE « ACTE REÇU LE » REPORTE CE QUE LE REGISTRE SAIT DÉJÀ, et reste
+// vide partout ailleurs (migration 059). Ce n'est pas une contradiction avec le
+// principe « l'application ne constate rien » : les dates imprimées sont celles
+// que le NOTAIRE a lui-même communiquées, et qu'on lui rend. C'est ce qui
+// transforme un second envoi en RELANCE — il voit d'un coup d'œil les lignes qui
+// restent blanches, au lieu de recommencer un pointage complet.
+// ⚠ Au premier envoi, la colonne est entièrement vide : le registre ne sait rien
+// encore, et c'est exactement ce qu'il doit montrer.
 // ============================================================================
 
 // ⚠ PAS `num()` DE `ui.jsx` : ce module ne doit pas dépendre d'un fichier React,
@@ -578,8 +583,15 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
 
   let y = 28 + GAP
   font(doc, 'normal', 9, INK)
-  const intro = opts.intro
-    || 'Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les deux dernières colonnes sont laissées libres pour noter les titres de propriété reçus.'
+  // ⚠ L'intro DIT si la colonne porte déjà des dates : un document qui en montre
+  // sans expliquer d'où elles viennent laisserait croire que l'association tient
+  // un décompte parallèle au sien.
+  const dejaRecus = lots.filter((l) => l.proprietaire?.acte_transmis_le).length
+  const intro = opts.intro || (
+    dejaRecus > 0
+      ? `Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les ${dejaRecus} titres déjà signalés reçus sont reportés ci-dessous ; les lignes restées vides sont celles que nous relançons.`
+      : 'Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les deux dernières colonnes sont laissées libres pour noter les titres de propriété reçus.'
+  )
   for (const l of lines(doc, intro, LARGEUR)) {
     text(doc, l, M, y)
     y += 4.5
@@ -602,8 +614,8 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
     pdfText(emailsOfficiels(l.proprietaire).join('\n')),
     pdfText(l.adresse_lotissement || ''),
     l.superficie != null ? `${nombre(l.superficie)} m²` : '',
-    '', // Acte reçu le
-    '', // Observations
+    l.proprietaire?.acte_transmis_le ? formatDate(l.proprietaire.acte_transmis_le) : '',
+    pdfText(l.proprietaire?.acte_observations || ''),
   ])
 
   autoTable(doc, {

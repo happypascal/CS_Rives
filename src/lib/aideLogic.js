@@ -539,6 +539,19 @@ export const MENUS = [
           'On convoque tous ceux qui doivent l’être : les deux indivisaires, l’usufruitier et le nu-propriétaire, le dirigeant et son mandataire sur place.',
       },
       {
+        titre: 'Noter les titres de propriété reçus par le notaire',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Recopier l’état que le notaire retourne, et voir qui manque.',
+        etapes: [
+          'Le compteur en haut du registre indique combien de titres ont été reçus sur le nombre de propriétaires.',
+          'Le bouton « Sans titre » ne laisse que ceux dont le notaire n’a rien reçu — c’est la liste à relancer.',
+          'Ouvrez une fiche : le bloc « Titre de propriété » porte la date de réception et l’observation du notaire.',
+          'La date se renseigne d’après ce que le notaire vous communique ; l’application ne le devine pas.',
+        ],
+        alerte:
+          'Le suivi est attaché au PROPRIÉTAIRE, pas à la parcelle : après une mutation, le nouvel arrivant repart sans titre reçu — c’est le sien que le notaire attend, pas celui du vendeur.',
+      },
+      {
         titre: 'Envoyer la liste des colotis au notaire',
         pourQui: ['president', 'secretaire'],
         resume: 'Un document et un tableur, avec deux colonnes à remplir.',
@@ -546,7 +559,7 @@ export const MENUS = [
           'Cliquez sur « Export pour le notaire » en haut du registre.',
           'L’écran rappelle ce que le fichier contient et à qui il peut être adressé. Lisez-le : c’est vous qui engagez votre responsabilité en l’envoyant.',
           '« Document (PDF) » pour l’envoyer tel quel, « Tableur (CSV) » si le notaire préfère l’annoter dans Excel.',
-          'Les deux colonnes « Acte reçu le » et « Observations » sont vides : c’est le notaire qui les remplit et vous les retourne.',
+          'Les colonnes « Acte reçu le » et « Observations » reprennent ce que le notaire vous a déjà signalé, et restent vides pour le reste : au second envoi, il voit d’un coup d’œil ce qui manque encore.',
         ],
         alerte:
           'Le fichier porte les adresses électroniques, par exception décidée par le président et pour le notaire seul — il doit pouvoir rapprocher les actes reçus et relancer. La même liste adressée à un coloti, au syndic ou à un prestataire serait une divulgation. Il ne contient ni domicile hors lotissement, ni numéro de téléphone.',

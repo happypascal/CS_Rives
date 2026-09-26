@@ -22,6 +22,7 @@ const CHAMPS_VIDES = {
   nom_2: '', email_2: '', telephone_2: '', est_indivision: false,
   contacts_officiels: [CONTACT_PROPRIETAIRE],
   date_acquisition: '', observations: '',
+  acte_transmis_le: '', acte_observations: '',
 }
 
 export default function LotDetail() {
@@ -248,6 +249,10 @@ function Contenu() {
         email: form.email || null,
         telephone: form.telephone || null,
         observations: form.observations || null,
+        // ⚠ Chaîne vide → null, jamais l'inverse : '' ferait échouer la
+        // contrainte de date, et « pas transmis » est bien une absence.
+        acte_transmis_le: form.acte_transmis_le || null,
+        acte_observations: form.acte_observations || null,
       })
       await reload()
       return true
@@ -593,6 +598,41 @@ function Contenu() {
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
               <div className="sm:col-span-2">
                 <Textarea label="Observations" rows={2} value={form.observations} onChange={set('observations')} readOnly={!peutSaisir} />
+              </div>
+
+              {/* ---------------------------------- TITRE DE PROPRIÉTÉ (059)
+                  ⚠ Ce bloc enregistre ce que le NOTAIRE a communiqué : lui seul
+                  reçoit les actes. L'application ne constate rien, elle recopie
+                  l'état des colotis qu'il retourne annoté. D'où le libellé
+                  « reçu par le notaire le » et non « transmis le » : la date qui
+                  compte est celle de la réception, pas celle de l'envoi. */}
+              <div className="sm:col-span-3 rounded-md border border-navy-100 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-navy-800">Titre de propriété</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Résolution n° 15 de l’AG 2026 : chaque coloti adresse son titre au notaire avant le
+                  31 octobre. À renseigner d’après l’état que le notaire retourne.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <Input
+                    label="Reçu par le notaire le"
+                    type="date"
+                    value={form.acte_transmis_le}
+                    onChange={set('acte_transmis_le')}
+                    readOnly={!peutSaisir}
+                  />
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="Observation du notaire"
+                      value={form.acte_observations}
+                      onChange={set('acte_observations')}
+                      placeholder="Ex. : acte de donation, manque l’acquisition d’origine"
+                      readOnly={!peutSaisir}
+                    />
+                  </div>
+                </div>
+                {!form.acte_transmis_le && (
+                  <p className="mt-2 text-xs text-amber-700">Aucun titre reçu à ce jour.</p>
+                )}
               </div>
             </div>
             {peutSaisir && (

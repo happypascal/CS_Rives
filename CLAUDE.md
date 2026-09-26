@@ -825,8 +825,27 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     rien à transmettre. Seul l'ORDRE d'affichage est repris.
   - **Les parcelles vacantes y figurent**, en rouge et nommées « propriétaire inconnu » : le notaire
     doit savoir à qui il ne peut rien réclamer.
-  - ⚠ **Les colonnes à remplir sont VIDES** : l'application ne sait pas qui a transmis son acte,
-    c'est le notaire qui le sait. Rien n'est pré-coché.
+  - ⚠ **La colonne « Acte reçu le » REPORTE ce que le registre sait** (059) et reste vide ailleurs.
+    Ce n'est pas une contradiction avec « l'application ne constate rien » : les dates imprimées sont
+    celles que le **notaire** a communiquées, et qu'on lui rend — c'est ce qui fait d'un second envoi
+    une **relance** plutôt qu'un nouveau pointage. Au premier envoi, la colonne est entièrement vide.
+
+**SUIVI DES TITRES DE PROPRIÉTÉ** (migration 059) — `proprietaires.acte_transmis_le` +
+`acte_observations`, saisis sur la fiche du lot, comptés en tête du registre, filtrables par
+« Sans titre (N) ».
+- ⚠ **SUR LA PÉRIODE DE PROPRIÉTÉ, PAS SUR LE LOT.** Un titre appartient à celui qui l'a reçu en
+  achetant. Posé sur `lots`, le drapeau survivrait à une **mutation** et le nouveau propriétaire
+  passerait pour avoir transmis un acte qui n'est pas le sien — alors que c'est justement du sien
+  que le notaire a besoin. Une mutation ouvre une période neuve : le suivi repart à zéro.
+- ⚠ **UNE DATE, PAS UNE CASE** : devant un délai statutaire et une recherche facturée 100 € au
+  propriétaire (résolution n° 15), savoir **quand** un acte est arrivé vaut mieux que savoir qu'il
+  l'est. Un booléen aurait imposé une seconde colonne le jour où la date devient utile.
+- ⚠ **L'application ne constate rien** : seul le notaire reçoit les actes. La colonne enregistre ce
+  qu'il communique. D'où le libellé « **reçu par le notaire le** », pas « transmis le ».
+- **Dénominateur = les PROPRIÉTAIRES, pas les parcelles** : on ne réclame pas un titre à une
+  parcelle vacante, et l'y compter afficherait un retard qui n'existe pas.
+- **Aucune policy à ajouter** — vérifié : `proprietaires_bureau` (035) est un `for all`, et la RLS
+  restreint les lignes, pas les colonnes.
   - ⚠ **PDF en PAYSAGE**, avec des constantes de page LOCALES : les constantes du module décrivent
     une page portrait, utilisée par le registre des décisions — les modifier aurait déplacé celui-ci.
   - ⚠ **Pas `num()` de `ui.jsx`** dans les cellules : `Intl` fr-FR insère une espace fine U+202F,

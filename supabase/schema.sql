@@ -648,12 +648,29 @@ create table if not exists proprietaires (
   date_cession          date,                 -- nulle = propriétaire ACTUEL
 
   observations          text,
+
+  -- SUIVI DES TITRES DE PROPRIÉTÉ (migration 059, résolution n° 15 de l'AG 2026).
+  -- ⚠ SUR LA PÉRIODE, PAS SUR LE LOT : un titre appartient à celui qui l'a reçu
+  -- en achetant. Posé sur `lots`, le drapeau survivrait à une mutation et le
+  -- nouveau propriétaire passerait pour avoir transmis un acte qui n'est pas le
+  -- sien — alors que c'est justement du sien que le notaire a besoin.
+  -- ⚠ UNE DATE, PAS UNE CASE : devant un délai statutaire et une facturation,
+  -- savoir QUAND un acte est arrivé vaut mieux que savoir qu'il est arrivé.
+  -- ⚠ L'application ne constate rien : elle enregistre ce que le NOTAIRE
+  -- communique, lui seul reçoit les actes.
+  acte_transmis_le      date,
+  acte_observations     text,
+
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now(),
 
   -- Une cession ne peut pas précéder l'acquisition.
   constraint proprietaires_periode_coherente
-    check (date_cession is null or date_acquisition is null or date_cession >= date_acquisition)
+    check (date_cession is null or date_acquisition is null or date_cession >= date_acquisition),
+
+  -- On ne transmet pas le titre d'un bien qu'on ne possède pas encore.
+  constraint proprietaires_acte_apres_acquisition
+    check (acte_transmis_le is null or date_acquisition is null or acte_transmis_le >= date_acquisition)
 );
 
 -- UN SEUL propriétaire actuel par lot. Index partiel : les lignes historiques
