@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Spinner, EmptyState, num } from '../components/ui'
+import { Card, Button, Input, Modal, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { destinataires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import { downloadRegistreNotairePDF } from '../lib/pdf'
+import { colotisNotaireToCSV, downloadCSV } from '../lib/csv'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -63,6 +65,7 @@ function Contenu() {
   const [tri, setTri] = useState(lireTri)
   const [nouveau, setNouveau] = useState('')
   const [busy, setBusy] = useState(false)
+  const [exportOuvert, setExportOuvert] = useState(false)
 
   const reload = async () => {
     setError('')
@@ -96,6 +99,13 @@ function Contenu() {
     // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
     return trierLots(liste, tri)
   }, [lots, q, tri])
+
+  // ⚠ L'EXPORT PORTE SUR TOUT LE REGISTRE, jamais sur la recherche en cours.
+  // Un « état des colotis » amputé des lignes qui ne correspondaient pas au
+  // terme tapé serait lu comme exhaustif par le notaire — et les parcelles
+  // absentes passeraient pour n'avoir rien à transmettre. Seul l'ORDRE est repris
+  // de l'écran, pour que le document se relise comme la liste.
+  const tousTries = useMemo(() => trierLots(lots, tri), [lots, tri])
 
   // Une indivision compte pour UN propriétaire : deux personnes, mais une seule
   // propriété — une part de charges, une voix. Les compter pour deux gonflerait
@@ -138,6 +148,18 @@ function Contenu() {
       <PageHeader
         title="Registre des propriétaires"
         subtitle="Membres de l’ASL : une parcelle, son propriétaire actuel, et l’historique des mutations."
+        actions={
+          // ⚠ Desktop seulement : on n'envoie pas un état des colotis au notaire
+          // depuis un téléphone. Pas de test de rôle ici — tout l'écran est
+          // derrière `RgpdGate`, donc déjà réservé au président et au secrétaire.
+          !isMobile && lots.length > 0 && (
+            <>
+              <Button variant="secondary" onClick={() => setExportOuvert(true)}>
+                Export pour le notaire
+              </Button>
+            </>
+          )
+        }
       />
 
       {/* Totaux du registre. ⚠ Le nombre de lots N'EST PAS le nombre de lignes :
@@ -365,7 +387,82 @@ function Contenu() {
           </div>
         </Card>
       )}
+
+      <ExportNotaireModal open={exportOuvert} onClose={() => setExportOuvert(false)} lots={tousTries} />
     </div>
+  )
+}
+
+// EXPORT POUR LE NOTAIRE — ce qui sort du registre, et ce qui n'en sort pas.
+//
+// ⚠ LA MODALE EXISTE POUR DIRE CE QU'ELLE N'EXPORTE PAS. Télécharger d'un clic
+// un fichier de cinquante propriétaires sans rien afficher laisserait croire
+// qu'il contient tout le registre — et celui qui l'envoie engage sa
+// responsabilité personnelle (mention RGPD, migration 035). On montre donc la
+// liste des champs retenus ET celle des champs écartés, avant le téléchargement.
+function ExportNotaireModal({ open, onClose, lots }) {
+  const vacants = lots.filter((l) => !l.proprietaire).length
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Export pour le notaire"
+      footer={
+        <>
+          <Button
+            variant="secondary"
+            onClick={() => { downloadCSV(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.csv`, colotisNotaireToCSV(lots)); onClose() }}
+          >
+            Tableur (CSV)
+          </Button>
+          <Button onClick={() => { downloadRegistreNotairePDF(lots); onClose() }}>
+            Document (PDF)
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3 text-sm text-slate-600">
+        <p>
+          La liste des <strong>{lots.length} parcelles</strong>, de leurs propriétaires et de leurs adresses
+          électroniques, avec deux colonnes laissées vides — <em>Acte reçu le</em> et <em>Observations</em> —
+          que le notaire remplit et vous retourne.
+        </p>
+        <div className="rounded-md border border-navy-100 bg-slate-50 p-3">
+          <p className="text-xs font-semibold text-navy-800">Le fichier contient :</p>
+          <ul className="mt-1 list-disc pl-5 text-xs text-slate-600">
+            <li>la parcelle et le nom du ou des propriétaires</li>
+            <li>l’adresse électronique de chaque contact officiel</li>
+            <li>l’adresse dans le lotissement et la superficie</li>
+          </ul>
+          <p className="mt-1 text-xs text-slate-500">
+            Ni domiciles hors lotissement, ni numéros de téléphone.
+          </p>
+        </div>
+        {/* ⚠ CE BLOC N'EST PAS UNE POLITESSE. Les adresses électroniques ne
+            sortent normalement PAS de ce registre ; elles figurent ici sur
+            arbitrage du président, pour un destinataire précis. Celui qui
+            télécharge doit le savoir avant d'envoyer, parce que c'est lui qui
+            engage sa responsabilité. */}
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
+          <p className="text-xs font-semibold text-amber-900">Ce fichier est destiné au notaire de l’association, et à lui seul.</p>
+          <p className="mt-1 text-xs text-amber-900">
+            Les adresses électroniques ne sortent pas de ce registre. Elles figurent ici par exception,
+            décidée par le président, pour que le notaire puisse rapprocher les actes reçus et relancer
+            qui n’a pas répondu — au titre de la résolution n° 15 de l’AG 2026.
+          </p>
+          <p className="mt-2 text-xs text-amber-900">
+            La même liste adressée à un coloti, à un prestataire ou au syndic serait une divulgation, et
+            votre responsabilité personnelle serait engagée.
+          </p>
+        </div>
+        {vacants > 0 && (
+          <p className="text-xs text-slate-500">
+            {vacants} parcelle{vacants > 1 ? 's' : ''} sans propriétaire connu figure{vacants > 1 ? 'nt' : ''} dans la liste,
+            signalée{vacants > 1 ? 's' : ''} comme telle{vacants > 1 ? 's' : ''} : le notaire doit savoir à qui il ne peut rien réclamer.
+          </p>
+        )}
+      </div>
+    </Modal>
   )
 }
 

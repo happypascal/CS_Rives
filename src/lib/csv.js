@@ -1,4 +1,5 @@
 import { formatDate } from './format'
+import { emailsOfficiels } from './proprietaireLogic'
 
 // Export CSV des budgets AG avec suivi d'engagement, format Foncia :
 // séparateur ';', décimales ',', BOM UTF-8 pour Excel.
@@ -27,6 +28,53 @@ export function budgetsToCSV(rows) {
   const total = ['', '', '', 'TOTAL', frNumber(sum('alloue')), frNumber(sum('projets_alloue')), frNumber(sum('engage_direct')), frNumber(sum('restant'))]
   const lines = [headers, ...body, total].map((r) => r.map(escapeCell).join(';'))
   return '﻿' + lines.join('\r\n')
+}
+
+// ============================================================================
+// ÉTAT DES COLOTIS POUR LE NOTAIRE — version tableur
+//
+// Le PDF (`downloadRegistreNotairePDF`) est le document qu'on ENVOIE ; celui-ci
+// est celui que le notaire REMPLIT et renvoie. Deux usages, deux fichiers — une
+// étude annote plus volontiers un tableur qu'un PDF.
+//
+// ⚠ MÊMES COLONNES, MÊMES BORNES QUE LE PDF. Si les deux fichiers divergeaient
+// un jour, c'est le plus bavard qui ferait la fuite. Le raisonnement complet —
+// et l'arbitrage de Pascal du 2026-09-26 qui autorise les adresses électroniques
+// vers le notaire, et vers lui seul — est écrit en tête de
+// `downloadRegistreNotairePDF` dans `pdf.js`. Le lire avant de toucher à ces
+// colonnes.
+//
+// Restent EXCLUS : les adresses de communication et les numéros de téléphone.
+//
+// Format Foncia réutilisé (';', BOM UTF-8) : c'est celui qu'Excel ouvre sans
+// poser de question sur un poste français.
+// ============================================================================
+export function colotisNotaireToCSV(lots) {
+  const headers = ['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie (m²)', 'Acte reçu le', 'Observations']
+  const body = lots.map((l) => {
+    const p = l.proprietaire
+    const noms = p ? [p.nom, p.nom_2].filter(Boolean).join(' / ') : ''
+    return [
+      l.numero || '',
+      // ⚠ Une parcelle vacante reste dans le fichier, dite comme telle : une
+      // ligne absente se lirait « rien à réclamer ici », alors qu'elle signifie
+      // « nous ne savons pas à qui la réclamer ».
+      noms || 'propriétaire inconnu',
+      // ⚠ Les CONTACTS OFFICIELS (044), pas la colonne `email` : c'est à eux que
+      // l'association écrit, dirigeant de SCI ou mandataire compris. Toutes,
+      // séparées par une virgule — un lot à deux noms se réclame aux deux.
+      emailsOfficiels(p).join(', '),
+      l.adresse_lotissement || '',
+      l.superficie != null ? frNumber(l.superficie) : '',
+      // Les deux dernières colonnes sont VIDES : c'est le notaire qui sait ce
+      // qu'il a reçu. Y mettre quoi que ce soit ferait dire au fichier le
+      // contraire de ce qu'il vient chercher.
+      '',
+      '',
+    ]
+  })
+  const lines = [headers, ...body].map((r) => r.map(escapeCell).join(';'))
+  return '\ufeff' + lines.join('\r\n')
 }
 
 export function downloadCSV(filename, content) {

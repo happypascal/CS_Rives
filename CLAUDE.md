@@ -84,7 +84,8 @@ src/
     aideLogic.js      MANUEL par rôle — contenu VERSIONNÉ, jamais en base : il décrit ce que
                       l'app fait, donc il change avec elle. ⚠ Ne décrire que ce qui est VRAI
     csv.js            export CSV Foncia (';', décimales ',', BOM UTF-8)
-    pdf.js            PDF registre + décision unique, lignes de signature
+    pdf.js            PDF registre + décision unique + ÉTAT DES COLOTIS pour le notaire
+                      (paysage, colonnes à remplir vides) — voir §Registre des propriétaires
     pvArchiveLogic.js  ARCHIVES DES PV : lecture des noms de fichiers (PARTAGÉE avec le script
                       d'ingestion), frise et années manquantes, extraits de recherche
     communicationLogic.js  ENVOIS AUX COLOTIS : libellés de canal/statut, découpage du corps
@@ -805,6 +806,32 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   par-dessus. Texte dans `src/lib/rgpdRegistre.js`, partagé par l'écran et le rappel permanent —
   **ne pas l'adoucir sans arbitrage** : il dit ce qui est communicable (nom, adresse dans le
   lotissement, lot) et que toute autre divulgation engage la responsabilité personnelle.
+- **EXPORT POUR LE NOTAIRE** (2026-09-26, `downloadRegistreNotairePDF` + `colotisNotaireToCSV`) :
+  la liste des parcelles, propriétaires et **adresses électroniques**, avec deux colonnes VIDES
+  — « Acte reçu le », « Observations » — que Me Garnier remplit et retourne (résolution n° 15 de
+  l'AG 2026, chaque coloti doit lui adresser son titre avant le 31 octobre).
+  - ⚠ **LES ADRESSES ÉLECTRONIQUES SORTENT DU REGISTRE PAR EXCEPTION**, sur **arbitrage exprès de
+    Pascal** : « chaque coloti va lui envoyer son acte de vente donc tu peux mettre les emails dans
+    ce fichier », et « c'est un notaire, pas un quidam ». La mention RGPD interdit de communiquer
+    *sans arbitrage* — elle n'interdit pas d'arbitrer. **Le destinataire fait partie de la
+    décision** : officier public tenu au secret, mandaté par l'AG. La même liste à un coloti, au
+    syndic ou à un prestataire serait une divulgation. **Ne pas étendre sans un nouvel arbitrage.**
+  - **Restent exclus** : adresses de communication (domiciles hors lotissement) et téléphones.
+  - Les adresses sont les **CONTACTS OFFICIELS** (044), pas la colonne `email` : dirigeant de SCI et
+    mandataire compris. `email` seul aurait privé le notaire de l'interlocuteur réel de la moitié
+    des sociétés.
+  - ⚠ **L'export porte sur TOUT le registre, jamais sur la recherche en cours** : un « état des
+    colotis » amputé serait lu comme exhaustif, et les parcelles absentes passeraient pour n'avoir
+    rien à transmettre. Seul l'ORDRE d'affichage est repris.
+  - **Les parcelles vacantes y figurent**, en rouge et nommées « propriétaire inconnu » : le notaire
+    doit savoir à qui il ne peut rien réclamer.
+  - ⚠ **Les colonnes à remplir sont VIDES** : l'application ne sait pas qui a transmis son acte,
+    c'est le notaire qui le sait. Rien n'est pré-coché.
+  - ⚠ **PDF en PAYSAGE**, avec des constantes de page LOCALES : les constantes du module décrivent
+    une page portrait, utilisée par le registre des décisions — les modifier aurait déplacé celui-ci.
+  - ⚠ **Pas `num()` de `ui.jsx`** dans les cellules : `Intl` fr-FR insère une espace fine U+202F,
+    le caractère qui a donné « 20/000,00 » (cf. `pdfText`), et **les cellules d'`autoTable` ne
+    passent pas par `text()`**. D'où un formateur local qui applique la correction à la source.
 - ⚠ Ce registre **EST le rôle des colotis** dont dépendait le chantier d'onboarding gelé
   (`docs/SPEC_ONBOARDING_COLOTIS.md`). Il est conçu pour pouvoir servir d'ancre d'identité (e-mail
   normalisé comme `membres_cs`) mais **n'ouvre RIEN** : aucun compte, aucune lecture élargie.

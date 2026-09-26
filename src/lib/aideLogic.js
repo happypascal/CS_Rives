@@ -539,6 +539,19 @@ export const MENUS = [
           'On convoque tous ceux qui doivent l’être : les deux indivisaires, l’usufruitier et le nu-propriétaire, le dirigeant et son mandataire sur place.',
       },
       {
+        titre: 'Envoyer la liste des colotis au notaire',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Un document et un tableur, avec deux colonnes à remplir.',
+        etapes: [
+          'Cliquez sur « Export pour le notaire » en haut du registre.',
+          'L’écran rappelle ce que le fichier contient et à qui il peut être adressé. Lisez-le : c’est vous qui engagez votre responsabilité en l’envoyant.',
+          '« Document (PDF) » pour l’envoyer tel quel, « Tableur (CSV) » si le notaire préfère l’annoter dans Excel.',
+          'Les deux colonnes « Acte reçu le » et « Observations » sont vides : c’est le notaire qui les remplit et vous les retourne.',
+        ],
+        alerte:
+          'Le fichier porte les adresses électroniques, par exception décidée par le président et pour le notaire seul — il doit pouvoir rapprocher les actes reçus et relancer. La même liste adressée à un coloti, au syndic ou à un prestataire serait une divulgation. Il ne contient ni domicile hors lotissement, ni numéro de téléphone.',
+      },
+      {
         titre: 'Enregistrer une mutation',
         pourQui: ['president', 'secretaire'],
         resume: 'Un changement de propriétaire.',

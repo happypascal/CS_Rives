@@ -10,6 +10,7 @@ import { tally, tallySummary, engagementApprouve, VOTE_LABELS, phaseOf } from '.
 import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
+import { emailsOfficiels } from './proprietaireLogic'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -494,4 +495,168 @@ export function downloadRegistrePDF(decisions, opts = {}) {
   const { startPages } = buildRegistre(decisions, opts, null)
   const { doc } = buildRegistre(decisions, opts, startPages)
   doc.save(`registre-CS-${new Date().getFullYear()}.pdf`)
+}
+
+// ============================================================================
+// ÉTAT DES COLOTIS POUR LE NOTAIRE — liste à retourner annotée
+//
+// Demande de Pascal (2026-09-26). La résolution n° 15 de l'AG 2026 impose à
+// chaque coloti d'adresser son titre de propriété à Me Garnier avant le
+// 31 octobre, pour qu'il puisse publier les statuts. Le notaire a besoin de la
+// liste des parcelles et de leurs propriétaires, et d'un endroit où noter ce
+// qu'il a reçu.
+//
+// ⚠ CE DOCUMENT SORT DU REGISTRE DES PROPRIÉTAIRES. La mention RGPD acceptée par
+// chaque membre (migration 035) dit : « Vous ne pouvez communiquer à quiconque —
+// coloti, tiers, prestataire — d'autre information que le nom du propriétaire,
+// son adresse dans le lotissement et son numéro de lot. Les adresses de
+// communication, adresses électroniques et numéros de téléphone ne sortent pas
+// de ce registre. »
+//
+// ⚠ LES ADRESSES ÉLECTRONIQUES Y FIGURENT MALGRÉ TOUT, SUR ARBITRAGE EXPRÈS DE
+// PASCAL (2026-09-26) : « chaque coloti va lui envoyer son acte de vente donc tu
+// peux mettre les emails dans ce fichier ». La mention prévoit elle-même cette
+// voie — elle interdit de communiquer « sans arbitrage », pas d'arbitrer. Le
+// notaire doit pouvoir rapprocher un acte reçu d'une parcelle et relancer qui
+// n'a pas répondu ; sans adresse, il renverrait la relance au conseil.
+// ⚠ ET LE DESTINATAIRE COMPTE AUTANT QUE LA DONNÉE : « c'est un notaire, pas un
+// quidam » (Pascal). Un officier public, tenu au secret professionnel, mandaté
+// par la résolution n° 15 de l'AG 2026 pour publier les statuts. La même liste
+// adressée à un prestataire ou à un coloti serait une divulgation.
+// ⚠ C'EST UNE DÉCISION, PAS UN RÉGLAGE : ne pas l'étendre à un autre destinataire
+// sans un nouvel arbitrage. Elle engage la responsabilité de celui qui envoie.
+//
+// Restent EXCLUS, et doivent le rester : les adresses de communication (domiciles
+// hors lotissement) et les numéros de téléphone.
+//
+// Les adresses retenues sont les CONTACTS OFFICIELS (migration 044), pas la
+// colonne `email` : c'est à eux que l'association écrit, dirigeant de SCI ou
+// mandataire compris. Prendre `email` seul aurait privé le notaire de
+// l'interlocuteur réel de la moitié des sociétés.
+//
+// ⚠ LES COLONNES À REMPLIR SONT VIDES, ET C'EST TOUT L'OBJET. L'application ne
+// sait pas qui a transmis son acte — c'est le notaire qui le sait. Pré-cocher
+// quoi que ce soit ferait dire au document l'inverse de ce qu'il vient chercher.
+// ============================================================================
+
+// ⚠ PAS `num()` DE `ui.jsx` : ce module ne doit pas dépendre d'un fichier React,
+// et surtout `Intl` en fr-FR insère une espace fine U+202F — le caractère qui a
+// donné « 20/000,00 » dans un PDF (voir `pdfText` en tête de fichier). Les
+// cellules d'`autoTable` ne passent PAS par `text()`, donc pas par `pdfText` :
+// la correction doit être appliquée ici, à la source.
+const nombre = (n) => pdfText(new Intl.NumberFormat('fr-FR').format(Number(n) || 0))
+
+// Le second propriétaire est NOMMÉ : une indivision ou un couple, ce sont deux
+// personnes à qui le notaire devra réclamer un titre. N'en nommer qu'une
+// laisserait croire qu'un seul acte suffit.
+function nomsDuLot(lot) {
+  const p = lot.proprietaire
+  if (!p) return null
+  return pdfText([p.nom, p.nom_2].filter(Boolean).join(' / '))
+}
+
+export function downloadRegistreNotairePDF(lots, opts = {}) {
+  // ⚠ PAYSAGE. Sept colonnes, dont une d'adresses électroniques et deux laissées
+  // libres pour l'annotation, ne tiennent pas en portrait : les courriels s'y
+  // coupaient en trois lignes. Les constantes du module décrivent une page
+  // portrait — on les redéfinit ICI plutôt que de les modifier, pour ne rien
+  // changer au PDF du registre des décisions.
+  const doc = new jsPDF({ orientation: 'landscape' })
+  const W = 297
+  const H = 210
+  const LARGEUR = W - 2 * M
+  const BAS = H - 16
+  setupFont(doc)
+
+  font(doc, 'bold', 14, NAVY)
+  text(doc, 'ÉTAT DES COLOTIS', W / 2, 18, { align: 'center' })
+  font(doc, 'normal', 9, NAVY)
+  text(doc, `${ORG.name} — ${ORG.lotissement}, ${ORG.commune}`, W / 2, 24, { align: 'center' })
+  doc.setDrawColor(...NAVY)
+  doc.setLineWidth(0.4)
+  doc.line(M, 28, W - M, 28)
+
+  let y = 28 + GAP
+  font(doc, 'normal', 9, INK)
+  const intro = opts.intro
+    || 'Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les deux dernières colonnes sont laissées libres pour noter les titres de propriété reçus.'
+  for (const l of lines(doc, intro, LARGEUR)) {
+    text(doc, l, M, y)
+    y += 4.5
+  }
+  y += 2
+  font(doc, 'normal', 8, GREY)
+  text(doc, `Édité le ${formatDate(new Date().toISOString().slice(0, 10))}`, M, y)
+  y += GAP
+
+  // ⚠ Les parcelles VACANTES restent dans la liste, avec la mention explicite :
+  // une ligne absente se lirait « rien à réclamer ici », alors qu'elle signifie
+  // « nous ne savons pas à qui la réclamer ». C'est exactement ce que le notaire
+  // doit voir.
+  const body = lots.map((l) => [
+    pdfText(l.numero || ''),
+    nomsDuLot(l) || '— propriétaire inconnu —',
+    // ⚠ TOUTES les adresses officielles, séparées par un retour à la ligne : un
+    // lot à deux noms se réclame aux deux. N'en montrer qu'une laisserait croire
+    // qu'un seul acte est attendu.
+    pdfText(emailsOfficiels(l.proprietaire).join('\n')),
+    pdfText(l.adresse_lotissement || ''),
+    l.superficie != null ? `${nombre(l.superficie)} m²` : '',
+    '', // Acte reçu le
+    '', // Observations
+  ])
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie', 'Acte reçu le', 'Observations']],
+    body,
+    theme: 'grid', // quadrillage complet : on écrit dedans à la main
+    styles: { font: 'Assistant', fontSize: 8.5, cellPadding: 1.8, lineColor: [190, 190, 190] },
+    headStyles: { font: 'Assistant', fontStyle: 'bold', fillColor: NAVY, fontSize: 8.5 },
+    bodyStyles: { valign: 'middle', minCellHeight: 8 },
+    // ⚠ PAYSAGE et colonnes resserrées : sept colonnes dont deux à remplir à la
+    // main ne tiennent pas en portrait sans que les courriels ne se coupent.
+    columnStyles: {
+      0: { cellWidth: 22 },
+      1: { cellWidth: 46 },
+      2: { cellWidth: 'auto', fontSize: 7.5 },
+      3: { cellWidth: 38 },
+      4: { cellWidth: 17, halign: 'right' },
+      5: { cellWidth: 20 },
+      6: { cellWidth: 28 },
+    },
+    didParseCell: (data) => {
+      // Une parcelle sans propriétaire connu se voit : c'est une réclamation
+      // que le notaire ne pourra pas adresser.
+      if (data.section === 'body' && data.column.index === 1 && data.cell.raw === '— propriétaire inconnu —') {
+        data.cell.styles.textColor = RED
+      }
+    },
+    margin: { left: M, right: M, bottom: 16 },
+  })
+
+  y = doc.lastAutoTable.finalY + GAP
+  // `ensure` raisonne en portrait : on refait le test avec la hauteur réelle.
+  if (y + 24 > BAS) { doc.addPage(); y = 20 }
+  font(doc, 'normal', 8, GREY)
+  const totalLots = lots.reduce((s, l) => s + (Number(l.nombre_lots) || 1), 0)
+  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s).`, M, y)
+  y += 5
+  // ⚠ La mention de protection voyage AVEC le document : une fois envoyé, il
+  // n'est plus sous le contrôle du conseil, et le destinataire doit savoir à
+  // quoi il est tenu.
+  for (const l of lines(doc, 'Ce document contient des données à caractère personnel, communiquées au notaire de l’association au seul titre de la publication des statuts (résolution n° 15 de l’assemblée générale 2026). Il ne doit être ni rediffusé, ni utilisé à d’autres fins.', LARGEUR)) {
+    text(doc, l, M, y)
+    y += 4
+  }
+
+  const total = doc.getNumberOfPages()
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p)
+    font(doc, 'normal', 8, GREY)
+    text(doc, `${ORG.lotissement} — état des colotis`, M, H - 8)
+    text(doc, `Page ${p} / ${total}`, W - M, H - 8, { align: 'right' })
+  }
+
+  doc.save(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
