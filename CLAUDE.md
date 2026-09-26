@@ -638,6 +638,32 @@ groupe CS. Owner-only, bascule en « Notifier à nouveau ».
 > « Choix assumé : pas d'envoi automatique. Notifier 4 personnes ne justifie ni service d'envoi,
 > ni domaine à vérifier, ni passerelle tierce. » (`src/lib/share.js`)
 
+**RELANCE CIBLÉE** (2026-09-26, écran `RegistreCS`) — un menu liste les membres qui ont **encore
+quelque chose à voter**, avec leur compte ; en choisir un filtre la liste sur ses votes en attente
+et ouvre un message WhatsApp reprenant toutes ses décisions.
+- ⚠ **UN SEUL MESSAGE POUR N DÉCISIONS**, titré par le COMPTE : relancer trois fois de suite pour
+  trois décisions, c'est se faire ignorer à la deuxième. « Il me reste trois votes » agit, « une
+  décision vous attend » se remet à plus tard.
+- ⚠ **`needsMyVote` N'EST PAS RÉUTILISABLE** : il ferme sur `me` et `myVotedSet`. La même question
+  posée pour un AUTRE membre a son propre calcul (`enAttenteParMembre`), qui applique la même
+  règle — `voteOuvert`, actif **à la `date_publication`** (art. 15 / 026), aucune ligne de vote.
+  Un membre élu depuis n'est pas relancé sur une décision ouverte avant lui ; un membre **inactif**
+  n'est jamais relancé (sa ligne manquante est un départ, pas un oubli).
+- ⚠ **SANS NUMÉRO DE TÉLÉPHONE.** Une colonne `membres_cs.telephone` a été envisagée puis
+  **écartée par Pascal en séance** (« on oublie le numéro »). La 003 l'avait posée, la 004
+  supprimée avec `whatsapp_apikey` : elle reste supprimée. Le message **nomme la personne**, ce qui
+  protège du mauvais destinataire quand WhatsApp s'ouvre sans contact.
+- ⚠ **AUCUNE TRACE N'EST ÉCRITE.** `date_notification` dit qu'une décision a été annoncée **au
+  conseil** ; un rappel adressé à une seule personne ne l'est pas, et poser cette date ferait croire
+  le conseil prévenu.
+- **Président et secrétaire seulement** (arbitrage Pascal) : relancer le conseil, c'est le convoquer.
+- Choisir un membre **remet `onlyToVote` et le filtre d'état à zéro** : « à voter » porte sur MES
+  votes, « état » sur le résultat — laissés en place, ils rendraient une liste vide sans raison
+  visible. Le menu d'état est désactivé tant qu'un membre est sélectionné.
+- ⚠ **`RelanceModal` n'est PAS `ShareModal`** (DecisionDetail) : l'une porte UNE décision et ses
+  gabarits, l'autre UNE PERSONNE et N décisions. Ce qui doit rester identique, ce sont les **gestes**
+  — texte éditable, « Copier », app native par `whatsapp://`, WhatsApp Web en secours.
+
 **Ne pas réintroduire de notification automatique sans demande explicite.**
 
 > **Demande explicite reçue (2026-07-20), à faire APRÈS l'AG** : ajouter des **notifications

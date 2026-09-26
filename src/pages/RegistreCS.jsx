@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Select, Spinner, EmptyState } from '../components/ui'
+import { Card, Button, Input, Select, Spinner, EmptyState, Modal, Textarea } from '../components/ui'
 import { DecisionEtatBadge, SignatureBadge } from '../components/badges'
 import { decisionResume } from '../lib/decisionResume'
 import { phaseOf, avantSoumission, voteOuvert, visibiliteOf, numeroDecision, VISIBILITE_COURT } from '../lib/decisionLogic'
@@ -10,9 +10,10 @@ import { formatDate, formatDateTime, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadRegistrePDF } from '../lib/pdf'
+import { relanceVoteText, whatsappAppUrl, whatsappShareUrl } from '../lib/share'
 
 export default function RegistreCS() {
-  const { user } = useAuth()
+  const { user, isAdmin, isSecretaire } = useAuth()
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,6 +30,10 @@ export default function RegistreCS() {
   const [q, setQ] = useState('')
   const [onlyToVote, setOnlyToVote] = useState(false)
   const [exporting, setExporting] = useState(false)
+  // RELANCE CIBLÉE (2026-09-26) : le membre dont on veut voir — et relancer — les
+  // votes en attente. Vide = pas de filtre.
+  const [relanceMembre, setRelanceMembre] = useState('')
+  const [relanceOuverte, setRelanceOuverte] = useState(false)
 
   const reload = async () => {
     setError('')
@@ -90,6 +95,49 @@ export default function RegistreCS() {
   const needsMyVote = (d) => voteOuvert(d) && iAmActiveAt(d.date_publication) && !myVotedSet.has(d.id)
   // En retard pour moi : mon vote est attendu et la date limite est dépassée.
   const overdueForMe = (d) => needsMyVote(d) && d.date_limite_reponse && d.date_limite_reponse < todayISO()
+
+  // ============================================================================
+  // RELANCE CIBLÉE — qui doit encore voter, et quoi
+  //
+  // ⚠ ON NE PEUT PAS RÉUTILISER `needsMyVote` : il est écrit pour MOI (il ferme
+  // sur `me` et `myVotedSet`). La même question posée pour un AUTRE membre
+  // demande sa propre composition et ses propres votes — d'où ce second calcul,
+  // qui applique exactement la même règle : décision SOUMISE et non enregistrée
+  // (`voteOuvert`), membre actif à la date de publication, aucune ligne de vote.
+  //
+  // ⚠ La date de référence est `date_publication`, pas aujourd'hui : c'est elle
+  // qui détermine la composition appelée à voter (art. 15, migration 026). Un
+  // membre élu depuis n'a pas à être relancé sur une décision ouverte avant lui.
+  // ============================================================================
+  const enAttenteParMembre = useMemo(() => {
+    const votesParMembre = new Map()
+    for (const v of allVotes) {
+      if (!votesParMembre.has(v.membre_id)) votesParMembre.set(v.membre_id, new Set())
+      votesParMembre.get(v.membre_id).add(v.decision_id)
+    }
+    const ouvertes = decisions.filter(voteOuvert)
+    const out = []
+    for (const m of members) {
+      // ⚠ Un membre INACTIF n'est pas relancé : il ne siège plus. Sa ligne de
+      // vote manquante n'est pas un oubli, c'est un départ.
+      if (!m.actif) continue
+      const votees = votesParMembre.get(m.id) || new Set()
+      const restantes = ouvertes.filter((d) => {
+        const elu = !m.date_election || m.date_election <= d.date_publication
+        const parti = m.date_fin && m.date_fin < d.date_publication
+        return elu && !parti && !votees.has(d.id)
+      })
+      if (restantes.length) out.push({ membre: m, decisions: restantes })
+    }
+    // Le plus en retard d'abord : c'est lui qu'on relance.
+    return out.sort((a, b) => b.decisions.length - a.decisions.length
+      || `${a.membre.nom}`.localeCompare(`${b.membre.nom}`, 'fr'))
+  }, [decisions, members, allVotes])
+
+  const relanceCible = enAttenteParMembre.find((x) => x.membre.id === relanceMembre) || null
+  // ⚠ Président et secrétaire seulement (arbitrage Pascal, 2026-09-26) :
+  // relancer le conseil, c'est le convoquer, et c'est la fonction du secrétaire.
+  const peutRelancer = isAdmin || isSecretaire
 
   const batchByDecision = useMemo(() => {
     const map = {}
@@ -179,6 +227,10 @@ export default function RegistreCS() {
     () =>
       decisions
         .filter((d) => {
+          // ⚠ Le filtre « relance » prime sur les autres critères d'état : on a
+          // choisi un membre pour voir CE QU'IL DOIT VOTER, et un filtre d'état
+          // resté sur « Adoptée » rendrait une liste vide sans raison visible.
+          if (relanceCible) return relanceCible.decisions.some((x) => x.id === d.id)
           if (onlyToVote && !needsMyVote(d)) return false
           if (year !== 'all' && d.date_publication?.slice(0, 4) !== year) return false
           if (!matchEtat(d)) return false
@@ -198,7 +250,7 @@ export default function RegistreCS() {
           const db = b.date_soumission_prevue || '9999'
           return da < db ? -1 : da > db ? 1 : 0
         }),
-    [decisions, year, statut, q, onlyToVote, myVotedSet, me], // eslint-disable-line react-hooks/exhaustive-deps
+    [decisions, year, statut, q, onlyToVote, myVotedSet, me, relanceCible], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // Le PDF est le REGISTRE : il n'y entre que des délibérations. Un brouillon ou
@@ -265,7 +317,7 @@ export default function RegistreCS() {
             <option value="all">Toutes les années</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </Select>
-          <Select value={statut} onChange={(e) => setStatut(e.target.value)}>
+          <Select value={statut} onChange={(e) => setStatut(e.target.value)} disabled={Boolean(relanceCible)}>
             <option value="all">Tous les états</option>
             <optgroup label="Avant le vote">
               <option value="brouillon">Brouillon</option>
@@ -279,6 +331,69 @@ export default function RegistreCS() {
             </optgroup>
           </Select>
         </div>
+
+        {/* ------------------------------------------------ RELANCE CIBLÉE
+            ⚠ Le menu ne liste QUE les membres qui ont encore quelque chose à
+            voter, avec leur compte. Lister tout le conseil obligerait à ouvrir
+            chaque nom pour découvrir qu'il n'y a rien à relancer — or la
+            question posée est « qui dois-je relancer ? », et la réponse doit
+            être dans le menu lui-même.
+            ⚠ Réservé au président et au secrétaire : relancer le conseil, c'est
+            le convoquer. */}
+        {peutRelancer && !isMobile && (
+          <div className="mt-3 border-t border-navy-100 pt-3">
+            {enAttenteParMembre.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Tout le monde a voté sur les décisions ouvertes — rien à relancer.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-slate-600">Relance ciblée :</span>
+                <Select
+                  value={relanceMembre}
+                  onChange={(e) => {
+                    setRelanceMembre(e.target.value)
+                    // ⚠ On remet les autres filtres à zéro en choisissant un
+                    // membre : « à voter » porte sur MES votes et « état » sur le
+                    // résultat, deux critères qui se contrediraient avec celui-ci
+                    // et rendraient une liste vide sans explication.
+                    setOnlyToVote(false)
+                    setStatut('all')
+                  }}
+                  className="w-auto"
+                >
+                  <option value="">— choisir un membre —</option>
+                  {enAttenteParMembre.map(({ membre, decisions: d }) => (
+                    <option key={membre.id} value={membre.id}>
+                      {membre.prenom} {membre.nom} ({d.length})
+                    </option>
+                  ))}
+                </Select>
+                {relanceCible && (
+                  <>
+                    <Button onClick={() => setRelanceOuverte(true)}>
+                      Relancer par WhatsApp ({relanceCible.decisions.length})
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setRelanceMembre('')}
+                      className="text-sm text-navy-600 underline"
+                    >
+                      Voir toutes les décisions
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {relanceCible && (
+              <p className="mt-2 text-xs text-slate-500">
+                La liste ci-dessous ne montre que les {relanceCible.decisions.length} décision
+                {relanceCible.decisions.length > 1 ? 's' : ''} qui attendent le vote de{' '}
+                <strong>{relanceCible.membre.prenom} {relanceCible.membre.nom}</strong>.
+              </p>
+            )}
+          </div>
+        )}
       </Card>
 
       {filtered.length === 0 ? (
@@ -445,6 +560,85 @@ export default function RegistreCS() {
           </div>
         </Card>
       )}
+
+      {relanceCible && (
+        <RelanceModal
+          open={relanceOuverte}
+          onClose={() => setRelanceOuverte(false)}
+          membre={relanceCible.membre}
+          decisions={relanceCible.decisions}
+        />
+      )}
     </div>
+  )
+}
+
+// RELANCE CIBLÉE D'UN MEMBRE — mêmes gestes que « Prévenir le CS ».
+//
+// ⚠ CE N'EST PAS `ShareModal` (DecisionDetail) : celle-là porte UNE décision,
+// ses gabarits et sa date de notification ; celle-ci porte UNE PERSONNE et les N
+// décisions qui l'attendent. Les fondre aurait demandé un composant à deux
+// visages. Ce qui doit rester identique, ce sont les GESTES — texte éditable,
+// « Copier », l'app native par `whatsapp://`, et WhatsApp Web en secours — et
+// c'est le cas.
+//
+// ⚠ AUCUNE TRACE N'EST ÉCRITE. `date_notification` dit qu'une décision a été
+// ANNONCÉE AU CONSEIL ; relancer une personne n'est pas annoncer une décision, et
+// poser cette date ferait croire que le conseil a été prévenu alors qu'un seul
+// membre a reçu un rappel.
+function RelanceModal({ open, onClose, membre, decisions }) {
+  const [text, setText] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  // Réinitialisé à chaque ouverture, puis LIBREMENT éditable : une relance se
+  // personnalise (« on en parle jeudi ? »), et un message qu'on ne peut pas
+  // retoucher finit par ne pas être envoyé.
+  useEffect(() => {
+    if (open) { setText(relanceVoteText(membre, decisions)); setCopied(false) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, membre.id, decisions.length])
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Relancer ${membre.prenom} ${membre.nom}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={copy}>{copied ? 'Copié ✓' : 'Copier'}</Button>
+          <Button
+            onClick={() => { window.location.href = whatsappAppUrl(text); onClose() }}
+            disabled={!text.trim()}
+          >
+            Ouvrir WhatsApp
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3 text-sm text-slate-600">
+        <p className="text-xs text-slate-500">
+          WhatsApp s’ouvre avec ce texte — <strong>choisissez {membre.prenom}</strong> dans vos contacts,
+          puis envoyez. L’application n’envoie rien d’elle-même et ne conserve aucune trace de cette relance.
+        </p>
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={8} autoGrow />
+        <p className="text-xs text-slate-400">
+          WhatsApp ne s’ouvre pas ?{' '}
+          <button
+            type="button"
+            onClick={() => { window.open(whatsappShareUrl(text), '_blank', 'noopener'); onClose() }}
+            className="text-navy-600 underline"
+          >
+            Ouvrir WhatsApp Web
+          </button>{' '}
+          à la place.
+        </p>
+      </div>
+    </Modal>
   )
 }

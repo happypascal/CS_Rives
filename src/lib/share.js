@@ -59,6 +59,45 @@ export function decisionRecordedText(decision) {
   ].join('\n')
 }
 
+// ============================================================================
+// RELANCE CIBLÉE — tout ce qu'un membre doit encore voter, en un message
+//
+// ⚠ UN SEUL MESSAGE POUR N DÉCISIONS, pas N messages. Relancer quelqu'un trois
+// fois de suite pour trois décisions, c'est se faire ignorer à la deuxième. Le
+// titre porte le COMPTE, parce que c'est l'information qui décide le lecteur à
+// ouvrir : « il me reste trois votes » agit, « une décision vous attend » se
+// remet à plus tard.
+//
+// ⚠ SANS NUMÉRO, comme les autres partages de l'application (arbitrage Pascal,
+// 2026-09-26 — la colonne `membres_cs.telephone` avait été envisagée puis
+// écartée). WhatsApp s'ouvre avec le texte, on choisit le destinataire à
+// l'arrivée. Le message NOMME donc la personne : c'est ce qui garantit qu'une
+// relance ouverte sans destinataire ne parte pas au mauvais interlocuteur.
+// ============================================================================
+export function relanceVoteText(membre, decisions) {
+  const n = decisions.length
+  const lignes = [
+    `*${n} décision${n > 1 ? 's' : ''} ${n > 1 ? 'attendent' : 'attend'} votre vote*`,
+    '',
+    `${membre.prenom} ${membre.nom},`,
+    '',
+  ]
+  for (const d of decisions) {
+    // `numero` est nul avant la soumission, mais une décision à voter est
+    // forcément soumise : elle en a donc toujours un.
+    lignes.push(`• ${d.numero || '(sans numéro)'} — ${d.titre}`)
+    lignes.push(`  ${decisionUrl(d)}`)
+  }
+  // ⚠ L'échéance annoncée est la PLUS PROCHE, pas celle de la dernière ligne :
+  // c'est elle qui presse. Les décisions sans date limite ne comptent pas.
+  const echeances = decisions.map((d) => d.date_limite_reponse).filter(Boolean).sort()
+  if (echeances.length) {
+    lignes.push('')
+    lignes.push(`Réponse souhaitée avant le ${formatDate(echeances[0])}.`)
+  }
+  return lignes.join('\n')
+}
+
 // Deux façons d'ouvrir WhatsApp avec le message pré-rempli, sans numéro (on
 // choisit le groupe du CS à l'arrivée) :
 //

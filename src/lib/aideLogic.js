@@ -120,6 +120,20 @@ export const MENUS = [
           'L’application n’avertit personne d’elle-même. Sans ce geste, une décision peut rester ouverte sans que quiconque le sache.',
       },
       {
+        titre: 'Relancer un membre qui n’a pas encore voté',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Un message WhatsApp reprenant tout ce qui l’attend.',
+        etapes: [
+          'Dans la barre de filtres, ouvrez « Relance ciblée » : le menu ne liste que les membres qui ont encore quelque chose à voter, avec le nombre entre parenthèses.',
+          'Choisissez un membre : la liste se réduit aux décisions qui attendent SON vote.',
+          'Cliquez sur « Relancer par WhatsApp » : un message s’ouvre, reprenant chaque décision avec son lien et l’échéance la plus proche.',
+          'Modifiez le texte si besoin, puis choisissez la personne dans vos contacts WhatsApp et envoyez.',
+          '« Voir toutes les décisions » rend la liste à son état normal.',
+        ],
+        alerte:
+          'L’application n’envoie rien d’elle-même et ne garde aucune trace de cette relance : la date de notification d’une décision dit que le CONSEIL a été prévenu, ce qu’un rappel adressé à une seule personne n’est pas.',
+      },
+      {
         titre: 'Poser une question, répondre',
         pourQui: TOUS,
         resume: 'Le fil d’échanges attaché à la décision.',
