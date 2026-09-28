@@ -152,12 +152,14 @@ scripts/
                       le registre consolidé : c'est la source INDÉPENDANTE qui permet de
                       vérifier la base sans la confronter à ce qui l'a remplie. ⚠ Le titre du
                       document est AVALÉ dans la première cellule du tableau : l'en-tête se
-                      reconnaît à « Scrutateur » en DEUXIÈME cellule.
+                      reconnaît à « Scrutateur » en DEUXIÈME cellule. ⚠ IGNORE les dossiers
+                      commençant par `_` : une sauvegarde y porte les MÊMES noms de fichiers,
+                      et l'ordre de parcours du disque décidait quelle version gagnait.
   corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
                       type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
-  marquer_resolutions_impactantes.mjs  MARQUE les résolutions retenues au résumé (`au_resume`),
-                      d'après les 25 résumés par année. N'écrit QUE ce champ : un ré-import
-                      effacerait les corrections. Idempotent.
+  completer_depuis_resumes_ag.mjs  CE QUE LES RÉSUMÉS PAR ANNÉE APPORTENT : le LIEU de la
+                      séance et la marque `au_resume` sur chaque résolution. N'écrit QUE ces
+                      champs — un ré-import effacerait les corrections. Idempotent.
   corriger_resolutions_archives.mjs  CORRECTIONS des résolutions archivées issues de la
                       confrontation aux résumés par année (4 sur 151). Idempotent, et chaque
                       correction porte la VALEUR ATTENDUE AVANT : si la base a changé, elle est
@@ -1142,7 +1144,7 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   2. ⚠ **ELLE N'EST PAS UN POINT DE ROUTINE** — élection du bureau, comptes, quitus, budget courant,
      désignation du syndic, identiques depuis 1988. **Condition CONSTATÉE** : est retenue la
      résolution qui **figure au `Resume_AG_<date>.docx`** de son année, où le tri a déjà été fait par
-     un lecteur du PV (`au_resume`, posé par `scripts/marquer_resolutions_impactantes.mjs`). Une
+     un lecteur du PV (`au_resume`, posé par `scripts/completer_depuis_resumes_ag.mjs`). Une
      règle par mots-clés (« quitus », « comptes ») aurait été une devinette, et se serait trompée
      **le jour où l'assemblée REFUSE le quitus** — ce jour-là, le quitus est la décision de l'année.
   - ⚠ **« FIGURE AU RÉSUMÉ » N'EST PAS « IMPACTANTE ».** Premier jet livré avec cette seule
@@ -1214,6 +1216,19 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   de **cette** assemblée. Parcourir la liste montre alors les changements de cabinet et
   d'interlocuteur — Moynat Pillet, Maison de l'Immobilier, Lemanique — qu'aucun autre écran ne
   raconte.
+- **LIEU DE LA SÉANCE** (`pv_archives.lieu`, ajouté aux résumés puis importé le 2026-09-28). Il
+  raconte quelque chose qu'aucun autre champ ne porte : l'assemblée s'est tenue à la mairie
+  jusqu'en 2016, à l'**ancienne école** en 2017, à l'**Espace Littorelle de MESSERY** en 2022 —
+  hors du lotissement, et même hors de la commune.
+  - ⚠ **« Non indiqué au procès-verbal » (AG 2005) EST REPRIS TEL QUEL.** C'est la source qui
+    constate l'absence ; la remplacer par un champ vide rendrait cette lacune indistincte d'un
+    champ qu'on n'a pas encore rempli — et le lieu habituel est trop évident pour qu'on résiste
+    longtemps à l'y écrire de tête.
+  - ⚠ **Sur sa propre ligne, en pleine largeur** : une adresse dans une colonne au quart de la
+    carte se casse sur trois lignes et déforme les quatre rubriques voisines.
+  - ⚠ **Le comparer suppose de le LIRE** : le premier jet ne sélectionnait pas `lieu`, donc le
+    script se croyait à faire à chaque exécution. L'idempotence ne se déclare pas, elle se vérifie
+    en relançant.
 - **NAVIGATION D'UNE ASSEMBLÉE À L'AUTRE** en tête de fiche (Pascal 2026-09-28). ⚠ Le fonds est rendu
   de la plus **récente** à la plus ancienne : la voisine *suivante* dans le tableau est la
   **précédente** dans le temps. ⚠ Les boutons ne sont **rendus que s'il y a une voisine** — un bouton

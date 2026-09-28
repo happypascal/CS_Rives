@@ -1,4 +1,9 @@
-// MARQUAGE DES RÉSOLUTIONS IMPACTANTES du fonds de procès-verbaux.
+// CE QUE LES RÉSUMÉS PAR ANNÉE APPORTENT AU FONDS DE PROCÈS-VERBAUX.
+//
+// Deux choses, et une seule source : les `Resume_AG_<date>.docx`.
+//   1. le LIEU de la séance (`lieu`) ;
+//   2. la marque « figure au résumé » sur chaque résolution (`au_resume`), qui
+//      sert à écarter les points de routine.
 //
 // Pascal (2026-09-28) : « je ne veux que les décisions impactantes dans ce
 // résumé ». Une assemblée vote chaque année l'élection du bureau, les comptes,
@@ -38,8 +43,8 @@
 // pas réécrite.
 //
 // Usage :
-//   node scripts/marquer_resolutions_impactantes.mjs        essai à blanc
-//   node scripts/marquer_resolutions_impactantes.mjs --go   écrit
+//   node scripts/completer_depuis_resumes_ag.mjs        essai à blanc
+//   node scripts/completer_depuis_resumes_ag.mjs --go   écrit
 
 import { createClient } from '@supabase/supabase-js'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
@@ -89,9 +94,9 @@ const rapport = []
 const W = (s) => { rapport.push(s); console.log(s) }
 
 async function main() {
-  W(`# Marquage des résolutions impactantes — ${GO ? 'ÉCRITURE' : 'ESSAI À BLANC'}`)
+  W(`# Ce que les résumés par année apportent au fonds — ${GO ? 'ÉCRITURE' : 'ESSAI À BLANC'}`)
   W('')
-  W('Est « impactante » la résolution qui figure au résumé d’assemblée de son année.')
+  W('Le lieu de la séance, et la marque « figure au résumé » sur chaque résolution.')
   W('')
   if (!GO) W('> ⚠ **Aucune écriture.** Relancer avec `--go` pour appliquer.')
   W('')
@@ -105,17 +110,32 @@ async function main() {
   W('')
 
   const { data: archives, error } = await supabase
-    .from('pv_archives').select('id, annee, date_ag, intitule, resolutions').order('annee')
+    .from('pv_archives').select('id, annee, date_ag, intitule, lieu, resolutions').order('annee')
   if (error) throw new Error(`Lecture du fonds : ${error.message}`)
 
   const aEcrire = []
+  const lieux = new Map()
   const soucis = []
-  W('| Assemblée | Au résumé | Écartées | Introuvables |')
-  W('|---|---|---|---|')
+  W('| Assemblée | Lieu | Au résumé | Écartées | Introuvables |')
+  W('|---|---|---|---|---|')
 
   for (const a of archives) {
-    if (!a.resolutions?.length) continue
     const r = resumes.get(a.date_ag)
+
+    // ⚠ LE LIEU EST REPRIS TEL QUEL, « Non indiqué au procès-verbal » COMPRIS
+    // (AG 2005). C'est la source qui constate l'absence ; la remplacer par un
+    // champ vide rendrait cette lacune indistincte d'un champ qu'on n'a pas
+    // encore rempli — et le lieu habituel est trop évident pour qu'on résiste
+    // longtemps à l'y écrire de tête.
+    // ⚠ Traité AVANT le garde-fou sur les résolutions : une assemblée sans
+    // résolution dépouillée a tout de même eu lieu quelque part.
+    const lieu = r?.lieu || null
+    if (lieu && lieu !== a.lieu) lieux.set(a.id, { lieu, intitule: a.intitule, avant: a.lieu })
+
+    if (!a.resolutions?.length) {
+      W(`| ${a.intitule} | ${lieu && lieu !== a.lieu ? lieu : '—'} | — | — | — |`)
+      continue
+    }
     if (!r) {
       // ⚠ SANS RÉSUMÉ, ON NE MARQUE RIEN. Marquer tout en « écartée » masquerait
       // l'assemblée entière ; marquer tout en « impactante » affirmerait un tri
@@ -146,7 +166,7 @@ async function main() {
 
     const change = resolutions.some((x, i) => x.au_resume !== a.resolutions[i].au_resume
       || 'impactante' in a.resolutions[i])
-    W(`| ${a.intitule} | ${retenues} | ${resolutions.length - retenues} | ${attendues.size || '—'} |`)
+    W(`| ${a.intitule} | ${lieux.has(a.id) ? lieux.get(a.id).lieu : '—'} | ${retenues} | ${resolutions.length - retenues} | ${attendues.size || '—'} |`)
     if (change) aEcrire.push({ id: a.id, intitule: a.intitule, resolutions })
   }
   W('')
@@ -160,25 +180,37 @@ async function main() {
 
   const total = archives.reduce((n, a) => n + (a.resolutions?.length || 0), 0)
   const retenues = aEcrire.reduce((n, x) => n + x.resolutions.filter((r) => r.au_resume).length, 0)
-  W(`${aEcrire.length} assemblée(s) à écrire — ${retenues} résolution(s) retenues sur ${total} au fonds.`)
+  W(`${aEcrire.length} assemblée(s) à marquer — ${retenues} résolution(s) retenues sur ${total} au fonds.`)
+  W(`${lieux.size} lieu(x) à renseigner.`)
   W('')
 
-  if (GO && aEcrire.length) {
-    for (const x of aEcrire) {
+  // ⚠ UN SEUL `update` PAR ASSEMBLÉE, lieu et marquage ensemble : deux écritures
+  // successives laisseraient, si la seconde échoue, une ligne à moitié complétée
+  // sans que rien ne le signale.
+  const patchs = new Map()
+  for (const x of aEcrire) patchs.set(x.id, { intitule: x.intitule, resolutions: x.resolutions })
+  for (const [id, v] of lieux) {
+    const p = patchs.get(id) || { intitule: v.intitule }
+    p.lieu = v.lieu
+    patchs.set(id, p)
+  }
+
+  if (GO && patchs.size) {
+    for (const [id, { intitule, ...champs }] of patchs) {
       const { error: e } = await supabase.from('pv_archives')
-        .update({ resolutions: x.resolutions, updated_at: new Date().toISOString() }).eq('id', x.id)
-      if (e) throw new Error(`Écriture de « ${x.intitule} » : ${e.message}`)
+        .update({ ...champs, updated_at: new Date().toISOString() }).eq('id', id)
+      if (e) throw new Error(`Écriture de « ${intitule} » : ${e.message}`)
     }
-    W(`✅ ${aEcrire.length} assemblée(s) marquée(s).`)
+    W(`✅ ${patchs.size} assemblée(s) complétée(s).`)
     W('')
-  } else if (!aEcrire.length) {
-    W('Rien à écrire — le marquage est déjà à jour.')
+  } else if (!patchs.size) {
+    W('Rien à écrire — le fonds est déjà à jour.')
     W('')
   }
 
   const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-')
   await mkdir(join(RACINE, 'export'), { recursive: true })
-  const chemin = join(RACINE, 'export', `resolutions_impactantes_${stamp}${GO ? '' : '-essai'}.md`)
+  const chemin = join(RACINE, 'export', `resumes_completion_${stamp}${GO ? '' : '-essai'}.md`)
   await writeFile(chemin, rapport.join('\n'))
   console.log(`\n📄 Rapport : ${chemin}`)
 }

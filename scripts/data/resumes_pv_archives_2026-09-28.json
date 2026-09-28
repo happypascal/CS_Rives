@@ -8,6 +8,7 @@
   "scrutateur": "—",
   "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
   "quorum": "41 lots sur 49",
+  "lieu": "Mairie de Nernier",
   "unite_des_votes": "Votes en lots",
   "note": "La page du procès-verbal relatant ce vote manque dans le fichier conservé.",
   "resolutions": [
@@ -28,6 +29,7 @@
   "scrutateur": "—",
   "secretaire_foncia": "Foncia Moynat Pillet",
   "quorum": "37 copropriétaires sur 49",
+  "lieu": "Salle de la mairie, Nernier",
   "unite_des_votes": "Votes en fraction de 45 (tel qu’au PV)",
   "note": "Votes exprimés en fraction de 45 au procès-verbal, sans précision d'unité.",
   "resolutions": [
@@ -84,6 +86,7 @@
   "scrutateur": "M. Michel Gachoud",
   "secretaire_foncia": "M. Sinègre (Foncia Moynat Pillet)",
   "quorum": "40 copropriétaires, 4 100 voix sur 5 100 (80 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -140,6 +143,7 @@
   "scrutateur": "M. Michel Gachoud",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "40 copropriétaires, 4 081 voix sur 5 100 (80 %)",
+  "lieu": "Non indiqué au procès-verbal",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -202,6 +206,7 @@
   "scrutateur": "M. Michel Gachoud",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -228,6 +233,7 @@
   "scrutateur": "M. Jean-Bernard Breux",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -254,6 +260,7 @@
   "scrutateur": "M. Michel Gachoud",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "36 copropriétaires, 3 700 voix sur 5 100 (73 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -310,6 +317,7 @@
   "scrutateur": "M. Jean-Claude Pargoux",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -336,6 +344,7 @@
   "scrutateur": "M. Jean-Claude Pargoux",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "30 copropriétaires, 3 019 voix sur 5 100 (59 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -362,6 +371,7 @@
   "scrutateur": "M. Antoine Maurice",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "32 copropriétaires, 3 300 voix sur 5 100 (65 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -388,6 +398,7 @@
   "scrutateur": "M. Jean-Jacques Vollbrecht",
   "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
   "quorum": "23 copropriétaires, 2 381 voix sur 5 100 (47 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -432,6 +443,7 @@
   "scrutateur": "M. Bernard Privat",
   "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
   "quorum": "24 copropriétaires, 2 419 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -458,6 +470,7 @@
   "scrutateur": "M. Antoine Maurice",
   "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
   "quorum": "23 copropriétaires, 2 400 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -490,6 +503,7 @@
   "scrutateur": "M. Jean-Jacques Vollbrecht",
   "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
   "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": "Résolution 14 : déclarée adoptée à l'article 25 avec 2 500 voix, alors que 2 551 étaient nécessaires.",
   "resolutions": [
@@ -522,6 +536,7 @@
   "scrutateur": "M. Antoine Maurice",
   "secretaire_foncia": "M. Erondel (Foncia Maison de l’Immobilier)",
   "quorum": "19 copropriétaires, 1 900 voix sur 5 100 (37 %)",
+  "lieu": "Ancienne école, 13 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -554,6 +569,7 @@
   "scrutateur": "M. Bernard Privat",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Maison de l’Immobilier)",
   "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -580,6 +596,7 @@
   "scrutateur": "M. Jean-Jacques Vollbrecht",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "26 copropriétaires, 2 600 voix sur 5 100 (51 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -618,6 +635,7 @@
   "scrutateur": "M. Antoine Maurice (SCI La Boussole)",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "24 copropriétaires, 2 400 voix sur 5 100 (47 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -698,6 +716,7 @@
   "scrutateur": "M. Jean-Jacques Vollbrecht",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "27 copropriétaires, 2 719 voix sur 5 100 (53 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -760,6 +779,7 @@
   "scrutateur": "M. Antoine Maurice (SCI La Boussole)",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "28 copropriétaires, 2 900 voix sur 5 100 (57 %)",
+  "lieu": "Espace Littorelle, 1 chemin de la Cure, 74140 Messery",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -840,6 +860,7 @@
   "scrutateur": "M. Raphaël Serre",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "31 copropriétaires, 3 200 voix sur 5 100 (63 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": "Résolution 12.1 : « rejetée » selon la version du PV de Foncia Maison de l'Immobilier ; « vote non pris en compte, dans l'attente d'une consultation juridique sur la majorité requise » selon la version notifiée par Foncia.",
   "resolutions": [
@@ -974,6 +995,7 @@
   "scrutateur": "Aucun (pas de candidature)",
   "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
   "quorum": "33 membres, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
   "note": null,
   "resolutions": [
@@ -1006,6 +1028,7 @@
   "scrutateur": "M. Raphaël Serre",
   "secretaire_foncia": "Mme Vanessa Meyer (Foncia Lemanique)",
   "quorum": "44 membres, 90 687 m² sur 104 646 (87 %) au moment des votes",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en m² de superficie, sur 104 646",
   "note": null,
   "resolutions": [
@@ -1068,6 +1091,7 @@
   "scrutateur": "M. Raphaël Serre",
   "secretaire_foncia": "Mme Vanessa Meyer (Foncia Lemanique)",
   "quorum": "32 membres, 63 695 m² sur 104 646 (61 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en m² de superficie, sur 104 646",
   "note": "Résolution 23 : le PV indique 80 000 €, alors que le PV du 15 septembre 2026 cite une cotisation de 50 000 € votée à cette date.",
   "resolutions": [
@@ -1148,6 +1172,7 @@
   "scrutateur": "M. Philippe Bermejo",
   "secretaire_foncia": "Mme Leina Abdelkader (Foncia Lemanique)",
   "quorum": "44 membres, 92 146 m² sur 104 646 (88 %) au moment des votes",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
   "unite_des_votes": "Votes en m² de superficie, sur 104 646",
   "note": "Résolutions 13 et 14 : la validation formelle de l'article sur le recouvrement n'a pas été donnée par Me Garnier.",
   "resolutions": [

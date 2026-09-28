@@ -302,8 +302,22 @@ export default function PVArchiveDetail() {
           ⚠ Quand il manque, on le dit plutôt que de ne rien afficher : une
           absence muette se lirait « cette assemblée n'a rien décidé ». */}
       <Card className="mb-6 overflow-hidden">
-        {/* Les quatre rubriques d'en-tête du résumé, dans son ordre. */}
+        {/* Les rubriques d'en-tête du résumé, dans son ordre.
+            ⚠ LE LIEU SUR SA PROPRE LIGNE, en pleine largeur (`sm:col-span-4`).
+            C'est une adresse — « Salle polyvalente, mairie, route de Messery,
+            74140 Nernier » — qui, dans une colonne au quart de la carte, se
+            casserait sur trois lignes et déformerait les quatre rubriques
+            voisines. Il ouvre l'en-tête parce que c'est l'ordre du résumé : où,
+            puis qui, puis combien.
+            ⚠ Il porte parfois « Non indiqué au procès-verbal » (AG 2005) : c'est
+            la source qui constate l'absence, et on la rend telle quelle plutôt
+            que de laisser un tiret qui se lirait « pas encore renseigné ». */}
         <div className="grid gap-4 border-b border-navy-100 px-5 py-4 sm:grid-cols-4">
+          {pv.lieu && (
+            <div className="sm:col-span-4">
+              <Rubrique titre="Lieu de la séance" valeur={pv.lieu} />
+            </div>
+          )}
           <Rubrique titre="Président de séance" valeur={pv.president_seance} />
           <Rubrique titre="Scrutateur" valeur={pv.scrutateur} />
           <Rubrique titre="Secrétaire" valeur={pv.syndic} />

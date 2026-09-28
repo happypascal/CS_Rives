@@ -13,6 +13,7 @@ rien.
 Format constaté (identique de 1988 à 2026) :
     ASL du Lotissement de Rives — Nernier
     <Titre : Assemblée générale ordinaire du 26 octobre 2024>
+    Lieu : <salle, adresse>            (ajouté le 2026-09-28, absent des versions antérieures)
     | Président de séance | Scrutateur | Secrétaire (Foncia) | Quorum |
     | <valeurs>                                                      |
     Résolutions <unité de vote>
@@ -83,6 +84,11 @@ def lire_un(chemin):
     paragraphes, lignes = contenu(chemin)
 
     titre = next((p for p in paragraphes if p.lower().startswith('assemblée')), None)
+    # ⚠ Le lieu est arrivé le 2026-09-28, APRÈS le premier import : il n'existe
+    # donc pas dans les documents antérieurs. Absent, il reste `None` — on
+    # n'invente pas « Salle de la mairie » parce que c'est le lieu habituel.
+    lieu = next((p[len('Lieu :'):].strip() for p in paragraphes
+                 if p.startswith('Lieu :')), None)
     unite = next((p[len('Résolutions'):].strip() for p in paragraphes
                   if p.startswith('Résolutions')), None)
     etabli = next((date_iso(p) for p in paragraphes if p.startswith('Résumé établi')), None)
@@ -120,6 +126,7 @@ def lire_un(chemin):
         'fichier': os.path.basename(chemin),
         'date_ag': date_iso(titre) or date_iso(os.path.basename(chemin)),
         'titre': titre,
+        'lieu': lieu,
         'unite_vote': unite,
         'resume_etabli_le': etabli,
         **entete,
@@ -129,7 +136,16 @@ def lire_un(chemin):
 
 def lire(racine):
     out = []
-    for dossier, _, fichiers in os.walk(racine):
+    for dossier, sous_dossiers, fichiers in os.walk(racine):
+        # ⚠ LES DOSSIERS DE TRAVAIL SONT ÉCARTÉS, et ce n'est pas du confort.
+        # Le 2026-09-28, l'ajout du lieu aux résumés s'est accompagné d'une
+        # sauvegarde dans `_travail_registre_2026-09-28/sauvegarde_resumes_avant_lieu/` :
+        # vingt-cinq fichiers portant EXACTEMENT les mêmes noms, au même format,
+        # mais sans le lieu. Les résumés étant indexés par date d'assemblée, le
+        # dernier lu écrasait le premier — c'est-à-dire que l'ordre de parcours du
+        # disque décidait si le registre recevait la bonne version ou l'ancienne.
+        # Une source de vérité ne se choisit pas au hasard.
+        sous_dossiers[:] = [d for d in sous_dossiers if not d.startswith('_')]
         for f in sorted(fichiers):
             if re.match(r'^Resume_AG_.*\.docx$', f) and not f.startswith('~$'):
                 out.append(lire_un(os.path.join(dossier, f)))
