@@ -1034,6 +1034,24 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - ⚠ **LES INTITULÉS NE PORTENT PLUS LA DATE** : « Assemblée générale ordinaire 2024 », pas
   « Assemblée du 3/09/2016 ». La date figure sur la ligne du dessous — elle y était deux fois, et
   les titres de longueurs inégales ne s'alignaient pas d'une décennie à l'autre.
+- ⚠ **UN `.txt` FRÈRE N'EST PAS UNE TRANSCRIPTION EXACTE.** J'avais marqué « qualité bonne » dès
+  qu'un `.txt` existait, en supposant un texte natif. L'examen du contenu dit l'inverse : ils
+  viennent eux aussi d'un OCR (« DNCIA » pour « FONCIA », marqueurs `----- page 1 -----`). Ils
+  valent mieux qu'une reconnaissance refaite — ils ont été relus au moins une fois — mais pas mieux
+  qu'une couche texte native. Ramenés à **`moyenne`**, ici et dans l'import.
+- ⚠ **LE NOMBRE DE PAGES NE DÉPEND PAS DU TEXTE.** En sautant la lecture du PDF quand un `.txt`
+  existait, l'import perdait aussi la pagination : **dix documents sont entrés sans nombre de
+  pages**. Compté désormais par **`pypdf`**, qui n'a pas besoin d'OCR — en relancer un pour une
+  métadonnée coûterait des minutes.
+- ⚠ **UN SEUL DOCUMENT PAR ASSEMBLÉE** (Pascal, 2026-09-28). 2018 et 2023 en avaient deux : le même
+  PV scanné deux fois, une version dans le dossier de l'année, une à la racine. Vérifié avant de
+  trancher — même fin de texte, même nombre de résolutions (18 et 40). **On garde celle du dossier
+  de l'année**, l'emplacement rangé. L'objet du Storage part avec la ligne : copie exacte du jour
+  même, la garder n'est pas de la prudence mais du déchet. ⚠ **2025 en a légitimement deux** : une
+  AGE en juin, une AGO tenue en janvier 2026.
+- ⚠ **Un rapport « avant / après » doit montrer LE CHAMP QUI CHANGE.** Le premier jet affichait
+  trois colonnes figées et rendait deux lignes identiques quand la correction portait sur les pages
+  ou la qualité — un rapport qui a l'air de ne rien faire ne se relit pas.
 - **Le TYPE ne se déduit pas d'un nom de fichier** : les sigles n'y figurent que depuis 2012, et
   vingt documents étaient en « type inconnu ». Pascal : « toutes des AGO sauf le 19/6/25 ».
   `scripts/corriger_pv_archives.mjs` applique la règle, **idempotent**, les exceptions nommées par

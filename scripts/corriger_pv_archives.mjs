@@ -18,6 +18,26 @@
 //  3. INTITULÉS. Uniformisés en « Assemblée générale [extraordinaire] <année> »,
 //     sans la date — elle s'affiche sur la ligne du dessous.
 //
+//  4. DOUBLONS. 2018 et 2023 avaient chacune DEUX entrées : le même
+//     procès-verbal scanné deux fois, une version dans le dossier de l'année et
+//     une à la racine de `1_AG`. Vérifié avant de trancher — même fin de texte,
+//     même nombre de résolutions (18 et 40). ⚠ On garde celle du DOSSIER DE
+//     L'ANNÉE : c'est l'emplacement rangé, et c'est là que Pascal a corrigé le
+//     fichier 2018 qui portait 2017. L'objet du Storage part avec la ligne —
+//     c'est une copie exacte créée le jour même, la garder n'est pas de la
+//     prudence mais du déchet (même raisonnement que les doublons de la mémoire).
+//
+//  5. NOMBRE DE PAGES. ⚠ Les dix fichiers ayant un `.txt` frère n'avaient AUCUN
+//     nombre de pages : l'import saute la lecture du PDF quand le texte est
+//     fourni, et perdait du même coup une métadonnée qui n'a rien à voir avec le
+//     texte. Recomptés ici, et l'import est corrigé pour ne plus les perdre.
+//
+//  6. QUALITÉ. ⚠ J'avais posé « bonne » dès qu'un `.txt` existait, en supposant
+//     une transcription exacte. C'est faux : ces `.txt` sont un OCR ANTÉRIEUR —
+//     « DNCIA » pour « FONCIA », des marqueurs `----- page 1 -----`. Ils valent
+//     mieux qu'une reconnaissance refaite, pas mieux qu'un texte natif. Ramenés
+//     à « moyenne », qui est ce qu'ils sont.
+//
 // ⚠ IDEMPOTENT : chaque ligne n'est écrite que si elle change vraiment. Relancer
 // ne produit rien et le dit.
 //
@@ -66,9 +86,49 @@ const W = (s) => { rapport.push(s); console.log(s) }
 // une liste d'UUID serait illisible à la relecture, et ces deux lignes-là sont
 // précisément celles qu'il faut pouvoir vérifier des années plus tard.
 const EXTRAORDINAIRES = ['2025-06-19']
+
+// ⚠ Les doublons sont désignés par leur NOM DE FICHIER, celui qui est parti — et
+// c'est celui de la RACINE qui s'en va, pas celui du dossier de l'année.
+const DOUBLONS_A_RETIRER = ['PV AG 2018.pdf', 'PV AG 2023.pdf']
 const EXERCICES = {
   // Séance du 19 janvier 2026 → exercice 2025 (Pascal, 2026-09-28).
   '2026-01-19': 2025,
+}
+
+// ⚠ `pypdf` plutôt que le lecteur Swift : compter des pages ne demande pas de
+// reconnaissance de caractères, et relancer un OCR sur dix documents pour une
+// métadonnée serait absurde. Le fichier est retrouvé par son NOM sous la racine
+// des AG — l'import n'a pas conservé le chemin d'origine.
+const RACINE_AG = '/Users/pfa/Documents/_0_Privé/Maison/Nernier/_1_lotissement/1_AG'
+const pagesParNom = new Map()
+
+async function compterPages(nom) {
+  if (!nom) return null
+  if (!pagesParNom.size) {
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const run = promisify(execFile)
+    const script = [
+      'import os, sys, json',
+      'from pypdf import PdfReader',
+      'out = {}',
+      'for r, d, fs in os.walk(sys.argv[1]):',
+      '    for f in fs:',
+      '        if f.lower().endswith(".pdf"):',
+      '            try: out[f] = len(PdfReader(os.path.join(r, f)).pages)',
+      '            except Exception: pass',
+      'print(json.dumps(out))',
+    ].join('\n')
+    try {
+      const { stdout } = await run('/usr/bin/python3', ['-c', script, RACINE_AG], { maxBuffer: 8 * 1024 * 1024 })
+      for (const [k, v] of Object.entries(JSON.parse(stdout))) pagesParNom.set(k, v)
+    } catch {
+      // Compter des pages est un confort : un échec ne doit pas empêcher les
+      // corrections de fond.
+      pagesParNom.set('__echec__', 0)
+    }
+  }
+  return pagesParNom.get(nom) || null
 }
 
 async function main() {
@@ -78,11 +138,33 @@ async function main() {
   W('')
 
   const { data: archives, error } = await supabase
-    .from('pv_archives').select('id, annee, date_ag, type_ag, intitule').order('annee')
+    .from('pv_archives').select('id, annee, date_ag, type_ag, intitule, document, nb_pages, qualite, source').order('annee')
   if (error) throw new Error(`Lecture du fonds : ${error.message}`)
 
+  // ---------------------------------------------------- 4. les doublons
+  const aSupprimer = archives.filter((a) => DOUBLONS_A_RETIRER.includes(a.document?.name))
+  if (aSupprimer.length) {
+    W('## Doublons retirés')
+    W('')
+    W('Le même procès-verbal scanné deux fois. On garde la version du dossier de l’année.')
+    W('')
+    for (const a of aSupprimer) W(`- ${a.annee} — \`${a.document.name}\``)
+    W('')
+    if (GO) {
+      for (const a of aSupprimer) {
+        const { error: e } = await supabase.from('pv_archives').delete().eq('id', a.id)
+        if (e) throw new Error(`Suppression de « ${a.document.name} » : ${e.message}`)
+        // L'objet part avec la ligne : copie exacte, rien ne la référence plus.
+        if (a.document?.path) await supabase.storage.from('documents').remove([a.document.path])
+      }
+      W(`✅ ${aSupprimer.length} doublon(s) supprimé(s), fichiers compris.`)
+      W('')
+    }
+  }
+  const restantes = archives.filter((a) => !aSupprimer.includes(a))
+
   const changements = []
-  for (const a of archives) {
+  for (const a of restantes) {
     const patch = {}
 
     // 1. Type : extraordinaire pour les séances nommées, ordinaire pour le reste.
@@ -101,10 +183,19 @@ async function main() {
     }, a.intitule)
     if (a.intitule !== intitule) patch.intitule = intitule
 
+    // 6. Qualité : un `.txt` frère est un OCR antérieur, pas un texte natif.
+    if (a.source?.includes('.txt joint') && a.qualite === 'bonne') patch.qualite = 'moyenne'
+
+    // 5. Pages manquantes, recomptées sur le PDF d'origine.
+    if (a.nb_pages == null) {
+      const n = await compterPages(a.document?.name)
+      if (n) patch.nb_pages = n
+    }
+
     if (Object.keys(patch).length) changements.push({ archive: a, patch })
   }
 
-  W(`${archives.length} archive(s) au fonds, ${changements.length} à corriger.`)
+  W(`${restantes.length} archive(s) au fonds, ${changements.length} à corriger.`)
   W('')
 
   if (!changements.length) {
@@ -113,12 +204,20 @@ async function main() {
     return
   }
 
-  W('| Séance | Avant | Après |')
-  W('|---|---|---|')
+  // ⚠ Le rapport ne montre QUE ce qui change, champ par champ. Une table
+  // « avant / après » figée sur trois colonnes affichait deux lignes identiques
+  // quand la correction portait sur les pages ou la qualité — un rapport qui a
+  // l'air de ne rien faire ne se relit pas.
+  W('| Séance | Champ | Avant | Après |')
+  W('|---|---|---|---|')
+  const lisible = (champ, v) => {
+    if (v == null || v === '') return '—'
+    return champ === 'type_ag' ? (TYPE_LABELS[v] || v) : String(v)
+  }
   for (const { archive: a, patch } of changements) {
-    const avant = `${a.annee} · ${TYPE_LABELS[a.type_ag] || a.type_ag || '—'} · ${a.intitule}`
-    const apres = `${patch.annee ?? a.annee} · ${TYPE_LABELS[patch.type_ag ?? a.type_ag]} · ${patch.intitule ?? a.intitule}`
-    W(`| ${a.date_ag || '—'} | ${avant} | ${apres} |`)
+    for (const [champ, valeur] of Object.entries(patch)) {
+      W(`| ${a.date_ag || a.annee} | ${champ} | ${lisible(champ, a[champ])} | ${lisible(champ, valeur)} |`)
+    }
   }
   W('')
 

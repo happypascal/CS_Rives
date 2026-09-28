@@ -138,11 +138,32 @@ function lireLesPdf(chemins) {
 
 const existe = async (chemin) => { try { await access(chemin); return true } catch { return false } }
 
-// ⚠ UN `.txt` FRÈRE PRIME SUR L'OCR. Les PV de 2019 à 2026 ont été déposés avec
-// une version texte à côté du scan : elle vient d'un traitement de texte ou d'une
-// relecture humaine, là où l'OCR d'un scan invente des caractères. Préférer
-// l'OCR quand le texte exact est disponible serait absurde — et les tags,
-// calculés dessus, s'en ressentiraient.
+// Nombre de pages d'un PDF, sans reconnaissance de caractères.
+// ⚠ `pypdf` et non le lecteur Swift : compter des pages ne demande pas d'OCR, et
+// en lancer un pour une métadonnée coûterait des minutes. Un échec rend `null` —
+// une pagination inconnue vaut mieux qu'un import bloqué.
+async function compterPages(chemin) {
+  try {
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const run = promisify(execFile)
+    const { stdout } = await run('/usr/bin/python3', [
+      '-c', 'import sys; from pypdf import PdfReader; print(len(PdfReader(sys.argv[1]).pages))', chemin,
+    ])
+    const n = Number(stdout.trim())
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
+// ⚠ UN `.txt` FRÈRE PRIME SUR L'OCR, mais ce n'est PAS une transcription exacte.
+// Les PV de 2019 à 2026 ont un fichier texte à côté du scan. Il vaut mieux qu'une
+// reconnaissance refaite — il a déjà été relu, au moins une fois — mais l'examen
+// de son contenu (2026-09-28) montre qu'il vient lui aussi d'un OCR : « DNCIA »
+// pour « FONCIA », des marqueurs `----- page 1 -----`. J'avais d'abord marqué ces
+// documents « qualité bonne », ce qui affirmait un texte natif. C'est
+// « moyenne » : mieux que rien, pas une garantie.
 async function texteFrere(cheminPdf) {
   const txt = cheminPdf.replace(/\.pdf$/i, '.txt')
   if (!(await existe(txt))) return null
@@ -169,9 +190,9 @@ function anneeDuDossier(chemin) {
 // `bonne` est réservé au PDF qui portait DÉJÀ son texte : là seulement, ce qu'on
 // a est exact. Tout ce qui sort d'une reconnaissance est au mieux `moyenne`.
 function qualiteDe(lecture, texteFourni) {
-  // Un `.txt` déposé à côté du scan est du texte EXACT, pas une reconnaissance :
-  // la qualité est bonne, quel que soit l'état du scan.
-  if (texteFourni) return 'bonne'
+  // ⚠ « moyenne » et non « bonne » : le `.txt` est un OCR antérieur (cf. plus
+  // haut). Seule une couche texte native dans le PDF vaut « bonne ».
+  if (texteFourni) return 'moyenne'
   if (!lecture || lecture.source === 'aucun' || !lecture.text) return 'illisible_partiel'
   if (lecture.source === 'texte') return 'bonne'
   return 'moyenne'
@@ -291,6 +312,10 @@ async function main() {
   // ⚠ Seuls les fichiers SANS `.txt` frère passent par la reconnaissance : sur
   // vingt-quatre PV dont huit ont déjà leur texte, c'est un tiers du temps
   // d'OCR économisé, et surtout aucun risque d'écraser du texte exact.
+  // ⚠ LE NOMBRE DE PAGES NE DÉPEND PAS DU TEXTE. En sautant la lecture du PDF
+  // pour les fichiers ayant un `.txt`, on perdait aussi leur pagination — dix
+  // documents sont entrés sans nombre de pages (constaté le 2026-09-28). Il est
+  // désormais compté à part, par `pypdf`, qui n'a pas besoin de reconnaissance.
   const aOcr = nouveaux.filter((c) => !c.texteFrere)
   if (!SANS_TEXTE && aOcr.length) {
     W(`Extraction du texte : ${nouveaux.length - aOcr.length} fichier(s) ont un .txt joint, ${aOcr.length} passent par la reconnaissance de caractères…`)
@@ -341,6 +366,8 @@ async function main() {
     const tags = texte ? tagsDuTexte(texte) : []
     if (texte && !tags.length) sansTag.push(c.nom)
 
+    const pages = lecture?.pages ?? (await compterPages(c.chemin))
+
     const chemin = `pv-archives/${annee}/${randomUUID()}.pdf`
     aEcrire.push({
       candidat: c,
@@ -359,7 +386,7 @@ async function main() {
           path: chemin, name: c.nom, type: 'application/pdf',
           size: c.contenu.length, sha256: c.sha256,
         },
-        nb_pages: lecture?.pages ?? null,
+        nb_pages: pages,
         texte_ocr: texte,
         // La provenance dit d'où vient le TEXTE, pas seulement le fichier : c'est
         // ce qui permet de savoir, dans deux ans, si les tags reposent sur une
