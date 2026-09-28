@@ -7,6 +7,7 @@ import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
   TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto, tagLibelle,
+  partagerResolutions,
 } from '../lib/pvArchiveLogic'
 
 // UN PROCÈS-VERBAL ARCHIVÉ — le document, et ce qu'on sait de lui.
@@ -49,12 +50,63 @@ const TON_RESULTAT = {
   'Information': 'text-slate-500',
 }
 
+// LES VOIX, RÉDUITES AUX NOMBRES (Pascal, 2026-09-28 : « diminuer voix, pas
+// nécessaire de lister nommément les contres, n'indiquer que les tantièmes sans
+// marquer tantième »).
+//
+// ⚠ La colonne affichait le texte brut du procès-verbal — « 1 500 sur 3 200
+// tantièmes (ALLEN PEREGRINE, BERSETH GILBERT, …) ». Sur certaines résolutions
+// cette liste fait six lignes et mange la moitié du tableau, au détriment de
+// l'objet, qui est ce qu'on vient lire.
+//
+// ⚠ RIEN N'EST PERDU : le texte complet, assiette et votants compris, reste dans
+// l'infobulle de la cellule — et surtout dans `voix_texte`, que la base garde
+// intact. On réduit l'AFFICHAGE, pas la donnée.
+//
+// ⚠ On affiche le nombre ENTIER déjà analysé (`pour`/`contre`/`abstention`), pas
+// un extrait du texte : c'est lui qui est juste, et c'est lui que la
+// confrontation aux résumés a vérifié. Un `null` reste un tiret — le PV ne
+// chiffre pas ce vote, il ne dit pas « zéro ».
+// ⚠ LES TROIS VOIX SUR UNE SEULE LIGNE (Pascal, 2026-09-28 : « il faut que
+// chaque décision tienne sur une ligne, donc élargir la colonne voix »). Empilées
+// — Pour / Contre / Abst. l'une sous l'autre — elles imposaient à elles seules
+// trois lignes de hauteur à CHAQUE résolution : un tableau de vingt décisions
+// faisait soixante lignes, et l'année ne se parcourait plus d'un coup d'œil.
+// Même règle que le journal de bord des projets : une entrée tient sur une ligne.
+//
+// ⚠ Les absentes sont OMISES, pas affichées à zéro : « Abst. 0 » occupe la place
+// sans rien apprendre, et `null` ne veut pas dire zéro — le PV ne chiffre pas ce
+// vote, il ne dit pas que personne ne s'est abstenu.
+function voixEnLigne(r) {
+  return [['Pour', r.pour], ['Contre', r.contre], ['Abst.', r.abstention]]
+    .filter(([, v]) => v != null)
+    .map(([libelle, v]) => `${libelle} ${v.toLocaleString('fr-FR')}`)
+    .join(' · ')
+}
+
 function Resolutions({ liste, unite }) {
   return (
     <div className="mt-3">
       {unite && <p className="mb-1 text-xs text-slate-500">{unite}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        {/* ⚠ `table-fixed` + largeurs explicites : c'est ce qui permet de couper
+            l'objet à l'ellipse. En disposition automatique, un `truncate` ne
+            tronque rien — le navigateur élargit la colonne jusqu'à contenir le
+            texte, et c'est le tableau entier qui déborde. */}
+        <table className="w-full table-fixed text-sm">
+          {/* ⚠ LARGEURS MESURÉES SUR LES DONNÉES RÉELLES, pas estimées à l'œil :
+              42 caractères au plus pour les voix (« Pour 25 723 · Contre 53 124 ·
+              Abst. 13 299 », AG 2026), 24 pour le résultat (« Inconnu (page
+              manquante) ») et 24 pour le numéro (« V (IV de la convocation) »).
+              Un premier jeu de largeurs tronquait les trois — et un RÉSULTAT
+              tronqué est la pire des économies de place : c'est la colonne pour
+              laquelle on lit le tableau. L'objet prend tout le reste. */}
+          <colgroup>
+            <col className="w-20" />
+            <col />
+            <col className="w-40" />
+            <col className="w-72" />
+          </colgroup>
           <thead>
             <tr className="border-b border-navy-100 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="py-2 pr-3 font-medium">N°</th>
@@ -64,35 +116,29 @@ function Resolutions({ liste, unite }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-navy-50">
-            {liste.map((r, i) => (
-              <tr key={`${r.numero}-${i}`} className="align-top">
-                <td className="whitespace-nowrap py-2 pr-3 text-xs text-slate-500">{r.numero}</td>
-                <td className="py-2 pr-3 text-slate-700">
-                  {r.objet}
-                  {/* Le détail est replié dans un titre : le tableau doit rester
-                      lisible d'un coup d'œil, et certains objets font dix lignes. */}
-                  {r.detail && (
-                    <span className="mt-0.5 block text-xs text-slate-400" title={r.detail}>
-                      {r.detail.length > 150 ? `${r.detail.slice(0, 150)}…` : r.detail}
-                    </span>
-                  )}
-                </td>
-                <td className={`whitespace-nowrap py-2 pr-3 text-xs font-medium ${TON_RESULTAT[r.resultat] || 'text-slate-600'}`}>
-                  {r.resultat}
-                </td>
-                <td className="py-2 text-xs text-slate-500">
-                  {r.voix_texte?.pour && r.voix_texte.pour !== '—' ? (
-                    <>
-                      <span className="block">Pour {r.voix_texte.pour}</span>
-                      <span className="block">Contre {r.voix_texte.contre}</span>
-                      <span className="block">Abst. {r.voix_texte.abstention}</span>
-                    </>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {liste.map((r, i) => {
+              // ⚠ LE DÉTAIL N'EST PLUS UNE SECONDE LIGNE. Certains objets portent
+              // dix lignes de détail, qui repoussaient la décision suivante hors
+              // de l'écran. Il passe dans l'infobulle, avec le texte brut des
+              // voix : rien n'est perdu, tout est à un survol.
+              const brut = [r.voix_texte?.pour, r.voix_texte?.contre, r.voix_texte?.abstention]
+                .filter((t) => t && t !== '—').join(' · ')
+              const voix = voixEnLigne(r)
+              return (
+                <tr key={`${r.numero}-${i}`}>
+                  <td className="truncate py-2 pr-3 text-xs text-slate-500" title={r.numero}>{r.numero}</td>
+                  <td className="truncate py-2 pr-3 text-slate-700" title={r.detail ? `${r.objet}\n\n${r.detail}` : r.objet}>
+                    {r.objet}
+                  </td>
+                  <td className={`truncate py-2 pr-3 text-xs font-medium ${TON_RESULTAT[r.resultat] || 'text-slate-600'}`} title={r.resultat}>
+                    {r.resultat}
+                  </td>
+                  <td className="truncate py-2 text-xs text-slate-500" title={brut || undefined}>
+                    {voix || <span className="text-slate-400">—</span>}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -109,6 +155,9 @@ export default function PVArchiveDetail() {
   const [pv, setPv] = useState(null)
   const [form, setForm] = useState(null)
   const [ags, setAgs] = useState([])
+  const [voisines, setVoisines] = useState([])
+  const [toutVoir, setToutVoir] = useState(false)
+  const [voirTexte, setVoirTexte] = useState(false)
   const [busy, setBusy] = useState(false)
   const [enregistre, setEnregistre] = useState(false)
 
@@ -117,10 +166,17 @@ export default function PVArchiveDetail() {
       repo.getPVArchive(id),
       // Idiome de résilience : sans la liste des AG, la fiche reste lisible.
       repo.listAG().catch(() => []),
+      // Le fonds entier, pour savoir quelle assemblée précède et laquelle suit.
+      repo.listPVArchives().catch(() => []),
     ])
-      .then(([a, listeAg]) => {
+      .then(([a, listeAg, fonds]) => {
         setPv(a)
         setAgs(listeAg)
+        setVoisines(fonds)
+        // Revenir à la sélection resserrée en changeant d'assemblée : l'état
+        // déplié appartient à la fiche qu'on quitte, pas à celle qu'on ouvre.
+        setToutVoir(false)
+        setVoirTexte(false)
         if (a) {
           setForm({
             date_ag: a.date_ag || '',
@@ -129,7 +185,6 @@ export default function PVArchiveDetail() {
             intitule: a.intitule || '',
             lieu: a.lieu || '',
             syndic: a.syndic || '',
-            resume: a.resume || '',
             mots_cles: (a.mots_cles || []).join(', '),
             qualite: a.qualite || '',
             assemblee_id: a.assemblee_id || '',
@@ -146,6 +201,20 @@ export default function PVArchiveDetail() {
   if (!pv) return <Card className="p-6 text-sm text-slate-600">Document introuvable.</Card>
 
   const set = (champ) => (e) => { setForm((f) => ({ ...f, [champ]: e.target.value })); setEnregistre(false) }
+
+  const { impactantes, ecartees } = partagerResolutions(pv.resolutions)
+
+  // ALLER D'UNE ASSEMBLÉE À L'AUTRE SANS REPASSER PAR LA LISTE.
+  //
+  // ⚠ Le fonds est rendu de la plus RÉCENTE à la plus ancienne : la voisine
+  // suivante dans le tableau est donc la PRÉCÉDENTE dans le temps. C'est le sens
+  // qu'on lit — « précédente » veut dire l'assemblée d'avant, pas la ligne d'au-
+  // dessus.
+  // ⚠ Les boutons ne sont RENDUS que s'il y a une voisine : un bouton désactivé
+  // en bout de fonds invite à cliquer sur ce qui n'existe pas.
+  const rang = voisines.findIndex((x) => x.id === pv.id)
+  const plusRecente = rang > 0 ? voisines[rang - 1] : null
+  const plusAncienne = rang > -1 && rang < voisines.length - 1 ? voisines[rang + 1] : null
 
   const ouvrir = async () => {
     setError('')
@@ -174,7 +243,6 @@ export default function PVArchiveDetail() {
         intitule: form.intitule.trim(),
         lieu: form.lieu.trim() || null,
         syndic: form.syndic.trim() || null,
-        resume: form.resume.trim() || null,
         // Mots-clés saisis en clair, séparés par des virgules : une interface à
         // étiquettes coûterait cher pour un champ qu'on remplit trois fois par an.
         mots_cles: form.mots_cles.split(',').map((m) => m.trim()).filter(Boolean),
@@ -199,7 +267,29 @@ export default function PVArchiveDetail() {
       <PageHeader
         title={pv.intitule}
         subtitle={`${pv.date_ag ? formatDate(pv.date_ag) : `${pv.annee} — jour inconnu`}${pv.type_ag ? ` · ${TYPE_LABELS[pv.type_ag] || pv.type_ag}` : ''}`}
-        actions={<Link to="/ag/archives" className="text-sm text-navy-600 underline">Retour aux archives</Link>}
+        actions={(
+          <div className="flex flex-wrap items-center gap-3">
+            {plusAncienne && (
+              <Link
+                to={`/ag/archives/${plusAncienne.id}`}
+                className="text-sm text-navy-600 underline"
+                title={plusAncienne.intitule}
+              >
+                ← {plusAncienne.annee}
+              </Link>
+            )}
+            {plusRecente && (
+              <Link
+                to={`/ag/archives/${plusRecente.id}`}
+                className="text-sm text-navy-600 underline"
+                title={plusRecente.intitule}
+              >
+                {plusRecente.annee} →
+              </Link>
+            )}
+            <Link to="/ag/archives" className="text-sm text-navy-600 underline">Retour aux archives</Link>
+          </div>
+        )}
       />
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}
@@ -222,14 +312,57 @@ export default function PVArchiveDetail() {
 
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-wide text-slate-500">Ce qui a été décidé</p>
-          {pv.resume && (
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{pv.resume}</p>
+
+          {/* LES RÉSERVES SUR CE DOCUMENT, AU-DESSUS DU TABLEAU.
+              ⚠ Elles n'étaient affichées qu'aux membres NON bureau, tout en bas,
+              sous un titre « Commentaire » : le président — celui qui en a le plus
+              besoin — ne les voyait que dans sa zone de saisie. Or elles disent
+              qu'une page du PV manque, qu'une résolution a été déclarée adoptée
+              avec moins de voix qu'il n'en fallait, ou que deux versions du PV se
+              contredisent. Une réserve qu'on lit après le tableau qu'elle
+              qualifie arrive trop tard. */}
+          {pv.commentaire && (
+            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+              <span className="font-medium">Réserve sur ce document — </span>
+              <span className="whitespace-pre-wrap">{pv.commentaire}</span>
+            </div>
           )}
+
           {pv.resolutions?.length > 0 ? (
-            <Resolutions liste={pv.resolutions} unite={pv.unite_vote} />
-          ) : !pv.resume && (
+            <>
+              <Resolutions liste={impactantes} unite={pv.unite_vote} />
+              {/* ⚠ LES ÉCARTÉES RESTENT ACCESSIBLES, à un clic. Élection du
+                  bureau, comptes, quitus, budget courant et désignation du
+                  syndic reviennent à l'identique chaque année : les montrer en
+                  premier noie les deux ou trois décisions qui ont réellement
+                  engagé le lotissement. Les SUPPRIMER de l'affichage serait
+                  autre chose — un fonds d'archives ne choisit pas ce qui mérite
+                  mémoire, il choisit ce qu'il montre en premier. */}
+              {ecartees.length > 0 && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setToutVoir((v) => !v)}
+                    className="text-xs text-navy-600 underline"
+                  >
+                    {/* ⚠ LE LIBELLÉ NE NOMME PAS CE QU'IL REPLIE. Une première
+                        version annonçait « bureau, comptes, quitus, budget,
+                        syndic » : vrai de la plupart des assemblées, faux de
+                        2023, dont les trois écartées sont des comptes rendus de
+                        procédure. Un libellé qui décrit à côté est pire que
+                        muet — on ne déplie pas ce qu'on croit connaître. */}
+                    {toutVoir
+                      ? 'Masquer les autres résolutions'
+                      : `Afficher les ${ecartees.length} résolutions non reprises au résumé`}
+                  </button>
+                  {toutVoir && <Resolutions liste={ecartees} unite={pv.unite_vote} />}
+                </div>
+              )}
+            </>
+          ) : (
             <p className="mt-1 text-sm text-slate-400">
-              Résumé à rédiger. Le procès-verbal ci-dessous reste consultable en attendant.
+              Les décisions de cette assemblée n’ont pas encore été dépouillées. Le procès-verbal
+              ci-dessous reste consultable en attendant.
             </p>
           )}
           {/* ⚠ CETTE MENTION RESTE, quoi qu'il arrive au reste de l'écran : un
@@ -238,8 +371,8 @@ export default function PVArchiveDetail() {
           {pv.resolutions?.length > 0 && (
             <p className="mt-3 text-xs text-slate-400">
               Résumé{pv.resume_etabli_le ? ` établi le ${formatDate(pv.resume_etabli_le)}` : ''} d’après le
-              procès-verbal ; <strong>seul le procès-verbal fait foi</strong>. Élection du bureau, comptes,
-              quitus, budgets courants et désignation du syndic non repris.
+              procès-verbal ; <strong>seul le procès-verbal fait foi</strong>.
+              {ecartees.length > 0 && ` ${ecartees.length} résolution${ecartees.length > 1 ? 's' : ''} du procès-verbal ${ecartees.length > 1 ? 'ne sont' : 'n’est'} pas reprise${ecartees.length > 1 ? 's' : ''} dans cette sélection — élection du bureau, comptes, quitus, budgets courants, désignation du syndic et points d’information.`}
             </p>
           )}
         </div>
@@ -312,8 +445,24 @@ export default function PVArchiveDetail() {
                 <Input label="Mots-clés (séparés par des virgules)" value={form.mots_cles} onChange={set('mots_cles')} />
                 {/* C'est CE champ qui alimente l'en-tête de la fiche : le dire
                     évite de chercher où se saisit le résumé qu'on vient de lire. */}
-                <Textarea label="Résumé — affiché en tête de cette fiche" rows={5} value={form.resume} onChange={set('resume')} placeholder="Les décisions principales de cette assemblée, et ce qui compte encore aujourd’hui." />
-                <Textarea label="Commentaire" rows={2} value={form.commentaire} onChange={set('commentaire')} />
+                {/* ⚠ `resume` (texte libre) A ÉTÉ RETIRÉ DE L'ÉCRAN (Pascal,
+                    2026-09-28 : « je ne vois pas à quoi sert le champ résumé »).
+                    Il datait d'avant la 062, quand « ce qui a été décidé » ne
+                    pouvait s'écrire qu'en paragraphe. Le tableau des résolutions
+                    le fait maintenant, en mieux : il est cherchable et comparable
+                    d'une année à l'autre. Le champ était VIDE sur les 25 archives
+                    — le proposer encore invitait à recopier à la main ce que la
+                    ligne du dessus dit déjà, et deux versions d'une même chose
+                    finissent toujours par diverger.
+                    ⚠ La COLONNE reste en base : aucune donnée à perdre, et une
+                    migration pour supprimer un champ vide serait du risque pur. */}
+                <Textarea
+                  label="Réserve sur ce document — affichée en tête, au-dessus des décisions"
+                  rows={3}
+                  value={form.commentaire}
+                  onChange={set('commentaire')}
+                  placeholder="Ce qui empêche de lire ce procès-verbal au pied de la lettre : une page manquante, deux versions qui se contredisent, un vote déclaré adopté sans les voix requises."
+                />
                 <div className="flex items-center justify-end gap-2">
                   {enregistre && <span className="text-xs text-emerald-700">Enregistré.</span>}
                   <Button onClick={enregistrer} disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
@@ -322,27 +471,50 @@ export default function PVArchiveDetail() {
             </Card>
           )}
 
+          {/* LE TEXTE OCÉRISÉ — REPLIÉ (Pascal, 2026-09-28 : « je ne vois pas à
+              quoi sert […] le champ texte en bas »).
+              ⚠ IL NE SE LIT PAS, IL FAIT CHERCHER. C'est ce texte qui alimente la
+              recherche du fonds et les dossiers ; personne ne vient lire une
+              reconnaissance de caractères sur un scan de 1961. Déplié par défaut,
+              il occupait un écran entier sous le document qu'il transcrit.
+              ⚠ IL N'EST PAS SUPPRIMÉ POUR AUTANT : c'est le seul endroit où l'on
+              constate qu'un document n'a AUCUN texte — donc qu'il ne ressortira
+              d'aucune recherche et ne portera aucun dossier. Cette absence-là doit
+              rester visible, et elle s'affiche sans qu'on ait à déplier. */}
           <Card>
             <CardHeader
               title="Texte reconnu automatiquement"
-              subtitle="Sert à retrouver le document. Ne pas citer."
+              subtitle="Sert à retrouver le document dans les recherches. Ne pas citer."
             />
             <div className="p-5">
-              {/* ⚠ L'avertissement est AU-DESSUS du texte, pas en note de bas de
-                  page : on le lit avant de lire ce qu'il qualifie. */}
-              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
-                Transcription <strong>approximative</strong>, produite automatiquement à partir du scan. Elle comporte
-                des erreurs, d’autant plus sur les documents anciens. <strong>Le document scanné fait foi</strong> :
-                ne recopiez jamais ce texte dans un courrier ou une délibération sans l’avoir vérifié sur l’original.
-              </div>
               {pv.texte_ocr ? (
-                <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded border border-navy-100 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
-                  {pv.texte_ocr}
-                </div>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setVoirTexte((v) => !v)}
+                    className="text-sm text-navy-600 underline"
+                  >
+                    {voirTexte ? 'Masquer la transcription' : 'Afficher la transcription'}
+                  </button>
+                  {voirTexte && (
+                    <>
+                      {/* ⚠ L'avertissement est AU-DESSUS du texte, pas en note de
+                          bas de page : on le lit avant de lire ce qu'il qualifie. */}
+                      <div className="mb-3 mt-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+                        Transcription <strong>approximative</strong>, produite automatiquement à partir du scan. Elle comporte
+                        des erreurs, d’autant plus sur les documents anciens. <strong>Le document scanné fait foi</strong> :
+                        ne recopiez jamais ce texte dans un courrier ou une délibération sans l’avoir vérifié sur l’original.
+                      </div>
+                      <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded border border-navy-100 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+                        {pv.texte_ocr}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-slate-500">
                   Aucun texte n’a pu être extrait de ce document. Il reste consultable, mais la recherche plein texte
-                  ne le trouvera pas.
+                  ne le trouvera pas, et il n’apparaîtra sous aucun dossier.
                 </p>
               )}
             </div>
@@ -401,13 +573,6 @@ export default function PVArchiveDetail() {
               )}
             </dl>
           </Card>
-
-          {!bureau && pv.commentaire && (
-            <Card>
-              <CardHeader title="Commentaire" />
-              <p className="whitespace-pre-wrap p-5 text-sm text-slate-700">{pv.commentaire}</p>
-            </Card>
-          )}
 
           {bureau && form && form.intitule !== intituleAuto(pv, pv.intitule) && (
             <Card className="p-4 text-xs text-slate-500">

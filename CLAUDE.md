@@ -155,6 +155,9 @@ scripts/
                       reconnaît à « Scrutateur » en DEUXIÈME cellule.
   corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
                       type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
+  marquer_resolutions_impactantes.mjs  MARQUE les résolutions retenues au résumé (`impactante`),
+                      d'après les 25 résumés par année. N'écrit QUE ce champ : un ré-import
+                      effacerait les corrections. Idempotent.
   corriger_resolutions_archives.mjs  CORRECTIONS des résolutions archivées issues de la
                       confrontation aux résumés par année (4 sur 151). Idempotent, et chaque
                       correction porte la VALEUR ATTENDUE AVANT : si la base a changé, elle est
@@ -1132,6 +1135,72 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     syndic. Le fonds garde le tout — **un registre d'archives ne choisit pas ce qui mérite mémoire.**
 - ⚠ **La mention « seul le procès-verbal fait foi » reste sous le tableau**, quoi qu'il arrive à
   l'écran : un résumé est une lecture, le procès-verbal est l'acte.
+- **SEULES LES DÉCISIONS IMPACTANTES AU RÉSUMÉ** (`impactante` dans le jsonb, `partagerResolutions`,
+  Pascal 2026-09-28). Chaque assemblée vote l'élection du bureau, les comptes, le quitus, le budget
+  courant et la désignation du syndic : cinq à dix lignes identiques depuis 1988, qui noient les
+  deux ou trois décisions ayant réellement engagé le lotissement. **151 retenues sur 237.**
+  - ⚠ **LA SÉLECTION EST CONSTATÉE, PAS FABRIQUÉE** : est retenue la résolution qui **figure au
+    `Resume_AG_<date>.docx`** de son année, où le tri a déjà été fait par un lecteur du PV.
+    `scripts/marquer_resolutions_impactantes.mjs` ne fait que le consigner. Une règle par mots-clés
+    (« quitus », « comptes ») aurait été une devinette, et se serait trompée **le jour où l'assemblée
+    refuse le quitus** — ce jour-là, le quitus est la décision de l'année.
+  - ⚠ **RIEN N'EST SUPPRIMÉ** : les 237 restent en base, les écartées se déplient d'un clic. Un fonds
+    d'archives ne choisit pas ce qui mérite mémoire, il choisit ce qu'il montre **en premier**.
+  - ⚠ **AUCUNE MARQUE ⇒ TOUT EST MONTRÉ.** Une assemblée dont le résumé n'a pas été dépouillé n'a
+    aucune ligne marquée ; la masquer ferait croire qu'elle n'a rien décidé. L'absence
+    d'information ne doit jamais se lire comme une information.
+  - ⚠ **LE LIBELLÉ DU BOUTON NE NOMME PAS CE QU'IL REPLIE.** « Bureau, comptes, quitus » est vrai de
+    la plupart des assemblées et **faux de 2023**, dont les trois écartées sont des comptes rendus de
+    procédure. Un libellé qui décrit à côté est pire que muet.
+  - ⚠ **PAS un ré-import pour poser la marque** : `importer_resumes_ag.mjs` réécrit les résolutions
+    depuis le registre et **effacerait les quatre corrections** du 2026-09-28. Le script de marquage
+    n'écrit que `impactante`.
+- **UNE DÉCISION TIENT SUR UNE LIGNE** (Pascal 2026-09-28, même règle que le journal de bord des
+  projets). Trois choses la faisaient déborder : les voix **empilées** (trois lignes par
+  résolution), le **détail** en seconde ligne (parfois dix lignes), et le texte brut des voix
+  — « 1 500 sur 3 200 tantièmes (ALLEN PEREGRINE, …) ». Un tableau de vingt décisions faisait
+  soixante lignes et l'année ne se parcourait plus.
+  - **Voix réduites aux nombres, en ligne** (« pas nécessaire de lister nommément les contres,
+    n'indiquer que les tantièmes sans marquer tantième »). ⚠ On affiche l'**entier déjà analysé**
+    (`pour`/`contre`/`abstention`), pas un extrait du texte : c'est lui que la confrontation aux
+    résumés a vérifié. ⚠ **`null` est omis, jamais rendu « 0 »** — le PV ne chiffre pas ce vote, il
+    ne dit pas que personne ne s'est abstenu.
+  - ⚠ **RIEN N'EST PERDU** : détail, assiette et votants passent dans l'**infobulle**, et
+    `voix_texte` garde le texte intact en base. On réduit l'AFFICHAGE, pas la donnée.
+  - ⚠ **`table-fixed` + `colgroup`, sinon `truncate` ne tronque rien** : en disposition automatique
+    le navigateur élargit la colonne jusqu'à contenir le texte, et c'est le tableau qui déborde.
+  - ⚠ **Largeurs MESURÉES sur les données**, pas estimées : 42 caractères au plus pour les voix,
+    24 pour le résultat, 24 pour le numéro. Un premier jeu de largeurs tronquait les trois — et un
+    **résultat tronqué est la pire des économies de place** : c'est la colonne pour laquelle on lit
+    le tableau.
+- **`resume` (texte libre) RETIRÉ DE L'ÉCRAN** (Pascal 2026-09-28 : « je ne vois pas à quoi sert le
+  champ résumé »). Il datait d'avant la 062, quand « ce qui a été décidé » ne pouvait s'écrire qu'en
+  paragraphe ; le **tableau des résolutions le fait maintenant en mieux** — cherchable, comparable
+  d'une année à l'autre. Il était **vide sur les 25 archives** : le proposer encore invitait à
+  recopier à la main ce que la ligne du dessus dit déjà, et deux versions d'une même chose finissent
+  toujours par diverger. ⚠ **La COLONNE reste en base** : aucune donnée à perdre, et une migration
+  pour supprimer un champ vide serait du risque pur.
+- **`commentaire` = LES RÉSERVES SUR LE DOCUMENT**, remonté en tête, au-dessus des décisions, et
+  **visible de tous**. ⚠ Il n'était affiché **qu'aux membres NON bureau**, tout en bas, sous un titre
+  « Commentaire » : le président ne le voyait que dans sa zone de saisie. Or les six commentaires
+  renseignés disent qu'une **page du PV manque** (1988), qu'une résolution a été **déclarée adoptée
+  avec moins de voix qu'il n'en fallait** (2016), que **deux versions du PV se contredisent** (2023),
+  qu'un montant contredit un PV ultérieur (2025). Une réserve lue après le tableau qu'elle qualifie
+  arrive trop tard.
+- **TEXTE OCÉRISÉ REPLIÉ** (Pascal 2026-09-28 : « ni le champ texte en bas »). ⚠ **Il ne se lit pas,
+  il fait chercher** : personne ne vient lire une reconnaissance de caractères sur un scan de 1961.
+  ⚠ **Pas supprimé pour autant** : c'est le seul endroit qui constate qu'un document n'a **aucun**
+  texte — donc qu'il ne ressortira d'aucune recherche et ne portera aucun dossier. **Cette
+  absence-là s'affiche sans qu'on ait à déplier.**
+- **LE GESTIONNAIRE DE L'ÉPOQUE DANS LA LISTE** (`pv_archives.syndic`, Pascal 2026-09-28). ⚠ Ce
+  n'est **pas** le gestionnaire actuel de la barre de gauche : c'est celui qui tenait le secrétariat
+  de **cette** assemblée. Parcourir la liste montre alors les changements de cabinet et
+  d'interlocuteur — Moynat Pillet, Maison de l'Immobilier, Lemanique — qu'aucun autre écran ne
+  raconte.
+- **NAVIGATION D'UNE ASSEMBLÉE À L'AUTRE** en tête de fiche (Pascal 2026-09-28). ⚠ Le fonds est rendu
+  de la plus **récente** à la plus ancienne : la voisine *suivante* dans le tableau est la
+  **précédente** dans le temps. ⚠ Les boutons ne sont **rendus que s'il y a une voisine** — un bouton
+  désactivé en bout de fonds invite à cliquer sur ce qui n'existe pas.
 
 - **Le TYPE ne se déduit pas d'un nom de fichier** : les sigles n'y figurent que depuis 2012, et
   vingt documents étaient en « type inconnu ». Pascal : « toutes des AGO sauf le 19/6/25 ».

@@ -68,7 +68,15 @@ function LigneArchive({ a, requete }) {
             {a.type_ag && <span> · {TYPE_LABELS[a.type_ag] || a.type_ag}</span>}
             {a.nb_pages != null && <span> · {a.nb_pages} page{a.nb_pages > 1 ? 's' : ''}</span>}
           </p>
-          {a.resume && <p className="mt-1 text-sm text-slate-600">{a.resume}</p>}
+          {/* LE GESTIONNAIRE DE L'ÉPOQUE (Pascal, 2026-09-28).
+              ⚠ Ce n'est pas le gestionnaire ACTUEL, celui de la barre de gauche :
+              c'est celui qui tenait le secrétariat de CETTE assemblée-là. Parcourir
+              la liste montre alors les changements de cabinet et d'interlocuteur —
+              Moynat Pillet, Maison de l'Immobilier, Lemanique — qu'aucun autre
+              écran ne raconte. D'où l'affichage sur sa propre ligne, et pas dans la
+              ligne de métadonnées : c'est une information qu'on parcourt du regard
+              d'une année à l'autre. */}
+          {a.syndic && <p className="mt-0.5 text-xs text-slate-500">Syndic : {a.syndic}</p>}
           {a.mots_cles?.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {a.mots_cles.map((m) => <Badge key={m} tone="gray">{tagLibelle(m)}</Badge>)}

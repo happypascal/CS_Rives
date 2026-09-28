@@ -411,3 +411,55 @@ export function synthesePV(parametres) {
     return null
   }
 }
+
+// ============================================================================
+// LES DÉCISIONS IMPACTANTES — ce qu'on vient lire, et le reste
+//
+// ⚠ Pascal (2026-09-28) : « je ne veux que les décisions impactantes dans ce
+// résumé ». Une assemblée vote chaque année l'élection du bureau, les comptes,
+// le quitus, le budget courant et la désignation du syndic : cinq à dix lignes
+// qui reviennent à l'identique depuis 1988 et qui n'apprennent rien. Noyées
+// dedans, les trois décisions qui ont réellement engagé le lotissement cette
+// année-là ne se voient plus.
+//
+// ⚠ LA SÉLECTION EST UN FAIT CONSTATÉ, PAS UN JUGEMENT DE L'APPLICATION. Chaque
+// assemblée a son `Resume_AG_<date>.docx`, où la sélection a déjà été faite par
+// un lecteur du procès-verbal. `impactante` ne fait que CONSIGNER qu'une
+// résolution y figure. Une règle par mots-clés — « quitus », « comptes » —
+// aurait été une devinette, et elle se serait trompée le jour où l'assemblée
+// refuse le quitus : ce jour-là, le quitus est la décision de l'année.
+//
+// ⚠ RIEN N'EST SUPPRIMÉ. Les 237 résolutions restent en base et l'écran donne
+// accès aux écartées d'un clic. Un fonds d'archives ne choisit pas ce qui mérite
+// mémoire — il choisit seulement ce qu'il montre en premier.
+//
+// ⚠ AUCUNE MARQUE ⇒ TOUT EST MONTRÉ. Une assemblée dont le résumé n'a pas encore
+// été dépouillé n'a aucune ligne marquée : la masquer entièrement ferait croire
+// qu'elle n'a rien décidé. L'absence d'information ne doit jamais se lire comme
+// une information.
+// ============================================================================
+
+/** Sépare les résolutions d'une assemblée en « impactantes » et « écartées ». */
+export function partagerResolutions(liste) {
+  const toutes = liste || []
+  const marquees = toutes.some((r) => typeof r?.impactante === 'boolean')
+  if (!marquees) return { impactantes: toutes, ecartees: [], marquees: false }
+  return {
+    impactantes: toutes.filter((r) => r.impactante !== false),
+    ecartees: toutes.filter((r) => r.impactante === false),
+    marquees: true,
+  }
+}
+
+// ⚠ APPARIEMENT SUR L'INTITULÉ, JAMAIS SUR LE NUMÉRO. Le n° 8 de l'AG 2003
+// couvre cinq résolutions distinctes ; apparier par numéro fabriquait huit
+// fausses divergences lors de la vérification du 2026-09-28. Partagé par
+// l'import et par le script de marquage pour que les deux apparient pareil.
+export function cleIntitule(texte) {
+  return String(texte || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
