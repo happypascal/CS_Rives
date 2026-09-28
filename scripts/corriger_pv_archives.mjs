@@ -85,7 +85,13 @@ const W = (s) => { rapport.push(s); console.log(s) }
 // ⚠ LES EXCEPTIONS SONT NOMMÉES PAR LEUR DATE DE SÉANCE, pas par un identifiant :
 // une liste d'UUID serait illisible à la relecture, et ces deux lignes-là sont
 // précisément celles qu'il faut pouvoir vérifier des années plus tard.
-const EXTRAORDINAIRES = ['2025-06-19']
+// ⚠ 1996 COMPTE DEUX ASSEMBLÉES (Pascal, 2026-09-28 : « il y a une AG et une
+// autre AG extraordinaire »). Le nom du fichier porte « EXTRAORDINAIRE » en
+// toutes lettres, mais la déduction ne reconnaît que les sigles AGO / AGE —
+// elle rangeait donc les deux en « type inconnu ». Nommer la séance ici plutôt
+// qu'élargir la déduction : un mot isolé dans un nom de fichier n'est pas une
+// convention, c'est une coïncidence heureuse une fois sur soixante-dix.
+const EXTRAORDINAIRES = ['2025-06-19', '1996-12-07']
 
 // ⚠ Les doublons sont désignés par leur NOM DE FICHIER, celui qui est parti — et
 // c'est celui de la RACINE qui s'en va, pas celui du dossier de l'année.

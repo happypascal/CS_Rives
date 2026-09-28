@@ -24,6 +24,7 @@ Usage  : /usr/bin/python3 scripts/lire_registre_ag.py <registre.docx>
 Sortie : un objet JSON { assemblees: [...] } sur la sortie standard.
 """
 
+import html
 import json
 import re
 import sys
@@ -97,6 +98,16 @@ def lignes_de_tableau(chemin):
     # Me Garnier… » — le titre répété au début d'un pavé, illisible en tableau.
     xml = xml.replace('</w:tc>', '\x01').replace('</w:tr>', '\x02').replace('</w:p>', '\x03')
     texte = re.sub(r'<[^>]+>', '', xml)
+    # ⚠ LES ENTITÉS XML SE DÉCODENT, ET APRÈS LE RETRAIT DES BALISES — sans quoi
+    # `&amp;lt;` deviendrait une balise fantôme. Le registre régénéré le
+    # 2026-09-28 encode les apostrophes droites en `&apos;` : sans ce décodage,
+    # « panneaux d'affichage » est entré en base sous la forme
+    # « panneaux d&apos;affichage ». Un texte affiché dans un registre légal ne
+    # peut pas porter le balisage de son format de transport.
+    # ⚠ `html.unescape` et non une suite de `replace` : il décode en UN SEUL
+    # passage. Remplacer `&amp;` en premier, puis `&lt;`, décode deux fois —
+    # « &amp;lt; » finit en « < » au lieu de « &lt; ».
+    texte = html.unescape(texte)
     out = []
     for ligne in texte.split('\x02'):
         cellules = []

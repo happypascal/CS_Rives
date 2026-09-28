@@ -181,13 +181,18 @@ async function main() {
     // pas réécrire une date déjà constatée sur le document lui-même.
     if (!cible.date_ag) patch.date_ag = a.date_ag
 
-    // Ce que seul le fichier de résumés connaît.
+    // ⚠ SCRUTATEUR ET UNITÉ DE VOTE VIENNENT DU RÉSUMÉ EN PREMIER, du fichier
+    // JSON seulement à défaut. Ils figurent dans les deux, mais le fichier JSON
+    // n'a été écrit que pour les vingt-cinq assemblées connues au 2026-09-28 :
+    // s'y fier seul laissait les nouvelles sans scrutateur ni unité, alors que
+    // leur résumé les porte. Une source qui couvre tout prime sur une source
+    // figée à une date.
     const c = complements.get(a.date_ag)
+    // ⚠ « — » signifie « aucun », pas « inconnu » : on l'écrit tel quel plutôt
+    // que de laisser un champ vide qui se lirait « pas encore renseigné ».
+    if (r?.scrutateur || c?.scrutateur) patch.scrutateur = r?.scrutateur || c.scrutateur
+    if (r?.unite_vote || c?.unite_des_votes) patch.unite_vote = r?.unite_vote || c.unite_des_votes
     if (c) {
-      // ⚠ « — » signifie « aucun », pas « inconnu » : on l'écrit tel quel plutôt
-      // que de laisser un champ vide qui se lirait « pas encore renseigné ».
-      if (c.scrutateur) patch.scrutateur = c.scrutateur
-      if (c.unite_des_votes) patch.unite_vote = c.unite_des_votes
       // La note est un avertissement sur le document (« la page relatant ce vote
       // manque »), pas un résumé des décisions : elle va au commentaire.
       if (c.note) patch.commentaire = c.note
@@ -198,6 +203,62 @@ async function main() {
       }
     }
     aEcrire.push({ cible, patch, source: a })
+  }
+
+  // ---------------------------------------- 2 bis. absentes du registre
+  // ⚠ UNE ASSEMBLÉE PEUT AVOIR UN RÉSUMÉ SANS FIGURER AU REGISTRE CONSOLIDÉ —
+  // c'est le cas de l'AG du 1er juillet 1989. Sans ce repli, sa fiche
+  // annoncerait que ses décisions « n'ont pas encore été dépouillées », alors
+  // qu'elles le sont : c'est le registre qui ne l'a pas encore reprise.
+  //
+  // ⚠ CE QUE LE REGISTRE APPORTE EN PROPRE, CE SONT LES VOIX CHIFFRÉES, et
+  // elles n'existent pas ici : le PV de 1989 ne chiffre aucun vote (« unanimité,
+  // non chiffré »). `pour`/`contre`/`abstention` restent donc NULS — un zéro
+  // serait une défaite, un null est une lacune — et le texte du résumé est
+  // conservé dans `voix_texte`.
+  //
+  // ⚠ LE RECOUPEMENT PAR LE DÉCOMPTE ANNONCÉ NE S'APPLIQUE PAS ICI : c'est le
+  // registre qui annonce son nombre de décisions, pas le résumé. Ces assemblées
+  // sont donc NOMMÉES au rapport, pour qu'on sache lesquelles sont entrées sans
+  // ce garde-fou.
+  const duResumeSeul = []
+  for (const [date, r] of resumesParDate) {
+    if (assemblees.some((a) => a.date_ag === date)) continue
+    const cible = parDate.get(date)
+    if (!cible) continue
+    duResumeSeul.push(date)
+    // ⚠ LA NOTE DU FICHIER DE RÉSUMÉS VAUT ICI AUSSI. Premier jet : ce chemin ne
+    // consultait pas `complements`, et la réserve de 1989 — « l'action de
+    // M. Le Corre vise une décision antérieure dont le PV n'est pas conservé » —
+    // restait sur le disque. Une réserve qui n'atteint pas la fiche ne protège
+    // personne.
+    const cr = complements.get(date)
+    aEcrire.push({
+      cible,
+      patch: {
+        ...(cr?.note ? { commentaire: cr.note } : {}),
+        president_seance: r.president || null,
+        presents_representes: r.quorum || null,
+        syndic: r.secretaire || null,
+        scrutateur: r.scrutateur || null,
+        unite_vote: r.unite_vote || null,
+        resume_etabli_le: '2026-09-28',
+        resolutions: r.resolutions.map((z) => ({
+          numero: z.numero,
+          objet: z.sujet,
+          detail: null,
+          resultat: z.decision,
+          pour: null,
+          contre: null,
+          abstention: null,
+          voix_texte: { pour: z.resultat, contre: '—', abstention: '—' },
+        })),
+      },
+      source: { date_ag: date, resolutions: r.resolutions },
+    })
+  }
+  if (duResumeSeul.length) {
+    soucis.push(`Absentes du registre consolidé, reprises de leur résumé par année (sans voix chiffrées, sans recoupement du décompte) : ${duResumeSeul.join(', ')}.`)
   }
 
   W('## Assemblées appariées')

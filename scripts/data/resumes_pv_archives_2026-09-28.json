@@ -21,6 +21,351 @@
   ]
  },
  {
+  "date_ag": "1989-07-01",
+  "annee_exercice": 1989,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 1er juillet 1989",
+  "president": "M. Jean-Bernard Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "32/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes non chiffrés au PV (unanimité) ; présence en fraction de 49",
+  "note": "L'action de M. Le Corre vise une décision antérieure de mise en place d'une barrière à l'entrée, dont le PV n'est pas conservé.",
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Action de M. Alain Le Corre contre la barrière à l'entrée : défense du syndicat (Me Yves Redon)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Aménagement contre le stationnement (demande de M. Liani)",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Numérotation des deux voies nouvelles, modèle standard",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Modèle de numérotation étudié par le conseil syndical",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1991-07-27",
+  "annee_exercice": 1991,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juillet 1991",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "32/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 49 (tel qu’au PV)",
+  "note": "Le point V renvoie au PV de l'assemblée du 21 juillet 1990, qui n'est pas conservé.",
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Terrain Le Corre à l'entrée : entretien demandé ; aménagements réalisés maintenus en l'état",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Empiètement du SIVOM sur la voie (5 m linéaires) pour le réseau d'eaux usées",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Raccordement de M. J. Francillon au réseau du lotissement refusé",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Éclairage extérieur : attendre les tranchées du réseau d'eaux usées",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Nouveau réseau d'eau pour la protection incendie (syndicat des eaux des Moises, 95 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/49 · Contre 1/49 (M. Silhol)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Fossés et bas-côtés : mise en demeure, puis travaux aux frais du défaillant après un mois",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/49 · Contre 1/49 (M. Silhol)"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Remplacement des miroirs par un miroir incassable (environ 2 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "X",
+    "sujet": "Changement d'entreprise d'espaces verts : cahier des charges et trois devis",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "XI",
+    "sujet": "Autres ralentisseurs à l'ordre du jour de l'assemblée suivante",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1992-07-25",
+  "annee_exercice": 1992,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 25 juillet 1992",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "28/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": "Résolution VII : selon le PV de 1993, la décision n'a pas été exécutée, la majorité de l'article 26 (2/3, soit 34/51) n'étant pas atteinte.",
+  "resolutions": [
+   {
+    "numero": "I",
+    "sujet": "Tiers supplémentaire de charges du lot Zwollsman maintenu à sa charge",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Trois nouveaux ralentisseurs (22 500 F)",
+    "decision": "Adoptée (non exécutée)",
+    "resultat_vote": "Pour 16/50 · Contre 11/50 · Abst. 1/50"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Bouche d'incendie supplémentaire (15 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1993-07-24",
+  "annee_exercice": 1993,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 juillet 1993",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "34/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 34 présents (tel qu’au PV)",
+  "note": "Est annexé au PV un extrait du cahier des charges (nouvel article 15 sur la hauteur des arbres). Résolution IX : le nombre de voix pour est corrigé à la main sur le PV.",
+  "resolutions": [
+   {
+    "numero": "III a",
+    "sujet": "Mandat au syndic pour la vente judiciaire du lot de M. Cartegini (jugement du TGI de Thonon du 17 mai 1993), après saisie chez le notaire",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Ralentisseurs (22 500 F) : majorité de l'article 26 (34/51) requise",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré (une douzaine d'opposants)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Miroir allée de Rives face au n° 36",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Mise en demeure de M. Reistad (hauteur des arbres)",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Traitement des chenilles par hélicoptère",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 33/34 · Contre 1/34 (M. Arn)"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Desserte du lotissement par le câble (télévision), sans frais",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1996-07-27",
+  "annee_exercice": 1996,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juillet 1996",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Non indiqué au PV (signé par M. Guy Pillet, syndic)",
+  "quorum": "32/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Mandat au conseil syndical et au syndic pour négocier avec le SIVOM le financement du réseau d'assainissement",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/50 · Contre 1/50 (M. Gachoud)"
+   },
+   {
+    "numero": "V",
+    "sujet": "Principe d'un fonds de réserve pour financer ces travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 21/50 · Contre 12/50"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Mise en souterrain de l'éclairage et points lumineux : étude à présenter",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1996-12-07",
+  "annee_exercice": 1996,
+  "type_ag": "AGE",
+  "titre": "Assemblée générale extraordinaire du 7 décembre 1996",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "41/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Vote non chiffré (unanimité) ; présence en fraction de 51",
+  "note": "Le PV parle d'« assemblée générale » et des « statuts du lotissement » ; le caractère extraordinaire ressort du nom du fichier et de l'objet unique de la séance.",
+  "resolutions": [
+   {
+    "numero": "I",
+    "sujet": "Modification de l'article 15 : délai supplémentaire, report à l'assemblée de fin juin 1997",
+    "decision": "Reportée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1998-06-20",
+  "annee_exercice": 1998,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 20 juin 1998",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "M. Jean-Christophe Sinègre (cabinet Guy Pillet)",
+  "quorum": "37/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 51 (tel qu’au PV)",
+  "note": "La proposition du SIVOM du 19 mai 1998 est jointe au PV : participation de la copropriété de 50 % d'un investissement de 430 000 HT, soit 215 000 HT.",
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Modification de l'article 15 (hauteur des plantations)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 20 · Contre 17 (majorité nécessaire non atteinte)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Proposition du SIVOM : poste de refoulement, puis réseau séparatif avec 50 % de participation publique",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Lettre de MM. Muskens et Mey sur la taille des peupliers : pas d'observation",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2001-06-30",
+  "annee_exercice": 2001,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2001",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "M. Jean-Christophe Sinègre (Foncia Moynat Pillet)",
+  "quorum": "34 copropriétaires, 34 voix sur 51",
+  "lieu": "Salle de la mairie, Nernier",
+  "unite_des_votes": "Votes non chiffrés (unanimité) ; présence en voix sur 51",
+  "note": "L'ordre du jour cite des décisions des assemblées de 1995 (piquets sur les bas-côtés) et de 2000 (largeur de 3,50 m de l'allée des Précettes), dont les PV ne sont pas conservés.",
+  "resolutions": [
+   {
+    "numero": "8",
+    "sujet": "Travaux d'assainissement du SIVOM : réserves sur les reprises de bitume, attente de la 2e tranche",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Mise sous terre des alimentations EDF (254 064 F TTC) et 20 000 F pour imprévus",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "10",
+    "sujet": "Piquets sur les bas-côtés : avis d'un juriste ou d'un assureur, à défaut assurance des colotis",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "11",
+    "sujet": "Sécurisation : un accès fermé, l'autre automatisé ; chiffrage pour 2002",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2002-06-29",
+  "annee_exercice": 2002,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juin 2002",
+  "president": "M. Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Foncia Moynat Pillet",
+  "quorum": "38 copropriétaires, 3 981 voix sur 5 100 (78 %)",
+  "lieu": "Salle de la mairie, Nernier",
+  "unite_des_votes": "Votes en fraction de 44 (tel qu’au PV) ; présence en voix sur 5 100",
+  "note": "Résolution 6 : présentée à la majorité de l'article 26 ; le PV déclare adoptée, par 15/44, la décision de ne pas fermer. Le projet précisait que les parcelles 2 à 6 de la zone C n'étaient pas concernées.",
+  "resolutions": [
+   {
+    "numero": "6",
+    "sujet": "Refus de fermer les deux accès par des portails électriques",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 15/44 · Contre 13/44 · Abst. 7/44"
+   },
+   {
+    "numero": "7",
+    "sujet": "Horaires d'ouverture des portails",
+    "decision": "Non votée",
+    "resultat_vote": "— (sans objet)"
+   }
+  ]
+ },
+ {
   "date_ag": "2003-06-28",
   "annee_exercice": 2003,
   "type_ag": "AGO",
@@ -332,6 +677,39 @@
     "sujet": "Distributeurs de sachets pour chiens aux entrées",
     "decision": "Rejetée",
     "resultat_vote": "Pour 0 · Contre 2 819 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2010-07-03",
+  "annee_exercice": 2010,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 3 juillet 2010",
+  "president": "M. Pargoux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "28 copropriétaires, 2 800 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Procédure contre Mme Briefer : démarches entérinées (délibéré du TGI de Thonon en septembre 2010)",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "11",
+    "sujet": "Stationnement sauvage à l'entrée côté village : intervention auprès de la commune",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "11",
+    "sujet": "ORTEC : nettoyage des caniveaux lors du curage des canalisations",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
    }
   ]
  },

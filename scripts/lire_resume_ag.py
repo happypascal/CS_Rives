@@ -25,6 +25,7 @@ Usage  : /usr/bin/python3 scripts/lire_resume_ag.py <dossier racine des AG>
 Sortie : { "resumes": [...] } sur la sortie standard.
 """
 
+import html
 import json
 import os
 import re
@@ -39,11 +40,19 @@ MOIS = {
 
 
 def date_iso(texte):
-    m = re.search(r'(\d{1,2})\s+([A-Za-zéûôàè]+)\s+(\d{4})', texte or '')
-    if not m:
-        return None
-    mois = MOIS.get(m.group(2).lower())
-    return '%s-%02d-%02d' % (m.group(3), mois, int(m.group(1))) if mois else None
+    # ⚠ « 1ER JUILLET », PAS « 1 JUILLET ». Le premier du mois s'écrit en
+    # ordinal, et le titre de l'AG de 1989 est le seul du fonds à tomber un
+    # premier : sans le `er` optionnel, ce résumé-là sortait SANS DATE, donc ne
+    # s'appariait à aucune archive — en silence.
+    m = re.search(r'(\d{1,2})(?:er)?\s+([A-Za-zéûôàè]+)\s+(\d{4})', texte or '')
+    if m:
+        mois = MOIS.get(m.group(2).lower())
+        if mois:
+            return '%s-%02d-%02d' % (m.group(3), mois, int(m.group(1)))
+    # Repli sur une date ISO, telle que les noms de fichiers la portent
+    # (`Resume_AG_1989-07-01.docx`).
+    iso = re.search(r'(\d{4})-(\d{2})-(\d{2})', texte or '')
+    return '%s-%s-%s' % iso.groups() if iso else None
 
 
 def contenu(chemin):
@@ -54,9 +63,10 @@ def contenu(chemin):
     texte = re.sub(r'<[^>]+>', '', xml)
     # ⚠ Les entités XML sont décodées APRÈS le retrait des balises : &amp;lt;
     # deviendrait sinon une balise fantôme.
-    for brut, clair in (('&amp;', '&'), ('&lt;', '<'), ('&gt;', '>'),
-                        ('&quot;', '"'), ('&apos;', "'")):
-        texte = texte.replace(brut, clair)
+    # ⚠ `html.unescape` et non une suite de `replace` : il décode en UN SEUL
+    # passage. L'ancienne version remplaçait `&amp;` en premier, puis `&lt;` —
+    # « &amp;lt; » y finissait en « < » au lieu de « &lt; ».
+    texte = html.unescape(texte)
 
     # ⚠ TOUS les paragraphes, à plat. Le titre du document et l'intertitre
     # « Résolutions … » se retrouvent AVALÉS dans la première cellule du tableau

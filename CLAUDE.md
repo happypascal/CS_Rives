@@ -1111,6 +1111,37 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     41/49 Lots »), les résumés normalisent (« 41 lots sur 49 »). Les deux sont exacts ; le second
     est celui qu'on lit. Le registre garde les **chiffres de vote**, que les résumés n'expriment que
     sous forme de phrase.
+- **LOT DU 2026-09-28 SOIR : 10 assemblées ajoutées** (1989, 1991, 1992, 1993, 1996 ×2, 1998,
+  2001, 2002, 2010) → **35 archives, 284 résolutions, 153 décisions montrées**. Années encore
+  manquantes : **1955–1987, 1990, 1994–1995, 1997, 1999–2000**.
+  - ⚠ **`&apos;` EST ENTRÉ EN BASE.** Le registre régénéré encode les apostrophes droites en
+    entités XML, et `lire_registre_ag.py` ne les décodait pas — « panneaux d'affichage » est devenu
+    « panneaux d&apos;affichage » sur toutes les lignes concernées. Les deux lecteurs utilisent
+    désormais **`html.unescape`**, qui décode en UN SEUL passage : la suite de `replace` qu'employait
+    `lire_resume_ag.py` traitait `&amp;` en premier et décodait donc deux fois (« &amp;lt; » → « < »
+    au lieu de « &lt; »). ⚠ **Trouvé par l'appariement aux résumés**, pas en relisant la base : le
+    texte corrompu se lit sans peine dans un tableau.
+  - ⚠ **LES DEUX SOURCES N'INTITULENT PAS PAREIL.** Le registre écrit « Miroirs incassables », le
+    résumé « Remplacement des miroirs par un miroir incassable (environ 2 000 F) » — mêmes
+    résolutions, mêmes numéros, même ordre, **zéro intitulé identique**. L'appariement par intitulé
+    seul marquait l'assemblée entière « hors résumé » et sa fiche n'affichait **aucune décision**.
+    D'où **DEUX PASSES** : l'intitulé d'abord (le n° 8 de 2003 couvre cinq résolutions, un
+    appariement par numéro d'emblée fabriquait huit fausses correspondances), **puis le numéro**
+    pour le reste, dans l'ordre. ⚠ La seconde passe est une **hypothèse**, pas une certitude : son
+    décompte figure au rapport (31 lignes sur ce lot).
+  - ⚠ **`PV AG 2018.pdf` et `PV AG 2023.pdf` À LA RACINE seraient RÉIMPORTÉS** : l'idempotence tient
+    à l'empreinte du fichier, et celle des doublons est partie avec les lignes supprimées. D'où un
+    import **dossier par dossier** sur les années neuves. Ne pas lancer l'import sur `1_AG` entier.
+  - ⚠ **1989 N'EST PAS AU REGISTRE CONSOLIDÉ** — seulement dans son résumé. `importer_resumes_ag.mjs`
+    retombe sur le résumé quand une assemblée manque au registre : sans quoi sa fiche annoncerait
+    des décisions « pas encore dépouillées » alors qu'elles le sont. **Voix nulles** (le PV ne
+    chiffre rien) et **pas de recoupement du décompte** — c'est le registre qui l'annonce, pas le
+    résumé. Ces assemblées sont **nommées au rapport**.
+  - ⚠ **« 1ER JUILLET » N'EST PAS « 1 JUILLET »** : le titre de l'AG 1989 est le seul du fonds à
+    tomber un premier du mois, et il sortait **sans date**, donc apparié à rien, en silence.
+  - ⚠ **Les fichiers bougent pendant le travail** : `PF AG …` (coquille) renommé en `PV AG …` en
+    cours de session, d'où un « PDF illisible » qui n'était qu'un fichier déplacé. Relire l'état du
+    disque avant de conclure.
 - ⚠ **VÉRIFIER UNE DONNÉE AVEC CE QUI L'A PRODUITE NE VÉRIFIE RIEN.** La base a été remplie depuis
   le registre consolidé ; c'est la confrontation aux **résumés par année** — une seconde rédaction
   des mêmes PV — qui l'a contrôlée. **151 résolutions relues ligne à ligne, appariées sur

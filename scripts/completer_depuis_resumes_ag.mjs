@@ -115,6 +115,7 @@ async function main() {
 
   const aEcrire = []
   const lieux = new Map()
+  const appariesParNumero = new Map()
   const soucis = []
   W('| Assemblée | Lieu | Au résumé | Écartées | Introuvables |')
   W('|---|---|---|---|---|')
@@ -144,29 +145,62 @@ async function main() {
       continue
     }
 
-    const attendues = new Map()
-    for (const z of r.resolutions) attendues.set(cleIntitule(z.sujet), z)
+    // ═══ APPARIEMENT EN DEUX PASSES ═══
+    //
+    // ⚠ PASSE 1 — L'INTITULÉ, jamais le numéro seul. Le n° 8 de l'AG 2003 couvre
+    // cinq résolutions distinctes ; apparier d'emblée par numéro fabriquait huit
+    // fausses correspondances lors de la vérification du 2026-09-28.
+    //
+    // ⚠ PASSE 2 — LE NUMÉRO, pour ce que la première n'a pas trouvé. Les
+    // assemblées entrées le 2026-09-28 (1991→2010) ont révélé que les deux
+    // sources n'intitulent PAS pareil : le registre écrit « Miroirs
+    // incassables », le résumé « Remplacement des miroirs par un miroir
+    // incassable (environ 2 000 F) ». Ce sont les mêmes neuf résolutions, dans
+    // le même ordre, sous les mêmes numéros — mais zéro intitulé identique. Sans
+    // cette seconde passe, l'assemblée entière était marquée « hors résumé » et
+    // sa fiche n'affichait AUCUNE décision.
+    //
+    // ⚠ On prend la PREMIÈRE ligne non encore appariée portant ce numéro, et les
+    // deux listes sont parcourues dans l'ordre : c'est ce qui rend l'appariement
+    // déterministe quand un numéro se répète. Ce n'est pas une certitude, c'est
+    // une hypothèse — d'où le décompte séparé au rapport, pour qu'on sache
+    // combien de lignes reposent dessus.
+    const restantes = [...r.resolutions]
+    const parRang = new Map()
+    const prendre = (idx, z) => { parRang.set(idx, z); restantes.splice(restantes.indexOf(z), 1) }
 
-    const resolutions = a.resolutions.map((x) => {
-      const trouvee = attendues.delete(cleIntitule(x.objet))
+    a.resolutions.forEach((x, i) => {
+      const z = restantes.find((y) => cleIntitule(y.sujet) === cleIntitule(x.objet))
+      if (z) prendre(i, z)
+    })
+    let parNumero = 0
+    a.resolutions.forEach((x, i) => {
+      if (parRang.has(i)) return
+      const z = restantes.find((y) => String(y.numero).trim() === String(x.numero).trim())
+      if (z) { prendre(i, z); parNumero++ }
+    })
+
+    const resolutions = a.resolutions.map((x, i) => {
       // ⚠ `impactante` est RETIRÉE : le champ a porté ce nom une heure et ne
       // disait pas ce qu'il promettait — seulement « figure au résumé », pas
       // « a décidé quelque chose ». Le laisser traîner à côté de `au_resume`
       // garantissait qu'un lecteur futur se fie au mauvais.
       const { impactante: _ancien, ...reste } = x
-      return { ...reste, au_resume: trouvee }
+      return { ...reste, au_resume: parRang.has(i) }
     })
     const retenues = resolutions.filter((x) => x.au_resume).length
+    if (parNumero) appariesParNumero.set(a.id, parNumero)
 
-    // ⚠ Une ligne du résumé qui ne retrouve pas la sienne en base est SIGNALÉE :
-    // c'est le seul indice qu'un intitulé a été reformulé d'un côté sans l'autre.
-    if (attendues.size) {
-      soucis.push(`${a.intitule} — ${attendues.size} ligne(s) du résumé sans correspondance en base : ${[...attendues.values()].map((z) => `« ${z.sujet} »`).join(', ')}`)
+    // ⚠ Une ligne du résumé qui ne retrouve NI son intitulé NI son numéro est
+    // signalée : c'est le seul indice qu'une résolution existe d'un côté et pas
+    // de l'autre.
+    if (restantes.length) {
+      soucis.push(`${a.intitule} — ${restantes.length} ligne(s) du résumé sans correspondance en base : ${restantes.map((z) => `« ${z.sujet} »`).join(', ')}`)
     }
 
     const change = resolutions.some((x, i) => x.au_resume !== a.resolutions[i].au_resume
       || 'impactante' in a.resolutions[i])
-    W(`| ${a.intitule} | ${lieux.has(a.id) ? lieux.get(a.id).lieu : '—'} | ${retenues} | ${resolutions.length - retenues} | ${attendues.size || '—'} |`)
+    W(`| ${a.intitule} | ${lieux.has(a.id) ? lieux.get(a.id).lieu : '—'} | ${retenues} | ${resolutions.length - retenues} | ${restantes.length || '—'} |`)
     if (change) aEcrire.push({ id: a.id, intitule: a.intitule, resolutions })
   }
   W('')
@@ -182,6 +216,11 @@ async function main() {
   const retenues = aEcrire.reduce((n, x) => n + x.resolutions.filter((r) => r.au_resume).length, 0)
   W(`${aEcrire.length} assemblée(s) à marquer — ${retenues} résolution(s) retenues sur ${total} au fonds.`)
   W(`${lieux.size} lieu(x) à renseigner.`)
+  const totalNumero = [...appariesParNumero.values()].reduce((n, v) => n + v, 0)
+  if (totalNumero) {
+    W('')
+    W(`⚠ ${totalNumero} résolution(s) appariées par leur NUMÉRO et non par leur intitulé — les deux sources ne les rédigent pas pareil. Appariement déterministe (même ordre, même numéro), mais c'est une hypothèse, pas une certitude.`)
+  }
   W('')
 
   // ⚠ UN SEUL `update` PAR ASSEMBLÉE, lieu et marquage ensemble : deux écritures
