@@ -416,38 +416,64 @@ export function synthesePV(parametres) {
 // LES DÉCISIONS IMPACTANTES — ce qu'on vient lire, et le reste
 //
 // ⚠ Pascal (2026-09-28) : « je ne veux que les décisions impactantes dans ce
-// résumé ». Une assemblée vote chaque année l'élection du bureau, les comptes,
-// le quitus, le budget courant et la désignation du syndic : cinq à dix lignes
-// qui reviennent à l'identique depuis 1988 et qui n'apprennent rien. Noyées
-// dedans, les trois décisions qui ont réellement engagé le lotissement cette
-// année-là ne se voient plus.
+// résumé ». DEUX conditions, et il en manquait une au premier jet.
 //
-// ⚠ LA SÉLECTION EST UN FAIT CONSTATÉ, PAS UN JUGEMENT DE L'APPLICATION. Chaque
-// assemblée a son `Resume_AG_<date>.docx`, où la sélection a déjà été faite par
-// un lecteur du procès-verbal. `impactante` ne fait que CONSIGNER qu'une
-// résolution y figure. Une règle par mots-clés — « quitus », « comptes » —
-// aurait été une devinette, et elle se serait trompée le jour où l'assemblée
-// refuse le quitus : ce jour-là, le quitus est la décision de l'année.
+// 1. ELLE A ÉTÉ VOTÉE — « Adoptée » ou « Rejetée ».
+//    ⚠ C'est la condition que j'avais oubliée, et Pascal l'a vue tout de suite :
+//    « il y a des résolutions sans vote dans le résumé ; 2023 12.1 rejeté et tu
+//    me mets 12.1 à 12.4, ça ne fait aucun sens ». Le principe du rond-point
+//    (12.1) ayant été REJETÉ, le mandat, le financement et le fonds de travaux
+//    (12.2 à 12.4) sont tombés avec lui : ils portent « Non votée ». Les afficher
+//    à la suite d'un rejet donne à lire quatre décisions là où il n'y en a
+//    qu'une. Sur tout le fonds : 22 « Non votée », 7 « Reportée », 1 « Inconnu
+//    (page manquante) » — trente lignes qui ne décident rien.
+//    ⚠ UN REJET EST UNE DÉCISION, et souvent la plus lourde de conséquences.
+//    On écarte l'absence de vote, jamais un vote défavorable.
+//    ⚠ Condition DÉRIVÉE, jamais stockée : elle se lit dans `resultat`. Corriger
+//    un résultat corrige l'affichage, sans rien relancer.
+//
+// 2. ELLE N'EST PAS UN POINT DE ROUTINE — élection du bureau, comptes, quitus,
+//    budget courant, désignation du syndic : cinq à dix lignes qui reviennent à
+//    l'identique depuis 1988.
+//    ⚠ CELLE-LÀ EST CONSTATÉE, PAS CALCULÉE. Chaque assemblée a son
+//    `Resume_AG_<date>.docx`, où le tri a déjà été fait par un lecteur du
+//    procès-verbal ; `au_resume` ne fait que CONSIGNER qu'une résolution y
+//    figure. Une règle par mots-clés — « quitus », « comptes » — aurait été une
+//    devinette, et elle se serait trompée le jour où l'assemblée REFUSE le
+//    quitus : ce jour-là, le quitus est la décision de l'année.
+//
+// ⚠ LE CHAMP STOCKÉ S'APPELLE `au_resume`, ET NON `impactante`. Il a porté ce
+// second nom une heure, et c'était un piège : il ne disait pas si la résolution
+// est impactante, seulement si elle figure au résumé d'année. Un nom qui promet
+// plus que ce qu'il contient finit toujours par être lu au pied de la lettre.
 //
 // ⚠ RIEN N'EST SUPPRIMÉ. Les 237 résolutions restent en base et l'écran donne
 // accès aux écartées d'un clic. Un fonds d'archives ne choisit pas ce qui mérite
 // mémoire — il choisit seulement ce qu'il montre en premier.
-//
-// ⚠ AUCUNE MARQUE ⇒ TOUT EST MONTRÉ. Une assemblée dont le résumé n'a pas encore
-// été dépouillé n'a aucune ligne marquée : la masquer entièrement ferait croire
-// qu'elle n'a rien décidé. L'absence d'information ne doit jamais se lire comme
-// une information.
 // ============================================================================
+
+/**
+ * A-t-elle été mise aux voix, et avec un résultat ?
+ * ⚠ « Non votée », « Reportée », « Information » et « Inconnu (page manquante) »
+ * ne décident rien — et « Inconnu » moins que tout : c'est une lacune du
+ * document, signalée par ailleurs en réserve.
+ */
+export function estVotee(resultat) {
+  const t = String(resultat || '')
+    .normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase()
+  return t.startsWith('adoptee') || t.startsWith('rejetee')
+}
 
 /** Sépare les résolutions d'une assemblée en « impactantes » et « écartées ». */
 export function partagerResolutions(liste) {
   const toutes = liste || []
-  const marquees = toutes.some((r) => typeof r?.impactante === 'boolean')
-  if (!marquees) return { impactantes: toutes, ecartees: [], marquees: false }
+  // ⚠ `au_resume !== false` et non `=== true` : une assemblée pas encore
+  // dépouillée n'a aucune marque, et la masquer ferait croire qu'elle n'a rien
+  // décidé. L'absence d'information ne doit jamais se lire comme une information.
+  const impactante = (r) => estVotee(r?.resultat) && r?.au_resume !== false
   return {
-    impactantes: toutes.filter((r) => r.impactante !== false),
-    ecartees: toutes.filter((r) => r.impactante === false),
-    marquees: true,
+    impactantes: toutes.filter(impactante),
+    ecartees: toutes.filter((r) => !impactante(r)),
   }
 }
 

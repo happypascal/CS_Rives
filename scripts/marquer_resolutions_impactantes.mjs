@@ -6,9 +6,15 @@
 // qui reviennent à l'identique depuis 1988. Noyées dedans, les trois décisions
 // qui ont réellement engagé le lotissement ne se voient plus.
 //
+// ⚠ CE SCRIPT NE POSE QU'UNE DES DEUX CONDITIONS. « Impactante » veut dire
+// VOTÉE (adoptée ou rejetée) ET hors routine. La première se lit dans
+// `resultat` et reste DÉRIVÉE à l'affichage (`estVotee`, `partagerResolutions`) :
+// corriger un résultat corrige la fiche sans relancer quoi que ce soit. Seule la
+// seconde est écrite ici, parce qu'elle ne se calcule pas.
+//
 // ⚠ LA SÉLECTION EST CONSTATÉE, PAS FABRIQUÉE. Chaque assemblée a son
 // `Resume_AG_<date>.docx`, où un lecteur du procès-verbal a déjà fait ce tri.
-// Ce script ne fait que CONSIGNER qu'une résolution y figure (`impactante`).
+// Ce script ne fait que CONSIGNER qu'une résolution y figure (`au_resume`).
 // Une règle par mots-clés — « quitus », « comptes », « budget » — aurait été une
 // devinette, et elle se serait trompée le jour où l'assemblée REFUSE le quitus :
 // ce jour-là, le quitus est la décision de l'année.
@@ -22,7 +28,7 @@
 // EFFACERAIT les quatre corrections du 2026-09-28 (trois effectifs pris pour
 // des voix en 2004, une lacune de 1988 présentée comme « Information »), qui
 // sont justes en base et fausses au registre. Celui-ci n'écrit QUE le champ
-// `impactante`, sur les lignes existantes.
+// `au_resume`, sur les lignes existantes.
 //
 // ⚠ APPARIEMENT SUR L'INTITULÉ, jamais sur le numéro : le n° 8 de 2003 couvre
 // cinq résolutions. `cleIntitule` est partagée avec l'import pour que les deux
@@ -123,9 +129,14 @@ async function main() {
 
     const resolutions = a.resolutions.map((x) => {
       const trouvee = attendues.delete(cleIntitule(x.objet))
-      return { ...x, impactante: trouvee }
+      // ⚠ `impactante` est RETIRÉE : le champ a porté ce nom une heure et ne
+      // disait pas ce qu'il promettait — seulement « figure au résumé », pas
+      // « a décidé quelque chose ». Le laisser traîner à côté de `au_resume`
+      // garantissait qu'un lecteur futur se fie au mauvais.
+      const { impactante: _ancien, ...reste } = x
+      return { ...reste, au_resume: trouvee }
     })
-    const retenues = resolutions.filter((x) => x.impactante).length
+    const retenues = resolutions.filter((x) => x.au_resume).length
 
     // ⚠ Une ligne du résumé qui ne retrouve pas la sienne en base est SIGNALÉE :
     // c'est le seul indice qu'un intitulé a été reformulé d'un côté sans l'autre.
@@ -133,7 +144,8 @@ async function main() {
       soucis.push(`${a.intitule} — ${attendues.size} ligne(s) du résumé sans correspondance en base : ${[...attendues.values()].map((z) => `« ${z.sujet} »`).join(', ')}`)
     }
 
-    const change = resolutions.some((x, i) => x.impactante !== a.resolutions[i].impactante)
+    const change = resolutions.some((x, i) => x.au_resume !== a.resolutions[i].au_resume
+      || 'impactante' in a.resolutions[i])
     W(`| ${a.intitule} | ${retenues} | ${resolutions.length - retenues} | ${attendues.size || '—'} |`)
     if (change) aEcrire.push({ id: a.id, intitule: a.intitule, resolutions })
   }
@@ -147,7 +159,7 @@ async function main() {
   }
 
   const total = archives.reduce((n, a) => n + (a.resolutions?.length || 0), 0)
-  const retenues = aEcrire.reduce((n, x) => n + x.resolutions.filter((r) => r.impactante).length, 0)
+  const retenues = aEcrire.reduce((n, x) => n + x.resolutions.filter((r) => r.au_resume).length, 0)
   W(`${aEcrire.length} assemblée(s) à écrire — ${retenues} résolution(s) retenues sur ${total} au fonds.`)
   W('')
 

@@ -155,7 +155,7 @@ scripts/
                       reconnaît à « Scrutateur » en DEUXIÈME cellule.
   corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
                       type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
-  marquer_resolutions_impactantes.mjs  MARQUE les résolutions retenues au résumé (`impactante`),
+  marquer_resolutions_impactantes.mjs  MARQUE les résolutions retenues au résumé (`au_resume`),
                       d'après les 25 résumés par année. N'écrit QUE ce champ : un ré-import
                       effacerait les corrections. Idempotent.
   corriger_resolutions_archives.mjs  CORRECTIONS des résolutions archivées issues de la
@@ -1135,26 +1135,43 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     syndic. Le fonds garde le tout — **un registre d'archives ne choisit pas ce qui mérite mémoire.**
 - ⚠ **La mention « seul le procès-verbal fait foi » reste sous le tableau**, quoi qu'il arrive à
   l'écran : un résumé est une lecture, le procès-verbal est l'acte.
-- **SEULES LES DÉCISIONS IMPACTANTES AU RÉSUMÉ** (`impactante` dans le jsonb, `partagerResolutions`,
-  Pascal 2026-09-28). Chaque assemblée vote l'élection du bureau, les comptes, le quitus, le budget
-  courant et la désignation du syndic : cinq à dix lignes identiques depuis 1988, qui noient les
-  deux ou trois décisions ayant réellement engagé le lotissement. **151 retenues sur 237.**
-  - ⚠ **LA SÉLECTION EST CONSTATÉE, PAS FABRIQUÉE** : est retenue la résolution qui **figure au
-    `Resume_AG_<date>.docx`** de son année, où le tri a déjà été fait par un lecteur du PV.
-    `scripts/marquer_resolutions_impactantes.mjs` ne fait que le consigner. Une règle par mots-clés
-    (« quitus », « comptes ») aurait été une devinette, et se serait trompée **le jour où l'assemblée
-    refuse le quitus** — ce jour-là, le quitus est la décision de l'année.
+- **SEULES LES DÉCISIONS IMPACTANTES AU RÉSUMÉ** (`partagerResolutions`, Pascal 2026-09-28).
+  **DEUX conditions**, et il en manquait une au premier jet. **121 décisions sur 237 lignes.**
+  1. ⚠ **ELLE A ÉTÉ VOTÉE** — « Adoptée » ou « Rejetée » (`estVotee`). **Condition DÉRIVÉE de
+     `resultat`, jamais stockée** : corriger un résultat corrige la fiche sans rien relancer.
+  2. ⚠ **ELLE N'EST PAS UN POINT DE ROUTINE** — élection du bureau, comptes, quitus, budget courant,
+     désignation du syndic, identiques depuis 1988. **Condition CONSTATÉE** : est retenue la
+     résolution qui **figure au `Resume_AG_<date>.docx`** de son année, où le tri a déjà été fait par
+     un lecteur du PV (`au_resume`, posé par `scripts/marquer_resolutions_impactantes.mjs`). Une
+     règle par mots-clés (« quitus », « comptes ») aurait été une devinette, et se serait trompée
+     **le jour où l'assemblée REFUSE le quitus** — ce jour-là, le quitus est la décision de l'année.
+  - ⚠ **« FIGURE AU RÉSUMÉ » N'EST PAS « IMPACTANTE ».** Premier jet livré avec cette seule
+    condition ; Pascal l'a vu aussitôt : « il y a des résolutions sans vote dans le résumé ; 2023
+    12.1 rejeté et tu me mets 12.1 à 12.4, ça ne fait aucun sens ». Le **principe** du rond-point
+    (12.1) ayant été rejeté, le mandat, le financement et le fonds (12.2 à 12.4) sont tombés avec
+    lui et portent « Non votée » — les afficher donnait à lire quatre décisions là où il n'y en a
+    qu'une. Sur le fonds : **22 « Non votée », 7 « Reportée », 1 « Inconnu »**, trente lignes qui ne
+    décident rien. Le résumé `.docx` les garde parce qu'il **raconte la séance** ; c'est son rôle,
+    pas celui de la fiche.
+  - ⚠ **UN REJET EST UNE DÉCISION**, souvent la plus lourde de conséquences. On écarte l'absence de
+    vote, **jamais un vote défavorable**.
+  - ⚠ **LE CHAMP STOCKÉ S'APPELLE `au_resume`, PAS `impactante`.** Il a porté ce second nom une
+    heure : il ne disait pas si la résolution est impactante, seulement si elle figure au résumé.
+    Un nom qui promet plus que ce qu'il contient finit toujours par être lu au pied de la lettre.
   - ⚠ **RIEN N'EST SUPPRIMÉ** : les 237 restent en base, les écartées se déplient d'un clic. Un fonds
     d'archives ne choisit pas ce qui mérite mémoire, il choisit ce qu'il montre **en premier**.
-  - ⚠ **AUCUNE MARQUE ⇒ TOUT EST MONTRÉ.** Une assemblée dont le résumé n'a pas été dépouillé n'a
-    aucune ligne marquée ; la masquer ferait croire qu'elle n'a rien décidé. L'absence
-    d'information ne doit jamais se lire comme une information.
+  - ⚠ **AUCUNE MARQUE ⇒ RIEN N'EST CACHÉ AU TITRE DE LA ROUTINE** (`au_resume !== false`). Une
+    assemblée non dépouillée montre toutes ses résolutions votées ; la masquer ferait croire qu'elle
+    n'a rien décidé. L'absence d'information ne doit jamais se lire comme une information.
+  - ⚠ **DÉPOUILLÉE MAIS SANS AUCUNE DÉCISION ≠ PAS ENCORE DÉPOUILLÉE.** L'AG 1988 n'a qu'une ligne,
+    « Inconnu (page manquante) » : le message d'attente y ferait croire à un travail restant, alors
+    que c'est le DOCUMENT qui est incomplet — ce que la réserve, juste au-dessus, explique.
   - ⚠ **LE LIBELLÉ DU BOUTON NE NOMME PAS CE QU'IL REPLIE.** « Bureau, comptes, quitus » est vrai de
-    la plupart des assemblées et **faux de 2023**, dont les trois écartées sont des comptes rendus de
-    procédure. Un libellé qui décrit à côté est pire que muet.
+    la plupart des assemblées et **faux de 2023**, dont les écartées sont des comptes rendus de
+    procédure et des points tombés avec un rejet. Un libellé qui décrit à côté est pire que muet.
   - ⚠ **PAS un ré-import pour poser la marque** : `importer_resumes_ag.mjs` réécrit les résolutions
     depuis le registre et **effacerait les quatre corrections** du 2026-09-28. Le script de marquage
-    n'écrit que `impactante`.
+    n'écrit que `au_resume`.
 - **UNE DÉCISION TIENT SUR UNE LIGNE** (Pascal 2026-09-28, même règle que le journal de bord des
   projets). Trois choses la faisaient déborder : les voix **empilées** (trois lignes par
   résolution), le **détail** en seconde ligne (parfois dix lignes), et le texte brut des voix

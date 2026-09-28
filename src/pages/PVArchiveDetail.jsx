@@ -330,14 +330,24 @@ export default function PVArchiveDetail() {
 
           {pv.resolutions?.length > 0 ? (
             <>
-              <Resolutions liste={impactantes} unite={pv.unite_vote} />
-              {/* ⚠ LES ÉCARTÉES RESTENT ACCESSIBLES, à un clic. Élection du
-                  bureau, comptes, quitus, budget courant et désignation du
-                  syndic reviennent à l'identique chaque année : les montrer en
+              {impactantes.length > 0 ? (
+                <Resolutions liste={impactantes} unite={pv.unite_vote} />
+              ) : (
+                /* ⚠ DÉPOUILLÉE MAIS SANS AUCUNE DÉCISION, ce n'est PAS « pas
+                   encore dépouillée ». Le cas existe : l'AG de 1988 n'a qu'une
+                   ligne, et c'est « Inconnu (page manquante) ». Servir le message
+                   d'attente y ferait croire à un travail qui reste à faire, alors
+                   que le travail est fait et que c'est le DOCUMENT qui est
+                   incomplet — ce que la réserve, juste au-dessus, explique. */
+                <p className="mt-2 text-sm text-slate-500">
+                  Aucune résolution de cette assemblée n’a été mise aux voix avec un résultat connu.
+                </p>
+              )}
+              {/* ⚠ LES ÉCARTÉES RESTENT ACCESSIBLES, à un clic. Les montrer en
                   premier noie les deux ou trois décisions qui ont réellement
-                  engagé le lotissement. Les SUPPRIMER de l'affichage serait
-                  autre chose — un fonds d'archives ne choisit pas ce qui mérite
-                  mémoire, il choisit ce qu'il montre en premier. */}
+                  engagé le lotissement. Les SUPPRIMER serait autre chose — un
+                  fonds d'archives ne choisit pas ce qui mérite mémoire, il
+                  choisit ce qu'il montre en premier. */}
               {ecartees.length > 0 && (
                 <div className="mt-3">
                   <button
@@ -348,12 +358,12 @@ export default function PVArchiveDetail() {
                     {/* ⚠ LE LIBELLÉ NE NOMME PAS CE QU'IL REPLIE. Une première
                         version annonçait « bureau, comptes, quitus, budget,
                         syndic » : vrai de la plupart des assemblées, faux de
-                        2023, dont les trois écartées sont des comptes rendus de
-                        procédure. Un libellé qui décrit à côté est pire que
-                        muet — on ne déplie pas ce qu'on croit connaître. */}
+                        2023, dont les écartées sont des comptes rendus de
+                        procédure et des points tombés avec un rejet. Un libellé
+                        qui décrit à côté est pire que muet. */}
                     {toutVoir
-                      ? 'Masquer les autres résolutions'
-                      : `Afficher les ${ecartees.length} résolutions non reprises au résumé`}
+                      ? 'Masquer les autres points'
+                      : `Afficher les ${ecartees.length} autres points de l’ordre du jour`}
                   </button>
                   {toutVoir && <Resolutions liste={ecartees} unite={pv.unite_vote} />}
                 </div>
@@ -372,7 +382,7 @@ export default function PVArchiveDetail() {
             <p className="mt-3 text-xs text-slate-400">
               Résumé{pv.resume_etabli_le ? ` établi le ${formatDate(pv.resume_etabli_le)}` : ''} d’après le
               procès-verbal ; <strong>seul le procès-verbal fait foi</strong>.
-              {ecartees.length > 0 && ` ${ecartees.length} résolution${ecartees.length > 1 ? 's' : ''} du procès-verbal ${ecartees.length > 1 ? 'ne sont' : 'n’est'} pas reprise${ecartees.length > 1 ? 's' : ''} dans cette sélection — élection du bureau, comptes, quitus, budgets courants, désignation du syndic et points d’information.`}
+              {ecartees.length > 0 && ` Ne figurent ici que les résolutions RÉELLEMENT MISES AUX VOIX, hors points de routine. Les ${ecartees.length} autres — non votées, reportées, points d’information, élection du bureau, comptes, quitus, budget courant et désignation du syndic — sont repliées ci-dessus.`}
             </p>
           )}
         </div>
