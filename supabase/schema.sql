@@ -804,6 +804,7 @@ create index if not exists communication_destinataires_comm_idx
 create table if not exists pv_archives (
   id            uuid primary key default gen_random_uuid(),
   date_ag       date,
+  -- ⚠ L'année de l'EXERCICE, pas de la séance (cf. la note sur les contraintes).
   annee         integer not null check (annee between 1955 and 2100),
   type_ag       text check (type_ag is null or type_ag in ('AGO','AGE','reunion_syndicat','inconnu')),
   intitule      text not null,
@@ -816,13 +817,11 @@ create table if not exists pv_archives (
   -- `documents_brouillon_prive` ne vise que le préfixe `decisions`, et
   -- `documents_insert_membre` ouvre à tout membre actif.
   document      jsonb not null,
-  -- ⚠ SECONDE PIÈCE, VOLONTAIREMENT DISTINCTE (migration 060) : `document` porte
-  -- le SCAN, qui fait foi et ne se remplace pas ; celle-ci porte un document de
-  -- SYNTHÈSE rédigé après coup, qui se réécrit. Dans la même colonne, on ne
-  -- pourrait plus garantir lequel est lequel.
-  -- ⚠ À ne pas confondre avec `resume` (text) ci-dessus : l'un est la synthèse
-  -- en quelques lignes affichée dans la liste, l'autre le fichier qu'on ouvre.
-  resume_document jsonb,
+  -- ⚠ PAS DE DOCUMENT DE SYNTHÈSE PAR ASSEMBLÉE. La 060 en avait ajouté un, la
+  -- 061 l'a retiré : il n'y a qu'UNE synthèse pour tout le fonds, rangée dans
+  -- `parametres` (clé `pv_archives_synthese`) et affichée en tête de la liste.
+  -- Une colonne par ligne aurait invité à y déposer des synthèses individuelles
+  -- faisant double emploi avec `resume`.
   nb_pages      integer,
   texte_ocr     text,
   source        text,
@@ -832,10 +831,10 @@ create table if not exists pv_archives (
   cree_par      uuid references membres_cs(id),
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  -- Une date complète qui ne tombe pas dans son année de classement rangerait le
-  -- document à un endroit et l'afficherait à un autre.
-  constraint pv_archives_annee_coherente
-    check (date_ag is null or extract(year from date_ag) = annee)
+  -- ⚠ AUCUNE CONTRAINTE ENTRE `annee` ET `date_ag` — la 057 en posait une, la
+  -- 061 l'a supprimée. Elle supposait que `annee` désigne l'année de la SÉANCE ;
+  -- c'est celle de l'EXERCICE sur lequel l'assemblée statue. Une AG tenue le
+  -- 19 janvier 2026 est l'AGO 2025, et le décalage est NORMAL.
 );
 
 -- ⚠ Colonne GÉNÉRÉE plutôt qu'index d'expression : PostgREST ne sait interroger

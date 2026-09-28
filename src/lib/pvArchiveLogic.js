@@ -154,18 +154,26 @@ function typeDuNom(base) {
 const intituleDuNom = (base) => base.replace(/\s*\(\d+\)\s*$/, '').replace(/[_]+/g, ' ').trim()
 
 /**
- * Un intitulé lisible, à partir de ce qu'on a effectivement déduit.
- * ⚠ Il ne dit JAMAIS plus que ce qu'on sait : sans type, « Assemblée » tout
- * court ; sans jour, l'année seule.
+ * L'intitulé d'une assemblée : son type et son ANNÉE D'EXERCICE.
+ *
+ * ⚠ PAS LA DATE DE SÉANCE (correction de Pascal, 2026-09-28) : « les titres ne
+ * sont pas uniformes… Assemblée Générale 2024, mais pas la date de l'AG, elle
+ * est en dessous ». Le titre servait « Assemblée du 3/09/2016 », la ligne du
+ * dessous répétait « 03/09/2016 » — la même information deux fois, et des
+ * titres de longueurs inégales qui ne s'alignaient pas d'une décennie à l'autre.
+ *
+ * ⚠ ET L'ANNÉE N'EST PAS CELLE DE LA DATE : l'AG tenue le 19 janvier 2026 est
+ * l'assemblée 2025. Le titre suit l'exercice, comme le classement.
+ *
+ * ⚠ Il ne dit jamais plus qu'on ne sait : sans type, « Assemblée générale »
+ * tout court plutôt qu'un type inventé.
  */
-export function intituleAuto({ annee, date_ag, type_ag }, secours) {
-  const quoi = type_ag && type_ag !== 'inconnu' ? TYPE_LABELS[type_ag] : 'Assemblée'
-  if (date_ag) {
-    const [a, m, j] = date_ag.split('-')
-    return `${quoi} du ${Number(j)}/${m}/${a}`
-  }
-  if (annee) return `${quoi} de ${annee}`
-  return secours || 'Document sans date'
+export function intituleAuto({ annee, type_ag }, secours) {
+  const quoi = type_ag && type_ag !== 'inconnu'
+    ? TYPE_LABELS[type_ag]
+    : 'Assemblée générale'
+  if (annee) return `${quoi} ${annee}`
+  return secours || 'Assemblée sans année'
 }
 
 /** Les années réellement couvertes, triées. */
@@ -370,4 +378,36 @@ export function tagsPresents(archives) {
   const connus = TAGS.filter((t) => vus.has(t.cle)).map((t) => t.cle)
   const autres = [...vus].filter((t) => !LIBELLES_TAG[t]).sort()
   return [...connus, ...autres]
+}
+
+// ============================================================================
+// LA SYNTHÈSE DU FONDS — un document, pas un par assemblée
+//
+// ⚠ Pascal (2026-09-28) : « le document de synthèse est en en-tête de la LISTE
+// des AG », et « pas de document de synthèse dans chaque AG ». Il y en a UN pour
+// soixante-dix ans d'assemblées — celui que Claude rédige, qui raconte les
+// grandes lignes du fonds. Chaque assemblée a son `resume` (texte), affiché en
+// tête de sa fiche ; aucune n'a de fichier propre.
+//
+// ⚠ IL VIT DANS `parametres`, PAS DANS UNE COLONNE. C'est une valeur UNIQUE qui
+// change rarement — même cas que les coordonnées du gestionnaire (054). Lui
+// donner une table serait une table d'une ligne ; le poser sur `pv_archives`
+// obligerait à désigner l'archive qui le porte, et ce serait faux : il ne porte
+// sur aucune en particulier.
+//
+// ⚠ `parametres.valeur` est du TEXTE : le document y est sérialisé en JSON, et
+// relu par `synthesePV`. Une valeur illisible rend `null` plutôt que de casser
+// l'écran — un paramètre bricolé à la main ne doit pas vider une archive.
+// ============================================================================
+export const CLE_SYNTHESE = 'pv_archives_synthese'
+
+export function synthesePV(parametres) {
+  const brut = parametres?.[CLE_SYNTHESE]
+  if (!brut) return null
+  try {
+    const doc = JSON.parse(brut)
+    return doc && doc.path ? doc : null
+  } catch {
+    return null
+  }
 }

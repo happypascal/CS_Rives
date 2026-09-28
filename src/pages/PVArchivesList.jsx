@@ -7,8 +7,10 @@ import { formatDate } from '../lib/format'
 import {
   TYPE_COURT, TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES,
   grouperParDecennie, anneesCouvertes, intervallesManquants, extrait, PREMIERE_ANNEE,
-  tagsPresents, tagLibelle,
+  tagsPresents, tagLibelle, synthesePV, CLE_SYNTHESE,
 } from '../lib/pvArchiveLogic'
+import PiecesJointes from '../components/PiecesJointes'
+import { useAuth } from '../lib/AuthContext'
 
 // ARCHIVES DES PROCÈS-VERBAUX DEPUIS 1955 (migration 057).
 //
@@ -86,6 +88,9 @@ function LigneArchive({ a, requete }) {
 }
 
 export default function PVArchivesList() {
+  const { user, isAdmin, isSecretaire } = useAuth()
+  const bureau = isAdmin || isSecretaire
+  const [synthese, setSynthese] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [archives, setArchives] = useState([])
@@ -100,11 +105,24 @@ export default function PVArchivesList() {
   const [tag, setTag] = useState('')
 
   useEffect(() => {
-    repo.listPVArchives()
-      .then(setArchives)
+    Promise.all([
+      repo.listPVArchives(),
+      // Idiome de résilience : sans les paramètres, le fonds reste consultable.
+      repo.getParametres().catch(() => ({})),
+    ])
+      .then(([liste, params]) => {
+        setArchives(liste)
+        setSynthese(synthesePV(params))
+      })
       .catch((e) => setError(e?.message || 'Chargement impossible.'))
       .finally(() => setLoading(false))
   }, [])
+
+  // ⚠ Le document est SÉRIALISÉ dans un paramètre texte (cf. `synthesePV`).
+  const enregistrerSynthese = async (doc) => {
+    await repo.setParametre(CLE_SYNTHESE, doc ? JSON.stringify(doc) : '', user?.membre_id || null)
+    setSynthese(doc)
+  }
 
   const chercher = async (e) => {
     e?.preventDefault()
@@ -148,6 +166,36 @@ export default function PVArchivesList() {
       />
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}
+
+      {/* ---------------------------------------- SYNTHÈSE DU FONDS, EN TÊTE
+          ⚠ UN SEUL document pour soixante-dix ans d'assemblées (Pascal,
+          2026-09-28), pas un par procès-verbal : il raconte les grandes lignes
+          du fonds, ce qu'aucune fiche ne peut faire. Chaque assemblée a son
+          résumé propre, en tête de sa fiche.
+          ⚠ Rangé dans `parametres`, pas dans une colonne : le poser sur une
+          archive obligerait à désigner laquelle le porte, et ce serait faux. */}
+      {(synthese || bureau) && (
+        <Card className="mb-4 p-4">
+          <p className="text-sm font-semibold text-navy-800">Synthèse du fonds</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Ce que ces {archives.length} assemblées racontent, lu d’un bout à l’autre. À lire avant de
+            chercher un procès-verbal en particulier.
+          </p>
+          <div className="mt-3">
+            <PiecesJointes
+              scope="pv-archives"
+              entityId="synthese"
+              label=""
+              readOnly={!bureau}
+              documents={synthese ? [synthese] : []}
+              onChange={(liste) => enregistrerSynthese(liste.length ? liste[liste.length - 1] : null)}
+            />
+          </div>
+          {!synthese && !bureau && (
+            <p className="text-sm text-slate-500">Aucune synthèse pour l’instant.</p>
+          )}
+        </Card>
+      )}
 
       {/* ------------------------------------------------ couverture du fonds */}
       <Card className="mb-4 p-4">

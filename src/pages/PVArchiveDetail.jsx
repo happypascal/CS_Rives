@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Textarea, Spinner, Badge } from '../components/ui'
-import PiecesJointes from '../components/PiecesJointes'
 import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
@@ -125,6 +124,24 @@ export default function PVArchiveDetail() {
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}
 
+      {/* ------------------------------ LES DÉCISIONS DE CETTE ASSEMBLÉE, EN TÊTE
+          ⚠ Pascal (2026-09-28) : « en en-tête de chaque AG on a un résumé avec
+          les décisions principales ». C'est ce qu'on vient chercher — pas le
+          nombre de pages ni la qualité du scan. Il passe donc AVANT le document,
+          en pleine largeur.
+          ⚠ Quand il manque, on le dit plutôt que de ne rien afficher : une
+          absence muette se lirait « cette assemblée n'a rien décidé ». */}
+      <Card className="mb-6 p-5">
+        <p className="text-xs uppercase tracking-wide text-slate-500">Ce qui a été décidé</p>
+        {pv.resume ? (
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{pv.resume}</p>
+        ) : (
+          <p className="mt-1 text-sm text-slate-400">
+            Résumé à rédiger. Le procès-verbal ci-dessous reste consultable en attendant.
+          </p>
+        )}
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card>
@@ -146,41 +163,6 @@ export default function PVArchiveDetail() {
                   Rattaché à l’assemblée{' '}
                   <Link to={`/ag/${agLiee.id}`} className="text-navy-700 underline">{agLiee.numero}</Link> de l’application.
                 </p>
-              )}
-            </div>
-          </Card>
-
-          {/* ------------------------------------------ DOCUMENT DE SYNTHÈSE
-              ⚠ UNE SECONDE PIÈCE, VOLONTAIREMENT DISTINCTE DU SCAN. Le
-              procès-verbal fait foi et ne se remplace pas ; la synthèse est un
-              document DÉRIVÉ, rédigé après coup, qui se réécrit. Les ranger
-              ensemble reviendrait à ne plus pouvoir dire lequel est lequel.
-              ⚠ Le chemin porte l'ANNÉE, comme le scan : `pv-archives/<annee>/`.
-              Aucune policy de Storage à ajouter — c'est le préfixe déjà en
-              service. */}
-          <Card>
-            <CardHeader
-              title="Document de synthèse"
-              subtitle="Une note de lecture rédigée après coup. Elle éclaire le procès-verbal, elle ne le remplace pas."
-            />
-            <div className="p-5">
-              <PiecesJointes
-                scope="pv-archives"
-                entityId={String(pv.annee)}
-                label=""
-                readOnly={!bureau}
-                documents={pv.resume_document ? [pv.resume_document] : []}
-                onChange={async (liste) => {
-                  // ⚠ UN SEUL document : on retient le dernier déposé. La colonne
-                  // est un objet, pas un tableau — deux synthèses pour un même PV
-                  // poseraient la question de laquelle fait référence.
-                  const doc = liste.length ? liste[liste.length - 1] : null
-                  const maj = await repo.updatePVArchive(id, { resume_document: doc })
-                  setPv((p) => ({ ...p, ...maj }))
-                }}
-              />
-              {!pv.resume_document && !bureau && (
-                <p className="text-sm text-slate-500">Aucune synthèse pour l’instant.</p>
               )}
             </div>
           </Card>
@@ -225,7 +207,9 @@ export default function PVArchiveDetail() {
                   </div>
                 </div>
                 <Input label="Mots-clés (séparés par des virgules)" value={form.mots_cles} onChange={set('mots_cles')} />
-                <Textarea label="Résumé" rows={3} value={form.resume} onChange={set('resume')} placeholder="Quelques lignes : ce qui a été décidé, et ce qui compte encore aujourd’hui." />
+                {/* C'est CE champ qui alimente l'en-tête de la fiche : le dire
+                    évite de chercher où se saisit le résumé qu'on vient de lire. */}
+                <Textarea label="Résumé — affiché en tête de cette fiche" rows={5} value={form.resume} onChange={set('resume')} placeholder="Les décisions principales de cette assemblée, et ce qui compte encore aujourd’hui." />
                 <Textarea label="Commentaire" rows={2} value={form.commentaire} onChange={set('commentaire')} />
                 <div className="flex items-center justify-end gap-2">
                   {enregistre && <span className="text-xs text-emerald-700">Enregistré.</span>}

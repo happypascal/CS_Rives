@@ -141,6 +141,8 @@ scripts/
   lire_pdf.swift      COUCHE TEXTE puis OCR français (PDFKit + Vision de macOS). ⚠ Ni tesseract,
                       ni ocrmypdf, ni pdftotext, ni Homebrew sur ce Mac — vérifié. Un seul appel
                       pour tous les fichiers : `swift x.swift` recompile à chaque exécution.
+  corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
+                      type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
   lire_eml.py         LECTURE D'UN .eml (en-têtes, destinataires, corps texte) par le module
                       `email` de Python. ⚠ Un parseur maison rendrait du charabia : en-têtes
                       repliés, noms en RFC 2047, corps multipart en quoted-printable.
@@ -1013,11 +1015,29 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     Dérivé d'un texte parfois océrisé, il peut manquer. **Un document sans texte ne porte aucun tag
     et n'apparaît sous aucun dossier** — l'écran le dit, sinon son absence se lirait « n'en parle pas ».
   - **Filtre à UN SEUL dossier à la fois** : à dix tags, un cumul « ou » ramène tout, un « et » rien.
-- ⚠ **`resume_document` ≠ `document` ≠ `resume`** (060). `document` porte le **scan**, qui fait foi
-  et ne se remplace pas ; `resume_document` un **fichier de synthèse** rédigé après coup, qui se
-  réécrit ; `resume` (text) la synthèse **en quelques lignes** affichée dans la liste. Dans la même
-  colonne, on ne pourrait plus dire lequel est lequel. Chemin `pv-archives/<annee>/` — **aucune
-  policy de Storage à ajouter**, c'est le préfixe déjà en service.
+#### Corrections du 2026-09-28 (migration 061) — ce que je m'étais figuré à tort
+- ⚠ **`annee` EST L'ANNÉE DE L'EXERCICE, PAS DE LA SÉANCE.** La 057 posait une contrainte
+  `pv_archives_annee_coherente` exigeant que la date tombe dans l'année de classement, justifiée
+  ainsi : « un document rangé à un endroit et affiché à un autre ». C'était **supposer** que `annee`
+  désigne la séance. Pascal : « l'AG du 19/1/26 est l'AGO 2025 » — une assemblée tenue en janvier
+  statue sur l'année écoulée. Le classement du lotissement était juste, **la contrainte était
+  fausse** ; la 061 la supprime et **rien ne la remplace** : le décalage est normal, il n'a pas à
+  être signalé.
+- ⚠ **UNE SEULE SYNTHÈSE POUR TOUT LE FONDS**, en tête de la liste — pas une par assemblée. La 060
+  avait ajouté `resume_document` sur une lecture erronée ; la 061 la **retire** (« pas de document
+  de synthèse dans chaque AG »). Elle vit dans `parametres` (clé `pv_archives_synthese`, JSON
+  sérialisé), comme les coordonnées du gestionnaire : une valeur unique, sans table à elle. ⚠ La
+  poser sur une archive obligerait à désigner **laquelle** la porte, et ce serait faux.
+- **`resume` (text) reste et passe EN TÊTE de chaque fiche** : « ce qui a été décidé », avant le
+  document. C'est ce qu'on vient chercher, pas le nombre de pages. ⚠ Quand il manque, l'écran le
+  **dit** — une absence muette se lirait « cette assemblée n'a rien décidé ».
+- ⚠ **LES INTITULÉS NE PORTENT PLUS LA DATE** : « Assemblée générale ordinaire 2024 », pas
+  « Assemblée du 3/09/2016 ». La date figure sur la ligne du dessous — elle y était deux fois, et
+  les titres de longueurs inégales ne s'alignaient pas d'une décennie à l'autre.
+- **Le TYPE ne se déduit pas d'un nom de fichier** : les sigles n'y figurent que depuis 2012, et
+  vingt documents étaient en « type inconnu ». Pascal : « toutes des AGO sauf le 19/6/25 ».
+  `scripts/corriger_pv_archives.mjs` applique la règle, **idempotent**, les exceptions nommées par
+  leur **date de séance** et non par un UUID — pour être relisibles dans dix ans.
 - ⚠ **AUCUNE ENTRÉE DE MENU** (arbitrage Pascal, 2026-09-25 — elle y a figuré une journée). Le fonds
   se rejoint par un **bouton en tête de l'écran Assemblées Générales** : on ne cherche pas le PV de
   1978 en parcourant un menu, on le cherche en pensant aux assemblées. En entrée distincte, il
