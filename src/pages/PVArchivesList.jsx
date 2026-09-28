@@ -7,6 +7,7 @@ import { formatDate } from '../lib/format'
 import {
   TYPE_COURT, TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES,
   grouperParDecennie, anneesCouvertes, intervallesManquants, extrait, PREMIERE_ANNEE,
+  tagsPresents, tagLibelle,
 } from '../lib/pvArchiveLogic'
 
 // ARCHIVES DES PROCÈS-VERBAUX DEPUIS 1955 (migration 057).
@@ -66,6 +67,11 @@ function LigneArchive({ a, requete }) {
             {a.nb_pages != null && <span> · {a.nb_pages} page{a.nb_pages > 1 ? 's' : ''}</span>}
           </p>
           {a.resume && <p className="mt-1 text-sm text-slate-600">{a.resume}</p>}
+          {a.mots_cles?.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {a.mots_cles.map((m) => <Badge key={m} tone="gray">{tagLibelle(m)}</Badge>)}
+            </div>
+          )}
           {morceau && (
             <p className="mt-1 rounded bg-slate-50 px-2 py-1 text-xs italic text-slate-500">{morceau}</p>
           )}
@@ -88,6 +94,10 @@ export default function PVArchivesList() {
   const [resultats, setResultats] = useState(null)
   const [busy, setBusy] = useState(false)
   const [voirTrous, setVoirTrous] = useState(false)
+  // ⚠ UN SEUL dossier à la fois : à dix tags, un cumul « ou » ramènerait presque
+  // tout et un cumul « et » presque rien. La question posée est « que s'est-il
+  // dit sur la plage ? » — elle porte sur un dossier.
+  const [tag, setTag] = useState('')
 
   useEffect(() => {
     repo.listPVArchives()
@@ -112,9 +122,16 @@ export default function PVArchivesList() {
     }
   }
 
+  const dossiers = useMemo(() => tagsPresents(archives), [archives])
   const trous = useMemo(() => intervallesManquants(archives), [archives])
   const couvertes = useMemo(() => anneesCouvertes(archives), [archives])
-  const groupes = useMemo(() => grouperParDecennie(resultats ?? archives), [resultats, archives])
+  // Le filtre par dossier s'applique AUSSI aux résultats de recherche : chercher
+  // « portail » puis restreindre à « Plage » est une question légitime.
+  const visibles = useMemo(() => {
+    const base = resultats ?? archives
+    return tag ? base.filter((a) => (a.mots_cles || []).includes(tag)) : base
+  }, [resultats, archives, tag])
+  const groupes = useMemo(() => grouperParDecennie(visibles), [visibles])
 
   if (loading) return <Spinner />
 
@@ -201,15 +218,53 @@ export default function PVArchivesList() {
             {resultats.length} document{resultats.length > 1 ? 's' : ''} pour « {requete} ».
           </p>
         )}
+
+        {/* ------------------------------------------------ FILTRE PAR DOSSIER
+            ⚠ Les tags sont posés automatiquement à partir du texte, donc de sa
+            qualité : un document sans texte exploitable n'en porte aucun et
+            n'apparaîtra sous aucun dossier. L'écran le dit, sinon son absence
+            se lirait « ce PV n'en parle pas ». */}
+        {dossiers.length > 0 && (
+          <div className="mt-3 border-t border-navy-100 pt-3">
+            <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Filtrer par dossier</p>
+            <div className="flex flex-wrap gap-1.5">
+              {dossiers.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setTag((t) => (t === d ? '' : d))}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    tag === d
+                      ? 'bg-navy-700 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {tagLibelle(d)}
+                </button>
+              ))}
+              {tag && (
+                <button type="button" onClick={() => setTag('')} className="px-2 text-xs text-navy-600 underline">
+                  Tout afficher
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              Les dossiers sont repérés automatiquement dans le texte des procès-verbaux. Un document
+              dont le texte n’a pas pu être lu n’apparaît sous aucun dossier.
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* ---------------------------------------------------------- la liste */}
-      {(resultats ?? archives).length === 0 ? (
+      {visibles.length === 0 ? (
         <EmptyState
-          title={resultats ? 'Aucun document trouvé' : 'Aucune archive'}
-          hint={resultats
-            ? 'Essayez un autre mot : le texte reconnu sur les scans anciens est approximatif.'
-            : 'Les procès-verbaux s’ajoutent par le script d’import, une fois les scans réalisés.'}
+          title={tag ? 'Aucun document pour ce dossier' : resultats ? 'Aucun document trouvé' : 'Aucune archive'}
+          hint={tag
+            ? 'Aucun procès-verbal retenu ne mentionne ce dossier — ou son texte n’a pas pu être lu.'
+            : resultats
+              ? 'Essayez un autre mot : le texte reconnu sur les scans anciens est approximatif.'
+              : 'Les procès-verbaux s’ajoutent par le script d’import, une fois les scans réalisés.'}
         />
       ) : (
         groupes.map((g) => (

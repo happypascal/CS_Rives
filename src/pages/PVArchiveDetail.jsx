@@ -3,10 +3,11 @@ import { Link, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Textarea, Spinner, Badge } from '../components/ui'
+import PiecesJointes from '../components/PiecesJointes'
 import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
-  TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto,
+  TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto, tagLibelle,
 } from '../lib/pvArchiveLogic'
 
 // UN PROCÈS-VERBAL ARCHIVÉ — le document, et ce qu'on sait de lui.
@@ -149,6 +150,41 @@ export default function PVArchiveDetail() {
             </div>
           </Card>
 
+          {/* ------------------------------------------ DOCUMENT DE SYNTHÈSE
+              ⚠ UNE SECONDE PIÈCE, VOLONTAIREMENT DISTINCTE DU SCAN. Le
+              procès-verbal fait foi et ne se remplace pas ; la synthèse est un
+              document DÉRIVÉ, rédigé après coup, qui se réécrit. Les ranger
+              ensemble reviendrait à ne plus pouvoir dire lequel est lequel.
+              ⚠ Le chemin porte l'ANNÉE, comme le scan : `pv-archives/<annee>/`.
+              Aucune policy de Storage à ajouter — c'est le préfixe déjà en
+              service. */}
+          <Card>
+            <CardHeader
+              title="Document de synthèse"
+              subtitle="Une note de lecture rédigée après coup. Elle éclaire le procès-verbal, elle ne le remplace pas."
+            />
+            <div className="p-5">
+              <PiecesJointes
+                scope="pv-archives"
+                entityId={String(pv.annee)}
+                label=""
+                readOnly={!bureau}
+                documents={pv.resume_document ? [pv.resume_document] : []}
+                onChange={async (liste) => {
+                  // ⚠ UN SEUL document : on retient le dernier déposé. La colonne
+                  // est un objet, pas un tableau — deux synthèses pour un même PV
+                  // poseraient la question de laquelle fait référence.
+                  const doc = liste.length ? liste[liste.length - 1] : null
+                  const maj = await repo.updatePVArchive(id, { resume_document: doc })
+                  setPv((p) => ({ ...p, ...maj }))
+                }}
+              />
+              {!pv.resume_document && !bureau && (
+                <p className="text-sm text-slate-500">Aucune synthèse pour l’instant.</p>
+              )}
+            </div>
+          </Card>
+
           {bureau && form && (
             <Card>
               <CardHeader
@@ -264,7 +300,9 @@ export default function PVArchiveDetail() {
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-slate-500">Mots-clés</dt>
                   <dd className="flex flex-wrap gap-1 pt-1">
-                    {pv.mots_cles.map((m) => <Badge key={m} tone="gray">{m}</Badge>)}
+                    {/* Le libellé du vocabulaire, pas la clé technique : « Eaux
+                        pluviales » et non « eaux ». */}
+                    {pv.mots_cles.map((m) => <Badge key={m} tone="gray">{tagLibelle(m)}</Badge>)}
                   </dd>
                 </div>
               )}

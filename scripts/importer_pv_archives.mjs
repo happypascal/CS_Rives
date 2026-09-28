@@ -28,7 +28,7 @@
 //   node scripts/importer_pv_archives.mjs --dossier "<chemin>" --hors-ligne   sans base
 
 import { createClient } from '@supabase/supabase-js'
-import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, stat, access } from 'node:fs/promises'
 import { join, dirname, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
@@ -36,6 +36,7 @@ import { spawn } from 'node:child_process'
 import process from 'node:process'
 import {
   deduireDuNom, intituleAuto, anneesCouvertes, intervallesManquants,
+  tagsDuTexte, tagLibelle, PREMIERE_ANNEE,
 } from '../src/lib/pvArchiveLogic.js'
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -53,6 +54,9 @@ const SANS_TEXTE = process.argv.includes('--sans-texte')
 // bien plus cher que de vérifier sur les cinq premiers. Il lit les fichiers,
 // extrait le texte, dit ce qu'il déduirait — et ne touche à rien.
 const HORS_LIGNE = process.argv.includes('--hors-ligne')
+// ⚠ `--tout` lève le filtre « procès-verbal » : à n'employer que sur un dossier
+// dont on sait qu'il ne contient QUE des PV.
+const TOUT = process.argv.includes('--tout')
 const DOSSIER = arg('--dossier')
 
 if (!DOSSIER) {
@@ -132,14 +136,70 @@ function lireLesPdf(chemins) {
   })
 }
 
+const existe = async (chemin) => { try { await access(chemin); return true } catch { return false } }
+
+// ⚠ UN `.txt` FRÈRE PRIME SUR L'OCR. Les PV de 2019 à 2026 ont été déposés avec
+// une version texte à côté du scan : elle vient d'un traitement de texte ou d'une
+// relecture humaine, là où l'OCR d'un scan invente des caractères. Préférer
+// l'OCR quand le texte exact est disponible serait absurde — et les tags,
+// calculés dessus, s'en ressentiraient.
+async function texteFrere(cheminPdf) {
+  const txt = cheminPdf.replace(/\.pdf$/i, '.txt')
+  if (!(await existe(txt))) return null
+  const contenu = (await readFile(txt, 'utf8')).trim()
+  return contenu || null
+}
+
+// L'ANNÉE DU DOSSIER, en dernier recours.
+//
+// ⚠ Les PV sont rangés par dossier d'année (`1_AG/2013/…`), et certains noms de
+// fichiers ne portent rien d'exploitable. Le dossier est alors la seule source —
+// mais il ne prime JAMAIS sur une date lue dans le nom, qui est plus précise.
+// Une divergence entre les deux est SIGNALÉE : c'est le genre d'écart qui révèle
+// un fichier mal rangé, et le taire reviendrait à le ranger mal une seconde fois.
+function anneeDuDossier(chemin) {
+  const parent = basename(dirname(chemin))
+  const m = parent.match(/^(\d{4})$/)
+  if (!m) return null
+  const a = Number(m[1])
+  return a >= PREMIERE_ANNEE && a <= 2100 ? a : null
+}
+
 // La qualité, DÉDUITE de ce qu'on a réussi à lire — jamais affirmée au-delà.
 // `bonne` est réservé au PDF qui portait DÉJÀ son texte : là seulement, ce qu'on
 // a est exact. Tout ce qui sort d'une reconnaissance est au mieux `moyenne`.
-function qualiteDe(lecture) {
+function qualiteDe(lecture, texteFourni) {
+  // Un `.txt` déposé à côté du scan est du texte EXACT, pas une reconnaissance :
+  // la qualité est bonne, quel que soit l'état du scan.
+  if (texteFourni) return 'bonne'
   if (!lecture || lecture.source === 'aucun' || !lecture.text) return 'illisible_partiel'
   if (lecture.source === 'texte') return 'bonne'
   return 'moyenne'
 }
+
+// ============================================================================
+// QU'EST-CE QU'UN PROCÈS-VERBAL ?
+//
+// ⚠ LE DOSSIER DES AG N'EST PAS UN FONDS DE PV. Lancé sur `1_AG`, l'import
+// ramassait CINQUANTE PDF : convocations, ordres du jour, grands livres
+// comptables, relevés bancaires, procurations, statuts, « demande de tolérance
+// de passage ». Les verser dans les archives de procès-verbaux aurait noyé
+// vingt-quatre délibérations sous vingt-six pièces qui n'en sont pas — et la
+// frise des années couvertes aurait annoncé un fonds complet là où il ne l'est
+// pas.
+//
+// La règle d'inclusion est donc EXPLICITE : le nom doit porter un « PV ».
+// ⚠ « projet PV.pdf » est exclu par le second filtre : un projet de PV n'est
+// pas un procès-verbal, il n'a été ni lu ni approuvé. C'est exactement le genre
+// de document dont la présence dans un registre ferait croire à une
+// délibération qui n'a pas eu lieu.
+//
+// Tout ce qui est écarté est NOMMÉ dans le rapport : une règle qui exclut en
+// silence finit par exclure ce qu'on cherchait.
+const EST_UN_PV = /(?:^|[^a-z])pv(?![a-z])/i
+const PAS_UN_PV = /projet|brouillon|modele/i
+
+const estProcesVerbal = (nom) => EST_UN_PV.test(nom) && !PAS_UN_PV.test(nom)
 
 async function pdfsDu(dossier) {
   const out = []
@@ -169,13 +229,17 @@ async function main() {
   const infos = await stat(DOSSIER).catch(() => null)
   if (!infos?.isDirectory()) throw new Error(`Dossier introuvable : ${DOSSIER}`)
 
-  const fichiers = await pdfsDu(DOSSIER)
+  const tousPdf = await pdfsDu(DOSSIER)
+  const fichiers = TOUT ? tousPdf : tousPdf.filter((c) => estProcesVerbal(basename(c)))
+  const ecartes = tousPdf.filter((c) => !fichiers.includes(c))
   if (!fichiers.length) {
-    W('Aucun fichier PDF dans ce dossier.')
+    W(`Aucun procès-verbal parmi les ${tousPdf.length} PDF de ce dossier.`)
+    W('')
+    W('Un fichier est retenu si son nom porte « PV » et ne porte ni « projet », ni « brouillon », ni « modèle`.')
     await ecrireRapport()
     return
   }
-  W(`${fichiers.length} fichier(s) PDF trouvé(s).`)
+  W(`${fichiers.length} procès-verbal(aux) retenu(s) sur ${tousPdf.length} PDF.`)
   W('')
 
   // ------------------------------------------------- 1. ce qui est déjà au fonds
@@ -203,7 +267,7 @@ async function main() {
   for (const chemin of fichiers) {
     const contenu = await readFile(chemin)
     const sha256 = createHash('sha256').update(contenu).digest('hex')
-    candidats.push({ chemin, nom: basename(chemin), contenu, sha256 })
+    candidats.push({ chemin, nom: basename(chemin), contenu, sha256, texteFrere: await texteFrere(chemin) })
   }
 
   // ⚠ Deux fichiers IDENTIQUES dans le même lot (un scan rangé deux fois) : le
@@ -224,10 +288,14 @@ async function main() {
 
   // ------------------------------------------------------------ 3. le texte
   let lectures = new Map()
-  if (!SANS_TEXTE && nouveaux.length) {
-    W('Extraction du texte (couche texte du PDF, reconnaissance de caractères sinon)…')
+  // ⚠ Seuls les fichiers SANS `.txt` frère passent par la reconnaissance : sur
+  // vingt-quatre PV dont huit ont déjà leur texte, c'est un tiers du temps
+  // d'OCR économisé, et surtout aucun risque d'écraser du texte exact.
+  const aOcr = nouveaux.filter((c) => !c.texteFrere)
+  if (!SANS_TEXTE && aOcr.length) {
+    W(`Extraction du texte : ${nouveaux.length - aOcr.length} fichier(s) ont un .txt joint, ${aOcr.length} passent par la reconnaissance de caractères…`)
     W('')
-    const r = await lireLesPdf(nouveaux.map((c) => c.chemin))
+    const r = await lireLesPdf(aOcr.map((c) => c.chemin))
     lectures = r.resultats
     if (!r.ok) {
       soucis.push(`Extraction du texte indisponible (${r.raison}). Les documents sont importés SANS texte cherchable — relancez l’import plus tard sur les mêmes fichiers après correction, ils seront reconnus comme déjà présents et il faudra compléter à la main.`)
@@ -239,43 +307,66 @@ async function main() {
   const sansDate = []
   const sansType = []
   const sansTexte = []
+  const sansTag = []
   for (const c of nouveaux) {
     const deduit = deduireDuNom(c.nom)
     const lecture = lectures.get(c.chemin)
-    const texte = lecture?.text?.trim() || null
-    const qualite = SANS_TEXTE ? null : qualiteDe(lecture)
+    // ⚠ Le `.txt` frère d'abord, l'OCR ensuite (cf. `texteFrere`).
+    const fourni = c.texteFrere
+    const texte = fourni || lecture?.text?.trim() || null
+    const qualite = SANS_TEXTE ? null : qualiteDe(lecture, fourni)
 
-    if (deduit.annee == null) {
+    // L'année du DOSSIER ne sert que si le nom n'a rien donné ; une divergence
+    // entre les deux est signalée, jamais arbitrée en silence.
+    const anneeDossier = anneeDuDossier(c.chemin)
+    const annee = deduit.annee ?? anneeDossier
+    if (deduit.annee != null && anneeDossier != null && deduit.annee !== anneeDossier) {
+      soucis.push(`\`${c.nom}\` : le nom du fichier dit ${deduit.annee}, le dossier dit ${anneeDossier}. Le NOM a été retenu — vérifiez que le fichier est au bon endroit.`)
+    }
+
+    if (annee == null) {
       // ⚠ `annee` est NOT NULL en base : sans année, on ne peut pas ranger le
       // document, et on ne l'invente pas. Il est écarté et nommé dans le
       // rapport — renommer le fichier suffit à le rattraper au prochain import.
-      soucis.push(`\`${c.nom}\` : aucune année lisible dans le nom du fichier. Document NON importé — renommez-le \`AAAA-MM-JJ_AGO.pdf\` ou \`AAAA_….pdf\`.`)
+      soucis.push(`\`${c.nom}\` : aucune année lisible, ni dans le nom du fichier ni dans le dossier. Document NON importé.`)
       continue
     }
     if (!deduit.date_ag) sansDate.push(c.nom)
     if (!deduit.type_ag) sansType.push(c.nom)
     if (!texte) sansTexte.push(c.nom)
 
-    const chemin = `pv-archives/${deduit.annee}/${randomUUID()}.pdf`
+    // ⚠ LES TAGS SONT DÉRIVÉS DU TEXTE, donc de sa qualité. Un document sans
+    // texte n'a aucun tag — ce n'est pas qu'il ne parle de rien, c'est qu'on ne
+    // sait pas. Les deux cas sont distingués dans le rapport.
+    const tags = texte ? tagsDuTexte(texte) : []
+    if (texte && !tags.length) sansTag.push(c.nom)
+
+    const chemin = `pv-archives/${annee}/${randomUUID()}.pdf`
     aEcrire.push({
       candidat: c,
       cheminStorage: chemin,
+      tags,
       ligne: {
         date_ag: deduit.date_ag,
-        annee: deduit.annee,
+        annee,
         // ⚠ `inconnu` plutôt que null quand le nom ne dit rien : la valeur dit
         // « on a regardé et on ne sait pas », un null dirait « on n'a pas rempli ».
         type_ag: deduit.type_ag || 'inconnu',
-        intitule: intituleAuto(deduit, deduit.intitule),
+        intitule: intituleAuto({ ...deduit, annee }, deduit.intitule),
         resume: null,
-        mots_cles: null,
+        mots_cles: tags.length ? tags : null,
         document: {
           path: chemin, name: c.nom, type: 'application/pdf',
           size: c.contenu.length, sha256: c.sha256,
         },
         nb_pages: lecture?.pages ?? null,
         texte_ocr: texte,
-        source: `Scan importé depuis ${basename(DOSSIER)}`,
+        // La provenance dit d'où vient le TEXTE, pas seulement le fichier : c'est
+        // ce qui permet de savoir, dans deux ans, si les tags reposent sur une
+        // transcription exacte ou sur une reconnaissance approximative.
+        source: fourni
+          ? `Scan importé depuis ${basename(DOSSIER)} — texte repris du fichier .txt joint`
+          : `Scan importé depuis ${basename(DOSSIER)}`,
         qualite,
         commentaire: null,
       },
@@ -347,12 +438,75 @@ async function main() {
     for (const n of sansType) W(`- \`${n}\``)
     W('')
   }
+  // ⚠ LE RÉCAPITULATIF DES TAGS EST LA SORTIE À RELIRE. Un tag est dérivé d'un
+  // texte parfois océrisé : c'est ici qu'on voit s'il en manque ou s'il y en a
+  // de trop, avant que le filtre de l'écran ne s'appuie dessus.
+  if (aEcrire.length) {
+    const compte = new Map()
+    for (const a2 of aEcrire) for (const t of a2.tags) compte.set(t, (compte.get(t) || 0) + 1)
+    W('## Dossiers repérés (tags)')
+    W('')
+    if (!compte.size) W('Aucun — aucun texte exploitable.')
+    else {
+      W('| Dossier | Documents |')
+      W('|---|---|')
+      for (const [t, n] of [...compte.entries()].sort((x, y) => y[1] - x[1])) W(`| ${tagLibelle(t)} | ${n} |`)
+    }
+    W('')
+    W('| Document | Dossiers |')
+    W('|---|---|')
+    for (const a2 of aEcrire) {
+      W(`| ${a2.candidat.nom} | ${a2.tags.map(tagLibelle).join(', ') || '—'} |`)
+    }
+    W('')
+  }
+  if (sansTag.length) {
+    W('## Aucun dossier repéré')
+    W('')
+    W('Ces documents ont un texte lisible, mais aucun des dossiers connus n’y est mentionné.')
+    W('À vérifier : soit le procès-verbal traite d’autre chose, soit le vocabulaire est à compléter.')
+    W('')
+    for (const n of sansTag) W(`- \`${n}\``)
+    W('')
+  }
   if (sansTexte.length) {
     W('## Sans texte cherchable')
     W('')
     W('Ces documents sont au fonds et consultables, mais la recherche plein texte ne les trouvera pas.')
     W('')
     for (const n of sansTexte) W(`- \`${n}\``)
+    W('')
+  }
+
+  if (ecartes.length) {
+    W('## Écartés — pas des procès-verbaux')
+    W('')
+    W('Retenus : les fichiers dont le nom porte « PV », sauf projets et brouillons.')
+    W('Relancez avec `--tout` si l’un d’eux devait entrer au fonds.')
+    W('')
+    for (const c of ecartes) W(`- \`${basename(c)}\``)
+    W('')
+  }
+
+  // ⚠ PLUSIEURS DOCUMENTS POUR UNE MÊME ANNÉE : ce n'est pas forcément une
+  // erreur — une année peut avoir une AGO et une AGE — mais c'est souvent deux
+  // versions du même scan. On les nomme plutôt que d'en écarter un : supprimer
+  // un doublon depuis la fiche prend un clic, retrouver un PV manquant prend une
+  // fouille dans le carton.
+  const parAnnee = new Map()
+  for (const a2 of aEcrire) {
+    if (!parAnnee.has(a2.ligne.annee)) parAnnee.set(a2.ligne.annee, [])
+    parAnnee.get(a2.ligne.annee).push(a2.candidat.nom)
+  }
+  const multiples = [...parAnnee.entries()].filter(([, n]) => n.length > 1)
+  if (multiples.length) {
+    W('## Plusieurs documents pour la même année')
+    W('')
+    W('À vérifier : une AGO et une AGE, ou deux versions du même procès-verbal ?')
+    W('')
+    for (const [an, noms] of multiples.sort((x, y) => x[0] - y[0])) {
+      W(`- **${an}** : ${noms.join(' · ')}`)
+    }
     W('')
   }
 

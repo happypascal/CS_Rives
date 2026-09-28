@@ -989,6 +989,35 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   dans la convention elle-même. Défaut trouvé **en éprouvant** la fonction, pas en la relisant.
 - **La frise des années manquantes est le cœur de l'écran**, pas une décoration : une archive qui
   montre seulement ce qu'elle contient laisse croire qu'elle est complète.
+
+#### Tags et document de synthèse (2026-09-28, migration 060)
+- ⚠ **LE DOSSIER DES AG N'EST PAS UN FONDS DE PV.** Lancé sur `1_AG`, l'import ramassait **50 PDF** :
+  convocations, grands livres, relevés bancaires, procurations, statuts. Règle d'inclusion
+  **explicite** — le nom doit porter « PV », et pas « projet » (un projet de PV n'a été ni lu ni
+  approuvé). **27 retenus**, les 23 écartés sont NOMMÉS au rapport. `--tout` lève le filtre.
+- ⚠ **QUATRE ÉCRITURES DE DATE** dans les fichiers réels (`2003_06_28`, `24.10.2020`, `18-09-2017`,
+  `29062013`), là où la spec n'en prévoyait qu'une. Sur huit chiffres collés, c'est la **validité**
+  qui tranche AAAAMMJJ / JJMMAAAA — et si les deux tiennent, on garde l'année seule.
+- **L'année du DOSSIER ne sert qu'en dernier recours** et ne prime jamais sur une date lue dans le
+  nom. Une divergence est **signalée** : c'est ce qui a révélé le PV 2018 rangé sous 2017.
+- ⚠ **UN `.txt` FRÈRE PRIME SUR L'OCR** : les PV 2019→2026 en ont un. Texte exact contre
+  reconnaissance approximative — et les tags en dépendent. 10 fichiers sur 27, autant d'OCR évité.
+- ⚠ **LES TAGS DOIVENT DISCRIMINER, SINON ILS NE SERVENT À RIEN.** Premier jet : « Syndic »,
+  « Comptes », « Travaux », « Conseil syndical » s'allumaient sur **27 documents sur 27**, même en
+  exigeant trois occurrences. Ce ne sont pas des dossiers du lotissement, c'est **l'ordre du jour de
+  toute AG**. Retirés. Le vocabulaire restant sépare vraiment (18 → 1 document).
+  - Deux faux positifs corrigés par la **frontière de mot** : « syndic » s'allumait sur
+    « conseil **syndic**al », « charges » sur « cahier des **charges** ». ⚠ Pas de `includes`.
+  - **Seuil de 3 occurrences** (`SEUIL_TAG`) : une mention de passage n'est pas un dossier traité.
+  - ⚠ **Un tag n'affirme rien sur le contenu** : il dit « ce document mentionne ce dossier ».
+    Dérivé d'un texte parfois océrisé, il peut manquer. **Un document sans texte ne porte aucun tag
+    et n'apparaît sous aucun dossier** — l'écran le dit, sinon son absence se lirait « n'en parle pas ».
+  - **Filtre à UN SEUL dossier à la fois** : à dix tags, un cumul « ou » ramène tout, un « et » rien.
+- ⚠ **`resume_document` ≠ `document` ≠ `resume`** (060). `document` porte le **scan**, qui fait foi
+  et ne se remplace pas ; `resume_document` un **fichier de synthèse** rédigé après coup, qui se
+  réécrit ; `resume` (text) la synthèse **en quelques lignes** affichée dans la liste. Dans la même
+  colonne, on ne pourrait plus dire lequel est lequel. Chemin `pv-archives/<annee>/` — **aucune
+  policy de Storage à ajouter**, c'est le préfixe déjà en service.
 - ⚠ **AUCUNE ENTRÉE DE MENU** (arbitrage Pascal, 2026-09-25 — elle y a figuré une journée). Le fonds
   se rejoint par un **bouton en tête de l'écran Assemblées Générales** : on ne cherche pas le PV de
   1978 en parcourant un menu, on le cherche en pensant aux assemblées. En entrée distincte, il

@@ -816,6 +816,13 @@ create table if not exists pv_archives (
   -- `documents_brouillon_prive` ne vise que le préfixe `decisions`, et
   -- `documents_insert_membre` ouvre à tout membre actif.
   document      jsonb not null,
+  -- ⚠ SECONDE PIÈCE, VOLONTAIREMENT DISTINCTE (migration 060) : `document` porte
+  -- le SCAN, qui fait foi et ne se remplace pas ; celle-ci porte un document de
+  -- SYNTHÈSE rédigé après coup, qui se réécrit. Dans la même colonne, on ne
+  -- pourrait plus garantir lequel est lequel.
+  -- ⚠ À ne pas confondre avec `resume` (text) ci-dessus : l'un est la synthèse
+  -- en quelques lignes affichée dans la liste, l'autre le fichier qu'on ouvre.
+  resume_document jsonb,
   nb_pages      integer,
   texte_ocr     text,
   source        text,
