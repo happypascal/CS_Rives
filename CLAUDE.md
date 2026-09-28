@@ -1085,8 +1085,11 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   défauts de l'analyse : tous les chiffres d'une cellule étaient collés (« 75 540 sur 104 646 » →
   75540104646) et le titre de la résolution était aplati avec son détail. **Sans ce recoupement,
   rien ne l'aurait signalé.**
-- **Deux champs restent vides** : `scrutateur` et `unite_vote` ne figurent que sur les résumés PDF,
-  pas dans le registre consolidé. **On ne les déduit pas** — ils se saisissent sur la fiche.
+- ⚠ **DEUX SOURCES, CHACUNE APPORTANT CE QUE L'AUTRE N'A PAS.** Le registre `.docx` chiffre les
+  votes ; `scripts/data/resumes_pv_archives_*.json` porte le **scrutateur**, l'**unité de vote** et
+  les **notes** — trois rubriques absentes du registre. **Le registre reste prioritaire** sur ce que
+  les deux disent : deux sources qui se contredisent doivent avoir un arbitre désigné d'avance, et
+  une divergence d'exercice est **signalée**, jamais arbitrée en silence.
 - ⚠ **La mention « seul le procès-verbal fait foi » reste sous le tableau**, quoi qu'il arrive à
   l'écran : un résumé est une lecture, le procès-verbal est l'acte.
 

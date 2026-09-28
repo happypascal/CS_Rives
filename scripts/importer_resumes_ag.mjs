@@ -38,6 +38,8 @@ const arg = (nom) => {
   return i > -1 ? process.argv[i + 1] : null
 }
 const GO = process.argv.includes('--go')
+// Le fichier produit avec les résumés, qui complète le registre consolidé.
+const FICHIER_RESUMES = 'resumes_pv_archives_2026-09-28.json'
 const REGISTRE = arg('--registre')
   || '/Users/pfa/Documents/_0_Privé/Maison/Nernier/_1_lotissement/1_AG/Registre_decisions_AG_Rives_1988-2026.docx'
 
@@ -75,6 +77,24 @@ async function main() {
   W(`> Registre : \`${REGISTRE}\``)
   if (!GO) W('> ⚠ **Aucune écriture.** Relancer avec `--go` pour appliquer.')
   W('')
+
+  // ⚠ DEUX SOURCES, ET CHACUNE APPORTE CE QUE L'AUTRE N'A PAS. Le registre
+  // consolidé `.docx` porte le détail des votes (pour / contre / abstention,
+  // assiette, parfois les votants) ; le fichier `resumes_pv_archives_*.json`,
+  // produit avec les résumés, porte le SCRUTATEUR, l'UNITÉ DE VOTE et les NOTES
+  // — trois rubriques absentes du registre. Les croiser vaut mieux que de
+  // laisser trois champs vides en disant qu'on ne les déduit pas.
+  //
+  // ⚠ LE REGISTRE RESTE PRIORITAIRE sur ce qu'ils disent tous les deux : c'est
+  // lui qui chiffre les voix, et deux sources qui se contredisent doivent avoir
+  // un arbitre désigné d'avance.
+  const complements = new Map()
+  try {
+    const brut = await readFile(join(RACINE, 'scripts', 'data', FICHIER_RESUMES), 'utf8')
+    for (const r of JSON.parse(brut)) complements.set(r.date_ag, r)
+  } catch {
+    soucis.push(`Fichier de résumés \`${FICHIER_RESUMES}\` absent ou illisible : scrutateur, unité de vote et notes ne seront pas renseignés.`)
+  }
 
   const { stdout } = await run('/usr/bin/python3',
     [join(RACINE, 'scripts', 'lire_registre_ag.py'), REGISTRE], { maxBuffer: 32 * 1024 * 1024 })
@@ -138,6 +158,23 @@ async function main() {
     // La date de séance n'est POSÉE que si elle manquait : le registre ne doit
     // pas réécrire une date déjà constatée sur le document lui-même.
     if (!cible.date_ag) patch.date_ag = a.date_ag
+
+    // Ce que seul le fichier de résumés connaît.
+    const c = complements.get(a.date_ag)
+    if (c) {
+      // ⚠ « — » signifie « aucun », pas « inconnu » : on l'écrit tel quel plutôt
+      // que de laisser un champ vide qui se lirait « pas encore renseigné ».
+      if (c.scrutateur) patch.scrutateur = c.scrutateur
+      if (c.unite_des_votes) patch.unite_vote = c.unite_des_votes
+      // La note est un avertissement sur le document (« la page relatant ce vote
+      // manque »), pas un résumé des décisions : elle va au commentaire.
+      if (c.note) patch.commentaire = c.note
+      // ⚠ L'exercice est CONFIRMÉ, jamais imposé : si les deux sources
+      // divergeaient, on le signalerait plutôt que d'en choisir une.
+      if (c.annee_exercice && c.annee_exercice !== cible.annee) {
+        soucis.push(`${a.date_ag} : le fichier de résumés dit exercice ${c.annee_exercice}, le fonds dit ${cible.annee}. Rien n'a été changé.`)
+      }
+    }
     aEcrire.push({ cible, patch, source: a })
   }
 
@@ -168,14 +205,12 @@ async function main() {
     W('')
   }
 
-  // ------------------------------------------- 3. ce que le registre ne dit pas
-  // ⚠ Le scrutateur et l'unité de vote figurent sur les résumés PDF mais PAS
-  // dans le registre consolidé. On ne les invente pas : les champs restent
-  // vides et se saisissent sur la fiche.
-  W('## Champs non renseignés')
+  // ------------------------------------------- 3. ce que chaque source apporte
+  const avecComplement = aEcrire.filter((e) => complements.has(e.source.date_ag)).length
+  W('## Sources')
   W('')
-  W('Le registre consolidé ne porte ni le **scrutateur** ni l’**unité de vote** ; les résumés PDF, si.')
-  W('Ces deux champs restent vides et se saisissent à la main sur la fiche — on ne les déduit pas.')
+  W(`- Registre consolidé : votes chiffrés, président de séance, quorum, syndic — ${aEcrire.length} assemblée(s).`)
+  W(`- Fichier de résumés : scrutateur, unité de vote, notes — ${avecComplement} assemblée(s).`)
   W('')
 
   if (soucis.length) {
