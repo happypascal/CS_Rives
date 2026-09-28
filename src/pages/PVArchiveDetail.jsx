@@ -20,6 +20,86 @@ import {
 const TYPES = ['AGO', 'AGE', 'reunion_syndicat', 'inconnu']
 const QUALITES = ['bonne', 'moyenne', 'illisible_partiel']
 
+/** Une rubrique d'en-tête : le titre, puis la valeur — ou un tiret assumé. */
+function Rubrique({ titre, valeur }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{titre}</p>
+      <p className="mt-0.5 text-sm text-slate-700">
+        {valeur || <span className="text-slate-400">—</span>}
+      </p>
+    </div>
+  )
+}
+
+// LE TABLEAU DES RÉSOLUTIONS, dans la forme du résumé.
+//
+// ⚠ LES VOIX NE SONT PAS RECALCULÉES, ni totalisées, ni converties en
+// pourcentage. L'unité change avec les décennies — lots avant 2003, voix sur
+// 5 100 ensuite, m² sur 104 646 depuis 2026 — et un pourcentage sans assiette
+// serait faux. On affiche le texte tel que le procès-verbal l'exprime, y compris
+// « non chiffré ».
+const TON_RESULTAT = {
+  'Adoptée': 'text-emerald-700',
+  'Adoptée (unanimité)': 'text-emerald-700',
+  'Rejetée': 'text-red-700',
+  'Rejetée (unanimité)': 'text-red-700',
+  'Non votée': 'text-slate-500',
+  'Reportée': 'text-amber-700',
+  'Information': 'text-slate-500',
+}
+
+function Resolutions({ liste, unite }) {
+  return (
+    <div className="mt-3">
+      {unite && <p className="mb-1 text-xs text-slate-500">{unite}</p>}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-navy-100 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="py-2 pr-3 font-medium">N°</th>
+              <th className="py-2 pr-3 font-medium">Objet</th>
+              <th className="py-2 pr-3 font-medium">Résultat</th>
+              <th className="py-2 font-medium">Voix</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-navy-50">
+            {liste.map((r, i) => (
+              <tr key={`${r.numero}-${i}`} className="align-top">
+                <td className="whitespace-nowrap py-2 pr-3 text-xs text-slate-500">{r.numero}</td>
+                <td className="py-2 pr-3 text-slate-700">
+                  {r.objet}
+                  {/* Le détail est replié dans un titre : le tableau doit rester
+                      lisible d'un coup d'œil, et certains objets font dix lignes. */}
+                  {r.detail && (
+                    <span className="mt-0.5 block text-xs text-slate-400" title={r.detail}>
+                      {r.detail.length > 150 ? `${r.detail.slice(0, 150)}…` : r.detail}
+                    </span>
+                  )}
+                </td>
+                <td className={`whitespace-nowrap py-2 pr-3 text-xs font-medium ${TON_RESULTAT[r.resultat] || 'text-slate-600'}`}>
+                  {r.resultat}
+                </td>
+                <td className="py-2 text-xs text-slate-500">
+                  {r.voix_texte?.pour && r.voix_texte.pour !== '—' ? (
+                    <>
+                      <span className="block">Pour {r.voix_texte.pour}</span>
+                      <span className="block">Contre {r.voix_texte.contre}</span>
+                      <span className="block">Abst. {r.voix_texte.abstention}</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function PVArchiveDetail() {
   const { id } = useParams()
   const { isAdmin, isSecretaire } = useAuth()
@@ -131,15 +211,38 @@ export default function PVArchiveDetail() {
           en pleine largeur.
           ⚠ Quand il manque, on le dit plutôt que de ne rien afficher : une
           absence muette se lirait « cette assemblée n'a rien décidé ». */}
-      <Card className="mb-6 p-5">
-        <p className="text-xs uppercase tracking-wide text-slate-500">Ce qui a été décidé</p>
-        {pv.resume ? (
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{pv.resume}</p>
-        ) : (
-          <p className="mt-1 text-sm text-slate-400">
-            Résumé à rédiger. Le procès-verbal ci-dessous reste consultable en attendant.
-          </p>
-        )}
+      <Card className="mb-6 overflow-hidden">
+        {/* Les quatre rubriques d'en-tête du résumé, dans son ordre. */}
+        <div className="grid gap-4 border-b border-navy-100 px-5 py-4 sm:grid-cols-4">
+          <Rubrique titre="Président de séance" valeur={pv.president_seance} />
+          <Rubrique titre="Scrutateur" valeur={pv.scrutateur} />
+          <Rubrique titre="Secrétaire" valeur={pv.syndic} />
+          <Rubrique titre="Présents ou représentés" valeur={pv.presents_representes} />
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Ce qui a été décidé</p>
+          {pv.resume && (
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{pv.resume}</p>
+          )}
+          {pv.resolutions?.length > 0 ? (
+            <Resolutions liste={pv.resolutions} unite={pv.unite_vote} />
+          ) : !pv.resume && (
+            <p className="mt-1 text-sm text-slate-400">
+              Résumé à rédiger. Le procès-verbal ci-dessous reste consultable en attendant.
+            </p>
+          )}
+          {/* ⚠ CETTE MENTION RESTE, quoi qu'il arrive au reste de l'écran : un
+              résumé est une lecture, le procès-verbal est l'acte. Celui qui cite
+              le premier sans avoir ouvert le second se trompera un jour. */}
+          {pv.resolutions?.length > 0 && (
+            <p className="mt-3 text-xs text-slate-400">
+              Résumé{pv.resume_etabli_le ? ` établi le ${formatDate(pv.resume_etabli_le)}` : ''} d’après le
+              procès-verbal ; <strong>seul le procès-verbal fait foi</strong>. Élection du bureau, comptes,
+              quitus, budgets courants et désignation du syndic non repris.
+            </p>
+          )}
+        </div>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">

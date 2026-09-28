@@ -1,0 +1,1258 @@
+[
+ {
+  "date_ag": "1988-07-02",
+  "annee_exercice": 1988,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 2 juillet 1988",
+  "president": "M. Jean-Jacques Mey",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "41 lots sur 49",
+  "unite_des_votes": "Votes en lots",
+  "note": "La page du procès-verbal relatant ce vote manque dans le fichier conservé.",
+  "resolutions": [
+   {
+    "numero": "V (IV de la convocation)",
+    "sujet": "Loi du 6 janvier 1986 : maintien des règles du lotissement",
+    "decision": "Inconnu (page manquante)",
+    "resultat_vote": "Non chiffré au PV"
+   }
+  ]
+ },
+ {
+  "date_ag": "2003-06-28",
+  "annee_exercice": 2003,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2003",
+  "president": "M. Gachoud",
+  "scrutateur": "—",
+  "secretaire_foncia": "Foncia Moynat Pillet",
+  "quorum": "37 copropriétaires sur 49",
+  "unite_des_votes": "Votes en fraction de 45 (tel qu’au PV)",
+  "note": "Votes exprimés en fraction de 45 au procès-verbal, sans précision d'unité.",
+  "resolutions": [
+   {
+    "numero": "6",
+    "sujet": "Refus de la fermeture automatique des deux accès",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 27/45 · Contre 13/45"
+   },
+   {
+    "numero": "7",
+    "sujet": "Pose de 2 portails manuels chemin de Messery",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 23/45 · Contre 11/45"
+   },
+   {
+    "numero": "8",
+    "sujet": "Remplacement des miroirs cassés par acier poli",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "8",
+    "sujet": "Chiffrage d'une surveillance privée du lotissement",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "8",
+    "sujet": "Commission des sages : composition et procédure arbres",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "8",
+    "sujet": "Incohérence du cahier des charges sur arbres hors zones",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "8",
+    "sujet": "Eaux pluviales : courrier commune et contrat d'entretien",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2004-06-26",
+  "annee_exercice": 2004,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 26 juin 2004",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Sinègre (Foncia Moynat Pillet)",
+  "quorum": "40 copropriétaires, 4 100 voix sur 5 100 (80 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "5",
+    "sujet": "Ligne travaux de 500 € au budget 2005/2006",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 100 (unanimité)"
+   },
+   {
+    "numero": "7",
+    "sujet": "Autorisation à la Mairie : panneaux d'affichage municipaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 500 · Contre 1 200 · Abst. 400"
+   },
+   {
+    "numero": "8.1",
+    "sujet": "Remplacement des 3 miroirs brisés par modèles incassables",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 200 (unanimité)"
+   },
+   {
+    "numero": "8.2",
+    "sujet": "Financement des miroirs : appel 100 % au 1er juillet 2004",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 200 (unanimité)"
+   },
+   {
+    "numero": "9 A",
+    "sujet": "Avenant article 15 (hauteur des arbres) — commission des sages",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 200 · Contre 4 000"
+   },
+   {
+    "numero": "9 B",
+    "sujet": "Modificatif article 15 présenté par le conseil syndical",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 900 · Contre 3 300"
+   },
+   {
+    "numero": "12",
+    "sujet": "Circulation et stationnement : poteaux STOP, rochers",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2005-06-18",
+  "annee_exercice": 2005,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 18 juin 2005",
+  "president": "M. Jean-Bernard Breux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "40 copropriétaires, 4 081 voix sur 5 100 (80 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "6.1",
+    "sujet": "Provision spéciale pour travaux d'entretien",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "6.2",
+    "sujet": "Placement des fonds de la provision spéciale",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "7",
+    "sujet": "Autorisation permanente police et gendarmerie",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9.1",
+    "sujet": "Article 12 bis cahier des charges : haies vives",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "9.2",
+    "sujet": "Article 15 bis : hauteur plantations zones A et B",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "9.3",
+    "sujet": "Article 15 ter : dérogation hauteur si vue inchangée",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "10",
+    "sujet": "Modification article 15 proposée par le CS en 2004",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "Annexe",
+    "sujet": "Portails, stationnement sauvage, rampe bateau",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2006-06-24",
+  "annee_exercice": 2006,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 juin 2006",
+  "president": "M. Jean-Bernard Breux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "1",
+    "sujet": "Appel d'offres assurance confié au conseil syndical",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "6",
+    "sujet": "Clause d'aggravation des charges",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2007-06-30",
+  "annee_exercice": 2007,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2007",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Jean-Bernard Breux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "7",
+    "sujet": "Opportunité de fermer les portails du lotissement",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 700"
+   },
+   {
+    "numero": "Divers",
+    "sujet": "Fonds de réserve",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2008-06-28",
+  "annee_exercice": 2008,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2008",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "36 copropriétaires, 3 700 voix sur 5 100 (73 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "1",
+    "sujet": "Nettoyage du réseau d'eaux pluviales tous les trois ans",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "7",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "8",
+    "sujet": "Placement de la provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Fermeture du lotissement / sécurisation de la résidence",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "10",
+    "sujet": "Déplacement de la borne EDF allée de Rive",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 500 · Abst. 200"
+   },
+   {
+    "numero": "11",
+    "sujet": "Évacuation des épaves et encombrants sur la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "13",
+    "sujet": "État des lieux photographique avant travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   }
+  ]
+ },
+ {
+  "date_ag": "2009-06-27",
+  "annee_exercice": 2009,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juin 2009",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Jean-Claude Pargoux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "8",
+    "sujet": "Constat d'huissier obligatoire avant travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "9",
+    "sujet": "Distributeurs de sachets pour chiens aux entrées",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 2 819 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2011-06-25",
+  "annee_exercice": 2011,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 25 juin 2011",
+  "president": "M. Antoine Maurice (SCI La Boussole)",
+  "scrutateur": "M. Jean-Claude Pargoux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "30 copropriétaires, 3 019 voix sur 5 100 (59 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Boute-roue SCI LE CLAPOTIS au 24 allée de Rive",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Abst. 200"
+   },
+   {
+    "numero": "10",
+    "sujet": "Devis de luminaires allées de Rives et Précettes",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2012-06-30",
+  "annee_exercice": 2012,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2012",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "32 copropriétaires, 3 300 voix sur 5 100 (65 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Réparation du portail côté Nernier",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 300 (unanimité)"
+   },
+   {
+    "numero": "11",
+    "sujet": "Éclairage des allées de Rives et Précettes (étude Labevière)",
+    "decision": "Rejetée",
+    "resultat_vote": "Contre 3 300"
+   }
+  ]
+ },
+ {
+  "date_ag": "2013-06-29",
+  "annee_exercice": 2013,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juin 2013",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "23 copropriétaires, 2 381 voix sur 5 100 (47 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Demande au SIVOM de prise en charge réparation canalisation EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "10",
+    "sujet": "Placement de la provision spéciale sur livret A",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "11",
+    "sujet": "Réfection de l'enrobé à l'entrée côté allée de Rives",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "12",
+    "sujet": "Taille des végétaux privatifs débordant sur les communs",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2014-06-28",
+  "annee_exercice": 2014,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2014",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Bernard Privat",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "24 copropriétaires, 2 419 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "12",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "13",
+    "sujet": "Placement de la provision spéciale",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2015-06-27",
+  "annee_exercice": 2015,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juin 2015",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "23 copropriétaires, 2 400 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Panneaux en bord de lac : plage privée et passage piétons",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 400 (unanimité)"
+   },
+   {
+    "numero": "14",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Contre 2 400"
+   },
+   {
+    "numero": "15",
+    "sujet": "Ouverture d'un livret A",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2016-09-03",
+  "annee_exercice": 2016,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 3 septembre 2016",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Résolution 14 : déclarée adoptée à l'article 25 avec 2 500 voix, alors que 2 551 étaient nécessaires.",
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Assignation de la SCI VIOLETTE (article 15 additif)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 000 · Contre 200 · Abst. 200"
+   },
+   {
+    "numero": "14",
+    "sujet": "Constitution d'une provision spéciale de 10 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 500 · Contre 300 · Abst. 600"
+   },
+   {
+    "numero": "15",
+    "sujet": "Ouverture d'un livret A pour la provision spéciale",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 400 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2017-09-18",
+  "annee_exercice": 2017,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 18 septembre 2017",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice",
+  "secretaire_foncia": "M. Erondel (Foncia Maison de l’Immobilier)",
+  "quorum": "19 copropriétaires, 1 900 voix sur 5 100 (37 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Remboursement de la provision spéciale existante",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Cotisation fonds de travaux 2017/2018",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Cotisation fonds de travaux 2018/2019 : 5 000 €/an",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2018-06-23",
+  "annee_exercice": 2018,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 23 juin 2018",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Bernard Privat",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Maison de l’Immobilier)",
+  "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Cotisation fonds de travaux 2019/2020 : 10 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Canalisation EP entre propriétés MATHON et CHAPPUIS",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2019-07-06",
+  "annee_exercice": 2019,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 6 juillet 2019",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "26 copropriétaires, 2 600 voix sur 5 100 (51 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Cotisation obligatoire fonds de travaux 2020/2021",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 500 · Contre 100 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Assignation de la SCI VILLA AYSHA (article 15)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 2 600 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Division de la parcelle LEAFE (3 allée des Précettes)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 300 · Contre 800 · Abst. 1 500"
+   },
+   {
+    "numero": "13",
+    "sujet": "Mandat au syndic : acte notarié des deux nouveaux lots",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 600 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2020-10-24",
+  "annee_exercice": 2020,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 octobre 2020",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice (SCI La Boussole)",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "24 copropriétaires, 2 400 voix sur 5 100 (47 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Cotisation fonds de travaux 2021/2022 à 100 % du budget",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 400"
+   },
+   {
+    "numero": "10",
+    "sujet": "Étude réseau EP : passage caméra et plan",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 100 · Abst. 300"
+   },
+   {
+    "numero": "11.1",
+    "sujet": "Miroir angle allée de Rive / accès plage : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 300 · Contre 600 · Abst. 500"
+   },
+   {
+    "numero": "11.2",
+    "sujet": "Miroir : entreprise EUROPE SIGNALETIQUE",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 300 · Contre 400 · Abst. 700"
+   },
+   {
+    "numero": "11.3",
+    "sujet": "Miroir : financement sur charges courantes",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 400 · Contre 300 · Abst. 700"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Remise en fonction des portails et interphone : principe",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 700 · Contre 900 · Abst. 300"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Portails : choix de l'entreprise et budget",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.3",
+    "sujet": "Portails : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.4",
+    "sujet": "Portails : honoraires du syndic 3 %",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.5",
+    "sujet": "Portails : financement clé allées Précettes et Rive",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13",
+    "sujet": "Assignation de la SCI VIOLETTE (article 15)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 600 · Contre 300 · Abst. 500"
+   }
+  ]
+ },
+ {
+  "date_ag": "2021-11-20",
+  "annee_exercice": 2021,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 20 novembre 2021",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "27 copropriétaires, 2 719 voix sur 5 100 (53 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "8",
+    "sujet": "Procédure SCI VIOLETTE : compte rendu et provision complémentaire",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.1",
+    "sujet": "Étude (DCE) pour réfection complète du réseau EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.2",
+    "sujet": "Étude EP confiée à GROUPE UD/GLOBAL PARTNER",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.3",
+    "sujet": "Mandat au conseil syndical pour l'étude EP (20 000 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.4",
+    "sujet": "Honoraires du syndic sur l'étude EP (2 %)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.5",
+    "sujet": "Financement de l'étude EP : appel au 1er janvier 2022",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.6",
+    "sujet": "Mobilisation du fonds travaux pour l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Cotisation fonds de travaux 2022/2023 à 200 % du budget",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2022-11-19",
+  "annee_exercice": 2022,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 19 novembre 2022",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice (SCI La Boussole)",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "28 copropriétaires, 2 900 voix sur 5 100 (57 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "5",
+    "sujet": "Foncia désigné mandataire chargé de gérer l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 872 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "9",
+    "sujet": "Assignation de la SCI VILLA AYSHA (article 15)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 400 · Contre 100 · Abst. 400"
+   },
+   {
+    "numero": "10",
+    "sujet": "Fonds de travaux 2023/2024 : 50 000 €, objectif 250 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Contrat d'entretien des espaces verts : L'ART-BRE DU LEMAN",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Rampe de mise à l'eau : régularisation auprès de la DDT",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 219 · Contre 2 581 · Abst. 100"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Suppression de la rampe et aménagement de la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.1",
+    "sujet": "STOP et ligne d'arrêt allée des Précettes / route de Messery",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 700 · Contre 200 · Abst. 0"
+   },
+   {
+    "numero": "13.2",
+    "sujet": "STOP : entreprise EUROPE SIGNALETIQUE",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.3",
+    "sujet": "STOP : mandat au syndicat (600 € maximum)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.4",
+    "sujet": "STOP : financement sur charges courantes",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "14",
+    "sujet": "Portail de la plage et portails d'entrée à l'ordre du jour",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2023-12-16",
+  "annee_exercice": 2023,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 16 décembre 2023",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "31 copropriétaires, 3 200 voix sur 5 100 (63 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Résolution 12.1 : « rejetée » selon la version du PV de Foncia Maison de l'Immobilier ; « vote non pris en compte, dans l'attente d'une consultation juridique sur la majorité requise » selon la version notifiée par Foncia.",
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Fonds de travaux 2024/2025 : 50 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.1",
+    "sujet": "Remise en fonction des portails et interphone : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 081 · Contre 1 119 · Abst. 0"
+   },
+   {
+    "numero": "10.2",
+    "sujet": "Portails : choix de l'entreprise en AG",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "10.3",
+    "sujet": "Portails : mandat au conseil syndical (50 000 € TTC)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 381 · Contre 819 · Abst. 0"
+   },
+   {
+    "numero": "10.4",
+    "sujet": "Portails : honoraires du mandataire 3 %",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 300"
+   },
+   {
+    "numero": "10.5",
+    "sujet": "Portails : appel de fonds au 1er juillet 2024",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 800 · Contre 100 · Abst. 300"
+   },
+   {
+    "numero": "10.6",
+    "sujet": "Portails : mobilisation du fonds travaux",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "11.1",
+    "sujet": "Étude de réaménagement de la plage : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11.2",
+    "sujet": "Étude plage : RFConseils phase 1 (2 000 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11.3",
+    "sujet": "Plage : financement et fonds supplémentaire de 13 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 100 · Contre 100 · Abst. 0"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Rond-point au bas de l'allée des Précettes : principe",
+    "decision": "Rejetée ou non prise en compte (voir note)",
+    "resultat_vote": "Pour 1 500 · Contre 1 100 · Abst. 600"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Rond-point : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.3",
+    "sujet": "Rond-point : modalités de financement",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.4",
+    "sujet": "Rond-point : mobilisation du fonds travaux",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13.1",
+    "sujet": "Remplacement du portail de la plage",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "13.2",
+    "sujet": "Portail de la plage : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13.3",
+    "sujet": "Portail de la plage : modalités de financement",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "14",
+    "sujet": "Servitude de passage sur B228 au profit de M. DECIMA",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "15",
+    "sujet": "Servitude de réseaux sur B228 au profit de M. DECIMA",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "16",
+    "sujet": "Entretien haies, fossés et gazon des allées par l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 119 · Contre 500 · Abst. 281"
+   }
+  ]
+ },
+ {
+  "date_ag": "2024-10-26",
+  "annee_exercice": 2024,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 26 octobre 2024",
+  "president": "Aucun (pas de candidature)",
+  "scrutateur": "Aucun (pas de candidature)",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "33 membres, 3 400 voix sur 5 100 (67 %)",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Mandat à un avocat pour modifier le cahier des charges",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 400 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10",
+    "sujet": "Création d'un comité de sauvetage (cahier des charges)",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "11",
+    "sujet": "Aucun budget proposé, AGE à convoquer",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2025-06-19",
+  "annee_exercice": 2025,
+  "type_ag": "AGE",
+  "titre": "Assemblée générale extraordinaire du 19 juin 2025",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre",
+  "secretaire_foncia": "Mme Vanessa Meyer (Foncia Lemanique)",
+  "quorum": "44 membres, 90 687 m² sur 104 646 (87 %) au moment des votes",
+  "unite_des_votes": "Votes en m² de superficie, sur 104 646",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Addendum 3 au cahier des charges et élection du conseil syndical",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 74 081 · Contre 2 326 · Abst. 14 280"
+   },
+   {
+    "numero": "7.1",
+    "sujet": "Maîtrise d'œuvre pour étude du réseau d'eaux pluviales",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.2",
+    "sujet": "Délégation au conseil syndical pour choisir le maître d'œuvre EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.3",
+    "sujet": "Honoraires du syndic sur l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 88 275 · Contre 0 · Abst. 2 412"
+   },
+   {
+    "numero": "7.4",
+    "sujet": "Financement de l'étude EP : appel au 01/09/2025",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.5",
+    "sujet": "Mobilisation du fonds travaux pour l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "8",
+    "sujet": "Confirmation du budget de réhabilitation de la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 81 584 · Contre 6 691 · Abst. 2 412"
+   },
+   {
+    "numero": "9",
+    "sujet": "Date de la prochaine AGO fixée au 11/12/2025",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2026-01-19",
+  "annee_exercice": 2025,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 19 janvier 2026",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre",
+  "secretaire_foncia": "Mme Vanessa Meyer (Foncia Lemanique)",
+  "quorum": "32 membres, 63 695 m² sur 104 646 (61 %)",
+  "unite_des_votes": "Votes en m² de superficie, sur 104 646",
+  "note": "Résolution 23 : le PV indique 80 000 €, alors que le PV du 15 septembre 2026 cite une cotisation de 50 000 € votée à cette date.",
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Choix de Global Partner comme maître d'œuvre EP, mandat 35 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "14",
+    "sujet": "Confirmation des travaux portails (50 000 €, nouvelle clé)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 54 737 · Contre 8 958 · Abst. 0"
+   },
+   {
+    "numero": "15.2",
+    "sujet": "Principe des travaux de remise en fonctionnement des portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 54 737 · Contre 8 958 · Abst. 0"
+   },
+   {
+    "numero": "15.3",
+    "sujet": "Délégation au conseil syndical pour les portails (70 000 € TTC)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 50 975 · Contre 12 720 · Abst. 0"
+   },
+   {
+    "numero": "15.4",
+    "sujet": "Honoraires du syndic sur travaux portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "15.5",
+    "sujet": "Financement portails : appel au 01/04/2026",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "15.6",
+    "sujet": "Mobilisation du fonds travaux pour les portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "19",
+    "sujet": "Contrat d'entretien des espaces verts avec Paysage Bois",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 63 695 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "23",
+    "sujet": "Cotisation au fonds de travaux 2026-2027 portée à 80 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 61 369 · Contre 2 326 · Abst. 0"
+   },
+   {
+    "numero": "24",
+    "sujet": "Délégation au CS pour dépenses exceptionnelles (2 500 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 61 369 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "27",
+    "sujet": "Option d'assistance Foncia 24/7 refusée",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 63 695 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2026-09-15",
+  "annee_exercice": 2026,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 15 septembre 2026",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Philippe Bermejo",
+  "secretaire_foncia": "Mme Leina Abdelkader (Foncia Lemanique)",
+  "quorum": "44 membres, 92 146 m² sur 104 646 (88 %) au moment des votes",
+  "unite_des_votes": "Votes en m² de superficie, sur 104 646",
+  "note": "Résolutions 13 et 14 : la validation formelle de l'article sur le recouvrement n'a pas été donnée par Me Garnier.",
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Approbation des statuts de mise en conformité de l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "5",
+    "sujet": "Pouvoirs pour signature et publication des statuts",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 77 866 · Contre 14 280 · Abst. 0"
+   },
+   {
+    "numero": "10",
+    "sujet": "Validation et règles du fonds de travaux (183 831,14 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 626 · Contre 14 280 · Abst. 2 240"
+   },
+   {
+    "numero": "11",
+    "sujet": "Réaffectation du fonds travaux selon la nouvelle clé",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 626 · Contre 14 280 · Abst. 2 240"
+   },
+   {
+    "numero": "12",
+    "sujet": "Autorisation des appels de fonds et de l'exécution des travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 659 · Contre 16 487 · Abst. 0"
+   },
+   {
+    "numero": "13",
+    "sujet": "Clause de recouvrement des charges impayées dans les statuts",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "14",
+    "sujet": "Taux d'intérêt de retard et frais de recouvrement",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "15",
+    "sujet": "Communication des titres de propriété au notaire",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "16",
+    "sujet": "Financement de l'application du conseil syndical (700 €/an)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "19",
+    "sujet": "Appel de la cotisation de 50 000 € et dotation complémentaire de 50 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 659 · Contre 16 487 · Abst. 0"
+   },
+   {
+    "numero": "20",
+    "sujet": "Ouverture d'un livret B au nom de l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 374 · Contre 14 280 · Abst. 2 492"
+   },
+   {
+    "numero": "21",
+    "sujet": "Remplacement du portail de la plage (5 000 €) refusé",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 25 723 · Contre 53 124 · Abst. 13 299"
+   },
+   {
+    "numero": "22",
+    "sujet": "Projet de division de la propriété de M. Décima",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "23",
+    "sujet": "Tolérance de passage pédestre pour Mme Pictet",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 66 846 · Contre 8 676 · Abst. 16 624"
+   },
+   {
+    "numero": "26",
+    "sujet": "Participation à distance aux AG (solution 8x8)",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "27",
+    "sujet": "Envoi dématérialisé des convocations et PV",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "28",
+    "sujet": "Changement de la serrure du portail de la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   }
+  ]
+ }
+]

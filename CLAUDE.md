@@ -141,6 +141,12 @@ scripts/
   lire_pdf.swift      COUCHE TEXTE puis OCR français (PDFKit + Vision de macOS). ⚠ Ni tesseract,
                       ni ocrmypdf, ni pdftotext, ni Homebrew sur ce Mac — vérifié. Un seul appel
                       pour tous les fichiers : `swift x.swift` recompile à chaque exécution.
+  importer_resumes_ag.mjs   IMPORT DES RÉSUMÉS d'assemblée (062) depuis le registre consolidé
+                      `.docx`. ⚠ REFUSE d'écrire si le nombre de décisions annoncé par le
+                      registre ne correspond pas à ce qui a été lu.
+  lire_registre_ag.py ANALYSE du registre `.docx` → JSON, sans dépendance (zipfile + re).
+                      ⚠ Conserve les sauts de PARAGRAPHE : dans la colonne « objet », le premier
+                      est le titre, les suivants le détail.
   corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
                       type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
   lire_eml.py         LECTURE D'UN .eml (en-têtes, destinataires, corps texte) par le module
@@ -1052,6 +1058,38 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - ⚠ **Un rapport « avant / après » doit montrer LE CHAMP QUI CHANGE.** Le premier jet affichait
   trois colonnes figées et rendait deux lignes identiques quand la correction portait sur les pages
   ou la qualité — un rapport qui a l'air de ne rien faire ne se relit pas.
+#### Les champs du résumé d'assemblée (migration 062)
+> Chaque dossier d'AG porte un **résumé au même format depuis 1988** — président de séance,
+> scrutateur, secrétaire, quorum, puis un tableau de résolutions. Ces rubriques sont devenues des
+> CHAMPS : un paragraphe ne permet ni de chercher ni de comparer d'une année à l'autre.
+
+- ⚠ **LES RÉSOLUTIONS VONT DANS UN `jsonb`, JAMAIS DANS `resolutions_ag`.** C'est la règle
+  fondatrice du fonds (057), et elle vaut ici plus qu'ailleurs : y verser **237 résolutions** votées
+  entre 1988 et 2026 ferait apparaître des enveloppes qui n'existent plus et fausserait les budgets
+  consolidés. Un jsonb dit ce qu'il est : la **transcription d'un tableau**, pas un objet géré.
+- ⚠ **`presents_representes` ET `unite_vote` EN TOUTES LETTRES.** La forme change avec les
+  décennies — « 41 lots sur 49 » (1988), « 3 400 voix sur 5 100 » (2003→2024), « 92 146 m² sur
+  104 646 » (2026). Les structurer imposerait d'**inventer une unité commune**, et additionner des
+  voix de 2012 avec des m² de 2026 n'a aucun sens. L'écran n'en calcule donc **aucun pourcentage**.
+- ⚠ **`pour`/`contre`/`abstention` NULS quand le PV ne chiffre pas** — fréquent avant 2003, et
+  encore en 2026 sur une résolution. **Un zéro serait une défaite, un null est une lacune.** Le
+  texte brut est conservé à côté (`voix_texte`) : « 1 500 sur 3 200 tantièmes (ALLEN PEREGRINE, …) »
+  porte l'assiette et parfois les votants, qu'aucun nombre ne rend.
+- ⚠ **SOURCE = LE REGISTRE CONSOLIDÉ `.docx`, PAS LES 25 RÉSUMÉS PDF.** Les deux disent la même
+  chose ; un tableau de `.docx` se lit **par ses cellules**, un tableau de PDF par des coordonnées
+  qui recollent « Non votée » et « — » en « Non votée— ». Le premier est une donnée, le second une
+  mise en page. `scripts/lire_registre_ag.py` le lit avec `zipfile` + `re`, **sans dépendance**.
+- ⚠ **LE SCRIPT REFUSE D'ÉCRIRE SI LE COMPTE NE TOMBE PAS JUSTE.** Le registre annonce par
+  assemblée son nombre de décisions (« 20 (13 adoptées, 1 rejetées) ») ; il est comparé au nombre de
+  lignes lues. **Zéro écart sur 25 assemblées / 237 résolutions** — et ce contrôle a révélé deux
+  défauts de l'analyse : tous les chiffres d'une cellule étaient collés (« 75 540 sur 104 646 » →
+  75540104646) et le titre de la résolution était aplati avec son détail. **Sans ce recoupement,
+  rien ne l'aurait signalé.**
+- **Deux champs restent vides** : `scrutateur` et `unite_vote` ne figurent que sur les résumés PDF,
+  pas dans le registre consolidé. **On ne les déduit pas** — ils se saisissent sur la fiche.
+- ⚠ **La mention « seul le procès-verbal fait foi » reste sous le tableau**, quoi qu'il arrive à
+  l'écran : un résumé est une lecture, le procès-verbal est l'acte.
+
 - **Le TYPE ne se déduit pas d'un nom de fichier** : les sigles n'y figurent que depuis 2012, et
   vingt documents étaient en « type inconnu ». Pascal : « toutes des AGO sauf le 19/6/25 ».
   `scripts/corriger_pv_archives.mjs` applique la règle, **idempotent**, les exceptions nommées par

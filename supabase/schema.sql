@@ -811,6 +811,28 @@ create table if not exists pv_archives (
   lieu          text,
   syndic        text,
   resume        text,
+
+  -- LES CHAMPS DU RÉSUMÉ D'ASSEMBLÉE (migration 062) — les rubriques régulières
+  -- du résumé, celles qui reviennent à chaque assemblée depuis 1988 et qu'un
+  -- paragraphe ne permet ni de chercher ni de comparer d'une année à l'autre.
+  -- `resume` reste pour ce que le tableau ne dit pas.
+  president_seance     text,
+  scrutateur           text,
+  -- ⚠ EN TOUTES LETTRES : la forme du quorum change avec les décennies (41 lots
+  -- sur 49 ; 33 membres, 3 400 voix sur 5 100 ; 44 membres, 92 146 m² sur
+  -- 104 646). Le structurer imposerait d'inventer une unité commune.
+  presents_representes text,
+  -- ⚠ Sans elle, les nombres de voix ne veulent rien dire : lots avant 2003,
+  -- voix sur 5 100 ensuite, m² sur 104 646 depuis 2026.
+  unite_vote           text,
+  -- ⚠ [{numero, objet, resultat, pour, contre, abstention}] — JAMAIS dans
+  -- `resolutions_ag` : les archives ne créent aucune ligne de gestion (057).
+  -- Voix NULLES quand le PV ne chiffre pas : un zéro serait une défaite, un null
+  -- est une lacune.
+  resolutions          jsonb,
+  -- Date de rédaction du résumé, pas de l'assemblée.
+  resume_etabli_le     date,
+
   mots_cles     text[],
   -- {path,name,type,size,sha256} — préfixe `pv-archives/<annee>/` dans le bucket
   -- privé `documents`. ⚠ Aucune policy de Storage à ajouter : vérifié —

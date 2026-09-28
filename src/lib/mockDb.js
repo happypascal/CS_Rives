@@ -2005,7 +2005,7 @@ export const mockRepo = {
     }
     // ⚠ Mêmes champs que le repo Supabase, et pas un de plus : `texte_ocr`,
     // l'empreinte et la colonne générée `recherche` sont des constats d'import.
-    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire']
+    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire', 'president_seance', 'scrutateur', 'presents_representes', 'unite_vote', 'resolutions', 'resume_etabli_le']
     for (const [k, v] of Object.entries(patch)) if (champs.includes(k)) a[k] = v
     a.updated_at = nowISO()
     save(data)
