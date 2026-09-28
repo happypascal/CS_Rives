@@ -146,9 +146,19 @@ scripts/
                       registre ne correspond pas à ce qui a été lu.
   lire_registre_ag.py ANALYSE du registre `.docx` → JSON, sans dépendance (zipfile + re).
                       ⚠ Conserve les sauts de PARAGRAPHE : dans la colonne « objet », le premier
-                      est le titre, les suivants le détail.
+                      est le titre, les suivants le détail. ⚠ `nombre()` prend le premier nombre
+                      de la cellule, SAUF après « totalisent » — où il compte des personnes.
+  lire_resume_ag.py   ANALYSE des 25 `Resume_AG_<date>.docx`, un par assemblée. ⚠ CE N'EST PAS
+                      le registre consolidé : c'est la source INDÉPENDANTE qui permet de
+                      vérifier la base sans la confronter à ce qui l'a remplie. ⚠ Le titre du
+                      document est AVALÉ dans la première cellule du tableau : l'en-tête se
+                      reconnaît à « Scrutateur » en DEUXIÈME cellule.
   corriger_pv_archives.mjs  CORRECTIONS du fonds de PV que nulle déduction ne pouvait trouver :
                       type d'assemblée, année d'EXERCICE, intitulés uniformisés. Idempotent.
+  corriger_resolutions_archives.mjs  CORRECTIONS des résolutions archivées issues de la
+                      confrontation aux résumés par année (4 sur 151). Idempotent, et chaque
+                      correction porte la VALEUR ATTENDUE AVANT : si la base a changé, elle est
+                      refusée plutôt qu'appliquée à l'aveugle.
   lire_eml.py         LECTURE D'UN .eml (en-têtes, destinataires, corps texte) par le module
                       `email` de Python. ⚠ Un parseur maison rendrait du charabia : en-têtes
                       repliés, noms en RFC 2047, corps multipart en quoted-printable.
@@ -1085,11 +1095,41 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   défauts de l'analyse : tous les chiffres d'une cellule étaient collés (« 75 540 sur 104 646 » →
   75540104646) et le titre de la résolution était aplati avec son détail. **Sans ce recoupement,
   rien ne l'aurait signalé.**
-- ⚠ **DEUX SOURCES, CHACUNE APPORTANT CE QUE L'AUTRE N'A PAS.** Le registre `.docx` chiffre les
-  votes ; `scripts/data/resumes_pv_archives_*.json` porte le **scrutateur**, l'**unité de vote** et
-  les **notes** — trois rubriques absentes du registre. **Le registre reste prioritaire** sur ce que
-  les deux disent : deux sources qui se contredisent doivent avoir un arbitre désigné d'avance, et
-  une divergence d'exercice est **signalée**, jamais arbitrée en silence.
+- ⚠ **TROIS SOURCES, UN ARBITRE PAR RUBRIQUE.** Le registre `.docx` chiffre les votes ; les **25
+  `Resume_AG_<date>.docx`** (un par assemblée, lus par `scripts/lire_resume_ag.py`) portent
+  l'**en-tête** — président de séance, scrutateur, secrétaire, quorum ; le fichier
+  `scripts/data/resumes_pv_archives_*.json` porte les **notes**. Deux sources qui se contredisent
+  doivent avoir un arbitre **désigné d'avance**, et une divergence est **signalée**, jamais arbitrée
+  en silence.
+  - ⚠ **L'EN-TÊTE VIENT DES RÉSUMÉS, PAS DU REGISTRE** — arbitrage **inversé** le 2026-09-28. Le
+    registre recopie le PV mot pour mot (« copropriétaires présents ou représentés porteurs de :
+    41/49 Lots »), les résumés normalisent (« 41 lots sur 49 »). Les deux sont exacts ; le second
+    est celui qu'on lit. Le registre garde les **chiffres de vote**, que les résumés n'expriment que
+    sous forme de phrase.
+- ⚠ **VÉRIFIER UNE DONNÉE AVEC CE QUI L'A PRODUITE NE VÉRIFIE RIEN.** La base a été remplie depuis
+  le registre consolidé ; c'est la confrontation aux **résumés par année** — une seconde rédaction
+  des mêmes PV — qui l'a contrôlée. **151 résolutions relues ligne à ligne, appariées sur
+  l'INTITULÉ** et non sur le numéro (le n° 8 de 2003 couvre cinq résolutions : apparier par numéro
+  fabriquait huit fausses divergences). Résultat : **quatre contradictions, toutes du côté de la
+  base**, corrigées par `scripts/corriger_resolutions_archives.mjs` (idempotent, chaque correction
+  portant la valeur attendue *avant* — un script qui écrase sans vérifier est un script de
+  destruction).
+  - ⚠ **Trois effectifs rangés dans une colonne de voix** (AG 2004). La cellule dit « 40
+    copropriétaires **totalisent** 4100 / 5100 tantièmes » : `nombre()` retenait le **premier**
+    nombre — juste partout ailleurs (« 3 200 sur 3 400 tantièmes »), faux ici. Une résolution
+    adoptée à l'unanimité affichait **40 voix sur 5 100**. Le fonds entier a été balayé : ces trois
+    lignes sont les seules, et `lire_registre_ag.py` saute désormais au nombre **après le verbe**,
+    sur ce verbe seul — une règle plus large casserait les cent trente autres cellules.
+  - ⚠ **Une lacune présentée comme un résultat** (AG 1988). La page du PV relatant le vote sur le
+    maintien des règles d'urbanisme **manque au PDF** ; le détail de la ligne le disait déjà (« NE
+    PAS considérer comme adopté ni rejeté »), mais la colonne portait « Information » — qui affirme
+    que le point n'appelait pas de vote. Corrigé en « Inconnu (page manquante) ». C'est la faute que
+    tout ce registre s'interdit : **ne pas confondre « on ne sait pas » avec un résultat**.
+  - **Non corrigé, et pourquoi** : « Adoptée (unanimité) » contre « Adoptée » n'est pas une
+    contradiction — la base en dit plus, on ne rabote pas une source parce qu'une autre est brève.
+  - **237 résolutions en base pour 151 dans les résumés, et aucune ne manque** : les résumés
+    écartent délibérément élection du bureau, comptes, quitus, budgets courants et désignation du
+    syndic. Le fonds garde le tout — **un registre d'archives ne choisit pas ce qui mérite mémoire.**
 - ⚠ **La mention « seul le procès-verbal fait foi » reste sous le tableau**, quoi qu'il arrive à
   l'écran : un résumé est une lecture, le procès-verbal est l'acte.
 

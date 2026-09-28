@@ -57,6 +57,20 @@ def nombre(texte):
     t = (texte or '').strip()
     if not t or t in ('—', '-', '–', 'n/c'):
         return None
+    # ⚠ « 40 COPROPRIÉTAIRES TOTALISENT 4100 / 5100 TANTIÈMES » — trois cellules
+    # de l'AG de 2004 comptent d'abord les PERSONNES, et la voix vient après le
+    # verbe. Le premier nombre y est un effectif : le retenir a rangé 40 dans une
+    # colonne qui compte des voix sur 5 100, soit deux ordres de grandeur
+    # d'écart, sur une résolution adoptée à l'unanimité. Trouvé en confrontant la
+    # base aux résumés par année, jamais en relisant le registre seul.
+    # ⚠ On ne saute au nombre suivant que sur ce verbe précis : partout ailleurs
+    # (« 3 200 sur 3 400 tantièmes ») le premier nombre est bien la voix, et une
+    # règle plus large casserait les cent trente autres cellules.
+    apres_verbe = re.search(r'totalisent\s*(\d[\d\s.]*)', t, re.IGNORECASE)
+    if apres_verbe:
+        chiffres = re.sub(r'[^\d]', '', apres_verbe.group(1))
+        return int(chiffres) if chiffres else None
+
     # Espaces de toutes sortes, y compris l'insécable et la fine.
     # ⚠ LE PREMIER NOMBRE, PAS TOUS LES CHIFFRES. Une première version retirait
     # tout ce qui n'était pas un chiffre : « 75 540 sur 104 646 » devenait

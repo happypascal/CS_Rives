@@ -78,22 +78,42 @@ async function main() {
   if (!GO) W('> ⚠ **Aucune écriture.** Relancer avec `--go` pour appliquer.')
   W('')
 
-  // ⚠ DEUX SOURCES, ET CHACUNE APPORTE CE QUE L'AUTRE N'A PAS. Le registre
-  // consolidé `.docx` porte le détail des votes (pour / contre / abstention,
-  // assiette, parfois les votants) ; le fichier `resumes_pv_archives_*.json`,
-  // produit avec les résumés, porte le SCRUTATEUR, l'UNITÉ DE VOTE et les NOTES
-  // — trois rubriques absentes du registre. Les croiser vaut mieux que de
-  // laisser trois champs vides en disant qu'on ne les déduit pas.
+  // ⚠ TROIS SOURCES, ET UN ARBITRE PAR RUBRIQUE.
   //
-  // ⚠ LE REGISTRE RESTE PRIORITAIRE sur ce qu'ils disent tous les deux : c'est
-  // lui qui chiffre les voix, et deux sources qui se contredisent doivent avoir
-  // un arbitre désigné d'avance.
+  //   1. Les RÉSUMÉS PAR ANNÉE (`Resume_AG_<date>.docx`) — c'est LA référence :
+  //      la fiche de l'application est censée les refléter. Ils donnent l'en-tête
+  //      dans sa forme définitive.
+  //   2. Le REGISTRE CONSOLIDÉ (.docx) — il chiffre les votes, colonne par
+  //      colonne, ce que les résumés donnent en une phrase.
+  //   3. Le fichier JSON produit avec les résumés — scrutateur, unité de vote,
+  //      notes.
+  //
+  // ⚠ L'ARBITRAGE A CHANGÉ (2026-09-28). J'avais d'abord donné la priorité au
+  // registre, et rempli président, secrétaire et quorum avec sa formulation :
+  // « copropriétaires présents ou représentés porteurs de : 41/49 Lots ». La
+  // confrontation aux résumés a montré 25 écarts sur 25 — ils disent « 41 lots
+  // sur 49 ». Aucune des deux n'est fausse : le registre CITE le procès-verbal,
+  // le résumé le NORMALISE. Mais c'est le résumé que l'écran prétend montrer.
+  //
+  // ⚠ Le registre garde les CHIFFRES du vote : eux, le résumé les donne en un
+  // seul texte (« Pour 3 400 · Contre 0 · Abst. 0 »), et les séparer à nouveau
+  // serait défaire ce que le registre a déjà fait.
   const complements = new Map()
   try {
     const brut = await readFile(join(RACINE, 'scripts', 'data', FICHIER_RESUMES), 'utf8')
     for (const r of JSON.parse(brut)) complements.set(r.date_ag, r)
   } catch {
     soucis.push(`Fichier de résumés \`${FICHIER_RESUMES}\` absent ou illisible : scrutateur, unité de vote et notes ne seront pas renseignés.`)
+  }
+
+  // Les résumés par année, lus à part — ils font référence pour l'en-tête.
+  const resumesParDate = new Map()
+  try {
+    const { stdout: sr } = await run('/usr/bin/python3',
+      [join(RACINE, 'scripts', 'lire_resume_ag.py'), dirname(REGISTRE)], { maxBuffer: 32 * 1024 * 1024 })
+    for (const r of JSON.parse(sr).resumes || []) resumesParDate.set(r.date_ag, r)
+  } catch {
+    soucis.push('Résumés par année illisibles : l’en-tête sera repris du registre consolidé, dans sa formulation brute.')
   }
 
   const { stdout } = await run('/usr/bin/python3',
@@ -147,10 +167,12 @@ async function main() {
     }
     if (!cible) { orphelines.push(a); continue }
 
+    // L'en-tête vient du RÉSUMÉ quand il existe, du registre sinon.
+    const r = resumesParDate.get(a.date_ag)
     const patch = {
-      president_seance: a.president_seance || null,
-      presents_representes: a.presents_representes || null,
-      syndic: a.syndic || null,
+      president_seance: r?.president || a.president_seance || null,
+      presents_representes: r?.quorum || a.presents_representes || null,
+      syndic: r?.secretaire || a.syndic || null,
       resolutions: a.resolutions,
       // ⚠ Le résumé dit quand il a été établi, pas quand l'assemblée s'est tenue.
       resume_etabli_le: '2026-09-28',
@@ -209,7 +231,8 @@ async function main() {
   const avecComplement = aEcrire.filter((e) => complements.has(e.source.date_ag)).length
   W('## Sources')
   W('')
-  W(`- Registre consolidé : votes chiffrés, président de séance, quorum, syndic — ${aEcrire.length} assemblée(s).`)
+  W(`- Résumés par année (référence) : en-tête — ${resumesParDate.size} assemblée(s).`)
+  W(`- Registre consolidé : votes chiffrés — ${aEcrire.length} assemblée(s).`)
   W(`- Fichier de résumés : scrutateur, unité de vote, notes — ${avecComplement} assemblée(s).`)
   W('')
 
