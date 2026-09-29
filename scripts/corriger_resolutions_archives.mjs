@@ -83,8 +83,18 @@ const CORRECTIONS = [
   },
   {
     date_ag: '1988-07-02', numero: 'V (IV de la convocation)', champ: 'resultat',
-    avant: 'Information', apres: 'Inconnu (page manquante)',
-    raison: 'La page du PV manque ; le détail le dit déjà. « Information » affirmait un fait inconnu.',
+    // ⚠ DEUX VALEURS ANTÉRIEURES ACCEPTÉES, et c'est l'histoire de la ligne.
+    // « Information » vient du registre, qui affirmait que le point n'appelait
+    // pas de vote. Corrigé une première fois en « Inconnu (page manquante) »,
+    // sur la croyance que le dossier de 1988 contenait le procès-verbal amputé
+    // d'une page. Pascal a tranché le 2026-09-29 : « 1988 n'est pas un PV, on
+    // n'a pas les résultats des votes ». Ce n'est donc pas une page qui manque,
+    // c'est le procès-verbal. Sans `avant_aussi`, un ré-import — qui repose
+    // « Information » — et une base déjà corrigée n'auraient pas pu passer par
+    // la même règle.
+    avant: 'Information', avant_aussi: ['Inconnu (page manquante)'],
+    apres: 'Inconnu (procès-verbal manquant)',
+    raison: 'Le PV de cette assemblée n’a pas été retrouvé ; le dossier ne porte que la convocation.',
   },
 ]
 
@@ -146,8 +156,9 @@ async function main() {
     if (!r) { refus.push(`${c.date_ag} n°${c.numero} — résolution introuvable.`); continue }
 
     if (r[c.champ] === c.apres) { W(`| ${c.date_ag} | ${c.numero} | ${c.champ} | — | déjà corrigé | ${c.raison} |`); continue }
-    if (r[c.champ] !== c.avant) {
-      refus.push(`${c.date_ag} n°${c.numero} — ${c.champ} vaut ${JSON.stringify(r[c.champ])}, attendu ${JSON.stringify(c.avant)}. Correction NON appliquée.`)
+    const acceptees = [c.avant, ...(c.avant_aussi || [])]
+    if (!acceptees.includes(r[c.champ])) {
+      refus.push(`${c.date_ag} n°${c.numero} — ${c.champ} vaut ${JSON.stringify(r[c.champ])}, attendu ${acceptees.map((v) => JSON.stringify(v)).join(' ou ')}. Correction NON appliquée.`)
       continue
     }
 

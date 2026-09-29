@@ -1152,12 +1152,24 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   - ⚠ **ON NE SUPPRIME PAS LA LIGNE.** Une convocation de 1988 porte l'ordre du jour d'une assemblée
     dont le PV serait perdu : la jeter pour faire tomber une année dans la bonne colonne, ce serait
     détruire une source pour arranger un compte.
-  - ⚠ **LE DOSSIER DE 1988 N'EST PAS UN SEUL DOCUMENT.** Ses 24 pages contiennent la convocation du
-    1er juin *et*, plus loin, le **procès-verbal** de la séance — « porteurs de 41/49 lots »,
-    « l'assemblée élit M. Jean-Jacques Mey président de séance », points I à IV — interrompu sur
-    « .../… » après l'élection du syndic, la page suivante du scan étant une lettre du SIVOM du
-    27 juin. C'est de là que viennent le président de séance et le quorum en base. **Trancher la
-    nature d'un scan sur ses premières pages est un piège** : il faut lire le texte entier.
+  - **1988 EST UNE CONVOCATION** (Pascal, 2026-09-29 : « 1988 n'est pas un PV, on n'a pas les
+    résultats des votes »). Le fonds compte donc **34 procès-verbaux sur 35 archives**, et
+    **1988 est retourné dans les années manquantes** — c'est exactement l'effet recherché.
+  - ⚠ **CE DOSSIER N'EST PAS UN SEUL DOCUMENT**, et c'est ce qui rendait la question difficile. Ses
+    24 pages portent la convocation du 1er juin et ses annexes, puis un **FRAGMENT de procès-verbal**
+    — « porteurs de 41/49 lots », élection de M. Jean-Jacques Mey à la présidence de séance, points
+    I à IV — interrompu sur « .../… », la page suivante du scan étant une lettre du SIVOM du 27 juin.
+    **C'est de ce fragment que viennent `president_seance` et `presents_representes`.** Ils sont
+    conservés — ils se lisent sur une pièce réelle — mais la **réserve dit d'où ils viennent** :
+    une fiche qui les affiche sans le dire affirmerait un procès-verbal qu'elle n'a pas.
+  - ⚠ **TRANCHER LA NATURE D'UN SCAN SUR SES PREMIÈRES PAGES EST UN PIÈGE**, dans les deux sens :
+    le nom du fichier disait « convocation », le texte interne contenait un début de PV. Lire le
+    texte ENTIER, puis demander — c'est le seul point que ni le nom ni l'OCR ne tranchaient.
+  - ⚠ **Le libellé du résultat a changé DEUX fois** : « Information » (le registre affirmait que le
+    point n'appelait pas de vote) → « Inconnu (page manquante) » → « Inconnu (procès-verbal
+    manquant) ». `corriger_resolutions_archives.mjs` accepte donc **plusieurs valeurs antérieures**
+    (`avant_aussi`) : sans cela, une base déjà corrigée et un ré-import — qui repose « Information »
+    — ne pouvaient pas passer par la même règle.
 - ⚠ **VÉRIFIER UNE DONNÉE AVEC CE QUI L'A PRODUITE NE VÉRIFIE RIEN.** La base a été remplie depuis
   le registre consolidé ; c'est la confrontation aux **résumés par année** — une seconde rédaction
   des mêmes PV — qui l'a contrôlée. **151 résolutions relues ligne à ligne, appariées sur

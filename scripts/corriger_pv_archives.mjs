@@ -101,6 +101,41 @@ const EXERCICES = {
   '2026-01-19': 2025,
 }
 
+// ⚠ LA NATURE DU DOCUMENT NE SE DÉDUIT DE RIEN (migration 063). Pascal
+// (2026-09-29) : « 1988 n'est pas un PV. On n'a pas les résultats des votes. »
+//
+// Le dossier de 1988 porte la convocation du 1er juin et ses annexes, puis un
+// FRAGMENT de procès-verbal — « porteurs de 41/49 lots », élection de
+// M. Jean-Jacques Mey à la présidence de séance, points I à IV — interrompu sur
+// « .../… », la page suivante du scan étant une lettre du SIVOM du 27 juin.
+// C'est de ce fragment que viennent le président de séance et le quorum. Le
+// procès-verbal complet, lui, n'a pas été retrouvé.
+//
+// ⚠ CONSÉQUENCE VOULUE : l'année 1988 RESSORT dans les années manquantes. C'est
+// tout l'objet de la 063 — une convocation ne remplace pas le PV, et la frise
+// doit continuer de le réclamer.
+const NATURES = {
+  '1988-07-02': 'convocation',
+}
+
+// Le nom sous lequel le fichier est rangé chez Pascal. ⚠ L'objet du bucket ne
+// bouge PAS : son chemin porte un uuid, et le renommer casserait le lien pour
+// ne gagner qu'une étiquette. Seul le libellé affiché suit.
+const NOMS_DOCUMENTS = {
+  '1988-07-02': 'Convocation AG 1988_07_02.pdf',
+}
+
+// ⚠ LA RÉSERVE DIT D'OÙ VIENNENT LES CHAMPS QU'ON GARDE. Président de séance et
+// quorum restent affichés — ils sont lus sur une pièce réelle — mais la fiche
+// doit dire sur quoi ils reposent, sans quoi elle affirme un procès-verbal
+// qu'elle n'a pas. Signaler, jamais corriger en silence.
+const RESERVES = {
+  '1988-07-02': 'Le document conservé est la convocation du 1er juin 1988 et ses annexes. '
+    + 'Le procès-verbal de cette assemblée n’a pas été retrouvé : les résultats des votes sont inconnus. '
+    + 'Le président de séance et le quorum indiqués proviennent d’un fragment de procès-verbal contenu '
+    + 'dans le dossier, interrompu après le point IV (élection du syndic).',
+}
+
 // ⚠ `pypdf` plutôt que le lecteur Swift : compter des pages ne demande pas de
 // reconnaissance de caractères, et relancer un OCR sur dix documents pour une
 // métadonnée serait absurde. Le fichier est retrouvé par son NOM sous la racine
@@ -144,7 +179,7 @@ async function main() {
   W('')
 
   const { data: archives, error } = await supabase
-    .from('pv_archives').select('id, annee, date_ag, type_ag, intitule, document, nb_pages, qualite, source').order('annee')
+    .from('pv_archives').select('id, annee, date_ag, type_ag, intitule, document, nb_pages, qualite, source, type_document, commentaire').order('annee')
   if (error) throw new Error(`Lecture du fonds : ${error.message}`)
 
   // ---------------------------------------------------- 4. les doublons
@@ -189,6 +224,14 @@ async function main() {
     }, a.intitule)
     if (a.intitule !== intitule) patch.intitule = intitule
 
+    // 7. Nature du document, réserve et libellé du fichier (063).
+    const nature = NATURES[a.date_ag]
+    if (nature && a.type_document !== nature) patch.type_document = nature
+    const reserve = RESERVES[a.date_ag]
+    if (reserve && a.commentaire !== reserve) patch.commentaire = reserve
+    const nomDoc = NOMS_DOCUMENTS[a.date_ag]
+    if (nomDoc && a.document?.name !== nomDoc) patch.document = { ...a.document, name: nomDoc }
+
     // 6. Qualité : un `.txt` frère est un OCR antérieur, pas un texte natif.
     if (a.source?.includes('.txt joint') && a.qualite === 'bonne') patch.qualite = 'moyenne'
 
@@ -218,7 +261,13 @@ async function main() {
   W('|---|---|---|---|')
   const lisible = (champ, v) => {
     if (v == null || v === '') return '—'
-    return champ === 'type_ag' ? (TYPE_LABELS[v] || v) : String(v)
+    if (champ === 'type_ag') return TYPE_LABELS[v] || v
+    // Le document et la réserve sont trop longs pour une cellule de tableau.
+    if (champ === 'document') return v.name || '—'
+    // ⚠ Les retours à la ligne sont ÉCRASÉS : un commentaire multiligne coupe la
+    // table du rapport en deux, et un rapport qui ne s'affiche pas ne se lit pas.
+    if (champ === 'commentaire') return `${String(v).replace(/\s+/g, ' ').slice(0, 60)}…`
+    return String(v)
   }
   for (const { archive: a, patch } of changements) {
     for (const [champ, valeur] of Object.entries(patch)) {
