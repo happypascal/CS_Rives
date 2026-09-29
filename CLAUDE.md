@@ -1310,6 +1310,14 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   se rejoint par un **bouton en tête de l'écran Assemblées Générales** : on ne cherche pas le PV de
   1978 en parcourant un menu, on le cherche en pensant aux assemblées. En entrée distincte, il
   devenait un second registre concurrent du premier.
+  - **DEUX PORTES, TOUJOURS PAS D'ENTRÉE** (Pascal, 2026-09-29) : un second bouton en tête de la
+    **Mémoire du lotissement**. Deux questions mènent au fonds — « que s'est-il décidé en
+    assemblée ? » depuis l'écran AG, « depuis quand traîne ce dossier ? » depuis la mémoire. ⚠ La
+    mémoire porte le **pourquoi**, les PV portent les **actes** qui l'ont fabriqué : chercher l'un
+    sans l'autre ne donne que la moitié du fil. Ouvert à tous — c'est une consultation, pas une
+    gestion. ⚠ Le manuel suit, sous l'entrée **Mémoire** cette fois : une action qui existe sans
+    être décrite laisse le lecteur dans l'ignorance, exactement comme une action décrite qui
+    n'existe pas.
   - ⚠ Les routes sont donc **`/ag/archives`** et `/ag/archives/:id`, et pas seulement par élégance :
     c'est cette URL qui garde l'entrée « Assemblées Générales » **active** dans la barre de gauche
     pendant la consultation. Avec `/archives-pv`, aucune entrée ne s'allumait — on ne savait plus où

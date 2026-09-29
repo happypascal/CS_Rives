@@ -88,6 +88,20 @@ export default function SujetList() {
       <PageHeader
         title="Mémoire du lotissement"
         subtitle="Ce qu’il faut savoir sur chaque dossier, et comment on en est arrivé là."
+        actions={(
+          /* ⚠ UNE SECONDE PORTE VERS LES ARCHIVES, pas une entrée de menu
+             (Pascal, 2026-09-29). Le fonds reste sans entrée propre — arbitrage
+             du 2026-09-25 : en menu distinct, il devenait un second registre
+             concurrent du premier. Mais il a désormais DEUX portes, parce que
+             deux questions y mènent : « que s'est-il décidé en assemblée ? »
+             depuis l'écran AG, et « depuis quand traîne ce dossier ? » depuis
+             ici. La mémoire dit le pourquoi, les PV portent les actes qui l'ont
+             fabriqué — chercher l'un sans l'autre laisse la moitié du fil.
+             ⚠ Ouvert à TOUS : c'est une consultation, pas une gestion. */
+          <Link to="/ag/archives">
+            <Button variant="secondary">Archives des PV depuis 1955</Button>
+          </Link>
+        )}
       />
 
       <Card className="mb-4 px-5 py-4">

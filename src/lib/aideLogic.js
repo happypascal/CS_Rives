@@ -737,8 +737,20 @@ export const MENUS = [
     menu: 'Mémoire de l’ASL',
     visiblePar: TOUS,
     aQuoi:
-      'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas.',
+      'La mémoire du lotissement, dossier par dossier : le portail, la zone C, le recouvrement. Elle porte le POURQUOI, que le registre des décisions ne conserve pas. Les procès-verbaux depuis 1955 se consultent aussi depuis cet écran, par le bouton « Archives des PV depuis 1955 ».',
     actions: [
+      {
+        titre: 'Remonter aux procès-verbaux d’origine',
+        pourQui: TOUS,
+        resume: 'Ce que les assemblées ont réellement décidé sur ce dossier.',
+        etapes: [
+          'En haut de cet écran, cliquez sur « Archives des PV depuis 1955 ».',
+          'Cherchez le dossier par un mot (« portail », « plage »), ou choisissez-le dans la liste des dossiers repérés.',
+          'Ouvrez le procès-verbal : son en-tête donne les décisions de l’assemblée.',
+        ],
+        alerte:
+          'La mémoire dit le pourquoi, les procès-verbaux portent les actes qui l’ont fabriqué : l’un sans l’autre ne donne que la moitié du fil. Attention, la recherche porte sur un texte reconnu automatiquement sur des scans parfois anciens : ne rien trouver ne prouve rien, et seul le document scanné fait foi.',
+      },
       {
         titre: 'Mettre la même pièce sur deux entrées',
         pourQui: TOUS,
