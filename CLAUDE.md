@@ -1111,9 +1111,18 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     41/49 Lots »), les résumés normalisent (« 41 lots sur 49 »). Les deux sont exacts ; le second
     est celui qu'on lit. Le registre garde les **chiffres de vote**, que les résumés n'expriment que
     sous forme de phrase.
-- **LOT DU 2026-09-28 SOIR : 10 assemblées ajoutées** (1989, 1991, 1992, 1993, 1996 ×2, 1998,
-  2001, 2002, 2010) → **35 archives, 284 résolutions, 153 décisions montrées**. Années encore
-  manquantes : **1955–1987, 1990, 1994–1995, 1997, 1999–2000**.
+- **LE FONDS S'ENRICHIT PAR LOTS, ET LA CHAÎNE EST TOUJOURS LA MÊME** — c'est elle qu'il faut
+  rejouer dans cet ordre, jamais un script isolé :
+  `importer_pv_archives` (dossier par dossier) → `corriger_pv_archives` (types, intitulés) →
+  `importer_resumes_ag` (en-tête + résolutions) → `corriger_resolutions_archives` (les quatre
+  corrections) → `completer_depuis_resumes_ag` (lieu + `au_resume`).
+  ⚠ **L'ordre n'est pas indifférent** : l'import des résumés RÉÉCRIT les résolutions depuis le
+  registre, donc efface et les corrections et le marquage — les deux scripts qui suivent les
+  reposent. C'est le filet, et il a fonctionné à chaque lot.
+  - **2026-09-28 soir : 10 assemblées** (1989, 1991, 1992, 1993, 1996 ×2, 1998, 2001, 2002, 2010).
+  - **2026-09-29 : 4 assemblées** (1990, 1994, 1995, 1997) → **39 archives, 38 procès-verbaux,
+    303 résolutions, 163 décisions montrées**. Années encore manquantes : **1955–1988, 1999–2000**
+    (1988 ne compte plus : son document est la convocation).
   - ⚠ **`&apos;` EST ENTRÉ EN BASE.** Le registre régénéré encode les apostrophes droites en
     entités XML, et `lire_registre_ag.py` ne les décodait pas — « panneaux d'affichage » est devenu
     « panneaux d&apos;affichage » sur toutes les lignes concernées. Les deux lecteurs utilisent

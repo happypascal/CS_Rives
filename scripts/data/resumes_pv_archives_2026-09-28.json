@@ -60,6 +60,39 @@
   ]
  },
  {
+  "date_ag": "1990-07-21",
+  "annee_exercice": 1990,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 21 juillet 1990",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "30/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes non chiffrés ; présence en fraction de 49",
+  "note": "PV incomplet : la page « suite n° 1 » manque (points IV à VII, dont le début du point sur l'éclairage). Le PV de 1997 cite une délibération de l'assemblée « du 20 juillet 1990 » sur les feux et les tondeuses : il s'agit vraisemblablement de celle-ci, datée du 21.",
+  "resolutions": [
+   {
+    "numero": "VII",
+    "sujet": "Éclairage : étude du conseil syndical (quatre lampadaires de 3 m) pour l'assemblée suivante",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré (début du point sur la page manquante)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Engorgement des eaux pluviales près de la propriété Jourlin : aménagement à examiner",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Miroir à la sortie et ralentisseur au milieu de l'allée des Précettes : à examiner",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
   "date_ag": "1991-07-27",
   "annee_exercice": 1991,
   "type_ag": "AGO",
@@ -213,6 +246,84 @@
   ]
  },
  {
+  "date_ag": "1994-07-30",
+  "annee_exercice": 1994,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juillet 1994",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "36/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": "Résolution VII (piquets) : 10 voix contre le projet, 10 pour, 15 abstentions, 1 n'ayant pas pris part au vote ; le PV conclut que l'assemblée n'autorise pas les piquets.",
+  "resolutions": [
+   {
+    "numero": "IV",
+    "sujet": "Mainlevée de l'hypothèque légale sur le lot D.4 (Cartegini), les créanciers prioritaires ayant absorbé le prix de vente",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Assainissement : prise d'acte de la prise en charge partielle par le SIVOM, attente de sa proposition",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 35/50 · Abst. 1/50 (M. Silhol)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Travaux SOTELCAB (câble) mal achevés : pas de solution ; raccordement à traiter directement avec l'entreprise",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 33/50 · Contre 3/50"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Piquets le long de la zone engazonnée des parcelles",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 10/50 · Contre 10/50 · Abst. 15/50"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Asphaltage et élargissement de la chaussée (demande de Mme Chevallay) à l'ordre du jour suivant",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1995-07-29",
+  "annee_exercice": 1995,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juillet 1995",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "30/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Consultation des pièces justificatives des charges les deux lundis précédant l'assemblée",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Piquets allée des Précettes : retrait non imposé, enlèvement lors de l'élargissement à 4 m ; déclaration aux assureurs RC",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 22/50 · Contre 8/50"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Échenillage par l'ONF (1 500 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
   "date_ag": "1996-07-27",
   "annee_exercice": 1996,
   "type_ag": "AGO",
@@ -262,6 +373,45 @@
     "numero": "I",
     "sujet": "Modification de l'article 15 : délai supplémentaire, report à l'assemblée de fin juin 1997",
     "decision": "Reportée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1997-06-28",
+  "annee_exercice": 1997,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 1997",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "33/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 51 (tel qu’au PV)",
+  "note": "Résolution VII : l'assemblée constate que le quorum de l'article L. 315-3 du code de l'urbanisme n'est pas réuni pour modifier l'article 15 ; le projet est réinscrit à l'assemblée suivante.",
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Assainissement : convention avec le SIVOM à l'étude, pas de travaux avant 2000 ; fonds de réserve jugé prématuré",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Mise en souterrain de l'éclairage extérieur : sursis, lié à l'assainissement",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Modification de l'article 15 : quorum de l'article L. 315-3 non réuni",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Commission des sages (MM. Privat, Pargoux et Perrin) pour régler à l'amiable les litiges",
+    "decision": "Adoptée",
     "resultat_vote": "Unanimité (non chiffré)"
    }
   ]
