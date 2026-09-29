@@ -1452,6 +1452,30 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     2026 s'annonçait « 09/09/1999 → … », un repère faux qui a l'air d'un fait).
   - ⚠ **Ne signaler QUE ce qu'on peut nommer** : un sujet sans pièce jointe n'est pas incomplet. Le
     bruit tue la liste — leçon des fausses alertes « injoignable » de l'export.
+  - **LA MÉMOIRE ALIMENTÉE PAR LES ARCHIVES DE PV** (`scripts/alimenter_memoire_depuis_pv.mjs`,
+    Pascal 2026-09-29). La mémoire commençait pour l'essentiel en 2021, le fonds couvre 1988→2026 :
+    l'origine de presque tous les dossiers manquait. **110 entrées créées**, la chronologie passe de
+    66 à 176, et le sujet **« Portails et fermeture du lotissement »** est créé — trente-quatre
+    résolutions de 2001 à 2026, et pas une ligne auparavant.
+    - ⚠ **UNE RÉSOLUTION N'EST PAS UN « POURQUOI »** : elle DATE le fil et en donne l'ossature, la
+      synthèse reste à écrire. C'est la séparation des deux tables de la 045 — `sujet_entrees`
+      s'ajoute, `sujets.contenu` se réécrit.
+    - ⚠ **ON IMPORTE AUSSI CE QUI N'A PAS ÉTÉ VOTÉ** — « Non votée », « Reportée », « Rejetée »,
+      « Information ». La mémoire n'est PAS le registre des décisions : que la provision spéciale
+      ait été **rejetée cinq fois** entre 2005 et 2015 avant d'être adoptée en 2016, que tout le lot
+      « portails » de 2020 soit resté sans vote, c'est cela l'histoire du dossier. Ne garder que les
+      adoptions donnerait à lire une suite de succès, ce qui serait faux. **Le résultat est toujours
+      en tête du contenu** : une entrée qui tait un rejet se lit comme une adoption.
+    - ⚠ **UNE RÉSOLUTION PEUT NOURRIR DEUX SUJETS**, et c'est voulu : « Portails : mobilisation du
+      fonds travaux » appartient aux deux fils. Un sujet est un FIL, pas un tiroir.
+    - ⚠ **`sujets.contenu` ET `sujet_entrees.contenu` SONT DU HTML** (`dangerouslySetInnerHTML`) :
+      un texte à sauts de ligne s'y écrase en un bloc, et tout ce qui vient des archives doit être
+      **échappé** — sinon une esperluette casse la fiche. Même leçon que `&apos;` dans le registre.
+    - ⚠ **La colonne est `sujets.created_by`**, pas `cree_par` (qui est celle de `pv_archives`) :
+      PostgREST rejette toute colonne inconnue, le mock l'avalerait.
+    - ⚠ **Les entrées déjà saisies à la main de même date sont SIGNALÉES, jamais touchées** : on ne
+      peut pas deviner si elles disent la même chose, et effacer le travail de quelqu'un sur une
+      ressemblance serait pire qu'un doublon qu'un humain voit.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
