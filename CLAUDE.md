@@ -1476,6 +1476,34 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     - ⚠ **Les entrées déjà saisies à la main de même date sont SIGNALÉES, jamais touchées** : on ne
       peut pas deviner si elles disent la même chose, et effacer le travail de quelqu'un sur une
       ressemblance serait pire qu'un doublon qu'un humain voit.
+  - **LE CONTENTIEUX SCI VIOLETTE** (`scripts/memoire_sci_violette.mjs`, Pascal 2026-09-29) — 22
+    entrées, 2016→2026, avec les actes en pièces jointes. **TROIS sources, et aucune ne suffit** :
+    les **PV d'AG** disent ce que l'assemblée a DÉCIDÉ (autorisation d'agir en 2016, renouvelée en
+    2020) mais jamais ce que l'action a donné ; le **journal du projet** dit ce que le conseil a
+    FAIT ; le dossier `3_procédures/` porte les ACTES (ordonnance, constats, conclusions) mais pas
+    les votes qui les ont permis. C'est exactement le rôle de la mémoire : tenir le fil quand aucune
+    source ne le tient seule. **Chaque entrée nomme sa source dans son texte.**
+    - ⚠ **LES NOMS DE FICHIERS SE COMPARENT EN FORME NORMALISÉE.** macOS écrit ses noms en **NFD**
+      (« é » = e + accent combinant), les littéraux d'un `.mjs` sont en NFC : « Procès-verbal » y est
+      **deux chaînes différentes, identiques à l'œil**. Le rapprochement des pièces déjà au Storage
+      ne trouvait rien. Trouvé parce que le script REFUSE quand une pièce attendue manque — un
+      rapprochement muet aurait créé les entrées sans leurs pièces, et personne ne l'aurait vu.
+    - ⚠ **Les pièces déjà au bucket sont RÉFÉRENCÉES, jamais recopiées** : une nouvelle référence au
+      même `path` avec un id neuf (patron de « Reprendre une pièce », 046). Les quatre constats du
+      projet pèsent 50 Mo à eux seuls.
+    - ⚠ **TOUTE PIÈCE TÉLÉVERSÉE DOIT ÊTRE CITÉE PAR UNE ENTRÉE.** Le premier jet en a envoyé une
+      sans la rattacher : un objet stocké et invisible, que rien ne signale. Son nom trompait de
+      surcroît — « Procédure SCI Violette 2017.pdf » est l'**appel de provision du 21 décembre 2016**.
+    - ⚠ **Ce qui n'a PAS été arbitré est écrit dans la fiche** : le constat de février 2026 est daté
+      du 21 au journal du projet et du **26** sur l'acte (on retient l'acte, et l'entrée le dit) ; le
+      fondement est daté du 15 janvier 1957 par les PV et du 26 mars 1956 par les conclusions (les
+      deux figurent dans la synthèse). Arbitrer une source juridique n'est pas le rôle d'un script.
+  - **UNE DÉCLARATION N'EST PAS UN CONSTAT** (entrée Villa Aysha du 2026-09-29). « Les arbres ont été
+    coupés cette année, elle n'a rien payé des dépens *à ma connaissance* » : l'entrée porte la
+    réserve de son auteur, dit que le non-paiement n'a été vérifié ni auprès de l'avocat ni du
+    syndic, que la **date de l'abattage n'est pas connue**, et qu'**aucune pièce n'est au dossier**.
+    Inscrire une déclaration comme un fait établi est la faute la plus facile à commettre dans une
+    mémoire — et la plus difficile à rattraper dix ans plus tard.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
