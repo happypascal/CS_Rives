@@ -8,6 +8,7 @@ import {
   TYPE_COURT, TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES,
   grouperParDecennie, anneesCouvertes, intervallesManquants, extrait, PREMIERE_ANNEE,
   tagsPresents, tagLibelle, synthesePV, CLE_SYNTHESE,
+  estProcesVerbal, TYPE_DOCUMENT_LABELS,
 } from '../lib/pvArchiveLogic'
 import PiecesJointes from '../components/PiecesJointes'
 import { useAuth } from '../lib/AuthContext'
@@ -27,9 +28,27 @@ import { useAuth } from '../lib/AuthContext'
 /** La frise 1955 → aujourd'hui : une case par année, pleine ou vide. */
 function Frise({ archives }) {
   const cetteAnnee = new Date().getFullYear()
+  // ⚠ LA FRISE NE COMPTE QUE LES PROCÈS-VERBAUX. 1988 porte une convocation et
+  // non son PV : comptée, sa case s'allumait et l'année sortait de la liste de
+  // ce qu'il reste à retrouver. La frise et les « années manquantes » lisent
+  // donc la même règle — se contredire d'un bloc à l'autre du même écran serait
+  // pire que se tromper.
   const parAnnee = useMemo(() => {
     const m = new Map()
-    for (const a of archives) m.set(a.annee, (m.get(a.annee) || 0) + 1)
+    for (const a of archives) {
+      if (!estProcesVerbal(a)) continue
+      m.set(a.annee, (m.get(a.annee) || 0) + 1)
+    }
+    return m
+  }, [archives])
+  // Les documents qui ne sont pas des PV, par année : la case reste vide, mais
+  // l'infobulle dit ce que le fonds détient tout de même pour cette année-là.
+  const autresParAnnee = useMemo(() => {
+    const m = new Map()
+    for (const a of archives) {
+      if (estProcesVerbal(a)) continue
+      m.set(a.annee, [...(m.get(a.annee) || []), TYPE_DOCUMENT_LABELS[a.type_document] || a.type_document])
+    }
     return m
   }, [archives])
 
@@ -40,11 +59,15 @@ function Frise({ archives }) {
     <div className="flex flex-wrap gap-0.5">
       {annees.map((a) => {
         const n = parAnnee.get(a) || 0
+        const autres = autresParAnnee.get(a)
+        const titre = n
+          ? `${a} — ${n} procès-verbal${n > 1 ? 'aux' : ''}`
+          : `${a} — aucun procès-verbal${autres ? ` (le fonds détient : ${autres.join(', ')})` : ''}`
         return (
           <span
             key={a}
-            title={n ? `${a} — ${n} document${n > 1 ? 's' : ''}` : `${a} — aucun procès-verbal`}
-            className={`h-4 w-2.5 rounded-[2px] ${n ? 'bg-navy-600' : 'bg-slate-200'}`}
+            title={titre}
+            className={`h-4 w-2.5 rounded-[2px] ${n ? 'bg-navy-600' : autres ? 'bg-amber-200' : 'bg-slate-200'}`}
           />
         )
       })}
@@ -87,6 +110,15 @@ function LigneArchive({ a, requete }) {
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
+          {/* ⚠ CE QUI N'EST PAS UN PV SE VOIT DANS LA LISTE. Le document de 1988
+              est la convocation, son procès-verbal n'a pas été retrouvé : sans
+              ce badge, la ligne se lit comme les trente-quatre autres et
+              l'année passe pour documentée. L'année figure d'ailleurs aussi
+              dans la frise des manquantes — les deux disent la même chose au
+              même moment. */}
+          {!estProcesVerbal(a) && (
+            <Badge tone="amber">{TYPE_DOCUMENT_LABELS[a.type_document] || a.type_document}</Badge>
+          )}
           <Badge tone="navy">{TYPE_COURT[a.type_ag] || '?'}</Badge>
           {a.qualite && <Badge tone={QUALITE_TONES[a.qualite]}>{QUALITE_LABELS[a.qualite]}</Badge>}
         </div>

@@ -176,9 +176,37 @@ export function intituleAuto({ annee, type_ag }, secours) {
   return secours || 'Assemblée sans année'
 }
 
-/** Les années réellement couvertes, triées. */
+// LA NATURE DU DOCUMENT CONSERVÉ (migration 063).
+//
+// ⚠ TOUT CE QUI EST AU FONDS N'EST PAS UN PROCÈS-VERBAL. Le document de 1988
+// est la CONVOCATION du 1er juin, envoyée pour la séance du 2 juillet ; le PV de
+// cette assemblée n'a pas été retrouvé (Pascal, 2026-09-29).
+//
+// ⚠ Le défaut est `pv`, et il dit vrai de l'existant : une ligne sans nature
+// déclarée est un procès-verbal. C'est ce qui permet d'ajouter la colonne sans
+// rien réinterpréter des trente-quatre autres.
+export const TYPE_DOCUMENT_LABELS = {
+  pv: 'Procès-verbal',
+  convocation: 'Convocation',
+  autre: 'Autre document',
+}
+
+export function estProcesVerbal(archive) {
+  return (archive?.type_document || 'pv') === 'pv'
+}
+
+/**
+ * Les années réellement couvertes par un PROCÈS-VERBAL, triées.
+ *
+ * ⚠ SEULS LES PV COMPTENT. Une convocation porte l'ordre du jour, pas les
+ * décisions : elle ne remplace pas le procès-verbal et ne doit pas faire sortir
+ * son année de la liste de ce qu'il reste à retrouver. Tant que 1988 comptait,
+ * le PV manquant ne figurait sur AUCUNE liste — et une archive qui se croit
+ * complète est exactement le mode de panne que la frise existe pour éviter.
+ */
 export function anneesCouvertes(archives) {
-  return [...new Set((archives || []).map((a) => a.annee).filter(Boolean))].sort((x, y) => x - y)
+  return [...new Set((archives || []).filter(estProcesVerbal).map((a) => a.annee).filter(Boolean))]
+    .sort((x, y) => x - y)
 }
 
 /**

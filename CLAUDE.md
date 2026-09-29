@@ -1142,6 +1142,22 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   - ⚠ **Les fichiers bougent pendant le travail** : `PF AG …` (coquille) renommé en `PV AG …` en
     cours de session, d'où un « PDF illisible » qui n'était qu'un fichier déplacé. Relire l'état du
     disque avant de conclure.
+- **LA NATURE DU DOCUMENT CONSERVÉ** (`type_document`, migration 063 — `pv` par défaut,
+  `convocation`, `autre` ; aucune contrainte de valeur, comme la catégorie des PJ d'AG en 031).
+  - ⚠ **SEULS LES `pv` COMPTENT DANS LES ANNÉES COUVERTES** (`estProcesVerbal`, `anneesCouvertes`).
+    Une convocation porte l'ordre du jour, pas les décisions : elle ne remplace pas le PV et ne doit
+    pas faire sortir son année de la frise de ce qu'il reste à retrouver. **La frise et la liste des
+    années manquantes lisent la même règle** — se contredire d'un bloc à l'autre du même écran serait
+    pire que se tromper. Case **ambre** quand l'année n'a qu'un document d'une autre nature.
+  - ⚠ **ON NE SUPPRIME PAS LA LIGNE.** Une convocation de 1988 porte l'ordre du jour d'une assemblée
+    dont le PV serait perdu : la jeter pour faire tomber une année dans la bonne colonne, ce serait
+    détruire une source pour arranger un compte.
+  - ⚠ **LE DOSSIER DE 1988 N'EST PAS UN SEUL DOCUMENT.** Ses 24 pages contiennent la convocation du
+    1er juin *et*, plus loin, le **procès-verbal** de la séance — « porteurs de 41/49 lots »,
+    « l'assemblée élit M. Jean-Jacques Mey président de séance », points I à IV — interrompu sur
+    « .../… » après l'élection du syndic, la page suivante du scan étant une lettre du SIVOM du
+    27 juin. C'est de là que viennent le président de séance et le quorum en base. **Trancher la
+    nature d'un scan sur ses premières pages est un piège** : il faut lire le texte entier.
 - ⚠ **VÉRIFIER UNE DONNÉE AVEC CE QUI L'A PRODUITE NE VÉRIFIE RIEN.** La base a été remplie depuis
   le registre consolidé ; c'est la confrontation aux **résumés par année** — une seconde rédaction
   des mêmes PV — qui l'a contrôlée. **151 résolutions relues ligne à ligne, appariées sur

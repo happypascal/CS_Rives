@@ -7,7 +7,7 @@ import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
   TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto, tagLibelle,
-  partagerResolutions,
+  partagerResolutions, estProcesVerbal, TYPE_DOCUMENT_LABELS,
 } from '../lib/pvArchiveLogic'
 
 // UN PROCÈS-VERBAL ARCHIVÉ — le document, et ce qu'on sait de lui.
@@ -184,6 +184,7 @@ export default function PVArchiveDetail() {
             type_ag: a.type_ag || 'inconnu',
             intitule: a.intitule || '',
             lieu: a.lieu || '',
+            type_document: a.type_document || 'pv',
             syndic: a.syndic || '',
             mots_cles: (a.mots_cles || []).join(', '),
             qualite: a.qualite || '',
@@ -242,6 +243,7 @@ export default function PVArchiveDetail() {
         type_ag: form.type_ag || 'inconnu',
         intitule: form.intitule.trim(),
         lieu: form.lieu.trim() || null,
+        type_document: form.type_document || 'pv',
         syndic: form.syndic.trim() || null,
         // Mots-clés saisis en clair, séparés par des virgules : une interface à
         // étiquettes coûterait cher pour un champ qu'on remplit trois fois par an.
@@ -335,6 +337,22 @@ export default function PVArchiveDetail() {
               avec moins de voix qu'il n'en fallait, ou que deux versions du PV se
               contredisent. Une réserve qu'on lit après le tableau qu'elle
               qualifie arrive trop tard. */}
+          {/* ⚠ UN DOCUMENT QUI N'EST PAS LE PV SE DIT AVANT TOUT LE RESTE.
+              Celui de 1988 est la convocation ; son procès-verbal n'a pas été
+              retrouvé. Sans cette phrase, le lecteur prend le tableau
+              ci-dessous pour la transcription du document qu'il a sous les
+              yeux, et croit tenir l'acte. L'année reste d'ailleurs comptée
+              parmi celles qui restent à retrouver. */}
+          {!estProcesVerbal(pv) && (
+            <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+              <span className="font-medium">
+                Le document conservé est {(TYPE_DOCUMENT_LABELS[pv.type_document] || pv.type_document).toLowerCase()}, pas le procès-verbal.
+              </span>{' '}
+              Le procès-verbal de cette assemblée n’a pas été retrouvé : l’année figure toujours parmi
+              celles qui restent à chercher. Ce qui suit vient du registre des décisions, pas du
+              document ci-dessous.
+            </div>
+          )}
           {pv.commentaire && (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
               <span className="font-medium">Réserve sur ce document — </span>
@@ -449,6 +467,11 @@ export default function PVArchiveDetail() {
                         pas. La base exige d'ailleurs que les deux concordent. */}
                     <p className="mt-1 text-xs text-slate-400">Laissez vide si le jour est illisible : l’année suffit à classer le document.</p>
                   </div>
+                  <Select label="Nature du document" value={form.type_document} onChange={set('type_document')}>
+                    {Object.entries(TYPE_DOCUMENT_LABELS).map(([v, l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </Select>
                   <Input label="Lieu" value={form.lieu} onChange={set('lieu')} />
                   <Input label="Gestionnaire de l’époque" value={form.syndic} onChange={set('syndic')} />
                   <div>

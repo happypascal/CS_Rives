@@ -771,7 +771,7 @@ export const supabaseRepo = {
   // la fiche le rapatrient, et la recherche ne ramène que ce qui correspond.
   async listPVArchives() {
     return must(await supabase.from('pv_archives')
-      .select('id, date_ag, annee, type_ag, intitule, lieu, syndic, resume, mots_cles, document, nb_pages, source, qualite, assemblee_id, commentaire, created_at, president_seance, presents_representes, resolutions')
+      .select('id, date_ag, annee, type_ag, intitule, lieu, syndic, resume, mots_cles, document, nb_pages, source, qualite, assemblee_id, commentaire, created_at, president_seance, presents_representes, resolutions, type_document')
       .order('annee', { ascending: false })
       .order('date_ag', { ascending: false, nullsFirst: false }))
   },
@@ -801,7 +801,7 @@ export const supabaseRepo = {
   // dire. Le texte océrisé et l'empreinte ne se modifient pas non plus à la
   // main : ce sont des constats d'import.
   async updatePVArchive(id, patch) {
-    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire', 'president_seance', 'scrutateur', 'presents_representes', 'unite_vote', 'resolutions', 'resume_etabli_le']
+    const champs = ['date_ag', 'annee', 'type_ag', 'intitule', 'lieu', 'syndic', 'resume', 'mots_cles', 'qualite', 'assemblee_id', 'commentaire', 'president_seance', 'scrutateur', 'presents_representes', 'unite_vote', 'resolutions', 'resume_etabli_le', 'type_document']
     const payload = Object.fromEntries(Object.entries(patch).filter(([k]) => champs.includes(k)))
     return must(await supabase.from('pv_archives')
       .update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select())[0]

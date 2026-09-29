@@ -807,6 +807,15 @@ create table if not exists pv_archives (
   -- ⚠ L'année de l'EXERCICE, pas de la séance (cf. la note sur les contraintes).
   annee         integer not null check (annee between 1955 and 2100),
   type_ag       text check (type_ag is null or type_ag in ('AGO','AGE','reunion_syndicat','inconnu')),
+  -- LA NATURE DU DOCUMENT CONSERVÉ (migration 063) : `pv`, `convocation`,
+  -- `autre`. ⚠ SEULS LES `pv` COMPTENT dans les années couvertes
+  -- (`anneesCouvertes`, `estProcesVerbal`) : une convocation porte l'ordre du
+  -- jour, pas les décisions, et ne doit pas faire sortir son année de la frise
+  -- de ce qu'il reste à retrouver — une archive qui se croit complète est le
+  -- mode de panne que cette frise existe pour éviter.
+  -- ⚠ Aucune contrainte de valeur, comme la catégorie des pièces jointes d'AG
+  -- (031) : une nature imprévue ne doit pas exiger une migration.
+  type_document text not null default 'pv',
   intitule      text not null,
   lieu          text,
   syndic        text,
