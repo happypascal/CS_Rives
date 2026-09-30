@@ -174,6 +174,11 @@ scripts/
                       seuls** (`\r`) : un découpage sur `\n` rend UNE ligne. ⚠ La date suit la
                       **locale du Mac** (anglais ou français) et n'est **jamais devinée** : un
                       format non reconnu fait échouer l'import, il ne retombe pas sur aujourd'hui.
+  connexions.mjs      QUI UTILISE L'APPLICATION — lit `auth.users` par l'API d'administration.
+                      ⚠ CE N'EST PAS UN JOURNAL : Supabase ne garde que DEUX DATES par compte,
+                      écrasées. ⚠ `last_sign_in_at` = dernier MOT DE PASSE saisi, pas dernière
+                      visite — la session se renouvelle en silence, d'où neuf jours d'écart
+                      constatés. C'est `updated_at` qui suit l'usage.
   backup.mjs          sauvegarde de la base (tables découvertes via l'OpenAPI PostgREST)
   restore.mjs         restauration — ⚠ ordre d'insertion NON codé en dur : insertion par
                       PASSES, ce qui échoue sur une clé étrangère repasse au tour suivant.
@@ -656,6 +661,35 @@ et **zéro vote**.
     chemins ni sur les policies.
 - Premier login (prod) : les non-admins sont bloqués par `<ForcePasswordChange>` tant que
   `user_metadata.password_changed !== true`. Min 8 caractères.
+
+### Journal des connexions — ÉCARTÉ, et pourquoi (2026-09-30)
+> Pascal : « je veux un log des connexions à l'application »… puis « on ne va pas le faire si
+> c'est trop complexe ». **Écarté.** `scripts/connexions.mjs` rend l'état, sans migration.
+
+- ⚠ **`last_sign_in_at` NE DIT PAS LA DERNIÈRE VISITE**, mais la dernière fois que le **mot de
+  passe** a été saisi. La session reste ouverte dans le navigateur et Supabase la renouvelle en
+  silence. **Erreur commise le 2026-09-30** : ce champ affirmait que deux membres n'étaient pas
+  venus depuis le 19 juillet, alors que l'un s'était connecté **la veille au soir** — neuf jours
+  d'écart sur le compte du président lui-même. C'est `updated_at` qui suit l'usage, et ce n'est
+  qu'un **indicateur** : il bouge aussi sur un changement de mot de passe ou une écriture dans les
+  métadonnées.
+- ⚠ **UN VRAI JOURNAL N'EST PAS UN `onAuthStateChange`.** L'événement se déclenche à **chaque
+  chargement de page et chaque renouvellement de jeton** (environ une fois par heure) : branché
+  dessus sans dédoublonnage par session, il écrirait quarante lignes par jour pour une seule
+  visite. **Un journal qui ment est pire que pas de journal.**
+- ⚠ **ET IL SERAIT DÉCLARATIF** : le projet n'a aucun code serveur, l'écriture se ferait depuis le
+  navigateur. C'est un journal d'**usage**, jamais une preuve d'accès — ne pas le présenter comme
+  tel dans un registre légal.
+- ⚠ **Pas d'adresse IP** : le navigateur ne la connaît pas, il faudrait interroger un service
+  tiers — donc envoyer des données dehors pour un gain nul.
+- ⚠ **Les tables internes de Supabase (`auth.audit_log_entries`) NE SONT PAS ATTEIGNABLES** —
+  vérifié : PostgREST n'expose que `public`, et Supabase les purge.
+- ⚠ **`connexions.mjs` est un SCRIPT, pas un écran** : il lui faut la clé `service_role`, qui
+  contourne toute la RLS et n'a rien à faire dans un navigateur. Données personnelles sur les cinq
+  membres.
+- ⚠ **« Hier » se compte en JOURS DE CALENDRIER, pas en heures écoulées.** Une connexion d'hier 20h
+  relue à 18h fait vingt-deux heures — donc « zéro jour », donc « aujourd'hui ». Le tableau
+  affirmait une visite du jour pour une visite de la veille.
 
 ### Notifications — manuelles, choix assumé
 Historique : edge function Resend → CallMeBot WhatsApp → fix User-Agent 403 → **tout supprimé**.
