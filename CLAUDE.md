@@ -1181,6 +1181,46 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     manquant) ». `corriger_resolutions_archives.mjs` accepte donc **plusieurs valeurs antérieures**
     (`avant_aussi`) : sans cela, une base déjà corrigée et un ré-import — qui repose « Information »
     — ne pouvaient pas passer par la même règle.
+#### Le RÉSUMÉ RÉDIGÉ des résolutions (migration 064, 2026-09-30)
+> Pascal : les résumés étaient **trop mécaniques** — une ligne par sous-résolution (10.1 à 10.6
+> pour un seul sujet), des intitulés obscurs, et aucune hiérarchie entre une décision qui engage le
+> lotissement et un miroir remplacé. **39 archives, 92 résolutions importantes, 57 autres.**
+
+- ⚠ **CE RÉSUMÉ EST ÉCRIT, PAS CALCULÉ.** Aucune règle ne produit « 10 — Remise en fonction des
+  portails avec interphone : mandat au conseil syndical jusqu'à 50 000 € TTC, financé par appel de
+  fonds ; l'utilisation du fonds de travaux est refusée » à partir de **six sous-résolutions dont
+  deux ont été REJETÉES**. Il faut avoir lu le procès-verbal. L'application l'AFFICHE, elle ne le
+  fabrique pas — même partage que partout ailleurs dans ce registre.
+- ⚠ **IL NE REMPLACE PAS `resolutions`** : les 303 lignes du registre, avec détail et voix
+  chiffrées, restent sous le résumé, dépliables. **Une lecture ne remplace pas une transcription.**
+  Le script **refuse d'écrire** si le nombre de lignes détaillées bouge — garantie mécanique que
+  cette couche s'ajoute.
+- **UN SEUL `jsonb`, ET NON TROIS COLONNES** : les deux listes et la note forment **une** lecture,
+  écrite d'un bloc. Trois colonnes auraient permis d'afficher les importantes d'une révision et les
+  autres d'une révision précédente, sans que rien ne le signale.
+- ⚠ **`numeros` EST DU TEXTE** (« 14 et 15 », « 10 à 12, 19 et 20 ») : c'est ce que la ligne
+  **couvre**, pas un identifiant. ⚠ **`vote` EST RÉDIGÉ** et porte parfois DEUX scrutins
+  (« Principe : Pour 2 081 · Contre 1 119 — mandat : Pour 2 381 · Contre 819 ») : aucune somme n'y
+  a de sens, et il n'est **jamais recalculé** depuis les résolutions détaillées.
+- ⚠ **LE RÉSUMÉ S'AFFICHE EN ENTIER**, jamais tronqué — jusqu'à 346 caractères. C'est l'inverse du
+  tableau détaillé, où chaque ligne tient sur une ligne parce qu'on le **parcourt** ; ici on le
+  **lit**.
+- ⚠ **« DÉCLARÉ » EST TESTÉ EN PREMIER** dans la couleur (`tonDecisionResume`) : « Refus de fermer
+  déclaré adopté » (2002) et « Déclarée adoptée (majorité non atteinte) » (2016) disent qu'une
+  décision a été **proclamée sans la majorité requise**. Les peindre en vert répéterait l'erreur du
+  PV. ⚠ **« Adoptée (non exécutée) » (1992) est AMBRE**, seule exception nommée : la résolution a
+  bien été adoptée, mais rien n'en est sorti. ⚠ **« Refus … » est VERT** quand le refus est ce qui a
+  été adopté — la couleur suit ce que l'assemblée a DÉCIDÉ, pas le sens du verbe.
+- ⚠ **`au_resume` A ÉTÉ RETIRÉE** des 303 résolutions (aucune supprimée) : elle marquait les lignes
+  de l'ancien résumé et ne commande plus rien. Garder une marque inerte, c'est promettre à un
+  lecteur futur qu'elle veut encore dire quelque chose. `completer_depuis_resumes_ag.mjs` ne doit
+  plus la reposer.
+- ⚠ **COMPARER DEUX `jsonb` PAR `JSON.stringify` NE MARCHE PAS.** Postgres ne conserve pas l'ordre
+  des clés : il les range par longueur puis alphabétiquement. Relu, `{ordre, numeros, resume…}`
+  revient `{vote, ordre, resume…}` — le script se croyait du travail à chaque exécution.
+  Comparer sur une forme **canonique** (clés triées). **L'idempotence ne se déclare pas, elle se
+  vérifie en relançant.**
+
 #### Revalidation du 2026-09-30 — les 39 PV relus sur l'IMAGE, sans OCR
 > 21 erreurs, 139 imprécisions, 21 doutes, 4 omissions. Cause principale : des décisions relatées
 > **sans formule de vote ni décompte** (« l'assemblée considère », « prend acte et entérine »,

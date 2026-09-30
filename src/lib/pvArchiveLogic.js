@@ -575,3 +575,60 @@ export function tonResultat(resultat) {
   if (t.startsWith('decision sans vote')) return 'text-sky-700'
   return 'text-slate-500'
 }
+
+// ============================================================================
+// LE RÉSUMÉ RÉDIGÉ DES RÉSOLUTIONS (migration 064)
+//
+// ⚠ Pascal (2026-09-30) : les résumés étaient trop mécaniques — une ligne par
+// sous-résolution (10.1 à 10.6 pour un seul sujet), des intitulés obscurs, et
+// aucune hiérarchie entre une décision qui engage le lotissement et un miroir
+// remplacé.
+//
+// ⚠ CE RÉSUMÉ EST ÉCRIT, PAS CALCULÉ. Aucune règle ne produit « 10 — Remise en
+// fonction des portails avec interphone : mandat au conseil syndical jusqu'à
+// 50 000 € TTC, financé par appel de fonds — Adoptée » à partir de six
+// sous-résolutions dont deux ont été REJETÉES. Il faut avoir lu le PV.
+// L'application l'affiche, elle ne le fabrique pas.
+//
+// ⚠ IL NE REMPLACE PAS `resolutions` : les 303 lignes du registre, avec détail
+// et voix chiffrées, restent consultables sous le résumé. Une lecture ne
+// remplace pas une transcription.
+// ============================================================================
+
+/** Le résumé d'une archive, ou `null` s'il n'a pas encore été rédigé. */
+export function resumeResolutions(archive) {
+  const r = archive?.resume_resolutions
+  if (!r || typeof r !== 'object') return null
+  const importantes = Array.isArray(r.importantes) ? r.importantes : []
+  const autres = Array.isArray(r.autres) ? r.autres : []
+  if (!importantes.length && !autres.length && !r.note) return null
+  return { importantes, autres, note: r.note || null }
+}
+
+// LA COULEUR D'UNE DÉCISION DU RÉSUMÉ — ordre imposé par le brief du
+// 2026-09-30, et cet ordre est le fond de la règle.
+//
+// ⚠ « DÉCLARÉ » PASSE EN PREMIER, avant même « commence par Adoptée ». « Refus
+// de fermer déclaré adopté » (2002) et « Déclarée adoptée (majorité non
+// atteinte) » (2016) disent qu'une décision a été PROCLAMÉE sans que la
+// majorité requise soit atteinte. Les peindre en vert reviendrait à répéter
+// l'erreur du procès-verbal.
+//
+// ⚠ « ADOPTÉE (NON EXÉCUTÉE) » EST AMBRE, PAS VERTE, et c'est la seule exception
+// nommée par le brief : la résolution de 1992 a bien été adoptée, mais rien n'en
+// est sorti. Le vert dirait que l'affaire est réglée.
+//
+// ⚠ « REFUS … » EST VERT quand le refus est ce qui a été adopté : c'est une
+// décision prise, pas un échec. La couleur suit ce que l'assemblée a DÉCIDÉ, pas
+// le sens positif ou négatif du verbe.
+export function tonDecisionResume(decision) {
+  const t = String(decision || '')
+    .normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase()
+  if (t.includes('declar')) return 'text-amber-700'
+  if (t.includes('non executee')) return 'text-amber-700'
+  if (t.startsWith('adoptee') || t.startsWith('refus')) return 'text-emerald-700'
+  if (t.startsWith('rejetee') || t.startsWith('regularisation rejetee')) return 'text-red-700'
+  if (t.startsWith('sans vote')) return 'text-sky-700'
+  if (t.startsWith('information') || t.startsWith('pas de vote') || t.startsWith('inconnu')) return 'text-slate-500'
+  return 'text-amber-700'
+}

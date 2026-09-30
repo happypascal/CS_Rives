@@ -55,6 +55,13 @@ import { promisify } from 'node:util'
 import process from 'node:process'
 import { cleIntitule } from '../src/lib/pvArchiveLogic.js'
 
+// ⚠ LE MARQUAGE `au_resume` EST CADUC depuis la migration 064 : c'est le RÉSUMÉ
+// RÉDIGÉ qui porte désormais la hiérarchie, et la marque a été retirée des 303
+// résolutions. Ce script ne pose plus que le LIEU. Relancer la partie marquage
+// réintroduirait une clé que plus rien ne lit — et qu'un lecteur futur croirait
+// signifiante.
+const MARQUAGE_CADUC = true
+
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const run = promisify(execFile)
 const GO = process.argv.includes('--go')
@@ -198,7 +205,7 @@ async function main() {
       soucis.push(`${a.intitule} — ${restantes.length} ligne(s) du résumé sans correspondance en base : ${restantes.map((z) => `« ${z.sujet} »`).join(', ')}`)
     }
 
-    const change = resolutions.some((x, i) => x.au_resume !== a.resolutions[i].au_resume
+    const change = !MARQUAGE_CADUC && resolutions.some((x, i) => x.au_resume !== a.resolutions[i].au_resume
       || 'impactante' in a.resolutions[i])
     W(`| ${a.intitule} | ${lieux.has(a.id) ? lieux.get(a.id).lieu : '—'} | ${retenues} | ${resolutions.length - retenues} | ${restantes.length || '—'} |`)
     if (change) aEcrire.push({ id: a.id, intitule: a.intitule, resolutions })

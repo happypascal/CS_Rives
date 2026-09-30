@@ -7,7 +7,8 @@ import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
   TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto, tagLibelle,
-  partagerResolutions, estProcesVerbal, TYPE_DOCUMENT_LABELS, tonResultat,
+  estProcesVerbal, TYPE_DOCUMENT_LABELS, tonResultat,
+  resumeResolutions, tonDecisionResume,
 } from '../lib/pvArchiveLogic'
 
 // UN PROCÈS-VERBAL ARCHIVÉ — le document, et ce qu'on sait de lui.
@@ -75,6 +76,60 @@ function voixEnLigne(r) {
     .filter(([, v]) => v != null)
     .map(([libelle, v]) => `${libelle} ${v.toLocaleString('fr-FR')}`)
     .join(' · ')
+}
+
+// LE RÉSUMÉ RÉDIGÉ (064) — deux listes, « importantes » puis « autres ».
+//
+// ⚠ LE RÉSUMÉ S'AFFICHE EN ENTIER, jamais tronqué : c'est une phrase rédigée,
+// parfois de trois cents caractères, et la couper la rendrait fausse. D'où
+// `align-top` et un retour à la ligne normal — c'est l'inverse exact du tableau
+// détaillé, où chaque ligne tient sur une ligne parce qu'on le PARCOURT. Ici on
+// LIT.
+function ResumeRedige({ titre, lignes, sourdine }) {
+  if (!lignes.length) return null
+  return (
+    <div className="mt-4">
+      <p className={`text-xs font-semibold uppercase tracking-wide ${sourdine ? 'text-slate-400' : 'text-navy-700'}`}>
+        {titre}
+      </p>
+      <div className="mt-1 overflow-x-auto">
+        <table className="w-full table-fixed text-sm">
+          {/* ⚠ Le résumé prend la place restante ; les trois autres colonnes
+              sont mesurées sur les données : 17 caractères au plus pour les
+              numéros, 117 pour le vote — celui-ci peut porter DEUX scrutins
+              (« Principe : Pour 2 081 · Contre 1 119 — mandat : … »). */}
+          <colgroup>
+            <col className="w-20" />
+            <col />
+            <col className="w-44" />
+            <col className="w-64" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-navy-100 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="py-2 pr-3 font-medium">N°</th>
+              <th className="py-2 pr-3 font-medium">Résumé</th>
+              <th className="py-2 pr-3 font-medium">Décision</th>
+              <th className="py-2 font-medium">Vote</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-navy-50">
+            {lignes.map((r) => (
+              <tr key={`${r.ordre}-${r.numeros}`} className="align-top">
+                <td className="py-2 pr-3 text-xs text-slate-500">{r.numeros}</td>
+                <td className="py-2 pr-3 leading-relaxed text-slate-700">{r.resume}</td>
+                <td className={`py-2 pr-3 text-xs font-medium ${tonDecisionResume(r.decision)}`}>
+                  {r.decision}
+                </td>
+                <td className="py-2 text-xs leading-relaxed text-slate-500">
+                  {r.vote || <span className="text-slate-400">—</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
 
 function Resolutions({ liste, unite }) {
@@ -201,7 +256,7 @@ export default function PVArchiveDetail() {
 
   const set = (champ) => (e) => { setForm((f) => ({ ...f, [champ]: e.target.value })); setEnregistre(false) }
 
-  const { impactantes, ecartees } = partagerResolutions(pv.resolutions)
+  const resume = resumeResolutions(pv)
 
   // ALLER D'UNE ASSEMBLÉE À L'AUTRE SANS REPASSER PAR LA LISTE.
   //
@@ -359,53 +414,56 @@ export default function PVArchiveDetail() {
             </div>
           )}
 
-          {pv.resolutions?.length > 0 ? (
+          {/* ═══ LE RÉSUMÉ RÉDIGÉ (064), PUIS LE DÉTAIL ═══
+              ⚠ DEUX LECTURES, ET L'ORDRE EST LE FOND. Le résumé rédigé regroupe
+              une résolution et ses sous-points en une phrase — « 10 » plutôt que
+              « 10.1 » à « 10.6 » — et sépare ce qui engage le lotissement du
+              reste. Le tableau détaillé, lui, est la TRANSCRIPTION du PV : il
+              reste dessous, entier, car une lecture ne remplace pas un acte.
+              ⚠ Tant qu'un résumé n'est pas rédigé, c'est le détail qui s'affiche
+              directement : une fiche ne doit jamais paraître vide parce qu'une
+              couche manque. */}
+          {resume ? (
             <>
-              {impactantes.length > 0 ? (
-                <Resolutions liste={impactantes} unite={pv.unite_vote} />
-              ) : (
-                /* ⚠ DÉPOUILLÉE MAIS SANS AUCUNE DÉCISION, ce n'est PAS « pas
-                   encore dépouillée ». Le cas existe : l'AG de 1988 n'a qu'une
-                   ligne, et c'est « Inconnu (page manquante) ». Servir le message
-                   d'attente y ferait croire à un travail qui reste à faire, alors
-                   que le travail est fait et que c'est le DOCUMENT qui est
-                   incomplet — ce que la réserve, juste au-dessus, explique. */
+              <ResumeRedige titre="Résolutions importantes" lignes={resume.importantes} />
+              <ResumeRedige titre="Autres résolutions" lignes={resume.autres} sourdine />
+              {resume.note && (
+                <p className="mt-3 text-xs leading-relaxed text-slate-500">{resume.note}</p>
+              )}
+              {!resume.importantes.length && !resume.autres.length && (
                 <p className="mt-2 text-sm text-slate-500">
-                  Aucune résolution de cette assemblée n’a été mise aux voix avec un résultat connu.
+                  Aucune résolution de fond à cette assemblée.
                 </p>
               )}
-              {/* ⚠ LES ÉCARTÉES RESTENT ACCESSIBLES, à un clic. Les montrer en
-                  premier noie les deux ou trois décisions qui ont réellement
-                  engagé le lotissement. Les SUPPRIMER serait autre chose — un
-                  fonds d'archives ne choisit pas ce qui mérite mémoire, il
-                  choisit ce qu'il montre en premier. */}
-              {ecartees.length > 0 && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setToutVoir((v) => !v)}
-                    className="text-xs text-navy-600 underline"
-                  >
-                    {/* ⚠ LE LIBELLÉ NE NOMME PAS CE QU'IL REPLIE. Une première
-                        version annonçait « bureau, comptes, quitus, budget,
-                        syndic » : vrai de la plupart des assemblées, faux de
-                        2023, dont les écartées sont des comptes rendus de
-                        procédure et des points tombés avec un rejet. Un libellé
-                        qui décrit à côté est pire que muet. */}
-                    {toutVoir
-                      ? 'Masquer les autres points'
-                      : `Afficher les ${ecartees.length} autres points de l’ordre du jour`}
-                  </button>
-                  {toutVoir && <Resolutions liste={ecartees} unite={pv.unite_vote} />}
-                </div>
-              )}
             </>
+          ) : pv.resolutions?.length > 0 ? (
+            <Resolutions liste={pv.resolutions} unite={pv.unite_vote} />
           ) : (
             <p className="mt-1 text-sm text-slate-400">
               Les décisions de cette assemblée n’ont pas encore été dépouillées. Le procès-verbal
               ci-dessous reste consultable en attendant.
             </p>
           )}
+
+          {/* ⚠ LE DÉTAIL N'EST PAS UNE VARIANTE DU RÉSUMÉ, c'est la source. Il
+              porte les numéros réels, les détails rédigés et les voix chiffrées
+              du registre — et il les porte TOUS : plus aucune ligne n'est
+              écartée, la hiérarchie étant désormais portée par le résumé. */}
+          {resume && pv.resolutions?.length > 0 && (
+            <div className="mt-4 border-t border-navy-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setToutVoir((v) => !v)}
+                className="text-xs text-navy-600 underline"
+              >
+                {toutVoir
+                  ? 'Masquer le détail des résolutions'
+                  : `Détail des résolutions (${pv.resolutions.length} lignes du registre)`}
+              </button>
+              {toutVoir && <Resolutions liste={pv.resolutions} unite={pv.unite_vote} />}
+            </div>
+          )}
+
           {/* ⚠ CETTE MENTION RESTE, quoi qu'il arrive au reste de l'écran : un
               résumé est une lecture, le procès-verbal est l'acte. Celui qui cite
               le premier sans avoir ouvert le second se trompera un jour. */}
@@ -413,7 +471,7 @@ export default function PVArchiveDetail() {
             <p className="mt-3 text-xs text-slate-400">
               Résumé{pv.resume_etabli_le ? ` établi le ${formatDate(pv.resume_etabli_le)}` : ''} d’après le
               procès-verbal ; <strong>seul le procès-verbal fait foi</strong>.
-              {ecartees.length > 0 && ` Ne figurent ici que les résolutions RÉELLEMENT MISES AUX VOIX, hors points de routine. Les ${ecartees.length} autres — non votées, reportées, points d’information, élection du bureau, comptes, quitus, budget courant et désignation du syndic — sont repliées ci-dessus.`}
+              {resume && ' Le résumé regroupe une résolution et ses sous-points ; le détail des lignes du registre reste consultable ci-dessus.'}
             </p>
           )}
         </div>

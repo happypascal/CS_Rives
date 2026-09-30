@@ -842,6 +842,20 @@ create table if not exists pv_archives (
   -- Date de rédaction du résumé, pas de l'assemblée.
   resume_etabli_le     date,
 
+  -- LE RÉSUMÉ RÉDIGÉ DES RÉSOLUTIONS (migration 064) —
+  -- { importantes: [...], autres: [...], note } ; chaque ligne
+  -- { ordre, numeros, resume, decision, vote } regroupe une résolution et ses
+  -- sous-points (« 10 » plutôt que « 10.1 » à « 10.6 »).
+  -- ⚠ NE REMPLACE PAS `resolutions` : celle-ci reste la TRANSCRIPTION intégrale
+  -- du procès-verbal, avec détail et voix chiffrées. Une lecture ne remplace pas
+  -- un acte.
+  -- ⚠ ÉCRIT PAR UN LECTEUR DU PV, JAMAIS CALCULÉ : aucune règle ne produit une
+  -- phrase à partir de six sous-résolutions dont deux ont été rejetées.
+  -- ⚠ `numeros` est du TEXTE (« 14 et 15 », « 10 à 12, 19 et 20 ») : c'est ce que
+  -- la ligne couvre, pas un identifiant. `vote` est RÉDIGÉ et peut porter deux
+  -- scrutins — aucune somme n'y a de sens.
+  resume_resolutions   jsonb,
+
   mots_cles     text[],
   -- {path,name,type,size,sha256} — préfixe `pv-archives/<annee>/` dans le bucket
   -- privé `documents`. ⚠ Aucune policy de Storage à ajouter : vérifié —
