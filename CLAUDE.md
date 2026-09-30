@@ -1692,6 +1692,28 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     - **Garde-fou « liée à une décision du conseil »** : la liaison est **textuelle** (aucune clé
       étrangère, limite v1), cherchée sur un numéro `AAAA-NNN` ou une mention explicite. Aucun cas
       trouvé — le dire vaut mieux que de taire un garde-fou qui n'a rien retenu.
+  - **LES NUMÉROS D'ARRÊTÉS CORRIGÉS SUR LES ACTES** (`scripts/corriger_numeros_arretes.mjs`,
+    2026-09-30 au soir). L'application portait **5184-55, 7955-56, 5835-61** — une mauvaise lecture.
+    Les actes, relus sur l'image, disent **3184-55** (22/08/1955), **755-56** (10/02/1956) et
+    **583-61** (21/02/1961) ; l'en-tête de ce dernier porte « ARRÊTÉ N° 583-61 » et ses visas
+    recoupent les trois autres. 7 remplacements ciblés, aucune reformulation.
+    - ⚠ **LE GARDE-FOU `a_verifier` A SERVI À ÇA.** La révision du matin les portait en « à
+      vérifier » et ne les avait donc **pas** corrigés ; c'est ce signalement qui a déclenché la
+      vérification sur les actes. Corriger à l'aveugle aurait inscrit d'autres numéros faux — le
+      document de contexte proposait **3164-55** et **52-57**, qui n'apparaissent **nulle part**.
+    - **2e consultation du 17/04/2025 : 70,3 → 72,6 %.** L'application lisait pour les colotis la
+      colonne « D'accord TOTAL » et pour les superficies la colonne « D'accord » seule — **deux
+      colonnes différentes dans la même phrase**.
+    - ⚠ **EXACTEMENT UNE OCCURRENCE, SINON ON N'ÉCRIT PAS.** Zéro : déjà fait, ou la cible a changé.
+      Plusieurs : on ne sait pas laquelle viser, et prendre la première serait un tirage au sort.
+    - ⚠ **UNE CORRECTION DE TITRE SE REND ELLE-MÊME INTROUVABLE** : au second passage,
+      `titre_actuel` porte l'ancien numéro, celui qu'on vient de remplacer. Sans ce test, relancer
+      signalait trois « entrées introuvables » qui n'étaient que la preuve du succès du premier
+      passage — **même piège que les déplacements de la 065**.
+    - ⚠ **RECHERCHE GLOBALE EN LECTURE SEULE** après écriture (sujets, entrées, décisions,
+      paramètres, commentaires d'archives) : **0 occurrence restante**. ⚠ `sujets.historique` en est
+      **exclu** — il garde les versions antérieures, qui doivent contenir les vieux numéros ;
+      les « corriger » effacerait la trace de ce qui a été corrigé.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu

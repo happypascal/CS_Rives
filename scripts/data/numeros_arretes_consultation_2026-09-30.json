@@ -1,0 +1,84 @@
+{
+  "date": "2026-09-30",
+  "auteur": "Claude (Cowork), vérifié sur les actes",
+  "corrections_entrees": [
+    {
+      "sujet": "Arbres et plantations (article 15)",
+      "date": "1956-02-10",
+      "titre_actuel": "L'additif réécrit l'article 15 sur les plantations",
+      "champ": "texte",
+      "ancien": "Arrêté préfectoral du 10 février 1956 (numéro à vérifier : 7955-56 dans l'application, 755-56 dans le document de contexte)",
+      "nouveau": "Arrêté préfectoral n° 755-56 du 10 février 1956",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Biens communs et indivis",
+      "date": "1956-02-10",
+      "titre_actuel": "Premier additif — extension, plantations et plage commune",
+      "champ": "texte",
+      "ancien": "n° 7955-56",
+      "nouveau": "n° 755-56",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Biens communs et indivis",
+      "date": "1955-08-22",
+      "titre_actuel": "Cahier des charges du lotissement de Rives (août 1955)",
+      "champ": "texte",
+      "ancien": "n° 5184-55",
+      "nouveau": "n° 3184-55",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Urbanisme et servitudes",
+      "date": "1955-08-22",
+      "titre_actuel": "Arrêté préfectoral n° 5184-55 autorisant le lotissement de Rives",
+      "champ": "titre",
+      "ancien": "n° 5184-55",
+      "nouveau": "n° 3184-55",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Urbanisme et servitudes",
+      "date": "1956-02-10",
+      "titre_actuel": "Arrêté préfectoral n° 7955-56 — extension et premier additif",
+      "champ": "titre",
+      "ancien": "n° 7955-56",
+      "nouveau": "n° 755-56",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Urbanisme et servitudes",
+      "date": "1961-02-21",
+      "titre_actuel": "Arrêté préfectoral n° 5835-61 — modification parcellaire (lots E, Luscher / Van Den Berg)",
+      "champ": "titre",
+      "ancien": "n° 5835-61",
+      "nouveau": "n° 583-61",
+      "source": "Arrêté préfectoral n° 583-61 du 21 février 1961 (en-tête « ARRÊTÉ N° 583-61 » et visas) et arrêté préfectoral n° 1298-61 (visas et article I), 4_ASL/2-documents mairie/Modification Vand Den Berg : Luscher.pdf et cession de la plage.pdf, lus sur l'image le 30 septembre 2026"
+    },
+    {
+      "sujet": "Statut juridique du lotissement",
+      "date": "2025-04-17",
+      "titre_actuel": "2ème consultation sur 9 points de modification du cahier des charges",
+      "champ": "texte",
+      "ancien": "70.3 à 78.9% des superficies",
+      "nouveau": "72.6 à 78.9% des superficies",
+      "source": "4_ASL/_résultats des votes/Résultats consultation 2.pdf, tableau « SUPERFICIE », colonne « D'accord TOTAL » (d'accord + d'accord avec question), cohérente avec les 76 à 82 % des colotis déjà inscrits (même colonne)"
+    }
+  ],
+  "chaines_a_rechercher_partout": [
+    "5184-55",
+    "7955-56",
+    "5835-61",
+    "3164-55",
+    "52-57",
+    "70.3 à 78.9",
+    "70,3 à 78,9"
+  ],
+  "numeros_verifies": {
+    "1955-08-22": "3184-55",
+    "1956-02-10": "755-56",
+    "1957-01-09": "32-57",
+    "1961-02-21": "583-61"
+  }
+}
