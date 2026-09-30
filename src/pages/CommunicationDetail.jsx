@@ -120,7 +120,7 @@ export default function CommunicationDetail() {
       <PageHeader
         title={envoi.objet}
         subtitle={`Envoyé le ${formatDateTime(envoi.date_envoi)} · ${CANAL_LABELS[envoi.canal] || envoi.canal}`}
-        actions={<Link to="/envois" className="text-sm text-navy-600 underline">Retour aux envois</Link>}
+        actions={<Link to="/envois"><Button variant="ghost">Retour aux envois</Button></Link>}
       />
 
       {envoi.mode_test && (

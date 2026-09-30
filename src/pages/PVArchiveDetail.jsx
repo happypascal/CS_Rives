@@ -268,26 +268,27 @@ export default function PVArchiveDetail() {
         title={pv.intitule}
         subtitle={`${pv.date_ag ? formatDate(pv.date_ag) : `${pv.annee} — jour inconnu`}${pv.type_ag ? ` · ${TYPE_LABELS[pv.type_ag] || pv.type_ag}` : ''}`}
         actions={(
-          <div className="flex flex-wrap items-center gap-3">
+          /* ⚠ DES BOUTONS, COMME PARTOUT AILLEURS (Pascal, 2026-09-30 : « toutes
+             les pages ont des boutons pour les actions en en-tête sauf les
+             archives de PV »). C'étaient les deux seuls écrans à servir des liens
+             soulignés : la même action y avait l'air d'une note de bas de page,
+             et une zone cliquable de la hauteur d'une ligne de texte se rate au
+             doigt sur mobile.
+             ⚠ La navigation entre assemblées reste en `secondary` et le retour
+             en `ghost` : aller d'un procès-verbal au suivant est ce qu'on vient
+             faire ici, quitter l'écran ne l'est pas. */
+          <div className="flex flex-wrap items-center gap-2">
             {plusAncienne && (
-              <Link
-                to={`/ag/archives/${plusAncienne.id}`}
-                className="text-sm text-navy-600 underline"
-                title={plusAncienne.intitule}
-              >
-                ← {plusAncienne.annee}
+              <Link to={`/ag/archives/${plusAncienne.id}`}>
+                <Button variant="secondary" title={plusAncienne.intitule}>← {plusAncienne.annee}</Button>
               </Link>
             )}
             {plusRecente && (
-              <Link
-                to={`/ag/archives/${plusRecente.id}`}
-                className="text-sm text-navy-600 underline"
-                title={plusRecente.intitule}
-              >
-                {plusRecente.annee} →
+              <Link to={`/ag/archives/${plusRecente.id}`}>
+                <Button variant="secondary" title={plusRecente.intitule}>{plusRecente.annee} →</Button>
               </Link>
             )}
-            <Link to="/ag/archives" className="text-sm text-navy-600 underline">Retour aux archives</Link>
+            <Link to="/ag/archives"><Button variant="ghost">Retour aux archives</Button></Link>
           </div>
         )}
       />

@@ -202,7 +202,9 @@ export default function PVArchivesList() {
         // (arbitrage Pascal, 2026-09-25), on y vient depuis les Assemblées
         // Générales. Sans ce lien, on n'en ressort que par le bouton du
         // navigateur — et le menu de gauche ne montre alors aucune page active.
-        actions={<Link to="/ag" className="text-sm text-navy-600 underline">Retour aux assemblées</Link>}
+        actions={(
+          <Link to="/ag"><Button variant="ghost">Retour aux assemblées</Button></Link>
+        )}
       />
 
       {error && <Card className="mb-4 p-4 text-sm text-red-700">{error}</Card>}
