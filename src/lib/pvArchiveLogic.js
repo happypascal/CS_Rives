@@ -481,10 +481,8 @@ export function synthesePV(parametres) {
 // ============================================================================
 
 /**
- * A-t-elle été mise aux voix, et avec un résultat ?
- * ⚠ « Non votée », « Reportée », « Information » et « Inconnu (page manquante) »
- * ne décident rien — et « Inconnu » moins que tout : c'est une lacune du
- * document, signalée par ailleurs en réserve.
+ * A-t-elle été mise aux voix, avec un résultat chiffré ou proclamé ?
+ * ⚠ Sert à QUALIFIER, plus à filtrer l'affichage : voir `decideQuelqueChose`.
  */
 export function estVotee(resultat) {
   const t = String(resultat || '')
@@ -492,16 +490,44 @@ export function estVotee(resultat) {
   return t.startsWith('adoptee') || t.startsWith('rejetee')
 }
 
-/** Sépare les résolutions d'une assemblée en « impactantes » et « écartées ». */
+// ⚠ CE QUI NE DÉCIDE RIEN — liste EXPLICITE, et c'est tout l'inverse de l'ancienne
+// règle. Le défaut par défaut est désormais **MONTRER**.
+//
+// ⚠ POURQUOI CE RENVERSEMENT (Pascal, 2026-09-30 : « il y a systématiquement les
+// décisions adoptées et rejetées mais pas les autres »). Le filtre ne retenait
+// que « Adoptée » et « Rejetée ». Il cachait donc la décision de l'AG 2008 de NE
+// PAS fermer le lotissement — « Décision sans vote formel » — c'est-à-dire
+// exactement la ligne que la revalidation avait passé deux jours à rétablir, et
+// la seule qui disait ce qu'était devenue l'étude votée en 2007. La fiche
+// montrait le déplacement d'une borne EDF et taisait le sort du portail.
+//
+// ⚠ LE CODE SE CONTREDISAIT LUI-MÊME : `tonResultat` peint « Décision sans vote
+// formel » en bleu en expliquant qu'« une décision prise sans vote reste une
+// DÉCISION », pendant que le filtre la traitait comme un point d'information.
+//
+// ⚠ ET LE DÉFAUT DOIT ÊTRE « MONTRER » : un libellé inconnu qu'on cache est
+// invisible, un libellé inconnu qu'on montre n'est que bruyant. La revalidation
+// a introduit dix libellés d'un coup ; la prochaine en introduira d'autres.
+const NE_DECIDE_RIEN = /^(information|non votee|sans objet|inconnu|a examiner|a l ordre du jour|pas de vote)/
+
+/** La résolution a-t-elle décidé quelque chose — vote formel ou non ? */
+export function decideQuelqueChose(resultat) {
+  const t = String(resultat || '')
+    .normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim()
+  return t !== '' && !NE_DECIDE_RIEN.test(t)
+}
+
+/** Sépare les résolutions d'une assemblée en « décisions » et « le reste ». */
 export function partagerResolutions(liste) {
   const toutes = liste || []
   // ⚠ `au_resume !== false` et non `=== true` : une assemblée pas encore
   // dépouillée n'a aucune marque, et la masquer ferait croire qu'elle n'a rien
   // décidé. L'absence d'information ne doit jamais se lire comme une information.
-  const impactante = (r) => estVotee(r?.resultat) && r?.au_resume !== false
+  const retenue = (r) => decideQuelqueChose(r?.resultat) && r?.au_resume !== false
   return {
-    impactantes: toutes.filter(impactante),
-    ecartees: toutes.filter((r) => !impactante(r)),
+    impactantes: toutes.filter(retenue),
+    ecartees: toutes.filter((r) => !retenue(r)),
   }
 }
 

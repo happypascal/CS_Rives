@@ -241,17 +241,25 @@ async function main() {
     const restantes = [...anciennes]
 
     const nouvelles = a.resolutions.map((r) => {
-      // ⚠ APPARIEMENT EN DEUX TEMPS. Le NUMÉRO d'abord : les sujets ont été
-      // réécrits par la revalidation, s'apparier sur eux serait d'autant plus
-      // faux que la correction est importante.
-      // ⚠ Puis l'INTITULÉ, parce que la revalidation RENUMÉROTE aussi. Sans ce
-      // repli, la ligne de 1988 — « V (IV de la convocation) » devenue
-      // « V présumé (IV de la convocation) » — n'était pas retrouvée : son détail
-      // était perdu et, en mode conservation, l'ancienne ligne SURVIVAIT à côté
-      // de la nouvelle. Un doublon silencieux dans un registre légal, né d'un
-      // mot ajouté à un numéro.
-      let i = restantes.findIndex((x) => norm(x.numero) === norm(r.numero))
+      // ⚠ APPARIEMENT EN TROIS PASSES, DE LA PLUS SPÉCIFIQUE À LA PLUS LÂCHE.
+      //
+      // 1. numéro ET intitulé — la seule correspondance certaine ;
+      // 2. intitulé seul, parce que la revalidation RENUMÉROTE (« V » devient
+      //    « V présumé », « 13 » devient « Annexes ») ;
+      // 3. numéro seul, en dernier recours.
+      //
+      // ⚠ COMMENCER PAR LE NUMÉRO SEUL ÉCRASE DES LIGNES. Constaté le
+      // 2026-09-30 : l'AG 2008 porte TROIS lignes n° 13. La ligne « État des
+      // lieux photographique » du résumé s'appariait à la première d'entre
+      // elles — « Plantations d'arbres et liquidation de l'astreinte » — qui
+      // disparaissait au profit d'une autre, cependant que la vraie « État des
+      // lieux » restait en ligne conservée : une ligne perdue ET un doublon, du
+      // même geste. Trois assemblées touchées (2008, 2022, 2026-09).
+      // ⚠ Une correspondance par numéro seul, quand le numéro se répète, n'est
+      // pas une correspondance : c'est un tirage au sort.
+      let i = restantes.findIndex((x) => norm(x.numero) === norm(r.numero) && norm(x.objet) === norm(r.sujet))
       if (i === -1) i = restantes.findIndex((x) => norm(x.objet) === norm(r.sujet))
+      if (i === -1) i = restantes.findIndex((x) => norm(x.numero) === norm(r.numero))
       const ancienne = i > -1 ? restantes.splice(i, 1)[0] : null
       if (ancienne?.detail) nDetailsGardes++; else nDetailsPerdus++
       const v = voixChiffrees(r.resultat_vote)

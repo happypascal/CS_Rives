@@ -1262,8 +1262,22 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   l'écran : un résumé est une lecture, le procès-verbal est l'acte.
 - **SEULES LES DÉCISIONS IMPACTANTES AU RÉSUMÉ** (`partagerResolutions`, Pascal 2026-09-28).
   **DEUX conditions**, et il en manquait une au premier jet. **121 décisions sur 237 lignes.**
-  1. ⚠ **ELLE A ÉTÉ VOTÉE** — « Adoptée » ou « Rejetée » (`estVotee`). **Condition DÉRIVÉE de
-     `resultat`, jamais stockée** : corriger un résultat corrige la fiche sans rien relancer.
+  1. ⚠ **ELLE A DÉCIDÉ QUELQUE CHOSE** (`decideQuelqueChose`) — et **non « elle a été votée »**.
+     Condition **DÉRIVÉE de `resultat`, jamais stockée** : corriger un résultat corrige la fiche
+     sans rien relancer.
+     - ⚠ **RENVERSEMENT DU 2026-09-30** (Pascal : « il y a systématiquement les décisions adoptées
+       et rejetées mais pas les autres »). Le filtre ne retenait que « Adoptée » et « Rejetée » : il
+       **cachait la décision de l'AG 2008 de NE PAS fermer le lotissement** — « Décision sans vote
+       formel » — c'est-à-dire la ligne que la revalidation avait passé deux jours à rétablir, et la
+       seule qui disait ce qu'était devenue l'étude votée en 2007. La fiche montrait le déplacement
+       d'une borne EDF et taisait le sort du portail.
+     - ⚠ **LE CODE SE CONTREDISAIT** : `tonResultat` peint « Décision sans vote formel » en bleu en
+       expliquant qu'« une décision prise sans vote reste une DÉCISION », pendant que le filtre la
+       traitait comme un point d'information.
+     - ⚠ **LE DÉFAUT EST DÉSORMAIS « MONTRER »**, et la liste de ce qui ne décide rien est
+       EXPLICITE (`NE_DECIDE_RIEN`) : un libellé inconnu qu'on cache est **invisible**, un libellé
+       inconnu qu'on montre n'est que **bruyant**. La revalidation en a introduit dix d'un coup.
+       **149 décisions montrées deviennent 177.**
   2. ⚠ **ELLE N'EST PAS UN POINT DE ROUTINE** — élection du bureau, comptes, quitus, budget courant,
      désignation du syndic, identiques depuis 1988. **Condition CONSTATÉE** : est retenue la
      résolution qui **figure au `Resume_AG_<date>.docx`** de son année, où le tri a déjà été fait par
