@@ -391,7 +391,7 @@ export default function DecisionDetail() {
               Export PDF
             </Button>
             {isOwner && !locked && !annulee && !isMobile && (
-              <Link to={`/registre/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>
+              <Link to={`/registre/${id}/modifier`}><Button variant="secondary">Modifier</Button></Link>
             )}
             {canDelete && (
               <Button variant="danger" onClick={() => setConfirmDelete(true)}>Supprimer</Button>

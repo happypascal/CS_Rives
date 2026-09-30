@@ -8,6 +8,10 @@
 
 ---
 
+
+> ⚠ **Avant d'écrire un écran, lire `CONVENTIONS_UI.md`** (même dossier) : boutons,
+> en-têtes, états vides, pièges du mobile, largeurs de tableau, couleur d'un statut.
+> Ce sont des règles constatées en usage, pas des préférences.
 ## En trois minutes
 
 Registre légal des délibérations du Conseil Syndical de l'**ASL du Lotissement de Rives**, Nernier

@@ -208,7 +208,7 @@ export default function SujetDetail() {
         subtitle={sujet.categorie || 'Sans catégorie'}
         actions={
           <>
-            <Link to="/memoire"><Button variant="ghost">Retour à la mémoire</Button></Link>
+            <Link to="/memoire"><Button variant="secondary">Retour à la mémoire</Button></Link>
             {peutSaisir && !editionSynthese && (
               <Button variant="secondary" onClick={() => setEditionSynthese(true)}>
                 Modifier la synthèse

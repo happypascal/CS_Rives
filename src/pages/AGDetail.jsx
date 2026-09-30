@@ -282,7 +282,7 @@ export default function AGDetail() {
         title={<span><span className="text-slate-400">{ag.numero}</span> · {ag.type === 'AGO' ? 'Ordinaire' : 'Extraordinaire'}</span>}
         subtitle={`${formatDate(ag.date_ag)}${ag.heure_planifiee ? ' à ' + ag.heure_planifiee : ''}${ag.lieu ? ' · ' + ag.lieu : ''}`}
         actions={<>
-          {canManage && !agFrozen && <Link to={`/ag/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
+          {canManage && !agFrozen && <Link to={`/ag/${id}/modifier`}><Button variant="secondary">Modifier</Button></Link>}
           {/* Clôturer = FIGER l'AG. Président seul, et seulement une fois l'AG TENUE
               (date passée) ET l'heure de fin saisie. Avant la date, pas de clôture. */}
           {/* PV envoyé : l'étape qui manquait entre la séance et la clôture (055).
@@ -300,7 +300,7 @@ export default function AGDetail() {
             <Button variant="secondary" onClick={() => setPvModal('contestation')}>Inscrire une contestation</Button>
           )}
           {isAdmin && !isMobile && ag.contestation_le && (
-            <Button variant="ghost" onClick={leverContestation}>Retirer la contestation</Button>
+            <Button variant="secondary" onClick={leverContestation}>Retirer la contestation</Button>
           )}
           {isAdmin && !isMobile && agAEuLieu(ag) && !agFrozen && (
             <Button onClick={cloturerAG} disabled={!ag.heure_fin} title={!ag.heure_fin ? 'Renseignez d’abord l’heure de fin de séance (Modifier)' : ''}>Clôturer l’AG</Button>

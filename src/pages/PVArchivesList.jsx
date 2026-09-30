@@ -203,7 +203,7 @@ export default function PVArchivesList() {
         // Générales. Sans ce lien, on n'en ressort que par le bouton du
         // navigateur — et le menu de gauche ne montre alors aucune page active.
         actions={(
-          <Link to="/ag"><Button variant="ghost">Retour aux assemblées</Button></Link>
+          <Link to="/ag"><Button variant="secondary">Retour aux assemblées</Button></Link>
         )}
       />
 

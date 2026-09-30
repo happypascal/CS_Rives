@@ -288,7 +288,7 @@ export default function PVArchiveDetail() {
                 <Button variant="secondary" title={plusRecente.intitule}>{plusRecente.annee} →</Button>
               </Link>
             )}
-            <Link to="/ag/archives"><Button variant="ghost">Retour aux archives</Button></Link>
+            <Link to="/ag/archives"><Button variant="secondary">Retour aux archives</Button></Link>
           </div>
         )}
       />

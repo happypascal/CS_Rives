@@ -189,6 +189,8 @@ supabase/
   nettoyage.sql       DESTRUCTIF, ne garde que le président
   migrations/         001..006, voir §Supabase
 docs/                 TECHNIQUE.md (POINT D'ENTRÉE d'un développeur qui reprend le projet),
+                      CONVENTIONS_UI.md (RÈGLES D'INTERFACE : boutons, en-têtes, mobile,
+                      tableaux, couleurs, formulaires — à lire AVANT d'écrire un écran),
                       DEPLOIEMENT.md, TRANSFERT_ASL.md, GUIDE_A_comptes_membres.md
 public/favicon.svg    seul asset public
 ```
@@ -1456,6 +1458,16 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
   inconnue**. Un `getX` qui renvoie une jointure (ex. `getAG` → `resolutions`) ne doit jamais
   voir cet objet repartir tel quel dans un `update` : construire un payload explicite limité aux
   colonnes réelles. Une modif « qui marche en mock » n'est pas vérifiée.
+- **RÈGLES D'INTERFACE : `docs/CONVENTIONS_UI.md`** — à lire avant d'écrire un écran. Ce qu'il
+  porte et qu'on ne devine pas : hiérarchie des variantes de bouton, états vides, pièges du mobile,
+  largeurs de tableau, couleur d'un statut, échappement du contenu HTML.
+  - ⚠ **EN EN-TÊTE DE PAGE, LES ACTIONS SONT DES BOUTONS**, et **`ghost` y est banni** : sans
+    bordure ni fond, il ressemble à du texte. Remplacer un lien souligné par un `ghost` ne change
+    rien à l'œil — erreur commise puis corrigée le 2026-09-30 sur **onze boutons de huit écrans**.
+    `secondary` par défaut, `danger` pour ce qui détruit, `primary` pour l'unique action de
+    création. ⚠ `ghost` reste légitime **dans une carte**.
+  - ⚠ **Les liens soulignés restent la convention DANS les cartes**, pour une bascule (« Afficher la
+    transcription ») : dix écrans, et le cadre de la carte fournit déjà le contraste.
 - **Styling** : utilitaires Tailwind inline ; palette `navy-*` (`#1F3864`, choisie pour coller au
   registre Word existant). ⚠ `cx()` n'est **pas exporté** par `ui.jsx` : composer les classes
   conditionnelles avec un template literal. Ton : sobre, professionnel,

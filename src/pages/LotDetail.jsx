@@ -325,13 +325,13 @@ function Contenu() {
         subtitle={lot.proprietaire ? lot.proprietaire.nom : 'Aucun propriétaire enregistré'}
         actions={
           <>
-            <Button variant="ghost" onClick={() => allerVers(precedente)} disabled={!precedente} title={precedente ? `Parcelle ${precedente.numero}` : 'Première parcelle'}>
+            <Button variant="secondary" onClick={() => allerVers(precedente)} disabled={!precedente} title={precedente ? `Parcelle ${precedente.numero}` : 'Première parcelle'}>
               ← Précédente
             </Button>
-            <Button variant="ghost" onClick={() => allerVers(suivante)} disabled={!suivante} title={suivante ? `Parcelle ${suivante.numero}` : 'Dernière parcelle'}>
+            <Button variant="secondary" onClick={() => allerVers(suivante)} disabled={!suivante} title={suivante ? `Parcelle ${suivante.numero}` : 'Dernière parcelle'}>
               Suivante →
             </Button>
-            <Link to="/proprietaires"><Button variant="ghost">Retour au registre</Button></Link>
+            <Link to="/proprietaires"><Button variant="secondary">Retour au registre</Button></Link>
             {peutSaisir && (
               <Button variant="secondary" onClick={() => setMutation({ ...CHAMPS_VIDES, date_mutation: todayISO() })}>
                 Enregistrer une mutation

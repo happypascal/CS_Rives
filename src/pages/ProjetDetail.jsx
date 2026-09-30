@@ -183,7 +183,7 @@ export default function ProjetDetail() {
         actions={
           (canEdit || canManage) && (
             <>
-              {canEdit && <Link to={`/projets/${id}/modifier`}><Button variant="ghost">Modifier</Button></Link>}
+              {canEdit && <Link to={`/projets/${id}/modifier`}><Button variant="secondary">Modifier</Button></Link>}
               {canManage && (canDelete ? (
                 <Button variant="danger" onClick={del}>Supprimer</Button>
               ) : (
