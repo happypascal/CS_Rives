@@ -140,3 +140,48 @@ export function elementsACompleter(sujets = [], entrees = []) {
 
   return out.sort((a, b) => a.gravite - b.gravite || a.sujetTitre.localeCompare(b.sujetTitre, 'fr'))
 }
+
+// ============================================================================
+// LA CHRONOLOGIE APRÈS LA RÉVISION DU 2026-09-30 (migration 065)
+//
+// ⚠ Pascal : les entrées venues des archives étaient éclatées en
+// sous-résolutions — six lignes « Portails » pour la seule résolution 10 de
+// l'AG 2023, aux titres illisibles. Lues à plat, elles disent six fois la même
+// chose et cachent le fil.
+//
+// ⚠ RIEN N'EST SUPPRIMÉ, ET C'EST TOUT L'OBJET. Une entrée regroupée pointe vers
+// sa consolidée (`regroupee_sous`) et cesse de s'afficher À PLAT ; elle reste
+// lisible, repliée dessous. Une entrée détachée garde son `sujet_id` et porte
+// une date et un motif — une entrée sans sujet n'apparaîtrait nulle part, donc
+// serait perdue en pratique tout en existant en base.
+// ============================================================================
+
+/** L'entrée est-elle visible dans la chronologie du sujet ? */
+export function entreeVisible(e) {
+  return !e?.regroupee_sous && !e?.detachee_le
+}
+
+/**
+ * La chronologie prête à afficher : les entrées visibles, chacune portant le
+ * `detail` des entrées qu'elle regroupe (triées comme les autres).
+ */
+export function chronologie(entrees, trier) {
+  const toutes = entrees || []
+  const parConsolidee = new Map()
+  for (const e of toutes) {
+    if (!e.regroupee_sous) continue
+    parConsolidee.set(e.regroupee_sous, [...(parConsolidee.get(e.regroupee_sous) || []), e])
+  }
+  return trier(toutes.filter(entreeVisible))
+    .map((e) => ({ ...e, detail: trier(parConsolidee.get(e.id) || []) }))
+}
+
+/** Les entrées retirées de la chronologie, avec leur motif. */
+export const entreesDetachees = (entrees) => (entrees || []).filter((e) => e.detachee_le)
+
+// ⚠ MÊME RÈGLE QUE DANS LES ARCHIVES (`tonDecisionResume`), et pour la même
+// raison : la couleur est une affirmation. « Déclarée adoptée » n'est pas verte,
+// « Décision sans vote formel » est bleue parce qu'une décision prise sans vote
+// reste une décision. Dupliquer la règle serait risquer qu'un même résultat se
+// peigne différemment selon l'écran — d'où le ré-export depuis `pvArchiveLogic`.
+export { tonDecisionResume as tonResultatEntree } from './pvArchiveLogic.js'

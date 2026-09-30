@@ -1,0 +1,1277 @@
+{
+ "version": "2026-09-30",
+ "auteur": "Claude (Cowork) pour Pascal Favre",
+ "regles": [
+  "Ne rien supprimer : « detacher » retire le rattachement au sujet, l'entrée d'archive reste dans les archives de PV ; « regroupements » crée une entrée consolidée et range les entrées regroupées dessous, repliées, sans les effacer.",
+  "Ne pas reformuler les textes fournis.",
+  "Conserver les pièces jointes, les auteurs et les dates existants.",
+  "Conserver l'ancienne synthèse et l'ancien résumé de chaque sujet dans l'historique (ou dans la sauvegarde du jour) avant de les remplacer.",
+  "Une correction marquée a_verifier ne s'applique pas : elle est seulement listée dans le rapport.",
+  "Aucune information de la section 9 du document de contexte n'est dans ce fichier ; ne rien y ajouter."
+ ],
+ "sujets": [
+  {
+   "sujet": "Assurances",
+   "action": "mettre_a_jour",
+   "resume": "Assurance responsabilité civile et protection juridique de l'ASL et de son conseil syndical (article 16 des statuts). La police en cours n'est pas au dossier : assureur, assuré et garanties sont à vérifier, puis à mettre au nom de l'ASL.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "L'article 16 des statuts dispose que « le lotissement souscrit une assurance responsabilité civile et protection juridique couvrant l'activité du Conseil syndical ». Deux risques sont en jeu : la responsabilité de l'association pour les biens communs qu'elle administre (allées, plage, portails, réseaux d'eaux pluviales) et le coût de sa défense ou de ses actions en justice."
+    },
+    {
+     "titre": "Historique",
+     "texte": "L'assurance n'apparaît qu'incidemment dans les assemblées. En 1995, les piquets posés allée des Précettes sont tolérés « pour éviter un procès » et la situation est déclarée aux assureurs ; en 2001, l'assemblée demande l'avis d'un juriste ou d'un assureur sur la responsabilité du lotissement pour ces piquets, faute de quoi les propriétaires concernés s'assurent eux-mêmes. En 2006, un appel d'offres d'assurance est confié au conseil syndical. En 2009, pendant le procès intenté par Mme Briefer contre le syndicat, l'assemblée demande de vérifier l'existence d'une protection juridique. Les contentieux sur les arbres ont ensuite été financés par des provisions appelées auprès des colotis (3 000 € en 2016, 3 000 € en 2020, 2 000 € en 2021, 4 000 € en 2022), ce qui laisse penser qu'aucune protection juridique ne les a pris en charge."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Aucun contrat ne figure au dossier. On ne sait ni quel assureur couvre le lotissement, ni au nom de qui la police est souscrite, ni ce qu'elle garantit."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "La mise en conformité des statuts change l'assuré : c'est désormais l'ASL, déclarée en préfecture, qui doit être titulaire de la police. Le risque augmente avec la remise en fonction de portails automatiques et avec les travaux de la plage et du réseau d'eaux pluviales. Une protection juridique adaptée financerait les procédures à venir (liquidation d'astreinte, demande de sortie de la zone C) sans nouvel appel de provision."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Obtenir de Foncia la copie de la police et des conditions particulières. Vérifier l'assuré désigné, la couverture de la responsabilité des membres du conseil syndical, la protection juridique et ses plafonds. Faire établir un avenant au nom de l'ASL après la publication des statuts."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "29/07/1995",
+     "titre": "Piquets de l'allée des Précettes tolérés, situation déclarée aux assureurs",
+     "texte": "Résolution VII, adoptée (22 voix pour, 8 contre, sur 50) : les piquets sont tolérés pour éviter un procès, jusqu'à l'élargissement de la voie à 4 m lors des travaux d'eaux usées ; la situation est déclarée aux assureurs.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "30/06/2001",
+     "titre": "Piquets sur les bas-côtés : avis d'un juriste ou d'un assureur",
+     "texte": "Résolution 10, adoptée à l'unanimité (non chiffrée) : avis d'un juriste ou d'un assureur sur la responsabilité du lotissement ; à défaut, les propriétaires concernés s'assurent eux-mêmes.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "24/06/2006",
+     "titre": "Appel d'offres d'assurance confié au conseil syndical",
+     "texte": "Décidé avec l'approbation des comptes (résolution 1), à l'unanimité, sans décompte.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "27/06/2009",
+     "titre": "Procès Briefer : vérifier la protection juridique",
+     "texte": "Résolution 7 : l'assemblée prend acte des actions menées dans le procès intenté par Mme Briefer contre le syndicat et demande de vérifier l'existence d'une protection juridique d'assurance. Décision sans vote formel (« prend acte et entérine »).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ]
+  },
+  {
+   "sujet": "Biens communs et indivis",
+   "action": "mettre_a_jour",
+   "resume": "Les biens communs — sol de l'allée de Rives et de l'allée des Précettes (parcelle B228), couloirs d'accès, plage privée et son accès, miroirs, fossé et canalisations d'eaux pluviales — sont en indivision perpétuelle entre tous les colotis, au prorata de la superficie de leur lot, et inséparables de celui-ci. L'ASL les administre ; elle n'en est pas propriétaire.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Le régime des biens communs ne résulte pas des statuts de 2026 mais du cahier des charges de 1955, de ses additifs de 1956 et de 1957, et de l'Addendum III du 19 juin 2025. L'additif de janvier 1957 dispose que le sol de la rue nouvelle et les couloirs d'accès appartiennent « indivisément aux acquéreurs de tous les lots et chacun en proportion de la superficie de son lot », que cette indivision est perpétuelle, et que ces droits « ne pourront être vendus, échangés ou hypothéqués séparément du surplus de leur propriété dont ils forment l'accessoire »."
+    },
+    {
+     "titre": "Historique",
+     "texte": "L'additif de 1956 crée une plage commune le long de la limite ouest, réservée aux lots sans accès privé au lac, qui en supportent l'entretien. L'arrêté du 5 mai 1961 fait céder à la commune une autre plage, sur le lot n° 13, avec un droit de passage pour ses usagers sur la voie ; le 4 novembre 1961, le maire refuse de reprendre les voies, les acquéreurs préférant les entretenir pour garder au lotissement son caractère privé. Pendant des décennies, le syndic gère ensuite les biens communs comme des parties communes de copropriété, au prorata des lots (100 voix par lot, 5 100 au total), sans fondement dans les actes. En 2023, les servitudes de passage et de réseaux demandées par M. Décima sur la parcelle B228 ne sont pas mises aux voix, faute de certitude sur la majorité requise."
+    },
+    {
+     "titre": "L'Addendum III et les statuts",
+     "texte": "L'Addendum III du 19 juin 2025 (articles 1 et 2) étend l'indivision à tous les biens communs, entre tous les colotis, au prorata des superficies ; toute clé par lot mentionnée dans un acte de vente est réputée erronée et inopposable. Il en dresse la liste : allée de Rives jusqu'à la route de Messery, allée des Précettes, plage privée et son accès, les deux miroirs, le fossé d'eaux pluviales de l'allée de Rives, les canalisations d'eaux pluviales sous les allées. Les canalisations qui desservent plusieurs colotis sous des lots privés, notamment celle de la zone C, sont biens communs à condition que les colotis concernés paient leur quote-part des autres charges. La plage appartient désormais à tous. L'assemblée du 15 septembre 2026 n'a rien changé à ce régime : la résolution 4 constate que la mise en conformité des statuts intervient « sans remise en cause de la nature indivise des biens communs ». La même assemblée accorde à Mme Pictet une simple tolérance de passage à pied, révocable, et non une servitude."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Parce que les droits indivis sont l'accessoire de chaque lot, toute opération sur un bien commun — servitude sur la parcelle B228, cession de quotes-parts en cas de sortie de la zone C, cession à la commune — touche la propriété de tous les colotis et doit être passée par acte. La majorité requise pour de telles décisions n'est pas établie : c'est la raison pour laquelle les demandes de 2023 n'ont pas été votées. D'où la préférence pour des tolérances révocables plutôt que des servitudes."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Majorité requise pour consentir une servitude ou céder des droits indivis (question posée à Me Garnier). Le préambule des statuts décrit encore le régime de la plage issu de 1956 : à signaler à Me Garnier. La cession de la plage communale de 1961 a-t-elle été réalisée par acte, et quelle suite a été donnée au recours gracieux de Mme de Leusse ?"
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "22/08/1955",
+     "titre_actuel": "Cahier des charges du lotissement de Rives (août 1955)",
+     "champ": "texte",
+     "a_verifier": true,
+     "motif": "Numéro d'arrêté à vérifier sur l'acte : l'application porte 5184-55, le document de contexte (dates « vérifiées sur les actes ») porte 3164-55. Ne pas corriger avant confirmation de Pascal."
+    },
+    {
+     "date": "10/02/1956",
+     "titre_actuel": "Premier additif — extension, plantations et plage commune",
+     "champ": "texte",
+     "a_verifier": true,
+     "motif": "Numéro d'arrêté à vérifier : 7955-56 dans l'application, 755-56 dans le document de contexte."
+    }
+   ]
+  },
+  {
+   "sujet": "Contentieux SCI Villa Aysha",
+   "action": "mettre_a_jour",
+   "resume": "Second contentieux sur les arbres, fondé sur l'article 15 du cahier des charges (additif du 10 février 1956). Ordonnance de référé obtenue le 7 octobre 2025 ; arbres coupés en 2026 selon le président, sans constat ; dépens non réglés.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "La SCI Villa Aysha ne respectait pas les règles de hauteur et d'emplacement des plantations de l'article 15. Les procès-verbaux citent « l'additif au cahier des charges du 15 janvier 1957 » ; l'article 15 vient en réalité de l'additif du 10 février 1956."
+    },
+    {
+     "titre": "Historique",
+     "texte": "En 2019, l'assemblée refuse à l'unanimité d'agir en justice, la SCI s'engageant à se mettre en conformité avant la fin de l'année. L'engagement n'est pas tenu : le 19 novembre 2022, l'assemblée autorise l'action, appel compris, avec une provision de 4 000 € appelée au 1er avril 2023 (2 400 voix pour, 100 contre, 400 abstentions). En 2023, un constat d'huissier est dressé, une négociation tentée et une mise en demeure adressée par avocat ; les travaux n'étant pas faits, Me Raimond engage la procédure. L'ordonnance de référé est rendue le 7 octobre 2025 et notifiée ; le décompte des sommes dues à l'ASL, transmis à l'avocat adverse, reste sans réponse malgré relance."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Selon le président (déclaration au conseil du 29 septembre 2026), la SCI a coupé ses arbres courant 2026, mais n'a rien réglé des dépens à sa connaissance. Aucune de ces deux informations n'est appuyée par une pièce : ni constat d'exécution, ni confirmation de l'avocat ou du syndic."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Faire constater l'exécution, pour clore le dossier sans contestation possible ; recouvrer les dépens ; surveiller dans la durée, les arbres repoussant. Le procès-verbal du 15 septembre 2026 désigne la société sous le nom « SCI Aicha » : l'erreur doit être corrigée par le syndic pour que les actes restent cohérents."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Verser l'ordonnance du 7 octobre 2025 au dossier (arbres visés, délais, astreinte, article 700, demandeurs : syndicat seul ou aux côtés de colotis, comme l'avocat l'avait recommandé en 2022 pour la SCI Violette). Faire dresser un constat de l'abattage. Obtenir de l'avocat l'état des sommes dues et recouvrées."
+    }
+   ]
+  },
+  {
+   "sujet": "Contentieux SCI Violette",
+   "action": "mettre_a_jour",
+   "resume": "Contentieux sur les arbres de la SCI Violette (36 allée de Rives), non conformes à l'article 15 du cahier des charges. Ordonnance d'abattage du 29 octobre 2024 non exécutée ; audience du 22 septembre 2026 sur la liquidation de l'astreinte ; 1 454,52 € de condamnations restent impayés.",
+   "synthese_mode": "remplacer_en_conservant",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "La SCI Violette (36 allée de Rives) ne respecte pas l'article 15 du cahier des charges sur la hauteur des plantations. Les procès-verbaux d'assemblée le datent du 15 janvier 1957 ; les conclusions de 2026 citent l'acte de dépôt du 26 mars 1956 de l'additif du 10 février 1956, qui est bien celui qui a réécrit l'article 15."
+    },
+    {
+     "titre": "Dix ans de procédure",
+     "texte": "L'assemblée autorise une première action en 2016 (provision de 3 000 €). En 2017, la SCI s'engage à élaguer ou abattre avant le 30 novembre ; l'élagage est fait fin 2017. En 2018, l'assemblée exige l'enlèvement des deux arbres situés devant la maison ; selon le procès-verbal de 2019, ils ont été enlevés au second semestre 2018. L'article 15 étant de nouveau méconnu, l'assemblée réautorise une action en 2020 (provision de 3 000 €, complétée de 2 000 € en 2021). Deux constats d'huissier (juin et novembre 2021) et une mise en demeure par avocat (juillet 2021) plus tard, l'affaire est portée devant le juge des référés."
+    },
+    {
+     "titre": "⚠ Qui agit",
+     "texte": "C'est un contrat entre colotis, pas une affaire du syndicat seul. L'avocat a averti en 2022 que le syndicat risquait l'irrecevabilité : la procédure est donc portée par MM. Favre et Privat aux côtés du syndicat. Ce point commande la forme de toute action fondée sur le cahier des charges."
+    },
+    {
+     "titre": "L'ordonnance et son exécution",
+     "texte": "Ordonnance du 29 octobre 2024 : abattage des arbres n° 4, A, B et C sous six mois, puis astreinte de 100 € par jour pendant cinq mois ; 3 000 € au titre de l'article 700 et dépens. Les demandes d'élagage des arbres n° 1, 2 et 3 sont rejetées. Elle n'a pas été exécutée : le constat du 26 février 2026 établit que les arbres n'ont pas été abattus ; celui du 10 septembre 2026 relève en outre un abri de jardin non cadastré. Une audience s'est tenue le 22 septembre 2026 pour liquider l'astreinte, demander une astreinte définitive de 500 € par jour et l'abattage de deux arbres supplémentaires (n° 2 et 3)."
+    },
+    {
+     "titre": "Argent",
+     "texte": "Sur 4 571,72 € dus au titre de la première ordonnance, 2 925,24 € ont été recouvrés par commissaire de justice ; selon la lettre de Me Merotto du 23 septembre 2026, restent dus 1 454,52 € (signification des conclusions, rémunération de Me Klein, droit de plaidoirie). Au 7 septembre 2026, la SCI n'avait pas complété la provision réclamée sur le compte CARPA de l'avocat."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Obtenir enfin l'exécution : sans abattage, l'autorité de l'article 15 — et donc la protection de la vue sur le lac de tous les lots — est en cause. L'affaire fixe aussi la méthode pour tout litige futur fondé sur le cahier des charges : colotis demandeurs aux côtés de l'association, constats d'huissier successifs, référé."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Décision du juge sur l'audience du 22 septembre 2026 (date de délibéré ou renvoi). Recouvrement du solde de 1 454,52 €. Suite à donner, ou non, à l'abri de jardin non cadastré, qui relève de la commune et non de l'ASL."
+    },
+    {
+     "titre": "Source",
+     "texte": "Synthèse établie le 30 septembre 2026 d'après les procès-verbaux d'assemblée relus sur l'image, le journal du projet « SCI Violette » et les actes du dossier. Seuls les actes font foi."
+    }
+   ],
+   "note_revision": "Correction de fond : l'ancienne synthèse disait que les deux arbres devant la maison « restent » après l'élagage de 2017. Le PV de 2019 (point 10) indique qu'ils ont été enlevés au second semestre 2018 ; l'action de 2020 vise un nouveau non-respect de l'article 15."
+  },
+  {
+   "sujet": "Distraction zone C",
+   "action": "mettre_a_jour",
+   "resume": "Les sept colotis de la zone C (14 280 m², 13,6 % de la superficie) ont demandé le 15 septembre 2026 la sortie commune de leurs propriétés du périmètre de l'ASL. Rien n'est décidé : la demande sera instruite puis soumise à l'assemblée du 14 septembre 2027.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Les sept propriétaires de la zone C — six sur la route de Messery et un en haut de l'allée de Rives — ont remis au président de séance, avant l'ouverture de l'assemblée du 15 septembre 2026, une déclaration commune signée demandant l'ouverture d'une procédure de distraction collective de leurs parcelles du périmètre de l'association, sur le fondement de l'article 26 des statuts. Ils déclarent ne pas contester l'existence de l'ASL."
+    },
+    {
+     "titre": "Historique",
+     "texte": "En mars 2025, six des sept approuvent la méthode de modification du cahier des charges à la double majorité. Le 19 juin 2025, à l'AGE, ils s'abstiennent tous les sept sur l'Addendum III (14 280 m²) ; aucun ne vote contre. Le 15 septembre 2026, ils votent tous contre les statuts (résolution 4), avec la SCI Violette, qui n'appartient pas à la zone C : 16 606 m² contre, 75 540 m² pour. Aucune résolution n'étant inscrite sur leur demande, l'assemblée n'a pas délibéré ; la résolution 28 prend acte de la déclaration et l'inscrit à l'ordre du jour de l'assemblée du 14 septembre 2027."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Le 16 septembre 2026, le conseil syndical écrit à tous les colotis que les frais de cette sortie, qu'elle aboutisse ou non, seront intégralement à la charge des sept, et que ces lots restent membres de l'ASL et redevables des charges jusqu'à la décision de l'assemblée. Le 19 septembre, les sept répondent en parlant d'« ouverture officielle de la procédure », demandent un groupe de travail commun, acceptent leurs propres frais techniques et notariés, mais renvoient les honoraires de gestion et de conseil de l'ASL à un futur protocole. Le 22 septembre, le conseil syndical répond : aucune procédure n'est ouverte ; l'assemblée de 2027 est seule compétente, à la majorité de l'article 26 ; tous les frais sont à leur charge, selon une convention préalable à toute dépense ; un interlocuteur unique sera désigné, sans groupe de travail commun ; la liste des pièces et le calendrier ne seront adressés qu'une fois obtenu un accord de principe pour leur raccordement en dehors du lotissement."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "L'article 26 exige une délibération prise à la majorité des propriétaires représentant au moins les deux tiers de la superficie. Une sortie supposerait de régler les réseaux (la canalisation d'eaux pluviales de la zone C n'est un bien commun qu'à la condition de l'Addendum III), l'accès du lot situé en haut de l'allée de Rives, et la cession de leurs quotes-parts indivises par acte notarié. Pour les quarante-trois autres colotis, la base de répartition passerait de 104 646 à 90 366 m², soit une hausse de 15,8 % des charges. Leur quote-part du fonds de travaux de 183 831,14 € (environ 25 000 €) reste acquise à l'association : la résolution 10 du 15 septembre 2026 exclut toute restitution."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Procédure et majorité applicables à la cession des quotes-parts indivises, et cohérence avec l'Addendum III adopté à la double majorité (questions posées à Me Garnier). Désignation du membre du conseil chargé du dossier."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Vote de la résolution 4 — les sept votent contre",
+     "champ": "texte",
+     "ancien": "Pour : 72 854.",
+     "nouveau": "Pour : 75 540.",
+     "motif": "Chiffre du PV diffusé le 25 septembre 2026 ; 72 854 provenait des documents préparatoires."
+    },
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Vote de la résolution 4 — les sept votent contre",
+     "champ": "titre",
+     "nouveau": "Vote de la résolution 4 — les sept votent contre, avec la SCI Violette",
+     "motif": "Huit votants contre : le titre doit le dire."
+    },
+    {
+     "date": "19/09/2026",
+     "titre_actuel": "Réponse commune des sept, via M. et Mme Hartwig",
+     "champ": "texte",
+     "ancien": "rectification du conseil syndical à venir.",
+     "nouveau": "Le conseil syndical a rectifié par son courrier du 22 septembre 2026.",
+     "motif": "La rectification a eu lieu."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "22/09/2026",
+     "titre": "Réponse du conseil syndical : aucune procédure ouverte",
+     "texte": "Courrier approuvé par vote du conseil dans l'application. Aucune procédure ouverte ni décision prise ; demande instruite puis soumise à l'AG du 14 septembre 2027, seule compétente, à la majorité de l'article 26 (majorité des propriétaires représentant au moins les deux tiers de la superficie) ; tous les frais à la charge des sept, modalités et provision fixées par convention préalable à toute dépense ; un interlocuteur unique désigné par le conseil, pas de groupe de travail commun ; liste des pièces et calendrier adressés seulement après un accord de principe pour leur raccordement en dehors du lotissement.",
+     "pj_existante": "email envoyé 22_9_26.pdf (dans 5_conseil syndical, à joindre si Pascal le souhaite)",
+     "source": "Courrier du conseil syndical du 22 septembre 2026."
+    }
+   ]
+  },
+  {
+   "sujet": "Fonds travaux",
+   "action": "mettre_a_jour",
+   "resume": "Réserve de l'ASL pour les travaux sur les biens communs : 183 831,14 € au 31 mars 2026, propriété de l'association et non remboursable en cas de vente ; 100 000 € supplémentaires appelés pour 2026-2027. Le chantier des eaux pluviales dira s'il suffit.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Au 31 mars 2026, le lotissement détient 183 831,14 € destinés au financement des travaux sur les biens communs : fonds de travaux 89 471,03 €, remise en fonction des portails 49 800,21 €, étude du nouveau réseau d'eaux pluviales 25 000 €, aménagement de la plage 20 159,90 € (7 159,90 € votés en 2022 et 13 000 € le 16 décembre 2023), sous déduction de 600 € d'honoraires complémentaires sur les portails. La résolution 10 du 15 septembre 2026 constate que ces sommes sont la propriété de l'association et « ne constituent ni une créance individuelle des colotis, ni un dépôt effectué pour leur compte ». Elles sont attachées aux lots et définitivement acquises à l'association : la quote-part d'un cédant est transmise de plein droit à l'acquéreur, et toute répartition convenue entre eux est inopposable à l'association."
+    },
+    {
+     "titre": "Trente ans sans réserve",
+     "texte": "Le principe d'un fonds de réserve est voté en 1996 pour financer l'assainissement, puis jugé prématuré en 1997 et renvoyé en 2007. Une provision spéciale pour travaux est refusée en 2005, 2008, 2013, 2014 et 2015, le montant étant souvent laissé en blanc. En 2016, 10 000 € sont placés sur un livret A — résolution déclarée adoptée avec 2 500 voix alors que la majorité requise était de 2 551. En 2017, cette provision est remboursée et remplacée par le fonds de travaux obligatoire des copropriétés : le lotissement applique alors un régime de copropriété qui n'était pas le sien."
+    },
+    {
+     "titre": "La montée en charge",
+     "texte": "Cotisations votées : 5 000 € par an à partir de 2018-2019 ; 10 000 € pour 2019-2020 ; 525 € pour 2020-2021 (déclarée adoptée sous le seuil de majorité) ; 10 000 € pour 2021-2022 ; 20 600 € pour 2022-2023. En 2022, l'assemblée fixe un objectif de 250 000 € en vue des gros travaux et vote 50 000 € pour 2023-2024, puis 50 000 € pour 2024-2025. S'y ajoutent des fonds affectés : plage (2022 et 2023), portails (50 000 € appelés au 1er juillet 2024), étude des eaux pluviales (25 000 € en 2025). Au 31 mars 2024 : fonds de travaux 122 497,75 €, plage 20 159,90 €, portails 51 363,51 €. Le fonds a déjà payé la reprise en urgence d'une canalisation (5 830 € en 2018), le passage caméra dans le réseau (8 388 € en 2020), les études d'eaux pluviales et l'avocat chargé du statut (10 000 € en 2024). Son utilisation pour les portails, refusée en 2023, est acceptée en janvier 2026."
+    },
+    {
+     "titre": "2026",
+     "texte": "Le 19 janvier 2026, le procès-verbal porte la cotisation 2026-2027 à 80 000 € (résolution 23). Le 15 septembre 2026, l'assemblée constate les 183 831,14 € et les transmet à l'ASL (résolution 10), les réaffecte au prorata des superficies (résolution 11), confirme une cotisation de 50 000 € « votée le 19 janvier 2026 » et y ajoute 50 000 €, appelés pour moitié au 30 septembre 2026 et pour le solde au 31 janvier 2027 (résolution 19). Le syndic doit informer le notaire à chaque vente, ouvrir un second support pour l'excédent du plafond du livret A, ne rien prélever sans délibération de l'assemblée et présenter chaque année un état des fonds opération par opération."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Le fonds est calibré pour les portails et la plage, pas pour la réfection du réseau d'eaux pluviales, dont le coût ne sera connu qu'après l'appel d'offres : ce chiffre décidera des appels de fonds des prochaines années. Sa nature juridique, désormais écrite, tranche deux débats : un vendeur ne récupère pas sa part, et les sept colotis de la zone C, s'ils sortaient, ne récupéreraient pas la leur."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Cotisation 2026-2027 : 80 000 € au PV du 19 janvier 2026, 50 000 € selon le PV du 15 septembre 2026 — à lever avec le syndic. Somme de 23 159,91 € ajoutée en fin de résolution 10 sans objet précisé (à rapprocher des 20 159,90 € de la plage). Le PV du 15 septembre rattache les 13 000 € de la plage à une assemblée du « 23 décembre 2022 » qui n'a pas existé : ils ont été votés le 16 décembre 2023."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Résolution 19 — dotation complémentaire de 100 000 €",
+     "champ": "titre",
+     "nouveau": "Résolution 19 — cotisation de 50 000 € confirmée et dotation complémentaire de 50 000 €",
+     "motif": "Le titre laissait croire à une dotation de 100 000 € ; le total appelé est de 100 000 €, dont 50 000 € de dotation nouvelle."
+    },
+    {
+     "date": "19/11/2022",
+     "titre_actuel": "Fonds plage initial — 7 159,90 €",
+     "champ": "texte",
+     "ancien": "Part Bre du Léman",
+     "nouveau": "L'Art-bre du Léman",
+     "motif": "Nom de l'entreprise au PV."
+    },
+    {
+     "date": "29/06/2013",
+     "titre_actuel": "Placement de la provision spéciale sur livret A",
+     "champ": "resultat",
+     "ancien": "Non votée",
+     "nouveau": "Sans objet",
+     "motif": "Registre corrigé : devenue sans objet après le refus de la provision (résolution 9)."
+    },
+    {
+     "date": "27/07/1996",
+     "titre_actuel": "Principe d'un fonds de réserve pour les travaux",
+     "champ": "titre",
+     "nouveau": "Principe d'un fonds de réserve pour financer l'assainissement (eaux usées)",
+     "motif": "Le PV vise les travaux d'eaux usées avec le SIVOM."
+    },
+    {
+     "date": "30/06/2007",
+     "titre_actuel": "Fonds de réserve",
+     "champ": "titre",
+     "nouveau": "Fonds de réserve renvoyé à l'assemblée suivante",
+     "motif": "Titre explicite."
+    }
+   ],
+   "detacher": [
+    {
+     "date": "16/12/2023",
+     "titre_actuel": "Rond-point",
+     "motif": "Projet de financement d'un rond-point non mis aux voix : ne concerne pas le fonds de travaux. L'entrée d'archive reste dans les archives du PV."
+    }
+   ],
+   "regroupements": [
+    {
+     "date": "18/09/2017",
+     "numeros": "10 à 12",
+     "titre": "Provision spéciale remboursée, remplacée par le fonds de travaux obligatoire",
+     "texte": "La provision spéciale de 10 000 € est remboursée au 1er octobre 2017 et remplacée par le fonds de travaux obligatoire (taux 2017-2018 laissé en blanc au PV ; 5 000 € par an à partir de 2018-2019).",
+     "resultat": "Adoptée",
+     "vote": "Pour 1 900 · Abst. 100 (2e lecture, art. 24)",
+     "titres_regroupes": [
+      "Remboursement de la provision spéciale existante",
+      "Cotisation fonds de travaux 2017/2018",
+      "Cotisation fonds de travaux 2018/2019"
+     ]
+    },
+    {
+     "date": "03/09/2016",
+     "numeros": "14 et 15",
+     "titre": "Provision spéciale de 10 000 € placée sur un livret A",
+     "texte": "Déclarée adoptée avec 2 500 voix alors que l'article 25 en exigeait 2 551.",
+     "resultat": "Déclarée adoptée (majorité non atteinte)",
+     "vote": "Pour 2 500 · Contre 300 · Abst. 600",
+     "titres_regroupes": [
+      "Constitution d'une provision spéciale de 10 000 €",
+      "Ouverture d'un livret A pour la provision spéciale"
+     ]
+    },
+    {
+     "date": "27/06/2015",
+     "numeros": "14 et 15",
+     "titre": "Provision spéciale refusée",
+     "texte": "Refusée ; le point sera remis à l'ordre du jour. Son placement sur livret A devient sans objet.",
+     "resultat": "Rejetée",
+     "vote": "Unanimité (2 400)",
+     "titres_regroupes": [
+      "Constitution d'une provision spéciale",
+      "Ouverture d'un livret A"
+     ]
+    },
+    {
+     "date": "28/06/2014",
+     "numeros": "12 et 13",
+     "titre": "Provision spéciale refusée",
+     "texte": "Refusée ; son placement devient sans objet.",
+     "resultat": "Rejetée",
+     "vote": "Non chiffré",
+     "titres_regroupes": [
+      "Constitution d'une provision spéciale",
+      "Placement de la provision spéciale"
+     ]
+    },
+    {
+     "date": "29/06/2013",
+     "numeros": "9 et 10",
+     "titre": "Provision spéciale refusée",
+     "texte": "Refusée ; son placement sur livret A devient sans objet.",
+     "resultat": "Rejetée",
+     "vote": "Non chiffré",
+     "titres_regroupes": [
+      "Constitution d'une provision spéciale",
+      "Placement de la provision spéciale sur livret A"
+     ]
+    },
+    {
+     "date": "28/06/2008",
+     "numeros": "7 et 8",
+     "titre": "Provision spéciale refusée",
+     "texte": "Refusée, ainsi que son placement.",
+     "resultat": "Rejetée",
+     "vote": "Unanimité (non chiffré)",
+     "titres_regroupes": [
+      "Constitution d'une provision spéciale",
+      "Placement de la provision spéciale"
+     ]
+    },
+    {
+     "date": "18/06/2005",
+     "numeros": "6.1 et 6.2",
+     "titre": "Provision spéciale refusée",
+     "texte": "Provision pour financer des travaux d'entretien sur trois ans : refusée ; son placement devient sans objet.",
+     "resultat": "Rejetée",
+     "vote": "Unanimité (non chiffré)",
+     "titres_regroupes": [
+      "Provision spéciale pour travaux d'entretien",
+      "Placement des fonds de la provision spéciale"
+     ]
+    }
+   ]
+  },
+  {
+   "sujet": "Plage",
+   "action": "mettre_a_jour",
+   "resume": "Plage commune indivise au bord du Léman, érodée depuis la crue de juillet 2021. Sa remise en état (budget de 20 159,90 €) attend depuis juin 2023 que la DDT fixe la limite du domaine public fluvial, seule à dire quelle autorisation demander.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Les actes connaissent deux plages. La plage commune, créée par l'additif de 1956 le long de la limite ouest du lotissement, est un bien commun ; l'Addendum III du 19 juin 2025 l'a rangée parmi les biens indivis de tous les colotis, alors qu'elle appartenait jusque-là aux seuls lots sans accès privé au lac. La plage communale, sur le lot n° 13, a été cédée à la commune par l'arrêté du 5 mai 1961. Au bord de l'eau commencent le domaine public fluvial et la servitude de marchepied, qui ouvre un passage au public le long de la rive."
+    },
+    {
+     "titre": "Usages et entretien",
+     "texte": "Les assemblées traitent longtemps de l'usage : bateaux et épaves à retirer (2002, 2007, 2008, 2021), ponton discuté en 2007, panneaux « plage privée » et « passage piétons » posés en 2015 (996 €), état du muret et haie de Mme Bertrand en 2018."
+    },
+    {
+     "titre": "Érosion et DDT",
+     "texte": "La crue du 12 au 17 juillet 2021 (372,69 m à Saint-Prex, record depuis 1975) érode le bord et abîme le marchepied. Après un contrôle de fin 2021, la DDT met le lotissement en demeure le 2 août 2022 (réf. 204/22) : remise en état de la servitude de marchepied, entretien ou abattage de la haie, démolition de la rampe de mise à l'eau qui occupe sans titre le domaine public. Le 19 novembre 2022, l'assemblée refuse de régulariser la rampe (219 voix pour, 2 581 contre), décide sa suppression (2 160 € TTC, L'Art-bre du Léman) et 5 000 € pour aménager la plage. Sur place le 24 mai 2023, la DDT indique verbalement qu'un enrochement traditionnel ne serait pas accepté ; il est convenu que M. et Mme Bertrand retireront une partie de leur haie une fois la limite du domaine public connue (hautes eaux de 1964). Son procès-verbal du 19 juin 2023 précise que seule la délimitation du domaine public fluvial dira si la consolidation de la berge relève d'une demande au titre de ce domaine ; le 23 juin 2023, la DDT s'engage à la faire."
+    },
+    {
+     "titre": "Budget",
+     "texte": "Le 16 décembre 2023, l'assemblée confie une étude de réaménagement à RF Conseils (phase 1, 2 000 € TTC) et vote un fonds supplémentaire de 13 000 €. Le 19 juin 2025, elle confirme le budget total de 20 159,90 €. Le 16 janvier 2026, l'entreprise Millet propose la remise en état pour 20 836 € TTC (TVA à 10 %), soit environ 676 € au-dessus du budget."
+    },
+    {
+     "titre": "Portail de la plage",
+     "texte": "Son remplacement, annoncé en 2022, est refusé à l'unanimité le 16 décembre 2023 ; le portail existant devait recevoir une fermeture automatique. Le 15 septembre 2026, un portail infranchissable relié à la centrale des portails (5 000 €) est refusé (25 723 m² pour, 53 124 contre) ; la serrure sera changée et une nouvelle clé remise à chaque coloti, décision consignée sans vote formel."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Toujours en attente de l'analyse de la DDT sur la limite du domaine public, plus de trois ans après son engagement. Tant qu'elle manque, on ne sait pas quel permis demander, et les travaux ne peuvent pas commencer."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Chaque hiver de hautes eaux aggrave l'érosion. L'ASL, gardienne d'un bien désormais commun à tous, en porte la responsabilité et la charge, réparties à la superficie. Le marchepied limite toute fermeture côté lac."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Relancer la DDT par écrit. La rampe a-t-elle été démolie ? La fermeture automatique annoncée en 2023 a-t-elle été posée, et la serrure changée ? Conclusions de l'étude RF Conseils. Retrait de la haie Bertrand, une fois la limite connue."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Changement de la serrure du portail de la plage",
+     "champ": "resultat",
+     "ancien": "Adoptée",
+     "nouveau": "Décision sans vote formel",
+     "motif": "Décision consignée dans les conclusions, sans formule de vote ni décompte."
+    },
+    {
+     "date": "19/11/2022",
+     "titre_actuel": "Portail de la plage et portails d'entrée à l'ordre du jour",
+     "champ": "resultat",
+     "ancien": "Reportée",
+     "nouveau": "Information",
+     "motif": "Registre corrigé : annonce, sans décision de report."
+    },
+    {
+     "date": "30/06/2007",
+     "titre_actuel": "Ponton sur la plage privée, épaves et bateaux",
+     "champ": "resultat",
+     "ancien": "Information",
+     "nouveau": "Décision sans vote formel",
+     "motif": "Le PV relate une décision (épaves à retirer, stationnement de bateaux toléré s'ils servent régulièrement) sans vote."
+    },
+    {
+     "date": "16/01/2026",
+     "titre_actuel": "Offre de Millet pour la remise en état",
+     "champ": "texte",
+     "ancien": "20'836 avec TVA à 10%. Budget prévu 20'160",
+     "nouveau": "Offre de 20 836 € TTC (TVA à 10 %) pour un budget de 20 159,90 €, soit environ 676 € de plus.",
+     "motif": "Lisibilité ; montants inchangés."
+    },
+    {
+     "date": "23/06/2023",
+     "titre_actuel": "Engagement de la DDT à effectuer l'analyse du domaine public _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "La DDT s'engage à réaliser l'analyse de la délimitation du domaine public fluvial, préalable à toute demande de travaux de consolidation de la berge. Réponse en pièce jointe.",
+     "motif": "Entrée sans texte."
+    },
+    {
+     "date": "20/11/2021",
+     "titre_actuel": "Plage",
+     "champ": "titre",
+     "nouveau": "Bateaux et objets à retirer de la plage : courrier à tous",
+     "motif": "Titre explicite."
+    },
+    {
+     "date": "20/11/2021",
+     "titre_actuel": "Servitude de marchepied",
+     "champ": "titre",
+     "nouveau": "Servitude de marchepied : courrier à M. et Mme Bertrand",
+     "motif": "Titre explicite."
+    },
+    {
+     "date": "02/08/2022",
+     "titre_actuel": "Lettre de la DDT",
+     "champ": "texte",
+     "ancien": null,
+     "nouveau": "Après sa tournée de contrôle de fin 2021, la DDT met le lotissement en demeure (réf. 204/22) : remise en état de la servitude de marchepied (parcelle B0288), entretien ou abattage de la haie, démolition de la rampe de mise à l'eau qui occupe sans titre le domaine public fluvial.",
+     "motif": "Contenu de la lettre."
+    }
+   ],
+   "detacher": [
+    {
+     "date": "24/10/2020",
+     "titre_actuel": "Miroir angle allée de Rive / accès plage",
+     "motif": "Miroir de sécurité routière : relève de la voirie, pas de la plage."
+    }
+   ],
+   "regroupements": [
+    {
+     "date": "16/12/2023",
+     "numeros": "11",
+     "titre": "Étude de réaménagement et fonds supplémentaire de 13 000 €",
+     "texte": "Étude de réaménagement confiée à RF Conseils (phase 1, 2 000 € TTC, financée par le fonds de 2022) et fonds supplémentaire de 13 000 € appelé au 1er avril 2024, pouvoir au conseil syndical.",
+     "resultat": "Adoptée",
+     "vote": "Unanimité (étude) — fonds : Pour 3 100 · Contre 100",
+     "titres_regroupes": [
+      "Étude de réaménagement de la plage",
+      "Étude plage",
+      "Plage"
+     ]
+    },
+    {
+     "date": "16/12/2023",
+     "numeros": "13",
+     "titre": "Remplacement du portail de la plage refusé",
+     "texte": "Remplacement refusé ; le portail actuel recevra une fermeture automatique. Mandat et financement non mis aux voix.",
+     "resultat": "Rejetée",
+     "vote": "Unanimité (3 200)",
+     "titres_regroupes": [
+      "Remplacement du portail de la plage",
+      "Portail de la plage",
+      "Portail de la plage"
+     ]
+    },
+    {
+     "date": "19/11/2022",
+     "numeros": "12",
+     "titre": "Rampe de mise à l'eau : régularisation refusée, suppression décidée",
+     "texte": "Rampe illégale sur le domaine public fluvial : régularisation auprès de la DDT refusée ; suppression (2 160 € TTC, L'Art-bre du Léman) et 5 000 € pour aménager la plage, le conseil syndical négociant avec la DDT.",
+     "resultat": "Régularisation rejetée, suppression adoptée",
+     "vote": "12.1 : Pour 219 · Contre 2 581 · Abst. 100 — 12.2 : unanimité",
+     "titres_regroupes": [
+      "Rampe de mise à l'eau",
+      "Suppression de la rampe et aménagement de la plage"
+     ]
+    },
+    {
+     "date": "15/09/2026",
+     "numeros": "21 et 28",
+     "titre": "Portail de la plage refusé ; serrure changée",
+     "texte": "Portail infranchissable relié à la centrale des portails (5 000 €) : refusé. La serrure sera changée et une nouvelle clé remise à chaque coloti (décision consignée sans vote formel).",
+     "resultat": "Rejetée",
+     "vote": "Pour 25 723 · Contre 53 124 · Abst. 13 299",
+     "titres_regroupes": [
+      "Remplacement du portail de la plage (5 000 €) refusé",
+      "Changement de la serrure du portail de la plage"
+     ]
+    }
+   ]
+  },
+  {
+   "sujet": "Portails et fermeture du lotissement",
+   "action": "mettre_a_jour",
+   "resume": "Fermer ou non les entrées du lotissement, contre les cambriolages, les repérages, le démarchage, le stationnement et les déjections canines : question posée depuis 1989, refusée à plusieurs reprises, puis votée en 2023. La remise en fonction des portails automatiques est déléguée au conseil syndical jusqu'à 70 000 € TTC.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Le lotissement a deux entrées, chacune équipée d'un portail manuel depuis 2003. La question est de les fermer et de les automatiser. Pour : sécurité après des cambriolages (2001, 2007), tranquillité, stationnement sauvage. Contre, selon les assemblées : le coût, l'accès des services (ramassage des ordures, La Poste) et, en droit, le droit de passage public institué en 1961 vers la plage communale."
+    },
+    {
+     "titre": "Trente ans d'hésitation",
+     "texte": "En 1989 déjà, M. Le Corre fait un procès au syndicat pour la barrière posée à l'entrée. En 2001, après des cambriolages, l'assemblée juge souhaitable de fermer un accès et d'automatiser l'autre, et demande un chiffrage. En 2002, le PV déclare adopté le refus de fermer les deux accès, avec 15 voix sur 44 contre 13 et 7 abstentions : la résolution relevait de l'article 26, et ce refus n'a recueilli qu'une majorité relative. En 2003, l'automatisation est refusée (27 voix sur 45), mais deux portails manuels ouverts jour et nuit sont posés, chemin de Messery et dans le virage de l'allée des Précettes (6 600 € TTC, 23 voix contre 11), compatibles avec une automatisation future. En 2007, l'assemblée mandate le conseil syndical pour instruire un dossier et demande une assemblée spéciale. En 2008, la fermeture n'est pas retenue, faute de garantie que le ramassage des ordures continuerait : la situation est maintenue, le portail pouvant être fermé à la main (décision relatée sans vote formel). En 2012, le portail côté Nernier est réparé plutôt que remplacé (960 €). En 2020, la remise en fonction avec interphone est refusée (700 voix pour, 900 contre, 300 abstentions)."
+    },
+    {
+     "titre": "Le tournant de 2023",
+     "texte": "Le 16 décembre 2023, l'assemblée adopte la remise en fonction des portails avec interphone (principe : 2 081 voix contre 1 119) et donne mandat au conseil syndical jusqu'à 50 000 € TTC (2 381 contre 819), sur des devis de 29 491 € à 46 972 € TTC ; le financement est appelé au 1er juillet 2024 et l'usage du fonds de travaux est refusé. Après le changement de clé de 2025, l'assemblée du 19 janvier 2026 confirme les travaux selon la superficie (54 737 m² contre 8 958), porte la délégation à 70 000 € TTC (50 975 contre 12 720), dont 50 000 € déjà appelés, et finance le complément par appel de fonds au 1er avril 2026 et par le fonds de travaux. Le conseil syndical propose un portail coulissant autoportant de type industriel, sans vote sur ce choix. Au 31 mars 2026, le fonds des portails s'élève à 49 800,21 €."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Le conseil syndical choisit le prestataire dans la limite de 70 000 € TTC et en rendra compte à l'assemblée du 14 septembre 2027. Le portail de la plage est un dossier distinct (voir le sujet Plage)."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Juridique : l'arrêté du 5 mai 1961 impose un droit de passage aux usagers de la plage communale sur la voie reliant le lot n° 13 à la route de Messery ; il faut savoir s'il subsiste avant de fermer. Pratique : l'accès des services, motif du renoncement de 2008, et la gestion des badges, y compris pour les tolérances accordées à des non-colotis (Mme Pictet, 2026). Politique : les votes ont toujours été serrés, et la clé de superficie fait participer des colotis qui n'utilisent pas ces entrées."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Le droit de passage public de 1961 subsiste-t-il (question posée à Me Garnier) ? Accord du service des ordures ménagères et de La Poste, demandé dès 2007. Choix du prestataire et calendrier."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "28/06/2008",
+     "titre_actuel": "L’assemblée refuse de fermer le lotissement et maintient la situation actuelle",
+     "champ": "titre",
+     "nouveau": "Fermeture non retenue : la situation actuelle est maintenue",
+     "motif": "Il n'y a pas de vote."
+    },
+    {
+     "date": "28/06/2008",
+     "titre_actuel": "L’assemblée refuse de fermer le lotissement et maintient la situation actuelle",
+     "champ": "texte",
+     "ancien": "Résolution n° 9, adoptée à l’unanimité — mais ce qui est adopté, c’est le maintien de la situation actuelle, et non la fermeture.",
+     "nouveau": "Résolution n° 9 — décision sans vote formel : le PV relate que « l'assemblée générale décide unanimement le maintien de la situation actuelle », sans résolution mise aux voix ni décompte.",
+     "motif": "Erreur relevée par Pascal le 30 septembre 2026 : aucun vote à l'unanimité n'est inscrit au PV (p. 5). Le reste du texte est conservé."
+    },
+    {
+     "date": "28/06/2008",
+     "titre_actuel": "L’assemblée refuse de fermer le lotissement et maintient la situation actuelle",
+     "champ": "resultat",
+     "nouveau": "Décision sans vote formel",
+     "motif": "Idem."
+    },
+    {
+     "date": "30/06/2007",
+     "titre_actuel": "Opportunité de fermer les portails du lotissement",
+     "champ": "titre",
+     "nouveau": "Mandat d'instruction et demande d'AG spéciale sur la fermeture des portails",
+     "motif": "La fermeture n'est pas décidée en 2007."
+    },
+    {
+     "date": "28/06/2003",
+     "titre_actuel": "Pose de 2 portails manuels chemin de Messery",
+     "champ": "titre",
+     "nouveau": "Deux portails manuels, ouverts jour et nuit, aux deux entrées",
+     "motif": "Le PV implante un portail chemin de Messery et l'autre dans le virage de l'allée des Précettes."
+    },
+    {
+     "date": "29/06/2002",
+     "titre_actuel": "Horaires d'ouverture des portails",
+     "champ": "resultat",
+     "ancien": "Non votée",
+     "nouveau": "Sans objet",
+     "motif": "Sans objet, faute de fermeture (point 6)."
+    },
+    {
+     "date": "30/06/2001",
+     "titre_actuel": "Sécurisation du lotissement",
+     "champ": "titre",
+     "nouveau": "Après des cambriolages : fermeture souhaitée, chiffrage demandé",
+     "motif": "Aucune fermeture n'est décidée en 2001."
+    },
+    {
+     "date": "19/11/2022",
+     "titre_actuel": "Portail de la plage et portails d'entrée à l'ordre du jour",
+     "champ": "resultat",
+     "ancien": "Reportée",
+     "nouveau": "Information",
+     "motif": "Registre corrigé."
+    },
+    {
+     "date": "06/07/2019",
+     "titre_actuel": "Fermeture du lotissement, électrification des portails",
+     "champ": "titre",
+     "nouveau": "Remise en fonction des portails à étudier",
+     "motif": "Seule décision du PV."
+    }
+   ],
+   "detacher": [
+    {
+     "date": "19/11/2022",
+     "titre_actuel": "Élagage du noyer près du portail allée de Rive",
+     "motif": "Espaces verts, sans lien avec la fermeture."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "01/07/1989",
+     "titre": "Procès de M. Le Corre contre la barrière de l'entrée",
+     "texte": "Résolution VI : l'assemblée prend connaissance de l'assignation et des conclusions déposées pour le syndicat par Me Redon (adoptée à l'unanimité, non chiffrée).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "29/06/2002",
+     "titre": "Fermeture des deux accès : refus déclaré adopté à la majorité relative",
+     "texte": "Résolution 6 (parcelles 2 à 6 de la zone C non concernées) : le PV déclare adopté le refus de fermer, avec 15 voix sur 44, contre 13 et 7 abstentions. La résolution relevait de l'article 26 : ce refus n'a recueilli qu'une majorité relative, pas la majorité absolue des 44.",
+     "resultat": "Refus de fermer déclaré adopté",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "28/06/2003",
+     "titre": "Automatisation des portails refusée",
+     "texte": "Résolution 6 : devis de 12 183 € à 19 767 € TTC ; l'assemblée décide de ne pas automatiser la fermeture des deux accès (refus adopté par 27 voix sur 45, contre 13).",
+     "resultat": "Refus adopté",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ],
+   "regroupements": [
+    {
+     "date": "19/01/2026",
+     "numeros": "14 et 15",
+     "titre": "Portails : travaux confirmés, délégation portée à 70 000 € TTC",
+     "texte": "Les travaux votés en 2023 sont confirmés selon la nouvelle clé de superficie ; la délégation au conseil syndical est portée à 70 000 € TTC (dont 50 000 € déjà appelés), financée par appel de fonds au 1er avril 2026 et par le fonds de travaux ; honoraires du syndic 600 € TTC. Le conseil syndical propose un portail coulissant autoportant industriel, sans vote sur ce choix.",
+     "resultat": "Adoptée",
+     "vote": "Principe : Pour 54 737 · Contre 8 958 — délégation : Pour 50 975 · Contre 12 720",
+     "titres_regroupes": [
+      "Confirmation des travaux portails (50 000 €, nouvelle clé)",
+      "Préambule",
+      "Principe des travaux de remise en fonctionnement des portails",
+      "Délégation au conseil syndical pour les portails (70 000 € TTC)",
+      "Honoraires du syndic sur travaux portails",
+      "Financement portails",
+      "Mobilisation du fonds travaux pour les portails"
+     ]
+    },
+    {
+     "date": "16/12/2023",
+     "numeros": "10",
+     "titre": "Remise en fonction des portails avec interphone : mandat de 50 000 € TTC",
+     "texte": "Devis de 29 491 € à 46 972 € TTC ; mandat au conseil syndical jusqu'à 50 000 € TTC, financé par appel de fonds au 1er juillet 2024 ; l'utilisation du fonds de travaux est refusée ; honoraires du syndic 3 % HT.",
+     "resultat": "Adoptée",
+     "vote": "Principe : Pour 2 081 · Contre 1 119 — mandat : Pour 2 381 · Contre 819",
+     "titres_regroupes": [
+      "Remise en fonction des portails et interphone",
+      "Portails",
+      "Portails",
+      "Portails",
+      "Portails",
+      "Portails"
+     ]
+    },
+    {
+     "date": "16/12/2023",
+     "numeros": "13",
+     "titre": "Remplacement du portail de la plage refusé",
+     "texte": "Remplacement refusé ; le portail actuel recevra une fermeture automatique.",
+     "resultat": "Rejetée",
+     "vote": "Unanimité (3 200)",
+     "titres_regroupes": [
+      "Remplacement du portail de la plage",
+      "Portail de la plage",
+      "Portail de la plage"
+     ]
+    },
+    {
+     "date": "24/10/2020",
+     "numeros": "12",
+     "titre": "Remise en fonction des portails avec interphone refusée",
+     "texte": "Refusée ; les résolutions d'entreprise, de mandat, d'honoraires et de financement ne sont pas mises aux voix.",
+     "resultat": "Rejetée",
+     "vote": "Pour 700 · Contre 900 · Abst. 300",
+     "titres_regroupes": [
+      "Remise en fonction des portails et interphone",
+      "Portails",
+      "Portails",
+      "Portails",
+      "Portails"
+     ]
+    },
+    {
+     "date": "15/09/2026",
+     "numeros": "21 et 28",
+     "titre": "Portail de la plage refusé ; serrure changée",
+     "texte": "Portail infranchissable relié à la centrale des portails (5 000 €) : refusé. La serrure sera changée et une nouvelle clé remise à chaque coloti (décision consignée sans vote formel).",
+     "resultat": "Rejetée",
+     "vote": "Pour 25 723 · Contre 53 124 · Abst. 13 299",
+     "titres_regroupes": [
+      "Remplacement du portail de la plage (5 000 €) refusé",
+      "Changement de la serrure du portail de la plage"
+     ]
+    }
+   ]
+  },
+  {
+   "sujet": "Réseau eaux pluviales — mémoire de l’association",
+   "action": "mettre_a_jour",
+   "resume": "Réseau d'eaux pluviales de 1955, bien commun, bouché, écrasé et sous-dimensionné par endroits : il doit être refait. La maîtrise d'œuvre est confiée à Global Partner (janvier 2026) ; le coût des travaux ne sera connu qu'après l'appel d'offres. Le chantier de réfection relève du projet RESEAU EP.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "Le réseau recueille les eaux de pluie des lots et des allées : canalisations sous les allées, fossé de l'allée de Rives, et canalisations qui passent sous certains lots privés. L'Addendum III du 19 juin 2025 en fait des biens communs (article 2) et grève les parcelles traversées d'une servitude d'accès pour leur entretien, après un préavis de trente jours sauf urgence (article 4) ; l'additif de 1956 prévoyait déjà une aisance de 3 m autour des collecteurs. Le réseau se déverse dans un collecteur communal de 800 mm qui passe sous l'allée privée (parcelle B228). Selon l'audit de 2021, 48 lots sur 50 rejettent leurs eaux par le réseau du lotissement. La canalisation qui descend l'allée de Rives reçoit aussi les eaux du chemin de la Ravoire (PV de 2014)."
+    },
+    {
+     "titre": "Trente ans de réparations",
+     "texte": "1990 : engorgement près de la propriété Jourlin. 1991 : chaque villa doit séparer eaux pluviales et eaux usées. 2003 : courrier à la commune pour les regards du chemin de Messery, contrat d'entretien à souscrire. 2008 : nettoyage du réseau tous les trois ans. 2013 : courrier recommandé au SIVOM pour qu'il paie une canalisation endommagée par ses travaux, et demande d'une étude de dimensionnement. 2014 : après curage et inspection vidéo, la canalisation de l'allée de Rives est déclarée hors d'usage ; lettre du maire le 24 février. 2018 : la canalisation entre les propriétés Mathon et Chappuis, bouchée par des racines, est reprise en urgence par l'entreprise Favre 4 (5 830 €). 2020 : passage caméra par Groupe UD (8 388 €)."
+    },
+    {
+     "titre": "Du diagnostic au projet",
+     "texte": "L'audit Global Partner du 6 janvier 2021 (n° 2034) constate des canalisations de 1955 bouchées, écrasées et non conformes, et des inondations en sous-sol sur l'ensemble des propriétés. En novembre 2021, l'assemblée apprend que les tuyaux posés par Favre 4 en 2018 posent un problème de diamètre, et vote un dossier d'appel d'offres pour une réfection complète, réalisable par tranches (Groupe UD / Global Partner, 19 200 € TTC, mandat de 20 000 €). La garantie décennale de Favre 4 est mise en jeu en 2022, puis activée en janvier 2026. Le 19 juin 2025, l'AGE délègue au conseil syndical, à l'unanimité des votants, une mission de maîtrise d'œuvre jusqu'à 25 000 € TTC. Le 19 janvier 2026, l'assemblée approuve le devis de Global Partner (21 120 €) et donne mandat au conseil syndical pour 35 000 €, dont 10 000 € appelés au 1er avril 2026 (décision relatée sans décompte). Le 15 septembre 2026, les 25 000 € du fonds d'étude sont constatés parmi les fonds de l'ASL (résolution 10) ; interrogé sur le fonds de travaux, le président indique que des ordres de grandeur ont été évoqués, qui ne constituent pas un budget (résolution 19)."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Global Partner conçoit le nouveau réseau et prépare l'appel d'offres ; c'est lui qui produira les devis. Le montant des travaux sera connu au dépouillement des offres."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "C'est le chantier le plus lourd de l'histoire du lotissement : son coût, inconnu, décidera des appels de fonds des prochaines années. Il pose la question du partage avec la collectivité, puisque le réseau privé reçoit des eaux publiques (chemin de la Ravoire) et se déverse dans un collecteur communal. Il suppose d'accéder à des parcelles privées, ce que la servitude de l'Addendum III permet désormais. Il conditionne enfin toute sortie de la zone C, dont la canalisation dépend du réseau commun."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Quelle suite a été donnée au mandat de 2021 (19 200 €) ? Recours contre Favre 4 : diamètre posé, décennale, situation de l'entreprise. Participation de la commune ou de Thonon Agglo au titre des eaux publiques. Calendrier de Global Partner."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Résolution 10-2 — 25 000 € pour la conception et l’appel d’offres",
+     "champ": "titre",
+     "nouveau": "Résolution 10 — 25 000 € d'étude des eaux pluviales constatés dans les fonds de l'ASL",
+     "motif": "Il n'existe pas de résolution 10-2 : la résolution 19 du PV renvoie à une « résolution n° 10-2 » inexistante."
+    },
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Résolution 10-2 — 25 000 € pour la conception et l’appel d’offres",
+     "champ": "texte",
+     "nouveau": "La résolution 10 constate, parmi les 183 831,14 € transmis à l'ASL, 25 000 € destinés à l'étude du nouveau réseau d'eaux pluviales. Ils proviennent de la délégation votée par l'AGE du 19 juin 2025 (résolution 7, maîtrise d'œuvre jusqu'à 25 000 € TTC). Le maître d'œuvre, Global Partner (21 120 €), a été approuvé le 19 janvier 2026. La résolution 19 du même PV renvoie à une « résolution n° 10-2 » qui n'existe pas.",
+     "motif": "Le texte actuel attribue à l'assemblée de 2026 une autorisation qu'elle n'a pas votée."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "28/06/2003",
+     "titre": "Regards du chemin de Messery et contrat d'entretien",
+     "texte": "Courrier à la commune pour l'entretien des regards du chemin de Messery ; contrat d'entretien du réseau à souscrire (décision sans vote formel).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "28/06/2008",
+     "titre": "Nettoyage du réseau tous les trois ans",
+     "texte": "Décidé avec l'approbation des comptes, à l'unanimité, sans décompte.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "29/06/2013",
+     "titre": "Canalisation endommagée par le SIVOM ; étude de dimensionnement demandée",
+     "texte": "Courrier recommandé au SIVOM pour qu'il paie la réparation de la canalisation endommagée par ses travaux ; l'assemblée demande un devis d'étude du dimensionnement du réseau.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "28/06/2014",
+     "titre": "La canalisation de l'allée de Rives est hors d'usage",
+     "texte": "Résolution 17 (information) : après curage et inspection vidéo, la canalisation qui descend l'allée de Rives, qui reçoit aussi les eaux du chemin de la Ravoire, est hors d'usage et doit être remplacée ; devis demandés, rendez-vous sollicité avec la mairie.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "23/06/2018",
+     "titre": "Reprise en urgence de la canalisation Mathon–Chappuis (5 830 €)",
+     "texte": "Résolution 12, adoptée à l'unanimité (2 819) : canalisation bouchée par des racines, reprise en urgence sur décision du conseil syndical par Favre 4 ; financée sur le fonds de travaux.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "24/10/2020",
+     "titre": "Passage caméra dans le réseau (8 388 €)",
+     "texte": "Résolution 10, adoptée (1 900 pour, 100 contre, 300 abstentions) : recherche des dysfonctionnements par Groupe UD, payée sur le fonds de réserve.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "20/11/2021",
+     "titre": "Dossier d'appel d'offres pour une réfection complète (19 200 €)",
+     "texte": "Résolution 10, adoptée à l'unanimité des votants (2 719 sur 5 100) : dossier confié à Groupe UD / Global Partner, réalisable par tranches ; mandat au conseil syndical jusqu'à 20 000 € ; financé par appel de fonds au 1er janvier 2022 et par le fonds de travaux. Point 9 (information) : les tuyaux posés par Favre 4 en 2018 posent un problème de diamètre.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "19/06/2025",
+     "titre": "Maîtrise d'œuvre déléguée au conseil syndical (25 000 € TTC)",
+     "texte": "Résolution 7, adoptée à l'unanimité des votants (90 687 m²) : diagnostic, cahier des charges, appel d'offres et analyse ; financée par appel de fonds au 1er septembre 2025 et par le fonds de travaux.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "19/01/2026",
+     "titre": "Global Partner retenu (21 120 €), mandat de 35 000 €",
+     "texte": "Résolution 11 : l'assemblée approuve le devis et donne mandat au conseil syndical pour 35 000 €, dont 10 000 € appelés au 1er avril 2026. Décision sans vote formel (« approuve le devis », « donne mandat », aucun décompte). Point 21 (information) : activation de la garantie décennale pour les travaux de Favre 4.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ],
+   "note_revision": "L'ancienne synthèse citait les ordres de grandeur évoqués en séance ; ils figurent au PV, mais le document de contexte demande de ne pas les communiquer tant qu'il n'y a pas de devis. La nouvelle synthèse renvoie au PV sans les reprendre."
+  },
+  {
+   "sujet": "Statut juridique du lotissement",
+   "action": "mettre_a_jour",
+   "resume": "Le lotissement est une association syndicale libre depuis 1955 (article 18 du cahier des charges), gérée à tort pendant des décennies comme une copropriété au prorata des lots. Cahier des charges modifié le 19 juin 2025 (Addendum III), statuts mis en conformité le 15 septembre 2026 ; publication en cours chez Me Garnier.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "L'article 18 du cahier des charges de 1955 constitue un « syndicat d'administration de la voie nouvelle », obligatoire pour tous les propriétaires actuels et futurs. Selon la conclusion de Me Garnier (mai 2026), validée par le CRIDON, c'est une association syndicale libre depuis 1955, qui subsiste en vertu de l'article 60 de l'ordonnance du 1er juillet 2004. Les statuts de 2026 ne créent donc rien : ils mettent en conformité. Une seule clé s'applique, la superficie, pour les charges comme pour les votes : 104 646 m², 50 parcelles."
+    },
+    {
+     "titre": "Ce qui s'était installé",
+     "texte": "Pendant des décennies, le syndic a appliqué la loi de 1965 sur la copropriété : « syndicat des copropriétaires », 100 voix par lot (5 100 au total), majorités des articles 24, 25 et 26, fonds de travaux obligatoire. Cette gestion au prorata des lots n'a jamais eu de fondement dans les actes. Deux signes anciens : en 1988, l'assemblée est appelée à maintenir les règles propres au lotissement après la loi du 6 janvier 1986 ; en 1997, elle ne peut modifier l'article 15 faute du quorum prévu par le code de l'urbanisme pour les lotissements."
+    },
+    {
+     "titre": "La découverte",
+     "texte": "Le 10 août 2022, Me Raimond écrit que le syndicat n'est pas recevable à agir, faute de personnalité juridique. En novembre 2022, Foncia est désigné « mandataire chargé de gérer l'ASL ». Rendez-vous avec Me Birraux (7 décembre 2023) puis Me Delecluse (7 septembre 2024), notaires ; le problème est mentionné oralement à l'AG du 16 décembre 2023, sans trace au PV. Le 24 septembre 2024, le conseil syndical démissionne in corpore. Le 26 octobre 2024, l'assemblée mandate un avocat (10 000 € sur le fonds de travaux) et 32 propriétaires forment un comité de sauvetage. Le 24 janvier 2025, le mémo du cabinet Lacourte Raquin Tatar établit que l'indivision est au prorata de la superficie."
+    },
+    {
+     "titre": "La réforme",
+     "texte": "12 mars 2025 : première consultation, sur la méthode (double majorité plutôt qu'unanimité), approuvée par 82,0 % des colotis et 80,4 % des superficies. 17 avril 2025 : deuxième consultation, sur neuf points de fond, 42 colotis sur 50. 19 juin 2025 : l'AGE adopte l'Addendum III — 36 colotis pour (74 081 m²), 1 contre (2 326), 7 abstentions (14 280, la zone C). Une piste d'association syndicale autorisée (ASA) est étudiée puis abandonnée (note du 1er mars 2026). 15 septembre 2026 : l'assemblée approuve les statuts rédigés par Me Garnier (75 540 m² pour, 16 606 contre) et donne pouvoir pour leur publication (résolutions 4 et 5)."
+    },
+    {
+     "titre": "⚠ Ne pas confondre",
+     "texte": "Les 82,0 % et 80,4 % sont ceux de la consultation de mars 2025, pas de l'AGE de juin 2025 (72,0 % des colotis, 70,8 % des superficies)."
+    },
+    {
+     "titre": "Où en est-on",
+     "texte": "Me Garnier déclare l'association en préfecture et publie les statuts au service de la publicité foncière. Chaque coloti doit lui transmettre son titre de propriété avant le 31 octobre 2026, sinon 100 € de frais de recherche (résolution 15)."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "Tant que les statuts ne sont pas publiés, l'ASL reste fragile face aux tiers. Le délai de contestation du PV ne court que si le procès-verbal est notifié par recommandé avec accusé de réception aux votants contre et aux absents (article 13 des statuts). L'article ajouté aux statuts sur les impayés (résolutions 13 et 14) n'a pas été validé formellement par Me Garnier."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Notification du PV du 15 septembre par recommandé AR : faite par Foncia ? Mandat de Foncia à Me Garnier pour la publication. Cas des successions et des sociétés pour la collecte des titres."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "09/01/1957",
+     "titre_actuel": "Annexe II du Cahier des Charges",
+     "champ": "texte",
+     "ancien": "Nouvel article 4 : propriété allées et plage au prorata de la superficie",
+     "nouveau": "Nouvel article 4 : propriété indivise du sol de la rue et des couloirs d'accès, au prorata de la superficie de chaque lot. La plage commune relève de l'additif de 1956 (article 17).",
+     "motif": "L'additif de 1957 ne porte pas sur la plage (la pièce jointe s'intitule d'ailleurs « propriété allées »)."
+    },
+    {
+     "date": "10/02/1956",
+     "titre_actuel": "Annexe I au Cahier des Charges",
+     "champ": "texte",
+     "ancien": "Nouvel Article 15 - Arbres",
+     "nouveau": "Nouvel article 15 (plantations), aisance de 3 m autour des collecteurs, création de la plage commune (article 17), extension aux lots A14 à A16 et E1 à E8.",
+     "motif": "Contenu complet de l'additif."
+    },
+    {
+     "date": "17/04/2025",
+     "titre_actuel": "2ème consultation sur 9 points de modification du cahier des charges",
+     "champ": "texte",
+     "a_verifier": true,
+     "motif": "L'application indique « 70.3 à 78.9% des superficies » ; le document de contexte indique 72,6 à 78,9 %. Vérifier sur « Résultats consultation 2.pdf » avant de corriger."
+    },
+    {
+     "date": "10/08/2022",
+     "titre_actuel": "Me Raimond nous précise que nous ne sommes pas une copro _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "Premier constat écrit : le syndicat n'est pas recevable à agir en justice, faute de personnalité juridique ; l'avocat recommande qu'un coloti soit demandeur.",
+     "motif": "Entrée sans texte."
+    },
+    {
+     "date": "16/12/2023",
+     "titre_actuel": "Mention de l'existence d'un problème en AG _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "Le problème de statut est évoqué oralement en assemblée ; il n'en reste aucune trace au procès-verbal.",
+     "motif": "Entrée sans texte."
+    },
+    {
+     "date": "24/09/2024",
+     "titre_actuel": "Démission de Conseil Syndical in corpore et lettre aux colotis _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "Le conseil syndical démissionne collectivement et écrit aux colotis pour exposer le problème de statut.",
+     "motif": "Entrée sans texte."
+    },
+    {
+     "date": "26/10/2024",
+     "titre_actuel": "Présentation de la situation en AG et création du comité de sauvetage _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "Résolution 9, adoptée à l'unanimité (3 400) : un avocat est mandaté pour analyser le cahier des charges et étudier sa modification (10 000 € sur le fonds de travaux). 32 propriétaires s'inscrivent au comité de sauvetage.",
+     "motif": "Entrée sans texte."
+    },
+    {
+     "date": "15/09/2026",
+     "titre_actuel": "Projet de statuts de l'ASL approuvé en AG _(Pascal Favre)_",
+     "champ": "texte",
+     "ancien": "",
+     "nouveau": "Résolution 4 : statuts approuvés — Pour 75 540 m² (36 colotis sur 50), Contre 16 606 (les sept de la zone C et la SCI Violette). Résolution 5 : pouvoirs pour la publication (77 866 pour, 14 280 contre).",
+     "motif": "Entrée sans texte."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "02/07/1988",
+     "titre": "Maintien des règles du lotissement après la loi de 1986",
+     "texte": "Point V de la convocation : maintenir les règles propres au lotissement après la loi du 6 janvier 1986, faute de quoi le POS de Nernier s'applique ; le conseil syndical recommandait le maintien. Seule la première page du PV est conservée : on ignore s'il y a eu vote.",
+     "resultat": "Inconnu",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "19/11/2022",
+     "titre": "Foncia désigné « mandataire chargé de gérer l'ASL »",
+     "texte": "Résolution 5, adoptée à l'unanimité (4 872) : convention jusqu'au 31 décembre 2024. Première désignation qui ne parle plus de syndic de copropriété.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ]
+  },
+  {
+   "sujet": "Syndic et gestion",
+   "action": "mettre_a_jour",
+   "resume": "Gestion de l'ASL confiée à Foncia Lemanique, mandataire, sous le contrôle du conseil syndical ; convention renouvelée pour 2027. Héritage d'une gestion de copropriété : chaque document du syndic est à relire avant diffusion.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "L'ASL confie sa gestion courante à un professionnel. Depuis le 19 novembre 2022, Foncia Lemanique est désigné « mandataire chargé de gérer l'ASL » (convention jusqu'au 31 décembre 2024). La résolution 7 de l'assemblée du 15 septembre 2026 le désigne pour 2027, par convention du 1er janvier au 31 décembre 2027, le président étant mandaté pour la signer."
+    },
+    {
+     "titre": "L'héritage de la copropriété",
+     "texte": "Le lotissement a été géré pendant des décennies comme une copropriété, ce qui explique les formulations erronées des documents du syndic : « tantièmes » pour des m² de superficie, articles de la loi de 1965, clés par lot. Les erreurs relevées dans les procès-verbaux récents : 13 000 € de la plage rattachés à une assemblée du « 23 décembre 2022 » qui n'a pas existé ; « SCI Aicha » au lieu de SCI Villa Aysha ; renvoi à une « résolution n° 10-2 » inexistante ; cotisation au fonds de travaux de 80 000 € ou de 50 000 € selon le PV. D'où la règle : relire chaque procès-verbal avant diffusion et en demander la correction."
+    },
+    {
+     "titre": "Cadre fixé par les assemblées",
+     "texte": "Honoraires sur travaux : 3 % HT (1 363,64 € TTC sur les portails en 2023, 600 € TTC en 2026). Le conseil syndical peut engager des dépenses hors budget jusqu'à 2 500 € TTC jusqu'au 31 mars 2027 (janvier 2026). Le service d'assistance Foncia 24/7 (745 € TTC par an) est refusé. L'application du conseil syndical coûte 700 € par an (septembre 2026). Le syndic doit informer le notaire à chaque vente, ne rien prélever sur les fonds sans délibération et présenter chaque année un état des fonds (résolution 10 du 15 septembre 2026)."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "La notification du procès-verbal par recommandé avec accusé de réception aux votants contre et aux absents (article 13 des statuts) conditionne le délai de contestation : c'est au syndic de la faire. Les pièces antérieures à l'ASL sont conservées sur MyFoncia et doivent être exportées avant tout changement de syndic."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Convention couvrant 2025 et 2026, entre la fin de celle de 2022 et celle de 2027 : à retrouver. Notification en recommandé du PV du 15 septembre 2026. Mandat donné à Me Garnier pour la publication des statuts."
+    }
+   ],
+   "entrees_a_ajouter": [
+    {
+     "date": "19/11/2022",
+     "titre": "Foncia Lemanique, « mandataire chargé de gérer l'ASL »",
+     "texte": "Résolution 5, adoptée à l'unanimité (4 872) : convention jusqu'au 31 décembre 2024.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "19/01/2026",
+     "titre": "Délégation de 2 500 € au conseil syndical ; assistance 24/7 refusée",
+     "texte": "Résolution 24, adoptée (61 369) : dépenses hors budget jusqu'à 2 500 € TTC, jusqu'au 31 mars 2027. Résolution 27 : service d'assistance Foncia 24/7 (745 € TTC par an) refusé à l'unanimité (63 695).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "15/09/2026",
+     "titre": "Application du conseil syndical : 700 € par an",
+     "texte": "Résolution 16, adoptée (75 540 pour, 16 606 contre).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ]
+  },
+  {
+   "sujet": "Urbanisme et servitudes",
+   "action": "completer",
+   "synthese_ajout": [
+    {
+     "titre": "Enjeux et questions ouvertes",
+     "texte": "Question posée à Me Garnier : les règles d'urbanisme contenues dans le cahier des charges sont-elles devenues caduques du fait du PLU (article L. 442-9 du code de l'urbanisme), et quelles clauses subsistent comme servitudes privées entre colotis ? La réponse commande la force de l'article 14 (non aedificandi, hauteurs) et de l'article 15 (plantations). Divisions de lots : l'article 14 soumet tout morcellement à approbation ; l'assemblée a refusé en 2019 un avis favorable à la division de la parcelle Leafe (avis du CRIDON demandé) et n'a pas mis aux voix, en 2026, celle de la propriété de M. Décima. Le droit de passage public de 1961 et l'objet de l'emplacement réservé n° 534 restent à vérifier. Les litiges d'arbres sont désormais suivis dans le sujet « Arbres et plantations (article 15) »."
+    }
+   ],
+   "corrections_entrees": [
+    {
+     "date": "02/08/2022",
+     "titre_actuel": "Lettre de la DDT",
+     "champ": "texte",
+     "ancien": "Datée de 2021 selon le brief. ⚠ Jour et mois à renseigner.",
+     "nouveau": "Lettre de mise en demeure réf. 204/22 du 2 août 2022, après la tournée de contrôle de fin 2021 : remise en état de la servitude de marchepied (parcelle B0288), entretien ou abattage de la haie, démolition de la rampe de mise à l'eau occupant sans titre le domaine public fluvial.",
+     "motif": "La date est connue."
+    },
+    {
+     "date": "22/08/1955",
+     "titre_actuel": "Arrêté préfectoral n° 5184-55 autorisant le lotissement de Rives",
+     "champ": "titre",
+     "a_verifier": true,
+     "motif": "Numéro à vérifier : 3164-55 selon le document de contexte."
+    },
+    {
+     "date": "10/02/1956",
+     "titre_actuel": "Arrêté préfectoral n° 7955-56 — extension et premier additif",
+     "champ": "titre",
+     "a_verifier": true,
+     "motif": "Numéro à vérifier : 755-56 selon le document de contexte."
+    }
+   ],
+   "deplacer_vers": "Arbres et plantations (article 15)",
+   "entrees_a_deplacer": [
+    "Assignation de la SCI VILLA AYSHA (article 15)",
+    "Assignation de la SCI VIOLETTE (article 15)",
+    "Rappel article 15",
+    "Assignation de la SCI VIOLETTE (article 15 additif)",
+    "Rappel des règles de plantations (article 15 additif)",
+    "Modification article 15 proposée par le CS en 2004",
+    "Article 15 ter",
+    "Article 15 bis",
+    "Article 12 bis cahier des charges",
+    "Modificatif article 15 présenté par le conseil syndical",
+    "Avenant article 15 (hauteur des arbres) — commission des sages",
+    "Commission des sages",
+    "Article 15 du cahier des charges",
+    "Modification de l'article 15 (hauteur des plantations)",
+    "Modification de l'article 15",
+    "Jardins mal entretenus ; peupliers ; hauteur des arbres"
+   ]
+  }
+ ],
+ "nouveaux_sujets": [
+  {
+   "sujet": "Arbres et plantations (article 15)",
+   "categorie": "Urbanisme",
+   "resume": "Hauteur et emplacement des arbres limités par l'article 15 du cahier des charges (additif du 10 février 1956) pour préserver la vue sur le lac. Trente ans de tentatives de modification rejetées, une commission des sages, puis deux contentieux gagnés en référé.",
+   "synthese": [
+    {
+     "titre": "La règle",
+     "texte": "L'article 15, dans sa rédaction issue de l'additif du 10 février 1956 : en zones A et B, sauf les lots B1 et B2, arbres de 7 m au plus le long des limites séparatives, sur une bande de 5 m de large et sur 40 m au plus depuis le lac (zone A) ou depuis le chemin d'accès (zone B) ; lots D1 à D6, bande de 5 m le long des limites perpendiculaires au lac, 7 m au plus ; lots B1, B2 et zone E, aux seuls emplacements prévus au plan de masse. La zone C et les lots D7, D8, E7 et E8 ne sont soumis à aucune restriction. Les procès-verbaux attribuent cet article à l'additif du 15 janvier 1957 : c'est une erreur ancienne."
+    },
+    {
+     "titre": "1992-2005 : modifier la règle ou la faire respecter",
+     "texte": "Mises en demeure dès 1992 et 1993 (visite des grands arbres avec un ingénieur de la DDA). De 1996 à 1998, l'assemblée tente de modifier l'article 15 : renvoi pour laisser aboutir des accords entre voisins (1996), impossibilité de décider faute du quorum requis (1997), refus faute de majorité suffisante (20 voix contre 17, 1998). En 1997, elle crée une commission des sages (MM. Privat, Pargoux et Perrin), chargée de régler les litiges à l'amiable par des protocoles entre voisins ; renouvelée en 2003 (M. Ryser, Mme Hirsch, M. Mey), elle prépare un avenant pour les arbres visés par une décision de la cour d'appel de Chambéry. Les avenants de la commission et du conseil syndical sont refusés en 2004 ; en 2005, les projets d'articles 12 bis (haies), 15 bis et 15 ter (tolérances de hauteur) obtiennent une majorité de voix mais pas celle qu'exigeait l'article 26, et sont tous refusés."
+    },
+    {
+     "titre": "2005-2015 : les décisions de justice",
+     "texte": "En 2007, l'assemblée rappelle un jugement du tribunal de grande instance de Thonon du 12 mai 2005 et l'astreinte qui pèse sur plusieurs résidents ; en 2008 et 2009, des résidents annoncent qu'ils en demanderont la liquidation si les arbres ne sont pas mis en conformité. En 2013, les végétaux qui débordent sur les parties communes seront taillés aux frais de leur propriétaire. En 2014, l'article 15 est rappelé ; en 2015, un constat d'huissier est décidé, préalable à une action en justice."
+    },
+    {
+     "titre": "2016-2026 : les deux contentieux",
+     "texte": "SCI Violette : action autorisée en 2016, renouvelée en 2020, ordonnance d'abattage du 29 octobre 2024, non exécutée, audience de liquidation de l'astreinte le 22 septembre 2026. SCI Villa Aysha : action refusée en 2019 contre un engagement non tenu, autorisée en 2022, ordonnance du 7 octobre 2025, arbres coupés en 2026 selon le président. En 2019, le règlement et un plan sont envoyés à tous. En 2023, l'entretien des haies, fossés et gazon le long des allées est confié à l'ASL aux frais des riverains, au mètre linéaire ; en janvier 2026, une procédure de constat annuel et de mise en demeure est présentée pour les haies."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "La vue sur le lac fait la valeur des lots : l'article 15 est une servitude privée, réciproque et opposable à tout acquéreur, que les tribunaux appliquent. L'expérience fixe la méthode : constats d'huissier, mise en demeure par avocat, action portée par des colotis aux côtés de l'association. Les arbres repoussent : le contrôle doit être périodique. Les haies relèvent d'autres règles : le cahier des charges ne les limite pas, le PLUi plafonne à 1,60 m la haie qui sert de clôture, et l'article 671 du code civil fixe les distances de plantation."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Retrouver les décisions de la cour d'appel de Chambéry et du tribunal de Thonon de 2003-2005 (parties, dispositif, astreinte). La commission des sages existe-t-elle encore ? Articulation avec le PLUi, qui impose en zone UCp un arbre de haute tige pour 100 m² de pleine terre. Survie de l'article 15 si les règles d'urbanisme du lotissement étaient jugées caduques (question posée à Me Garnier)."
+    }
+   ],
+   "entrees": [
+    {
+     "date": "10/02/1956",
+     "titre": "L'additif réécrit l'article 15 sur les plantations",
+     "texte": "Arrêté préfectoral du 10 février 1956 (numéro à vérifier : 7955-56 dans l'application, 755-56 dans le document de contexte) ; dépôt chez Me Naz le 26 mars 1956.",
+     "source": "Acte au dossier."
+    },
+    {
+     "date": "24/07/1993",
+     "titre": "Mise en demeure de M. Reistad (hauteur des arbres)",
+     "texte": "Point VII : visite des grands arbres avec un ingénieur de la DDA ; l'assemblée donne mission au syndic de mettre en demeure (décision sans vote formel).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "30/06/2007",
+     "titre": "Rappel du jugement du 12 mai 2005 et de l'astreinte",
+     "texte": "Point 6 (information) : jugement du TGI de Thonon du 12 mai 2005, astreinte pesant sur plusieurs résidents ; dialogue à privilégier, haies à tailler selon le code civil.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "29/06/2013",
+     "titre": "Végétaux débordant sur les parties communes",
+     "texte": "Résolution 12, adoptée à l'unanimité (non chiffrée) : à défaut de taille par le propriétaire, le syndic les fait tailler à ses frais.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "27/06/2015",
+     "titre": "Constat d'huissier avant action en justice",
+     "texte": "Point 12 (information) : un constat d'huissier sera établi ; le conseil syndical pourra demander à l'assemblée d'agir en justice contre les arbres non conformes.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "16/12/2023",
+     "titre": "Haies, fossés et gazon entretenus par l'ASL aux frais des riverains",
+     "texte": "Résolution 16, adoptée (2 119 pour, 500 contre, 281 abstentions) : facturation au mètre linéaire.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "19/01/2026",
+     "titre": "Procédure de constat annuel et de mise en demeure pour les haies",
+     "texte": "Point 28 : visite avec le syndic, mise en demeure de tailler sous 30 jours, à défaut taille aux frais du coloti.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ],
+   "entrees_venues_de": "Urbanisme et servitudes (liste entrees_a_deplacer), plus un lien vers les sujets Contentieux SCI Violette et Contentieux SCI Villa Aysha."
+  },
+  {
+   "sujet": "Eaux usées et assainissement",
+   "categorie": "Réseaux",
+   "resume": "Raccordement du lotissement au réseau public d'eaux usées, négocié avec le SIVOM de 1989 à 2001 : poste de refoulement et réseau séparatif, en partie à la charge du lotissement. C'est pour ces travaux que l'idée d'un fonds de réserve est née en 1996.",
+   "synthese": [
+    {
+     "titre": "Ce dont il s'agit",
+     "texte": "L'évacuation des eaux usées des villas, distincte du réseau d'eaux pluviales. À la fin des années 1980, le réseau du lotissement est en mauvais état et doit être mis en conformité ; le SIVOM prévoit un nouveau réseau public."
+    },
+    {
+     "titre": "Historique",
+     "texte": "1989 : le conseil syndical et le syndic suivent la mise en conformité. 1991 : le SIVOM est autorisé à empiéter sur la voie (5 m) pour le futur réseau ; chaque villa doit séparer eaux pluviales et eaux usées ; le raccordement d'un voisin extérieur au réseau du lotissement est refusé. 1994 : prise d'acte de la prise en charge d'une partie des dépenses par le SIVOM. 1995 : l'élargissement de l'allée des Précettes à 4 m est attendu à l'occasion de ces travaux. 1996 : mandat au conseil syndical et au syndic pour négocier le financement avec le SIVOM (les parcelles extérieures qui en profitent devraient participer) et principe d'un fonds de réserve. 1997 : convention à l'étude, pas de travaux avant 2000 ; le fonds de réserve est jugé prématuré. 1998 : la proposition du SIVOM est entérinée — un poste de refoulement d'ici 1999 (430 000 HT préfinancés, dont la moitié, 215 000 HT, à la charge de la copropriété de l'époque ; montants de 1998, avant l'euro), puis un réseau séparatif dans les cinq à dix ans avec au moins 50 % de participation publique. 2001 : première tranche faite ; réserves sur les reprises de bitume, sans recours possible, le lotissement n'étant pas maître d'ouvrage ; seconde tranche attendue. 2013 : le SIVOM est mis en cause pour une canalisation d'eaux pluviales endommagée par ses travaux."
+    },
+    {
+     "titre": "Enjeux",
+     "texte": "La séparation des eaux usées et pluviales, exigée en 1991, conditionne le bon fonctionnement du réseau d'eaux pluviales qui va être refait. La réponse aux demandes de raccordement de voisins ou de colotis passe par ce qui a été convenu avec le SIVOM."
+    },
+    {
+     "titre": "Questions ouvertes",
+     "texte": "Retrouver la convention conclue avec le SIVOM (1997-1998) et le procès-verbal de réception des travaux. Savoir ce qui est aujourd'hui public et ce qui est resté au lotissement. La seconde tranche annoncée en 2001 a-t-elle été réalisée ?"
+    }
+   ],
+   "entrees": [
+    {
+     "date": "01/07/1989",
+     "titre": "Mise en conformité du réseau d'eaux usées suivie par le conseil",
+     "texte": "Point VIII : décision sans vote formel.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "27/07/1991",
+     "titre": "Le SIVOM autorisé à empiéter sur la voie ; séparation obligatoire",
+     "texte": "Point VI, adopté à l'unanimité (non chiffré) : emprise de 5 m sur la voie pour le futur réseau ; chaque villa doit séparer eaux pluviales et eaux usées. Refus du raccordement de M. J. Francillon au réseau du lotissement (réseau en mauvais état, nouveau réseau prévu).",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "30/07/1994",
+     "titre": "Prise en charge partielle par le SIVOM",
+     "texte": "Point VI, adopté (35 voix sur 50, 1 abstention) : prise d'acte, dans l'attente de sa proposition.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "27/07/1996",
+     "titre": "Mandat de négociation avec le SIVOM et principe d'un fonds de réserve",
+     "texte": "Point V : mandat au conseil syndical et au syndic (31 voix pour, 1 contre, sur 50) ; les parcelles extérieures qui bénéficient du réseau devraient participer. Principe d'un fonds de réserve pour ces travaux (21 pour, 12 contre), montant renvoyé.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "28/06/1997",
+     "titre": "Convention SIVOM à l'étude, pas de travaux avant 2000",
+     "texte": "Point V, adopté à l'unanimité (non chiffré) : le fonds de réserve voté en 1996 est jugé prématuré.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "20/06/1998",
+     "titre": "Proposition du SIVOM entérinée : poste de refoulement puis réseau séparatif",
+     "texte": "Point VII, adopté à l'unanimité (non chiffré) : poste de refoulement d'ici 1999 (430 000 HT préfinancés, dont 50 % à la charge de la copropriété, soit 215 000 HT), puis réseau séparatif dans les 5 à 10 ans avec au moins 50 % de participation publique.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    },
+    {
+     "date": "30/06/2001",
+     "titre": "Première tranche des travaux faite",
+     "texte": "Point 8, adopté à l'unanimité (non chiffré) : réserves sur les reprises de bitume, sans recours possible, le lotissement n'étant pas maître d'ouvrage ; seconde tranche attendue.",
+     "source": "Procès-verbal relu sur l'image le 30 septembre 2026.",
+     "archive": true
+    }
+   ]
+  }
+ ],
+ "points_a_verifier_par_pascal": [
+  "Numéros des arrêtés préfectoraux : l'application porte 5184-55 (22 août 1955) et 7955-56 (10 février 1956) ; le document de contexte, « dates vérifiées sur les actes », porte 3164-55 et 755-56. À vérifier sur les actes ; rien n'est corrigé en attendant.",
+  "Deuxième consultation (17 avril 2025) : 70,3 % à 78,9 % des superficies dans l'application, 72,6 % à 78,9 % dans le document de contexte. À vérifier sur « Résultats consultation 2.pdf ».",
+  "Réseau EP : l'ancienne synthèse citait les ordres de grandeur évoqués en séance (résolution 19). Ils sont au PV, mais le document de contexte demande de ne pas les communiquer sans devis ; la nouvelle synthèse ne les reprend pas. Dire si tu préfères les garder.",
+  "Zone C : entrée du 22 septembre 2026 ajoutée (réponse du conseil). Joindre ou non le courrier « email envoyé 22_9_26.pdf ».",
+  "Si une synthèse ou une entrée a été approuvée par une décision du conseil, Code ne l'écrase pas : il propose le nouveau texte en commentaire et le signale."
+ ]
+}

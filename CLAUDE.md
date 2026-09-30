@@ -1623,6 +1623,41 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     syndic, que la **date de l'abattage n'est pas connue**, et qu'**aucune pièce n'est au dossier**.
     Inscrire une déclaration comme un fait établi est la faute la plus facile à commettre dans une
     mémoire — et la plus difficile à rattraper dix ans plus tard.
+  - **RÉVISION DU 2026-09-30** (migration 065, `scripts/appliquer_memoire_sujets.mjs`) — Pascal :
+    les synthèses étaient trop minces, et plusieurs entrées fausses (2008 « adoptée à l'unanimité »,
+    un « Pour : 72 854 », une « résolution 10-2 » qui n'existe pas). **12 → 14 sujets, 199 → 251
+    entrées, aucune supprimée.**
+    - ⚠ **ON NE SUPPRIME RIEN, ET TROIS COLONNES LE GARANTISSENT.** `regroupee_sous` range six
+      sous-résolutions (« Portails » ×5) sous une consolidée — elles cessent de s'afficher **à
+      plat** et restent lisibles, repliées. `detachee_le` / `detachee_motif` retirent une entrée de
+      la chronologie **sans toucher à son `sujet_id`** : une entrée sans sujet n'apparaîtrait nulle
+      part, donc serait perdue en pratique tout en existant en base. Le script **refuse d'écrire**
+      si le total diminue.
+    - ⚠ **`sujets.historique`** garde l'ancien résumé et l'ancienne synthèse avant remplacement :
+      une mémoire qui perd ses versions ne peut plus dire qui a écrit quoi, et quand.
+    - ⚠ **TROIS TOLÉRANCES D'APPARIEMENT, toutes nécessaires** — sans elles, **36 opérations sur
+      102** ne trouvaient rien. (1) Le suffixe ` _(Pascal Favre)_` des `titre_actuel` vient de
+      l'**export Markdown**, pas de la base. (2) Les `titres_regroupes` sont **abrégés** :
+      « Portails » désigne « Portails : choix de l'entreprise en AG », et le même mot répété cinq
+      fois désigne cinq entrées. (3) **Une correction ne consomme pas sa cible** — deux corrections
+      visent souvent la même entrée (le titre, puis le résultat).
+    - ⚠ **UNE ÉDITION CIBLÉE DOIT TRAVERSER LES BALISES.** Le passage à remplacer est fourni en
+      texte brut, le stockage est du HTML où la phrase est coupée — et pas seulement entre les mots :
+      « actuelle**</strong>**, ». Un `includes` n'y voit rien, et la correction de 2008 échouait **en
+      silence**. Le motif tolère donc les balises **entre deux caractères quelconques** — et la
+      tolérance ne se met **jamais après le dernier** : accolée à chacun, elle avalait le
+      `</p><p>` suivant et soudait deux paragraphes.
+    - ⚠ **UNE OPÉRATION DÉJÀ APPLIQUÉE N'EST PAS UNE ERREUR.** Au second passage, `titre_actuel` ne
+      retrouve plus rien — puisqu'il a été corrigé — et les entrées déplacées ne sont plus dans leur
+      sujet d'origine. Sans ces tests, relancer produisait **51 « opérations sans cible » qui
+      n'étaient que le signe de son propre succès**, et 30 entrées en double.
+    - ⚠ **LA COULEUR EST CELLE DES ARCHIVES** (`tonResultatEntree` ré-exporte `tonDecisionResume`) :
+      un même résultat ne doit pas se peindre différemment selon l'écran. Au passage, la règle
+      testait « sans vote » en début de chaîne : les archives écrivent « Sans vote formel », la
+      mémoire « **Décision** sans vote formel » — la seconde sortait en ambre.
+    - **Garde-fou « liée à une décision du conseil »** : la liaison est **textuelle** (aucune clé
+      étrangère, limite v1), cherchée sur un numéro `AAAA-NNN` ou une mention explicite. Aucun cas
+      trouvé — le dire vaut mieux que de taire un garde-fou qui n'a rien retenu.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu

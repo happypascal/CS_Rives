@@ -9,7 +9,7 @@ import { useConfirm } from '../components/useConfirm'
 import { formatDate, todayISO } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { categoriesConnues, trierEntrees, estDateInconnue } from '../lib/sujetLogic'
+import { categoriesConnues, trierEntrees, estDateInconnue, chronologie, entreesDetachees, tonResultatEntree } from '../lib/sujetLogic'
 
 // Fiche d'un sujet : la SYNTHÈSE (où en est-on) puis la CHRONOLOGIE (comment y
 // est-on arrivé). Deux questions différentes, deux zones distinctes.
@@ -165,7 +165,12 @@ export default function SujetDetail() {
     }
   }
 
-  const entrees = trierEntrees(sujet.entrees || [])
+  // ⚠ LA CHRONOLOGIE NE MONTRE PLUS TOUT À PLAT (migration 065). Les entrées
+  // regroupées sont repliées sous leur consolidée, les détachées sont sorties de
+  // la liste — aucune n'est supprimée, et les détachées restent listées plus bas
+  // avec leur motif.
+  const entrees = chronologie(sujet.entrees || [], trierEntrees)
+  const detachees = entreesDetachees(sujet.entrees || [])
 
   // Séparées une fois pour toutes : la sentinelle ne doit entrer dans aucun calcul
 
@@ -446,8 +451,44 @@ export default function SujetDetail() {
                             </span>
                           )}
                         </div>
+                        {/* ⚠ LE RÉSULTAT EST UNE COLONNE, PLUS UNE PHRASE NOYÉE
+                            DANS LE TEXTE : c'est ce qui permet de le corriger sans
+                            réécrire un paragraphe, et de le colorer. La règle de
+                            couleur est CELLE DES ARCHIVES (`tonResultatEntree` ré-exporte
+                            `tonDecisionResume`) — un même résultat ne doit pas se
+                            peindre différemment selon l'écran. */}
+                        {e.resultat && (
+                          <p className={`mt-1 text-xs font-medium ${tonResultatEntree(e.resultat)}`}>
+                            {e.resultat}
+                            {e.vote && <span className="ml-2 font-normal text-slate-500">{e.vote}</span>}
+                          </p>
+                        )}
                         {e.contenu && (
                           <div className="rich-text mt-1 text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: e.contenu }} />
+                        )}
+                        {/* ⚠ LES SOUS-RÉSOLUTIONS RESTENT LISIBLES, repliées. Six
+                            lignes « Portails » à plat disaient six fois la même
+                            chose ; les effacer aurait perdu le détail exact du
+                            vote. On les range, on ne les supprime pas. */}
+                        {e.detail?.length > 0 && (
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-xs text-navy-600 underline">
+                              Détail : {e.detail.length} résolution{e.detail.length > 1 ? 's' : ''}
+                            </summary>
+                            <ul className="mt-2 space-y-2 border-l-2 border-navy-100 pl-3">
+                              {e.detail.map((d) => (
+                                <li key={d.id}>
+                                  <p className="text-sm font-medium text-slate-600">{d.titre}</p>
+                                  {d.resultat && (
+                                    <p className={`text-xs font-medium ${tonResultatEntree(d.resultat)}`}>{d.resultat}</p>
+                                  )}
+                                  {d.contenu && (
+                                    <div className="rich-text text-xs text-slate-500" dangerouslySetInnerHTML={{ __html: d.contenu }} />
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
                         )}
                         {(e.documents || []).length > 0 && (
                           <div className="mt-2">
@@ -461,6 +502,29 @@ export default function SujetDetail() {
                 ))}
               </ul>
             )}
+          {/* ⚠ CE QUI A ÉTÉ RETIRÉ DE LA CHRONOLOGIE SE DIT, avec son motif.
+              « Détacher » ne supprime rien : l'entrée garde son sujet et cesse
+              seulement de s'afficher dans le fil. La cacher sans le dire ferait
+              disparaître une trace que quelqu'un a écrite, et personne ne saurait
+              où la chercher. */}
+          {detachees.length > 0 && (
+            <div className="border-t border-navy-100 px-5 py-3">
+              <details>
+                <summary className="cursor-pointer text-xs text-slate-500 underline">
+                  {detachees.length} entrée{detachees.length > 1 ? 's' : ''} retirée{detachees.length > 1 ? 's' : ''} de cette chronologie
+                </summary>
+                <ul className="mt-2 space-y-2">
+                  {detachees.map((e) => (
+                    <li key={e.id} className="text-xs text-slate-500">
+                      <span className="font-medium text-slate-600">{e.titre}</span>
+                      {e.detachee_motif && <> — {e.detachee_motif}</>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+          )}
+
           </Card>
         </div>
 

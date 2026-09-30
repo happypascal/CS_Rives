@@ -628,7 +628,11 @@ export function tonDecisionResume(decision) {
   if (t.includes('non executee')) return 'text-amber-700'
   if (t.startsWith('adoptee') || t.startsWith('refus')) return 'text-emerald-700'
   if (t.startsWith('rejetee') || t.startsWith('regularisation rejetee')) return 'text-red-700'
-  if (t.startsWith('sans vote')) return 'text-sky-700'
+  // ⚠ DEUX FORMULATIONS POUR LA MÊME CHOSE : le résumé des archives écrit « Sans
+  // vote formel », la mémoire de l'ASL « Décision sans vote formel ». Ne tester
+  // que le début de chaîne peignait la seconde en ambre — le même fait, deux
+  // couleurs selon l'écran, ce que cette fonction partagée existe pour empêcher.
+  if (t.startsWith('sans vote') || t.startsWith('decision sans vote')) return 'text-sky-700'
   if (t.startsWith('information') || t.startsWith('pas de vote') || t.startsWith('inconnu')) return 'text-slate-500'
   return 'text-amber-700'
 }

@@ -336,6 +336,11 @@ create table if not exists sujets (
   resume      text,                  -- une ligne, pour la liste
   contenu     text,                  -- la synthèse, HTML de RichTextEditor
   documents   jsonb not null default '[]'::jsonb,
+  -- ⚠ LES VERSIONS ANTÉRIEURES du résumé et de la synthèse (migration 065) :
+  -- [{ le, resume, contenu, motif }], la plus récente en tête. Une mémoire qui
+  -- perd ses versions ne peut plus dire qui a écrit quoi, et quand — précisément
+  -- la question qu'elle existe pour tenir.
+  historique  jsonb not null default '[]'::jsonb,
   created_by  uuid references membres_cs(id) on delete set null,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
@@ -359,9 +364,28 @@ create table if not exists sujet_entrees (
   -- que le préfixe `decisions`.
   documents      jsonb not null default '[]'::jsonb,
   auteur_id      uuid not null references membres_cs(id) on delete cascade,
+
+  -- LA RÉVISION DU 2026-09-30 (migration 065) — ⚠ AUCUNE DE CES COLONNES
+  -- N'EFFACE QUOI QUE CE SOIT : elles changent ce qui S'AFFICHE et gardent la
+  -- trace de ce qui a été remplacé.
+  resultat       text,   -- « Adoptée », « Décision sans vote formel »… coloré à l'écran
+  vote           text,   -- RÉDIGÉ, porte parfois deux scrutins ; jamais recalculé
+  -- ⚠ Six sous-résolutions (« Portails » ×5) sous une seule ligne : l'entrée
+  -- regroupée pointe vers sa consolidée et cesse de s'afficher À PLAT. Elle
+  -- reste lisible, repliée dessous. `on delete set null` : supprimer la
+  -- consolidée les rend visibles à plat, jamais ne les emporte.
+  regroupee_sous uuid references sujet_entrees(id) on delete set null,
+  -- ⚠ « Détacher » sans supprimer. L'entrée GARDE son `sujet_id` : une entrée
+  -- sans sujet n'apparaîtrait nulle part — perdue en pratique tout en existant
+  -- en base. Le détachement est un fait daté et motivé, affiché comme tel.
+  detachee_le    timestamptz,
+  detachee_motif text,
+
   created_at     timestamptz not null default now(),  -- la SAISIE, jamais modifiée
   updated_at     timestamptz not null default now()
 );
+
+create index if not exists sujet_entrees_regroupee_idx on sujet_entrees (regroupee_sous);
 
 create index if not exists sujet_entrees_idx on sujet_entrees (sujet_id, date_evenement desc);
 
