@@ -1198,6 +1198,22 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     PAS considérer comme adopté ni rejeté »), mais la colonne portait « Information » — qui affirme
     que le point n'appelait pas de vote. Corrigé en « Inconnu (page manquante) ». C'est la faute que
     tout ce registre s'interdit : **ne pas confondre « on ne sait pas » avec un résultat**.
+  - ⚠ **UN INTITULÉ QUI DIT LE CONTRAIRE DE LA DÉCISION** (AG 2008 n° 9, signalé par Pascal le
+    2026-09-30 : « n'a pas décidé de fermer le lotissement mais au contraire de garder la situation
+    actuelle »). Le registre avait repris la question de l'**ORDRE DU JOUR** — « Point sur le dossier
+    relatif à l'ÉVENTUELLE fermeture… » — abrégée en « Fermeture du lotissement / sécurisation de la
+    résidence ». Accolée à « **Adoptée (unanimité)** », elle fait lire l'inverse du vote : le PV dit
+    « l'assemblée générale décide unanimement **le maintien de la situation actuelle** », faute de
+    garantie sur le ramassage des ordures ménagères.
+    - ⚠ **LE DÉTAIL ÉTAIT JUSTE DEPUIS LE DÉBUT** : c'est le TITRE qui mentait. Dans un tableau
+      comme dans une chronologie, **c'est le titre qu'on lit** — une erreur de titre se propage sans
+      être relue. **Un intitulé doit nommer la DÉCISION, jamais la question posée.**
+    - « Partout » = **trois endroits** : l'intitulé dans `pv_archives` (ici, pour survivre au
+      ré-import), l'**entrée de chronologie** et la **synthèse** du sujet « Portails » (dans
+      `corriger_memoire_fermeture_2008.mjs` — rien ne réécrit la mémoire, ces corrections-là sont
+      définitives). ⚠ Le **registre `.docx` et le résumé `.docx` portent toujours l'intitulé
+      fautif** : à corriger à la source, sinon chaque régénération le réintroduira — le script de
+      correction est le filet, pas la solution.
   - **Non corrigé, et pourquoi** : « Adoptée (unanimité) » contre « Adoptée » n'est pas une
     contradiction — la base en dit plus, on ne rabote pas une source parce qu'une autre est brève.
   - **237 résolutions en base pour 151 dans les résumés, et aucune ne manque** : les résumés

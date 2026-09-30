@@ -82,6 +82,28 @@ const CORRECTIONS = [
     raison: 'Effectif (41 copropriétaires) stocké au lieu des voix (4 200).',
   },
   {
+    // ⚠ UN INTITULÉ QUI DIT LE CONTRAIRE DE LA DÉCISION. Pascal (2026-09-30) :
+    // « le point 9 de l'AG 2008 n'a pas décidé de fermer le lotissement mais au
+    // contraire de garder la situation actuelle ».
+    //
+    // Le registre avait repris l'intitulé de l'ORDRE DU JOUR — « Point sur le
+    // dossier relatif à l'éventuelle fermeture du lotissement ou toute autre
+    // solution visant à la sécurisation de la résidence » — abrégé en
+    // « Fermeture du lotissement / sécurisation de la résidence ». Accolé à
+    // « Adoptée (unanimité) », cet intitulé fait lire l'inverse du vote : le PV
+    // dit « l'assemblée générale décide unanimement LE MAINTIEN DE LA SITUATION
+    // ACTUELLE », faute de garantie que le ramassage des ordures ménagères
+    // continuerait d'entrer dans le lotissement.
+    //
+    // ⚠ Le DÉTAIL, lui, était juste depuis le début. C'est le titre qui menait
+    // en erreur — et dans un tableau, c'est le titre qu'on lit. Un intitulé doit
+    // nommer la DÉCISION, pas la question posée.
+    date_ag: '2008-06-28', numero: '9', champ: 'objet',
+    avant: 'Fermeture du lotissement / sécurisation de la résidence',
+    apres: 'Maintien de la situation actuelle : pas de fermeture du lotissement',
+    raison: 'Le PV décide le maintien de la situation actuelle ; l’intitulé reprenait la question de l’ordre du jour.',
+  },
+  {
     date_ag: '1988-07-02', numero: 'V (IV de la convocation)', champ: 'resultat',
     // ⚠ DEUX VALEURS ANTÉRIEURES ACCEPTÉES, et c'est l'histoire de la ligne.
     // « Information » vient du registre, qui affirmait que le point n'appelait
