@@ -1179,6 +1179,43 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     manquant) ». `corriger_resolutions_archives.mjs` accepte donc **plusieurs valeurs antérieures**
     (`avant_aussi`) : sans cela, une base déjà corrigée et un ré-import — qui repose « Information »
     — ne pouvaient pas passer par la même règle.
+#### Revalidation du 2026-09-30 — les 39 PV relus sur l'IMAGE, sans OCR
+> 21 erreurs, 139 imprécisions, 21 doutes, 4 omissions. Cause principale : des décisions relatées
+> **sans formule de vote ni décompte** (« l'assemblée considère », « prend acte et entérine »,
+> « donne mission », « il est décidé ») étaient qualifiées « **Adoptée** ».
+> `scripts/appliquer_revalidation_pv_2026-09-30.mjs`, source `resumes_pv_archives_2026-09-30.json`.
+
+- ⚠ **LE RÉSUMÉ N'EST PAS LE REGISTRE** : 207 lignes contre 303. Un remplacement littéral aurait
+  **supprimé 96 lignes** — le ponton de la plage de 2007, la liquidation de l'astreinte de 2008,
+  douze lignes de janvier 2026 — dont **certaines sont citées par la mémoire du lotissement**.
+  Arbitrage Pascal : **mode conservation**, et les lignes gardées reçoivent leurs corrections du
+  **registre revalidé** (`1_AG/_travail_registre_2026-09-28/json/<clé>.json`). Sans cela on les
+  garderait justement pour les laisser fausses : sept d'entre elles passent de « Adoptée » ou
+  « Information » à « Décision sans vote formel ».
+- ⚠ **L'EN-TÊTE N'EST JAMAIS RÉÉCRIT** — le JSON le porte pourtant, et c'est bien pourquoi la liste
+  des champs ignorés est écrite en clair dans le script : syndic et lieu ont été corrigés **à la
+  main** dans l'application. Vérifié après écriture par comparaison à la sauvegarde d'avant :
+  **zéro écart**.
+- ⚠ **LE DÉTAIL N'EST PAS RÉÉCRIT, MAIS SES CONTRADICTIONS SONT NOMMÉES.** « Adopté à l'unanimité »
+  sous une ligne devenue « Décision sans vote formel » est la phrase qu'on lit sans vérifier la
+  colonne d'à côté. Neuf signalées, **trois corrigées** sur arbitrage de Pascal (2016 n° 14, 2005
+  n° 6.2, 2013 n° 10) ; les six autres sont cohérentes et n'ont pas été touchées.
+- ⚠ **UNE RENUMÉROTATION CASSE L'APPARIEMENT.** La ligne de 1988 passe de « V » à « V présumé » :
+  l'appariement par numéro échouait et, en mode conservation, **l'ancienne ligne survivait à côté de
+  la nouvelle** — un doublon silencieux né d'un mot ajouté à un numéro. Repli sur l'intitulé.
+  Inversement, deux lignes de 2013 passent de « 13 » à « **Annexes** » : le numéro aussi suit le
+  registre, sans quoi elles se lisaient comme la suite d'un rappel sur le bruit.
+- ⚠ **`au_resume` PART AVEC LES RÉSOLUTIONS RÉÉCRITES** : relancer `completer_depuis_resumes_ag.mjs`
+  juste après, toujours. Le marquage retombe alors exactement sur les 207 lignes du résumé.
+- **LA COULEUR SE CALCULE PAR PRÉFIXE** (`tonResultat`), plus par table exacte : les **dix libellés
+  nouveaux** y tombaient tous dans la couleur par défaut, donc se lisaient comme des résultats
+  ordinaires. ⚠ **« Déclarée adoptée » n'est PAS verte** — la provision de 2016 a été déclarée
+  adoptée avec 2 500 voix quand l'article 25 en exigeait 2 551 ; la peindre en adoption ordinaire
+  répéterait l'erreur du procès-verbal. Ambre, comme « Vote non pris en compte ».
+- ⚠ **LARGEURS REMESURÉES** : le résultat passe de 24 à **53 caractères**, le numéro de 24 à 32.
+  Les largeurs d'avant les tronquaient tous les deux. Les trois libellés de plus de 40 caractères
+  restent coupés avec leur infobulle — les élargir pour eux seuls écraserait l'objet sur les trois
+  cents autres lignes.
 - ⚠ **VÉRIFIER UNE DONNÉE AVEC CE QUI L'A PRODUITE NE VÉRIFIE RIEN.** La base a été remplie depuis
   le registre consolidé ; c'est la confrontation aux **résumés par année** — une seconde rédaction
   des mêmes PV — qui l'a contrôlée. **151 résolutions relues ligne à ligne, appariées sur

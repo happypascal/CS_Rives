@@ -7,7 +7,7 @@ import { useAuth } from '../lib/AuthContext'
 import { formatDate } from '../lib/format'
 import {
   TYPE_LABELS, QUALITE_LABELS, QUALITE_TONES, intituleAuto, tagLibelle,
-  partagerResolutions, estProcesVerbal, TYPE_DOCUMENT_LABELS,
+  partagerResolutions, estProcesVerbal, TYPE_DOCUMENT_LABELS, tonResultat,
 } from '../lib/pvArchiveLogic'
 
 // UN PROCÈS-VERBAL ARCHIVÉ — le document, et ce qu'on sait de lui.
@@ -40,16 +40,9 @@ function Rubrique({ titre, valeur }) {
 // 5 100 ensuite, m² sur 104 646 depuis 2026 — et un pourcentage sans assiette
 // serait faux. On affiche le texte tel que le procès-verbal l'exprime, y compris
 // « non chiffré ».
-const TON_RESULTAT = {
-  'Adoptée': 'text-emerald-700',
-  'Adoptée (unanimité)': 'text-emerald-700',
-  'Rejetée': 'text-red-700',
-  'Rejetée (unanimité)': 'text-red-700',
-  'Non votée': 'text-slate-500',
-  'Reportée': 'text-amber-700',
-  'Information': 'text-slate-500',
-}
-
+// ⚠ La couleur est calculée par `tonResultat` (pvArchiveLogic), PAR PRÉFIXE :
+// la table exacte qui vivait ici laissait les dix libellés nés de la
+// revalidation du 2026-09-30 dans la couleur par défaut.
 // LES VOIX, RÉDUITES AUX NOMBRES (Pascal, 2026-09-28 : « diminuer voix, pas
 // nécessaire de lister nommément les contres, n'indiquer que les tantièmes sans
 // marquer tantième »).
@@ -95,16 +88,21 @@ function Resolutions({ liste, unite }) {
             texte, et c'est le tableau entier qui déborde. */}
         <table className="w-full table-fixed text-sm">
           {/* ⚠ LARGEURS MESURÉES SUR LES DONNÉES RÉELLES, pas estimées à l'œil :
-              42 caractères au plus pour les voix (« Pour 25 723 · Contre 53 124 ·
-              Abst. 13 299 », AG 2026), 24 pour le résultat (« Inconnu (page
-              manquante) ») et 24 pour le numéro (« V (IV de la convocation) »).
-              Un premier jeu de largeurs tronquait les trois — et un RÉSULTAT
-              tronqué est la pire des économies de place : c'est la colonne pour
-              laquelle on lit le tableau. L'objet prend tout le reste. */}
+              42 caractères au plus pour les voix, 53 pour le résultat et 32 pour
+              le numéro — ⚠ REMESURÉ après la revalidation du 2026-09-30, qui a
+              fait passer le résultat de 24 à 53 caractères (« Déclarée adoptée
+              (majorité de l'art. 25 non atteinte) ») et le numéro de 24 à 32
+              (« V présumé (IV de la convocation) »). Les largeurs d'avant les
+              tronquaient tous les deux.
+              ⚠ Un RÉSULTAT tronqué est la pire des économies de place : c'est la
+              colonne pour laquelle on lit le tableau. Les trois libellés de plus
+              de 40 caractères restent coupés, avec leur texte complet en
+              infobulle — les élargir pour eux seuls écraserait l'objet sur les
+              trois cents autres lignes. L'objet prend tout le reste. */}
           <colgroup>
-            <col className="w-20" />
+            <col className="w-28" />
             <col />
-            <col className="w-40" />
+            <col className="w-52" />
             <col className="w-72" />
           </colgroup>
           <thead>
@@ -130,7 +128,7 @@ function Resolutions({ liste, unite }) {
                   <td className="truncate py-2 pr-3 text-slate-700" title={r.detail ? `${r.objet}\n\n${r.detail}` : r.objet}>
                     {r.objet}
                   </td>
-                  <td className={`truncate py-2 pr-3 text-xs font-medium ${TON_RESULTAT[r.resultat] || 'text-slate-600'}`} title={r.resultat}>
+                  <td className={`truncate py-2 pr-3 text-xs font-medium ${tonResultat(r.resultat)}`} title={r.resultat}>
                     {r.resultat}
                   </td>
                   <td className="truncate py-2 text-xs text-slate-500" title={brut || undefined}>

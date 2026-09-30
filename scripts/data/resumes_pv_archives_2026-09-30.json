@@ -1,0 +1,1829 @@
+[
+ {
+  "date_ag": "1988-07-02",
+  "annee_exercice": 1988,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 2 juillet 1988",
+  "president": "M. Jean-Jacques Mey",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "41 lots sur 49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Aucun vote visible : seule la première page du PV est conservée",
+  "note": "Le fichier conservé est pour l'essentiel la convocation et ses annexes ; seule la première page du procès-verbal (p. 19) y figure, et elle s'arrête avant ce point.",
+  "resolutions": [
+   {
+    "numero": "V présumé (IV de la convocation)",
+    "sujet": "Loi du 6 janvier 1986 : maintien des règles du lotissement",
+    "decision": "Inconnu (point absent du PV conservé)",
+    "resultat_vote": "Inconnu"
+   }
+  ]
+ },
+ {
+  "date_ag": "1989-07-01",
+  "annee_exercice": 1989,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 1er juillet 1989",
+  "president": "M. Jean-Bernard Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "32/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes non chiffrés au PV (unanimité) ; présence en fraction de 49",
+  "note": "L'action de M. Le Corre vise une décision antérieure de mise en place d'une barrière à l'entrée, dont le PV n'est pas conservé.",
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Action de M. Alain Le Corre contre la décision de poser une barrière : lecture de l'assignation et des conclusions déposées pour le syndicat (Me Yves Redon)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Aménagement contre le stationnement (demande de M. Liani)",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Numérotation des deux voies nouvelles, modèle standard",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Modèle de numérotation étudié par le conseil syndical",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1990-07-21",
+  "annee_exercice": 1990,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 21 juillet 1990",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "30/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes non chiffrés ; présence en fraction de 49",
+  "note": "PV incomplet : la page « suite n° 1 » manque (points IV à VII, dont le début du point sur l'éclairage). Le PV de 1997 cite une délibération de l'assemblée « du 20 juillet 1990 » sur les feux et les tondeuses : il s'agit vraisemblablement de celle-ci, datée du 21.",
+  "resolutions": [
+   {
+    "numero": "VII",
+    "sujet": "Éclairage : étude du conseil syndical (quatre lampadaires de 3 m) pour l'assemblée suivante",
+    "decision": "Mission confiée (vote non visible)",
+    "resultat_vote": "Inconnu (début du point sur la page manquante)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Engorgement des eaux pluviales près de la propriété Jourlin : aménagement à examiner",
+    "decision": "À examiner (sans vote)",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Miroir à la sortie et ralentisseur au milieu de l'allée des Précettes : à examiner",
+    "decision": "À examiner (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1991-07-27",
+  "annee_exercice": 1991,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juillet 1991",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "32/49",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 49 (tel qu’au PV)",
+  "note": "Le point V renvoie au PV de l'assemblée du 21 juillet 1990, qui n'est pas conservé.",
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Terrain Le Corre à l'entrée : entretien demandé ; aménagements réalisés maintenus en l'état",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Empiètement du SIVOM sur la voie (5 m linéaires) pour le réseau d'eaux usées",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Raccordement de M. J. Francillon au réseau du lotissement refusé",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Éclairage extérieur : attendre les tranchées du réseau d'eaux usées",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Nouveau réseau d'eau pour la protection incendie (syndicat des eaux des Moises, 95 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/49 · Contre 1/49 (M. Silhol)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Fossés et bas-côtés : mise en demeure, puis travaux aux frais du défaillant après un mois",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/49 · Contre 1/49 (M. Silhol)"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Remplacement des miroirs par un miroir incassable (environ 2 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "X",
+    "sujet": "Changement d'entreprise d'espaces verts : cahier des charges et trois devis",
+    "decision": "Adoptée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "XI",
+    "sujet": "Autres « amortisseurs » (sic, vraisemblablement ralentisseurs), sur demande de copropriétaires, à prévoir à l'ordre du jour suivant",
+    "decision": "À l’ordre du jour suivant (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1992-07-25",
+  "annee_exercice": 1992,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 25 juillet 1992",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "28/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": "Résolution VII : selon le PV de 1993, la décision n'a pas été exécutée, la majorité de l'article 26 (2/3, soit 34/51) n'étant pas atteinte.",
+  "resolutions": [
+   {
+    "numero": "I",
+    "sujet": "Tiers supplémentaire de charges du lot Zwollsman maintenu à sa charge",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« L'assemblée considère » ; l'unanimité porte sur l'approbation des comptes"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Trois nouveaux ralentisseurs (22 500 F)",
+    "decision": "Adoptée (non exécutée)",
+    "resultat_vote": "Pour 16/50 · Contre 11/50 · Abst. 1/50"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Bouche d'incendie supplémentaire (15 000 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1993-07-24",
+  "annee_exercice": 1993,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 juillet 1993",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "34/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 34 présents (tel qu’au PV)",
+  "note": "Est annexé au PV un extrait du cahier des charges (nouvel article 15 sur la hauteur des arbres). Résolution IX : le nombre de voix pour est corrigé à la main sur le PV.",
+  "resolutions": [
+   {
+    "numero": "III a",
+    "sujet": "Mandat au syndic pour la vente judiciaire du lot de M. Cartegini (jugement du TGI de Thonon du 17 mai 1993), après saisie chez le notaire",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Ralentisseurs (22 500 F) : majorité de l'article 26 (34/51) requise",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré (une douzaine d'opposants)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Miroir allée de Rives face au n° 36",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Mise en demeure de M. Reistad (hauteur des arbres)",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« L'assemblée donne mission au syndic »"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Traitement des chenilles par hélicoptère",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 33/34 · Contre 1/34 (M. Arn)"
+   },
+   {
+    "numero": "IX",
+    "sujet": "Desserte du lotissement par le câble (télévision), sans frais",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1994-07-30",
+  "annee_exercice": 1994,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juillet 1994",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "36/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": "Résolution VII (piquets) : 10 voix contre le projet, 10 pour, 15 abstentions, 1 n'ayant pas pris part au vote ; le PV conclut que l'assemblée n'autorise pas les piquets.",
+  "resolutions": [
+   {
+    "numero": "IV",
+    "sujet": "Mainlevée de l'hypothèque légale sur le lot D.4 (Cartegini), les créanciers prioritaires ayant absorbé le prix de vente",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Assainissement : prise d'acte de la prise en charge partielle par le SIVOM, attente de sa proposition",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 35/50 · Abst. 1/50 (M. Silhol)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Travaux SOTELCAB (câble) mal achevés : pas de solution ; raccordement à traiter directement avec l'entreprise",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 33/50 · Contre 3/50"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Piquets le long de la zone engazonnée des parcelles",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 10/50 · Contre 10/50 · Abst. 15/50"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Demande de Mme Chevallay d'inscrire un projet d'asphaltage (élargissement) de la chaussée à l'ordre du jour suivant",
+    "decision": "Demande (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "1995-07-29",
+  "annee_exercice": 1995,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juillet 1995",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "30/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Consultation des pièces justificatives des charges les deux lundis précédant l'assemblée",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Piquets allée des Précettes : retrait non imposé, enlèvement lors de l'élargissement à 4 m ; déclaration aux assureurs RC",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 22/50 · Contre 8/50"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Échenillage par l'ONF (1 500 F)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1996-07-27",
+  "annee_exercice": 1996,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juillet 1996",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Non indiqué au PV (signé par M. Guy Pillet, syndic)",
+  "quorum": "32/50",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 50 (tel qu’au PV)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Mandat au conseil syndical et au syndic pour négocier avec le SIVOM le financement du réseau d'assainissement",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 31/50 · Contre 1/50 (M. Gachoud)"
+   },
+   {
+    "numero": "V",
+    "sujet": "Principe d'un fonds de réserve pour financer ces travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 21/50 · Contre 12/50"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Mise en souterrain de l'éclairage et points lumineux : étude à présenter",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« Il sera présenté à l’ordre du jour de la prochaine assemblée »"
+   }
+  ]
+ },
+ {
+  "date_ag": "1996-12-07",
+  "annee_exercice": 1996,
+  "type_ag": "AGE",
+  "titre": "Assemblée générale extraordinaire du 7 décembre 1996",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "41/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Vote non chiffré (unanimité) ; présence en fraction de 51",
+  "note": "Le PV parle d'« assemblée générale » et des « statuts du lotissement » ; le caractère extraordinaire ressort du nom du fichier et de l'objet unique de la séance.",
+  "resolutions": [
+   {
+    "numero": "I",
+    "sujet": "Modification de l'article 15 : délai supplémentaire, report à l'assemblée de fin juin 1997",
+    "decision": "Reportée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1997-06-28",
+  "annee_exercice": 1997,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 1997",
+  "president": "M. Jean Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Le syndic (cabinet Guy Pillet)",
+  "quorum": "33/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 51 (tel qu’au PV)",
+  "note": "Résolution VII : l'assemblée constate que le quorum de l'article L. 315-3 du code de l'urbanisme n'est pas réuni pour modifier l'article 15 ; le projet est réinscrit à l'assemblée suivante.",
+  "resolutions": [
+   {
+    "numero": "V",
+    "sujet": "Assainissement : convention avec le SIVOM à l'étude, pas de travaux avant 2000 ; fonds de réserve jugé prématuré",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VI",
+    "sujet": "Mise en souterrain de l'éclairage extérieur : sursis, lié à l'assainissement",
+    "decision": "Information (sans vote)",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Modification de l'article 15 : quorum de l'article L. 315-3 non réuni",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Commission des sages (MM. Privat, Pargoux et Perrin) pour régler à l'amiable les litiges",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "1998-06-20",
+  "annee_exercice": 1998,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 20 juin 1998",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "M. Jean-Christophe Sinègre (cabinet Guy Pillet)",
+  "quorum": "37/51",
+  "lieu": "Mairie de Nernier",
+  "unite_des_votes": "Votes en fraction de 51 (tel qu’au PV)",
+  "note": "La proposition du SIVOM du 19 mai 1998 est jointe au PV : participation de la copropriété de 50 % d'un investissement de 430 000 HT, soit 215 000 HT.",
+  "resolutions": [
+   {
+    "numero": "VI",
+    "sujet": "Modification de l'article 15 (hauteur des plantations)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 20 · Contre 17 (majorité nécessaire non atteinte)"
+   },
+   {
+    "numero": "VII",
+    "sujet": "Proposition du SIVOM entérinée : poste de refoulement d'ici 1999 (430 000 HT préfinancés, dont 50 % à la charge de la copropriété), puis réseau séparatif avec participation minimum de 50 % de la collectivité sur les canalisations communes",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "VIII",
+    "sujet": "Lettre de MM. Muskens et Mey sur la taille des peupliers : pas d'observation",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2001-06-30",
+  "annee_exercice": 2001,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2001",
+  "president": "M. Jean Pargoux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Foncia Moynat Pillet (PV signé par J.-C. Sinègre)",
+  "quorum": "34 copropriétaires, 34 voix sur 51",
+  "lieu": "Salle de la mairie, Nernier",
+  "unite_des_votes": "Votes non chiffrés (unanimité) ; présence en voix sur 51",
+  "note": "L'ordre du jour cite des décisions des assemblées de 1995 (piquets sur les bas-côtés) et de 2000 (largeur de 3,50 m de l'allée des Précettes), dont les PV ne sont pas conservés.",
+  "resolutions": [
+   {
+    "numero": "8",
+    "sujet": "Travaux d'assainissement du SIVOM : réserves sur les reprises de bitume, attente de la 2e tranche",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Mise sous terre des alimentations EDF (254 064 F TTC) et 20 000 F pour imprévus",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "10",
+    "sujet": "Piquets sur les bas-côtés : avis d'un juriste ou d'un assureur, à défaut assurance des colotis",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "11",
+    "sujet": "Sécurisation : chiffrage d'une barrière avec codeur et d'un portail classique à présenter en 2002 (souhait : un accès fermé, l'autre automatisé) — aucune fermeture décidée",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2002-06-29",
+  "annee_exercice": 2002,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juin 2002",
+  "president": "M. Breux",
+  "scrutateur": "—",
+  "secretaire_foncia": "Foncia Moynat Pillet",
+  "quorum": "38 copropriétaires, 3 981 voix sur 5 100 (78 %)",
+  "lieu": "Salle de la mairie, Nernier",
+  "unite_des_votes": "Votes en fraction de 44 (tel qu’au PV) ; présence en voix sur 5 100",
+  "note": "Résolution 6 : présentée à la majorité de l'article 26 ; le PV déclare adoptée, par 15/44, la décision de ne pas fermer. Le projet précisait que les parcelles 2 à 6 de la zone C n'étaient pas concernées.",
+  "resolutions": [
+   {
+    "numero": "6",
+    "sujet": "Refus de fermer les deux accès par des portails électriques",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 15/44 · Contre 13/44 · Abst. 7/44"
+   },
+   {
+    "numero": "7",
+    "sujet": "Horaires d'ouverture des portails",
+    "decision": "Non votée",
+    "resultat_vote": "— (sans objet)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2003-06-28",
+  "annee_exercice": 2003,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2003",
+  "president": "M. Gachoud",
+  "scrutateur": "—",
+  "secretaire_foncia": "Foncia Moynat Pillet",
+  "quorum": "37 copropriétaires sur 49",
+  "lieu": "Salle de la mairie, Nernier",
+  "unite_des_votes": "Votes en fraction de 45 (tel qu’au PV)",
+  "note": "Votes exprimés en fraction de 45 au procès-verbal, sans précision d'unité.",
+  "resolutions": [
+   {
+    "numero": "6",
+    "sujet": "Refus de la fermeture automatique des deux accès",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 27/45 · Contre 13/45"
+   },
+   {
+    "numero": "7",
+    "sujet": "Pose de 2 portails manuels chemin de Messery",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 23/45 · Contre 11/45"
+   },
+   {
+    "numero": "8",
+    "sujet": "Remplacement des 3 miroirs cassés par de l'acier poli",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« Prévoir le remplacement »"
+   },
+   {
+    "numero": "8",
+    "sujet": "Chiffrage d'une surveillance privée, à présenter l'année suivante",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "8",
+    "sujet": "Commission des sages : MM. Ryser, Mey et Mme Hirsch",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« Sont élus », sans formule de vote"
+   },
+   {
+    "numero": "8",
+    "sujet": "Arbres hors zones : projet d'avenant à préparer par la commission des sages",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "8",
+    "sujet": "Eaux pluviales : courrier à la commune et contrat d'entretien du réseau",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2004-06-26",
+  "annee_exercice": 2004,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 26 juin 2004",
+  "president": "M. Pargoux (signature : « Madame Pargoux Janine »)",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Sinègre (Foncia Moynat Pillet)",
+  "quorum": "40 copropriétaires, 4 100 voix sur 5 100 (80 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "5",
+    "sujet": "Budget prévisionnel 5 760 € : ligne travaux de 500 € annoncée pour 2005/2006 (phrase du budget, pas une résolution distincte)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 100 (unanimité)"
+   },
+   {
+    "numero": "7",
+    "sujet": "Autorisation à la Mairie : panneaux d'affichage municipaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 500 · Contre 1 200 · Abst. 400"
+   },
+   {
+    "numero": "8.1",
+    "sujet": "Remplacement des 3 miroirs brisés par modèles incassables",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 200 (unanimité)"
+   },
+   {
+    "numero": "8.2",
+    "sujet": "Financement des miroirs : appel 100 % au 1er juillet 2004",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 200 (unanimité)"
+   },
+   {
+    "numero": "9 A",
+    "sujet": "Avenant article 15 (hauteur des arbres) — commission des sages",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 200 · Contre 4 000"
+   },
+   {
+    "numero": "9 B",
+    "sujet": "Modificatif article 15 présenté par le conseil syndical",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 900 · Contre 3 300"
+   },
+   {
+    "numero": "12",
+    "sujet": "Circulation et stationnement : poteaux STOP, rochers",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2005-06-18",
+  "annee_exercice": 2005,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 18 juin 2005",
+  "president": "M. Jean-Bernard Breux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "P. Dutruel, p/o Foncia Moynat Pillet",
+  "quorum": "40 copropriétaires, 4 081 voix sur 5 100 (80 %)",
+  "lieu": "Non indiqué au procès-verbal",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "6.1",
+    "sujet": "Provision spéciale pour travaux d'entretien",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "6.2",
+    "sujet": "Placement des fonds de la provision spéciale",
+    "decision": "Sans objet",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "7",
+    "sujet": "Autorisation permanente police et gendarmerie",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9.1",
+    "sujet": "Article 12 bis cahier des charges : haies vives",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "9.2",
+    "sujet": "Article 15 bis : hauteur plantations zones A et B",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "9.3",
+    "sujet": "Article 15 ter : dérogation hauteur si vue inchangée",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "10",
+    "sujet": "Modification article 15 proposée par le CS en 2004",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 2 400 · Contre 1 381 · Abst. 200"
+   },
+   {
+    "numero": "Annexe",
+    "sujet": "Portails, stationnement sauvage, rampe bateau",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2006-06-24",
+  "annee_exercice": 2006,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 juin 2006",
+  "president": "M. Breux (« M. BREUX Jean » à l’élection, « J. Bernard » au point 8)",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "P. Dutruel, p/o Foncia Moynat Pillet",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "1",
+    "sujet": "Appel d'offres « assurance » confié au conseil syndical (mention incluse dans l'approbation des comptes)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "6",
+    "sujet": "Clause d'aggravation des charges",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2007-06-30",
+  "annee_exercice": 2007,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2007",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Jean-Bernard Breux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "7",
+    "sujet": "Fermeture des portails : mandat au conseil syndical d'instruire un dossier, appel d'offres et AG spéciale demandée pour voter sur l'opportunité de fermer — la fermeture n'est pas décidée",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 700 / 5 100 · Contre : 7 copropriétaires nommés (non chiffré)"
+   },
+   {
+    "numero": "Divers",
+    "sujet": "Fonds de réserve",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2008-06-28",
+  "annee_exercice": 2008,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2008",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "36 copropriétaires, 3 700 voix sur 5 100 (73 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Point 9 : aucune résolution n'est mise aux voix ; le PV relate que l'assemblée « décide unanimement le maintien de la situation actuelle » : le lotissement n'est pas fermé.",
+  "resolutions": [
+   {
+    "numero": "1",
+    "sujet": "Nettoyage du réseau d'eaux pluviales tous les trois ans (mention incluse dans l'approbation des comptes)",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "7",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "8",
+    "sujet": "Placement de la provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Fermeture du lotissement NON retenue : maintien de la situation actuelle (faute de garantie sur le ramassage des ordures) ; le portail peut être fermé manuellement",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« L'assemblée générale décide unanimement le maintien de la situation actuelle » — aucune formule de vote ni décompte"
+   },
+   {
+    "numero": "10",
+    "sujet": "Déplacement de la borne EDF allée de Rive",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 500 · Abst. 200"
+   },
+   {
+    "numero": "11",
+    "sujet": "Évacuation des épaves et encombrants sur la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "13",
+    "sujet": "État des lieux photographique avant travaux",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« Il est décidé »"
+   }
+  ]
+ },
+ {
+  "date_ag": "2009-06-27",
+  "annee_exercice": 2009,
+  "type_ag": "AG (non précisé)",
+  "titre": "Assemblée générale ordinaire du 27 juin 2009",
+  "president": "M. Ihsan Afzeli",
+  "scrutateur": "M. Jean-Claude Pargoux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "7",
+    "sujet": "Procédure Briefer : l'AG prend acte et entérine les actions menées",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« prend acte et entérine »"
+   },
+   {
+    "numero": "8",
+    "sujet": "Constat d'huissier obligatoire avant travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "9",
+    "sujet": "Distributeurs de sachets pour chiens aux entrées",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 2 819 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2010-07-03",
+  "annee_exercice": 2010,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 3 juillet 2010",
+  "president": "M. Pargoux",
+  "scrutateur": "M. Michel Gachoud",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "28 copropriétaires, 2 800 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Procédure Briefer : l'AG prend acte et entérine les démarches (délibéré du TGI de Thonon attendu en septembre 2010)",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« en prend acte et entérine »"
+   },
+   {
+    "numero": "11",
+    "sujet": "Stationnement sauvage à l'entrée côté village : le syndic interviendra auprès de la commune",
+    "decision": "Information (sans vote)",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "11",
+    "sujet": "Demande à ORTEC de nettoyer les caniveaux à ciel ouvert lors du curage",
+    "decision": "Demande (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2011-06-25",
+  "annee_exercice": 2011,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 25 juin 2011",
+  "president": "M. Antoine Maurice (SCI La Boussole)",
+  "scrutateur": "M. Jean-Claude Pargoux",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "30 copropriétaires, 3 019 voix sur 5 100 (59 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Boute-roue SCI LE CLAPOTIS au 24 allée de Rive",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Abst. 200"
+   },
+   {
+    "numero": "10",
+    "sujet": "Devis de luminaires allées de Rives et Précettes",
+    "decision": "Information (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2012-06-30",
+  "annee_exercice": 2012,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 30 juin 2012",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "32 copropriétaires, 3 300 voix sur 5 100 (65 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Réparation du portail côté Nernier",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 300 (unanimité)"
+   },
+   {
+    "numero": "11",
+    "sujet": "Éclairage des allées de Rives et Précettes (étude Labevière)",
+    "decision": "Rejetée",
+    "resultat_vote": "Contre 3 300"
+   }
+  ]
+ },
+ {
+  "date_ag": "2013-06-29",
+  "annee_exercice": 2013,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 29 juin 2013",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "M. Patrick Dutruel (Foncia Moynat Pillet)",
+  "quorum": "23 copropriétaires, 2 381 voix sur 5 100 (47 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Demande au SIVOM de prise en charge réparation canalisation EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "9",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "10",
+    "sujet": "Placement de la provision spéciale sur livret A",
+    "decision": "Sans objet",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "11",
+    "sujet": "Réfection de l'enrobé à l'entrée côté allée de Rives",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   },
+   {
+    "numero": "12",
+    "sujet": "Taille des végétaux privatifs débordant sur les communs",
+    "decision": "Adoptée",
+    "resultat_vote": "Unanimité (non chiffré)"
+   }
+  ]
+ },
+ {
+  "date_ag": "2014-06-28",
+  "annee_exercice": 2014,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 28 juin 2014",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Bernard Privat",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "24 copropriétaires, 2 419 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "12",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Non chiffré au PV"
+   },
+   {
+    "numero": "13",
+    "sujet": "Placement de la provision spéciale",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "18",
+    "sujet": "Mandat au conseil syndical pour décider des portions d'enrobé à changer",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« donne mandat au conseil syndical »"
+   }
+  ]
+ },
+ {
+  "date_ag": "2015-06-27",
+  "annee_exercice": 2015,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 27 juin 2015",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "23 copropriétaires, 2 400 voix sur 5 100 (47 %) — quorum non atteint, AG tenue",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Panneaux en bord de lac : plage privée et passage piétons",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 400 (unanimité)"
+   },
+   {
+    "numero": "14",
+    "sujet": "Constitution d'une provision spéciale",
+    "decision": "Rejetée",
+    "resultat_vote": "Contre 2 400"
+   },
+   {
+    "numero": "15",
+    "sujet": "Ouverture d'un livret A",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2016-09-03",
+  "annee_exercice": 2016,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 3 septembre 2016",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "M. Florent Buttay (Foncia Moynat Pillet)",
+  "quorum": "33 copropriétaires, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Résolution 14 : déclarée adoptée à l'article 25 avec 2 500 voix, alors que 2 551 étaient nécessaires.",
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Assignation de la SCI VIOLETTE (article 15 additif)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 000 · Contre 200 · Abst. 200"
+   },
+   {
+    "numero": "14",
+    "sujet": "Constitution d'une provision spéciale de 10 000 €",
+    "decision": "Déclarée adoptée (majorité de l’art. 25 non atteinte)",
+    "resultat_vote": "Pour 2 500 · Contre 300 · Abst. 600"
+   },
+   {
+    "numero": "15",
+    "sujet": "Ouverture d'un livret A pour la provision spéciale",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 400 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2017-09-18",
+  "annee_exercice": 2017,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 18 septembre 2017",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Maurice (représentant la SCI Boussole)",
+  "secretaire_foncia": "M. Erondel (Foncia Maison de l’Immobilier)",
+  "quorum": "19 copropriétaires, 1 900 voix sur 5 100 (37 %)",
+  "lieu": "Ancienne école, 13 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Remboursement de la provision spéciale existante",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Cotisation fonds de travaux 2017/2018 (taux laissé en blanc au PV : « ……% »)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Cotisation fonds de travaux 2018/2019 : 5 000 €/an",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 100 (M. Devisle)"
+   },
+   {
+    "numero": "13",
+    "sujet": "SCI Violette : poursuite de l'action judiciaire si l'élagage ou l'abattage n'est pas fait au 30-11-2017",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« décide de continuer l’action judiciaire »"
+   }
+  ]
+ },
+ {
+  "date_ag": "2018-06-23",
+  "annee_exercice": 2018,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 23 juin 2018",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Bernard Privat",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Maison de l’Immobilier)",
+  "quorum": "28 copropriétaires, 2 819 voix sur 5 100 (55 %)",
+  "lieu": "Salle de la mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "10",
+    "sujet": "Cotisation fonds de travaux 2019/2020 : 10 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Financement par le fonds de travaux de la reprise de la canalisation EP Mathon–Chappuis (5 830 € TTC, travaux validés en urgence par le conseil syndical)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 819 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2019-07-06",
+  "annee_exercice": 2019,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 6 juillet 2019",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "26 copropriétaires, 2 600 voix sur 5 100 (51 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Résolution 9 : déclarée adoptée à l'article 25 avec 2 500 voix, alors que 2 551 étaient nécessaires.",
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Cotisation obligatoire fonds de travaux 2020/2021",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 500 · Contre 100 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Assignation de la SCI VILLA AYSHA (article 15)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 2 600 · Abst. 0"
+   },
+   {
+    "numero": "12",
+    "sujet": "Division de la parcelle LEAFE (3 allée des Précettes)",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 300 · Contre 800 · Abst. 1 500"
+   },
+   {
+    "numero": "13",
+    "sujet": "Mandat conditionnel au syndic (acte notarié des deux lots Leafe) si la division est possible après avis du CRIDON",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 600 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2020-10-24",
+  "annee_exercice": 2020,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 24 octobre 2020",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice (SCI Boussole)",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "24 copropriétaires, 2 400 voix sur 5 100 (47 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Cotisation fonds de travaux 2021/2022 à 100 % du budget",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 0 · Abst. 400"
+   },
+   {
+    "numero": "10",
+    "sujet": "Étude réseau EP : passage caméra et plan",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 900 · Contre 100 · Abst. 300"
+   },
+   {
+    "numero": "11.1",
+    "sujet": "Miroir angle allée de Rive / accès plage : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 300 · Contre 600 · Abst. 500"
+   },
+   {
+    "numero": "11.2",
+    "sujet": "Miroir : entreprise EUROPE SIGNALETIQUE",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 300 · Contre 400 · Abst. 700"
+   },
+   {
+    "numero": "11.3",
+    "sujet": "Miroir : financement sur charges courantes",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 400 · Contre 300 · Abst. 700"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Remise en fonction des portails et interphone : principe",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 700 · Contre 900 · Abst. 300"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Portails : choix de l'entreprise et budget",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.3",
+    "sujet": "Portails : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.4",
+    "sujet": "Portails : honoraires du syndic 3 %",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.5",
+    "sujet": "Portails : financement clé allées Précettes et Rive",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13",
+    "sujet": "Assignation de la SCI VIOLETTE (article 15)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 1 600 · Contre 300 · Abst. 500"
+   }
+  ]
+ },
+ {
+  "date_ag": "2021-11-20",
+  "annee_exercice": 2021,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 20 novembre 2021",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Jean-Jacques Vollbrecht",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "27 copropriétaires, 2 719 voix sur 5 100 (53 %)",
+  "lieu": "Salle polyvalente, mairie, route de Messery, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "8",
+    "sujet": "Procédure SCI VIOLETTE : compte rendu et provision complémentaire",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.1",
+    "sujet": "Étude (DCE) pour réfection complète du réseau EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.2",
+    "sujet": "Étude EP confiée à GROUPE UD/GLOBAL PARTNER",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.3",
+    "sujet": "Mandat au conseil syndical pour l'étude EP (20 000 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.4",
+    "sujet": "Honoraires du syndic sur l'étude EP (2 %)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.5",
+    "sujet": "Financement de l'étude EP : appel au 1er janvier 2022",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.6",
+    "sujet": "Mobilisation du fonds travaux pour l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Cotisation fonds de travaux 2022/2023 à 200 % du budget",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 719 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2022-11-19",
+  "annee_exercice": 2022,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 19 novembre 2022",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Antoine Maurice (SCI Boussole)",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "28 copropriétaires, 2 900 voix sur 5 100 (57 %)",
+  "lieu": "Espace Littorelle, 1 chemin de la Cure, 74140 Messery",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "5",
+    "sujet": "Foncia désigné mandataire chargé de gérer l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 4 872 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "9",
+    "sujet": "Assignation de la SCI VILLA AYSHA (article 15)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 400 · Contre 100 · Abst. 400"
+   },
+   {
+    "numero": "10",
+    "sujet": "Fonds de travaux 2023/2024 : 50 000 €, objectif 250 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11",
+    "sujet": "Contrat d'entretien des espaces verts : L'ART-BRE DU LEMAN",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Rampe de mise à l'eau : régularisation auprès de la DDT",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 219 · Contre 2 581 · Abst. 100"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Suppression de la rampe et aménagement de la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.1",
+    "sujet": "STOP et ligne d'arrêt allée des Précettes / route de Messery",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 700 · Contre 200 · Abst. 0"
+   },
+   {
+    "numero": "13.2",
+    "sujet": "STOP : entreprise EUROPE SIGNALETIQUE",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.3",
+    "sujet": "STOP : mandat au syndicat (600 € maximum)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "13.4",
+    "sujet": "STOP : financement sur charges courantes",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "14",
+    "sujet": "Portail de la plage et portails d'entrée à l'ordre du jour",
+    "decision": "Information (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2023-12-16",
+  "annee_exercice": 2023,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 16 décembre 2023",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre",
+  "secretaire_foncia": "Mme Isabelle Buonocore (Foncia Lemanique)",
+  "quorum": "31 copropriétaires, 3 200 voix sur 5 100 (63 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": "Résolution 12.1 : la version notifiée par Foncia, seule présente dans le dossier, indique « il n'est pas tenu compte de ce vote, dans l'attente d'une consultation juridique sur la majorité requise » ; une autre version (Foncia Maison de l'Immobilier), absente du dossier depuis, indiquait « rejetée ».",
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Fonds de travaux 2024/2025 : 50 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10.1",
+    "sujet": "Remise en fonction des portails et interphone : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 081 · Contre 1 119 · Abst. 0"
+   },
+   {
+    "numero": "10.2",
+    "sujet": "Portails : choix de l'entreprise en AG",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "10.3",
+    "sujet": "Portails : mandat au conseil syndical (50 000 € TTC)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 381 · Contre 819 · Abst. 0"
+   },
+   {
+    "numero": "10.4",
+    "sujet": "Portails : honoraires du mandataire 3 %",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 900 · Contre 0 · Abst. 300"
+   },
+   {
+    "numero": "10.5",
+    "sujet": "Portails : appel de fonds au 1er juillet 2024",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 800 · Contre 100 · Abst. 300"
+   },
+   {
+    "numero": "10.6",
+    "sujet": "Portails : mobilisation du fonds travaux",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "11.1",
+    "sujet": "Étude de réaménagement de la plage : principe",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11.2",
+    "sujet": "Étude plage : RFConseils phase 1 (2 000 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 200 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "11.3",
+    "sujet": "Plage : financement et fonds supplémentaire de 13 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 100 · Contre 100 · Abst. 0"
+   },
+   {
+    "numero": "12.1",
+    "sujet": "Rond-point au bas de l'allée des Précettes : principe",
+    "decision": "Vote non pris en compte (consultation juridique)",
+    "resultat_vote": "Pour 1 500 · Contre 1 100 · Abst. 600"
+   },
+   {
+    "numero": "12.2",
+    "sujet": "Rond-point : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.3",
+    "sujet": "Rond-point : modalités de financement",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "12.4",
+    "sujet": "Rond-point : mobilisation du fonds travaux",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13.1",
+    "sujet": "Remplacement du portail de la plage",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 3 200 · Abst. 0"
+   },
+   {
+    "numero": "13.2",
+    "sujet": "Portail de la plage : mandat au conseil syndical",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "13.3",
+    "sujet": "Portail de la plage : modalités de financement",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "14",
+    "sujet": "Servitude de passage sur B228 au profit de M. DECIMA",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "15",
+    "sujet": "Servitude de réseaux sur B228 au profit de M. DECIMA",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "16",
+    "sujet": "Entretien haies, fossés et gazon des allées par l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 2 119 · Contre 500 · Abst. 281"
+   }
+  ]
+ },
+ {
+  "date_ag": "2024-10-26",
+  "annee_exercice": 2024,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 26 octobre 2024",
+  "president": "Aucun (pas de candidature)",
+  "scrutateur": "Aucun (pas de candidature)",
+  "secretaire_foncia": "Isabelle Buonocore (Foncia Maison de l’Immobilier, Douvaine)",
+  "quorum": "33 membres, 3 400 voix sur 5 100 (67 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en voix, sur 5 100 (100 par lot)",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "9",
+    "sujet": "Mandat à un avocat pour analyser le cahier des charges et étudier sa modification (10 000 € sur le fonds de travaux)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 3 400 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "10",
+    "sujet": "Inscription de 32 propriétaires à un comité de sauvetage",
+    "decision": "Pas de vote (inscriptions individuelles)",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "11",
+    "sujet": "Aucun budget proposé, AGE à convoquer",
+    "decision": "Information (sans vote)",
+    "resultat_vote": "—"
+   }
+  ]
+ },
+ {
+  "date_ag": "2025-06-19",
+  "annee_exercice": 2025,
+  "type_ag": "AGE",
+  "titre": "Assemblée générale extraordinaire du 19 juin 2025",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre",
+  "secretaire_foncia": "Vanessa Meyer",
+  "quorum": "44 membres, 90 687 tantièmes (m²) sur 104 646 au moment des votes ; le bureau constate 38 membres (« 3 900 voix », incohérent)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en tantièmes au PV (m² de superficie), sur 104 646",
+  "note": null,
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Addendum 3 au cahier des charges et élection du conseil syndical",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 74 081 · Contre 2 326 · Abst. 14 280"
+   },
+   {
+    "numero": "7.1",
+    "sujet": "Maîtrise d'œuvre pour étude du réseau d'eaux pluviales",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.2",
+    "sujet": "Délégation au conseil syndical pour choisir le maître d'œuvre EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.3",
+    "sujet": "Honoraires du syndic sur l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 88 275 · Contre 0 · Abst. 2 412"
+   },
+   {
+    "numero": "7.4",
+    "sujet": "Financement de l'étude EP : appel au 01/09/2025",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "7.5",
+    "sujet": "Mobilisation du fonds travaux pour l'étude EP",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "8",
+    "sujet": "Confirmation du budget de réhabilitation de la plage",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 81 584 · Contre 6 691 · Abst. 2 412"
+   },
+   {
+    "numero": "9",
+    "sujet": "Date de la prochaine AGO fixée au 11/12/2025",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 90 687 · Contre 0 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2026-01-19",
+  "annee_exercice": 2025,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 19 janvier 2026",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Raphaël Serre (« RAPHAEIL SERRE » au PV)",
+  "secretaire_foncia": "Vanessa Meyer",
+  "quorum": "32 membres, 63 695 m² sur 104 646 (61 %)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en tantièmes au PV (m² de superficie), sur 104 646",
+  "note": "Résolution 23 : le PV indique 80 000 €, alors que le PV du 15 septembre 2026 cite une cotisation de 50 000 € votée à cette date.",
+  "resolutions": [
+   {
+    "numero": "11",
+    "sujet": "Choix de Global Partner comme maître d'œuvre EP, mandat 35 000 €",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« approuve le devis », « donne mandat » — aucun décompte"
+   },
+   {
+    "numero": "14",
+    "sujet": "Confirmation des travaux portails (50 000 €, nouvelle clé)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 54 737 · Contre 8 958 · Abst. 0"
+   },
+   {
+    "numero": "15.2",
+    "sujet": "Principe des travaux de remise en fonctionnement des portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 54 737 · Contre 8 958 · Abst. 0"
+   },
+   {
+    "numero": "15.3",
+    "sujet": "Délégation au conseil syndical pour les portails (70 000 € TTC)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 50 975 · Contre 12 720 · Abst. 0"
+   },
+   {
+    "numero": "15.4",
+    "sujet": "Honoraires du syndic sur travaux portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "15.5",
+    "sujet": "Financement portails : appel au 01/04/2026",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "15.6",
+    "sujet": "Mobilisation du fonds travaux pour les portails",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 56 429 · Contre 7 266 · Abst. 0"
+   },
+   {
+    "numero": "19",
+    "sujet": "Contrat d'entretien des espaces verts avec Paysage Bois",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 63 695 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "23",
+    "sujet": "Cotisation au fonds de travaux 2026-2027 portée à 80 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 61 369 · Contre 2 326 · Abst. 0"
+   },
+   {
+    "numero": "24",
+    "sujet": "Délégation au CS pour dépenses exceptionnelles (2 500 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 61 369 · Contre 0 · Abst. 0"
+   },
+   {
+    "numero": "27",
+    "sujet": "Option d'assistance Foncia 24/7 refusée",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 0 · Contre 63 695 · Abst. 0"
+   }
+  ]
+ },
+ {
+  "date_ag": "2026-09-15",
+  "annee_exercice": 2026,
+  "type_ag": "AGO",
+  "titre": "Assemblée générale ordinaire du 15 septembre 2026",
+  "president": "M. Pascal Favre",
+  "scrutateur": "M. Philippe Bermejo",
+  "secretaire_foncia": "Mme Leina Abdelkader (Foncia Lemanique)",
+  "quorum": "42 membres, 86 992 voix constatés par le bureau ; 44 membres, 92 146 voix au moment des votes (sur 104 646)",
+  "lieu": "Salle de la mairie, 14 rue de la Mairie, 74140 Nernier",
+  "unite_des_votes": "Votes en tantièmes au PV (m² de superficie), sur 104 646",
+  "note": "Résolutions 13 et 14 : la validation formelle de l'article sur le recouvrement n'a pas été donnée par Me Garnier.",
+  "resolutions": [
+   {
+    "numero": "4",
+    "sujet": "Approbation des statuts de mise en conformité de l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "5",
+    "sujet": "Pouvoirs pour signature et publication des statuts",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 77 866 · Contre 14 280 · Abst. 0"
+   },
+   {
+    "numero": "10",
+    "sujet": "Validation et règles du fonds de travaux (183 831,14 €)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 626 · Contre 14 280 · Abst. 2 240"
+   },
+   {
+    "numero": "11",
+    "sujet": "Réaffectation du fonds travaux selon la nouvelle clé",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 626 · Contre 14 280 · Abst. 2 240"
+   },
+   {
+    "numero": "12",
+    "sujet": "Autorisation des appels de fonds et de l'exécution des travaux",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 659 · Contre 16 487 · Abst. 0"
+   },
+   {
+    "numero": "13",
+    "sujet": "Clause de recouvrement des charges impayées dans les statuts",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "14",
+    "sujet": "Taux d'intérêt de retard et frais de recouvrement",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "15",
+    "sujet": "Communication des titres de propriété au notaire",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« demande », « décide », « autorise » — ni majorité ni décompte"
+   },
+   {
+    "numero": "16",
+    "sujet": "Financement de l'application du conseil syndical (700 €/an)",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 540 · Contre 16 606 · Abst. 0"
+   },
+   {
+    "numero": "19",
+    "sujet": "Appel de la cotisation de 50 000 € et dotation complémentaire de 50 000 €",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 659 · Contre 16 487 · Abst. 0"
+   },
+   {
+    "numero": "20",
+    "sujet": "Ouverture d'un livret B au nom de l'ASL",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 75 374 · Contre 14 280 · Abst. 2 492"
+   },
+   {
+    "numero": "21",
+    "sujet": "Remplacement du portail de la plage (5 000 €) refusé",
+    "decision": "Rejetée",
+    "resultat_vote": "Pour 25 723 · Contre 53 124 · Abst. 13 299"
+   },
+   {
+    "numero": "22",
+    "sujet": "Projet de division de la propriété de M. Décima",
+    "decision": "Non votée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "23",
+    "sujet": "Tolérance de passage pédestre pour Mme Pictet",
+    "decision": "Adoptée",
+    "resultat_vote": "Pour 66 846 · Contre 8 676 · Abst. 16 624"
+   },
+   {
+    "numero": "26",
+    "sujet": "Participation à distance aux AG (solution 8x8)",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "27",
+    "sujet": "Envoi dématérialisé des convocations et PV",
+    "decision": "Reportée",
+    "resultat_vote": "—"
+   },
+   {
+    "numero": "28",
+    "sujet": "Changement de la serrure du portail de la plage",
+    "decision": "Décision sans vote formel",
+    "resultat_vote": "« Il est également décidé »"
+   }
+  ]
+ }
+]

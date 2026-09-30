@@ -517,3 +517,35 @@ export function cleIntitule(texte) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 }
+
+// ============================================================================
+// LA COULEUR D'UN RÉSULTAT — la revalidation du 2026-09-30 en a multiplié les
+// libellés : « Décision sans vote formel », « Information (sans vote) »,
+// « Sans objet », « Vote non pris en compte (consultation juridique) »,
+// « Déclarée adoptée (majorité de l'art. 25 non atteinte) »…
+//
+// ⚠ UNE TABLE DE CORRESPONDANCE EXACTE NE TIENT PLUS. L'écran en avait une, de
+// sept entrées : les dix libellés nouveaux y tombaient tous dans la couleur par
+// défaut, donc se lisaient comme des résultats ordinaires. On classe par
+// PRÉFIXE, et tout libellé futur hérite d'une couleur cohérente sans qu'on ait
+// à y penser.
+//
+// ⚠ « DÉCLARÉE ADOPTÉE » N'EST PAS VERTE. La provision de 2016 a été déclarée
+// adoptée avec 2 500 voix quand l'article 25 en exigeait 2 551 : la peindre
+// comme une adoption ordinaire, c'est répéter l'erreur du procès-verbal. Même
+// raison pour « Vote non pris en compte ». L'ambre dit « regardez de plus près ».
+//
+// ⚠ Cohérent avec `estVotee` : seuls « Adoptée » et « Rejetée » sont des votes,
+// et ce sont les seuls à porter une couleur de verdict.
+// ============================================================================
+export function tonResultat(resultat) {
+  const t = String(resultat || '').normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase()
+  if (t.startsWith('declaree adoptee')) return 'text-amber-700'
+  if (t.startsWith('adoptee')) return 'text-emerald-700'
+  if (t.startsWith('rejetee')) return 'text-red-700'
+  if (t.startsWith('vote non pris en compte') || t.startsWith('reportee')) return 'text-amber-700'
+  // Une décision prise sans vote reste une DÉCISION : elle se distingue du
+  // simple point d'information, qui ne décide rien. Bleu du brief (#DDEBF7).
+  if (t.startsWith('decision sans vote')) return 'text-sky-700'
+  return 'text-slate-500'
+}
