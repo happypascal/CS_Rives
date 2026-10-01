@@ -1714,6 +1714,21 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
       paramètres, commentaires d'archives) : **0 occurrence restante**. ⚠ `sujets.historique` en est
       **exclu** — il garde les versions antérieures, qui doivent contenir les vieux numéros ;
       les « corriger » effacerait la trace de ce qui a été corrigé.
+  - **LA LETTRE DU SIVOM DU 19 MAI 1998** (`scripts/ajouter_lettre_sivom_1998.mjs`, 2026-10-01) :
+    la proposition que l'AG du 20 juin 1998 a entérinée, versée au dossier avec ses 8 pages
+    d'annexes. Une entrée, deux éditions ciblées de la synthèse. **Eaux usées : 7 → 8 entrées.**
+    - ⚠ **`ancien` SURVIT DANS `nouveau` — LES DEUX FOIS.** « Juin 1998 : la proposition du SIVOM
+      est entérinée » englobe « 1998 : la proposition… », et la seconde édition ne fait qu'ajouter
+      une incise **à la fin** de la phrase qu'elle vise. Un script qui raisonne « `ancien` est
+      présent, donc j'applique » **réécrit à chaque exécution, en empilant**. L'idempotence se teste
+      donc sur **`nouveau` EN ENTIER, et AVANT** de chercher `ancien`.
+    - ⚠ **ET JAMAIS SUR UN PRÉFIXE DE `nouveau`** : la seconde édition COMMENCE par `ancien`, si
+      bien qu'un test de préfixe répond « déjà fait » dès le premier passage et n'écrit jamais rien.
+      Les deux erreurs sont symétriques, et toutes deux silencieuses.
+    - ⚠ **La pièce est attachée à L'ENTRÉE** (`sujet_entrees.documents`), mais son **chemin porte
+      l'id du SUJET** — convention 046, le sujet existe au moment de l'envoi, l'entrée pas encore.
+    - ⚠ **L'objet est retiré du bucket si l'insertion échoue** : une pièce téléversée que rien ne
+      cite est invisible, et rien ne la signale (leçon du 2026-09-29).
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu

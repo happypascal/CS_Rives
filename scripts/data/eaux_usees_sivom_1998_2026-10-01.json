@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-01",
+  "auteur": "Claude (Cowork), lu sur l'image des 8 pages",
+  "sujet": "Eaux usées et assainissement",
+  "entree_a_ajouter": {
+    "date": "1998-05-19",
+    "titre": "Lettre du SIVOM du Bas-Chablais au syndic : proposition de raccordement du lotissement",
+    "texte": "Lettre de M. Bernard Neplaz, président du SIVOM du Bas-Chablais, au cabinet Guy Pillet, syndic (interlocuteur au SIVOM : M. Christian Tourais). Elle rappelle la décision du SIVOM, notifiée en juin 1996, de participer à hauteur de 50 % des investissements, et les interventions du maire de Nernier, M. Bruno de Leusse. Elle propose à l'assemblée des copropriétaires d'entériner deux phases : 1) d'ici la saison 1999, reprise de la totalité des eaux arrivant à la station d'épuration du lotissement (eaux usées et eaux parasites) par un poste de refoulement implanté à la place de la station existante, et refoulement vers le réseau syndical situé sous la voie communale de Messery ; 2) dans les 5 à 10 ans, réseau séparatif complet du lotissement (canalisation d'eaux usées de 200 mm et nouveaux branchements des habitations), selon une convention à signer d'ici là, avec une participation de la collectivité d'au moins 50 % sur la pose des canalisations communes. La phase 1 représente 430 000 F HT, préfinancés par le SIVOM ; la part de la copropriété (50 %), soit 215 000 F HT, sera encaissée lorsque la collectivité annoncera qu'elle peut engager la phase 2. Pièces jointes à la lettre : extrait du rapport de la Régie départementale d'assistance (RDA) — eaux parasites d'infiltration (95 % en basse saison, 40 % en haute saison), présence d'eaux pluviales, ouvrage de traitement fonctionnant en simple décantation dont les boues sont rejetées au lac après chaque orage, avec un risque de contamination bactériologique de la plage ; estimatif (426 667 F HT, arrondi à 430 000, dont 150 000 pour le poste de refoulement) ; plan du tracé (refoulement de 125 mm et conduite gravitaire de 200 mm, regards de 1 000 mm, par Champ Catin et l'allée des Précettes jusqu'à la route de Messery) ; plans du poste.",
+    "resultat": "Information",
+    "source": "Pièce : lettre du SIVOM du 19 mai 1998 et annexes (8 pages)",
+    "piece": "3_procédures/SCI Maison du Lac/Assainissement19.05.98.pdf"
+  },
+  "synthese_edits": [
+    {
+      "section": "Historique",
+      "ancien": "1998 : la proposition du SIVOM est entérinée",
+      "nouveau": "Mai 1998 : le SIVOM écrit au syndic (lettre du 19 mai) en s'appuyant sur une étude de la Régie départementale d'assistance : eaux parasites massives (95 % en basse saison, 40 % en haute saison), eaux pluviales dans le réseau, boues de la station du lotissement rejetées au lac après chaque orage, risque bactériologique pour la plage. Juin 1998 : la proposition du SIVOM est entérinée"
+    },
+    {
+      "section": "Questions ouvertes",
+      "ancien": "Retrouver la convention conclue avec le SIVOM (1997-1998)",
+      "nouveau": "Retrouver la convention conclue avec le SIVOM (1997-1998) — la lettre du 19 mai 1998 n'en est que la proposition —"
+    }
+  ],
+  "controles": {
+    "entrees_avant": 7,
+    "entrees_apres": 8,
+    "total_base_avant": 251,
+    "total_base_apres": 252
+  }
+}
