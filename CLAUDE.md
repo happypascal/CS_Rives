@@ -1374,9 +1374,19 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     - « Partout » = **trois endroits** : l'intitulé dans `pv_archives` (ici, pour survivre au
       ré-import), l'**entrée de chronologie** et la **synthèse** du sujet « Portails » (dans
       `corriger_memoire_fermeture_2008.mjs` — rien ne réécrit la mémoire, ces corrections-là sont
-      définitives). ⚠ Le **registre `.docx` et le résumé `.docx` portent toujours l'intitulé
-      fautif** : à corriger à la source, sinon chaque régénération le réintroduira — le script de
-      correction est le filet, pas la solution.
+      définitives).
+    - ✅ **LES DEUX SOURCES `.docx` SONT CORRIGÉES DEPUIS** (vérifié le 2026-10-05, après l'avoir
+      annoncé deux fois comme restant à faire). `Registre_decisions_AG_Rives_1988-2026.docx` porte
+      « Fermeture du lotissement : maintien de la situation actuelle (pas de fermeture) » et
+      `1_AG/2008/Resume_AG_2008-06-28.docx` « non retenue […] la situation actuelle est maintenue » ;
+      les deux portent « Décision sans vote formel ». Une régénération ne réintroduira donc plus la
+      faute. ⚠ **Vérifier l'état du disque avant de redire qu'une correction est en attente** — les
+      fichiers de Pascal changent entre deux sessions (même leçon que le `PF AG …` renommé en cours
+      de travail).
+    - ⚠ **Les deux intitulés ne sont pas mot pour mot identiques** : la base est plus longue (elle
+      nomme le motif et la fermeture manuelle), le registre plus court. Ils disent la même chose,
+      donc un ré-import qui remplacerait l'un par l'autre reste **sans danger** — c'est ce qui rend
+      cette divergence tolérable, et non le fait qu'elle soit mineure.
   - **Non corrigé, et pourquoi** : « Adoptée (unanimité) » contre « Adoptée » n'est pas une
     contradiction — la base en dit plus, on ne rabote pas une source parce qu'une autre est brève.
   - **237 résolutions en base pour 151 dans les résumés, et aucune ne manque** : les résumés
