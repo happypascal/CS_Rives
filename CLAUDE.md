@@ -1270,6 +1270,41 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     tables de la 045, **pas un automatisme** — `sujet_entrees` s'ajoute, `sujets.contenu` se *rédige*.
     **Le vérifier après chaque lot qui fait reculer la date la plus ancienne d'un sujet.**
     `scripts/ajouter_precedents_zones_2026-10-05.mjs` (deux éditions ciblées, idempotent).
+  - **LES HUIT AUTRES SYNTHÈSES, VÉRIFIÉES PAR CLAUDE PUIS APPLIQUÉES** (2026-10-05 au soir,
+    `scripts/appliquer_syntheses_memoire_2026-10-05.mjs`, document
+    `A_VERIFIER_syntheses_memoire_2026-10-05.md`). **8 paragraphes, 8 corrections d'entrées,
+    3 entrées ajoutées** → 294 → 297 entrées, les 42 du lot désormais reflétées, **0 trou sur les
+    14 sujets**.
+    - ⚠ **LES TEXTES SONT LUS DANS LE DOCUMENT, PAS RECOPIÉS DANS LE SCRIPT.** Huit paragraphes et
+      onze lignes de tableau retranscrits à la main, c'est onze occasions de changer un mot sans le
+      voir. Le script **refuse de tourner** s'il n'y trouve pas ses 8 blocs et ses 2 tableaux :
+      écrire la moitié d'une révision est pire que ne rien écrire, rien ne signalerait l'autre moitié.
+    - ⚠ **LE DOCUMENT NOMME LE CHAMP « texte », LA COLONNE S'APPELLE `contenu`.** Passé tel quel,
+      PostgREST a **refusé les cinq corrections** concernées (« Could not find the 'texte' column »)
+      — le mock aurait avalé la clé inconnue en silence. ⚠ **L'essai à blanc ne pouvait pas le voir** :
+      il n'appelle aucun `update`. **Un essai à blanc prouve que les cibles existent, jamais que
+      l'écriture passe.** D'où un mappage explicite `COLONNE` et un refus si le champ est inconnu.
+    - ⚠ **DEUX TITRES DE SECTION COMPTAIENT LES ANNÉES** — « Trente ans d'hésitation » (portails,
+      depuis 1989) et « Trente ans de réparations » (eaux pluviales, depuis 1990). Y verser 1968-1987
+      les rendait **faux**. Arbitrage de Claude : une **section propre** (`Avant 1989`, `Avant 1990`)
+      insérée **avant** l'existante, et la phrase d'attaque du paragraphe retirée puisqu'elle devient
+      le titre. Les titres existants restent exacts pour leur période, aucun texte n'est touché.
+      **Un titre qui compte les années doit compter juste.**
+    - ⚠ **« Urbanisme et servitudes » est organisé par RÈGLE, pas par date** : seule synthèse sans
+      `<h3>` (pseudo-titres `<p><strong>` + listes) et seule en apostrophe typographique. Son
+      paragraphe va **à la fin**, en pseudo-section « Application dans le temps » — en tête, il
+      cassait le plan.
+    - **Ce que la vérification de Claude a corrigé**, et qu'aucune relecture interne n'aurait trouvé :
+      des décisions **au futur** rendues comme faites (« les fossés sont raccordés » au lieu de « il
+      est décidé de raccorder »), « **premier** PV du cabinet Pillet » alors que ceux de 1978 et 1979
+      manquent (seul « le plus ancien conservé » est exact), un titre affirmant « toutes non
+      conformes » quand le compte rendu dit « anomalies », et une **causalité** (Francillon 1971 →
+      refus de 1991) présentée comme établie alors que seul le lien de personne l'est.
+    - ⚠ **LES TROIS ENTRÉES AJOUTÉES PASSENT AVANT LES PARAGRAPHES** : ceux d'Arbres et de Portails
+      s'appuient dessus. Une synthèse qui cite un fait absent de la chronologie est invérifiable.
+    - **Non appliqué** : les trois entrées « si tu le souhaites » de la question 7 (statut juridique
+      1980 et l'article 42 de la loi de 1965, eaux pluviales 1976 conduite Grando, bouches d'incendie
+      1971). Demandé : les paragraphes, les corrections, **les trois** entrées — pas celles-là.
   - ⚠ **L'APOSTROPHE DE CES DEUX CHAMPS EST DROITE** (U+0027), alors que la convention d'UI du dépôt
     impose « ’ » : `sujets.contenu` vient des JSON de Claude et n'en contient aucune courbe. On aligne
     sur le **champ**, pas sur la règle générale — une apostrophe courbe au milieu d'un paragraphe
