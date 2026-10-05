@@ -1243,9 +1243,25 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - **1963 est un `releve_de_decisions`, 1982 un `compte_rendu_commission`** (063) : ni l'un ni l'autre
   ne compte dans les années couvertes, comme 1988 (convocation). ⚠ **Aucune ligne dans
   `assemblees_generales`** — règle fondatrice du fonds (057).
-- ⚠ **5 entrées `attente_pascal` NON écrites** (2 dans « Plage », 3 dans « Distraction zone C »),
-  seulement listées. Même garde-fou que les `a_verifier` du 30 septembre — celui qui a évité
-  d'inscrire trois numéros d'arrêtés faux.
+- ⚠ **5 entrées `attente_pascal`, d'abord listées puis ARBITRÉES** (2 dans « Plage », 3 dans
+  « Distraction zone C »). Le garde-fou — celui des `a_verifier` du 30 septembre, qui a évité
+  d'inscrire trois numéros d'arrêtés faux — a tenu : elles sont restées dehors jusqu'à ce que Pascal
+  tranche (« applique-les », 2026-10-05), puis sont entrées par **`--avec-attente`**, drapeau
+  explicite plutôt que nouveau défaut. ⚠ Le fichier de données **continue de les marquer**
+  `attente_pascal` : effacer la marque effacerait la trace qu'un arbitrage a eu lieu, et un relecteur
+  les croirait ordinaires. **294 entrées.**
+  - ⚠ **CE SONT LES PLUS ANCIENNES DU DOSSIER ZONE C**, dont la chronologie commençait en **2025**.
+    Elles constatent la dispense de la route de Nernier à Messery en **1968** (frais de voirie,
+    « que le cahier des charges dispense de participer aux frais d'entretien des routes »), en
+    **1974** (téléphone, « qui n'utiliseront jamais les installations du lotissement ») et en
+    **1982** (répartition à la façade sans aucun lot C). La demande des sept colotis a donc un
+    précédent de cinquante-huit ans — ce qu'aucun autre écran ne disait.
+  - ⚠ **La colonne « Déjà là » du rapport compte les entrées DE CE LOT**, pas celles du sujet : un
+    « — » devant « Distraction zone C » ne veut pas dire que le dossier était vide (il avait 9
+    entrées). Lu de travers une première fois.
+  - **Aucun `resultat` sur les 42 entrées du lot**, les 5 comprises : le résultat est **dans le
+    texte** (« unanimité », « refuse par 28 voix contre 3 »), tel que Claude (Cowork) l'a écrit. En
+    déduire un remplirait une colonne de qualification par supposition.
 - **Années encore manquantes** : 1955–1967, 1969–1970, 1972–1973, 1975, 1978–1979, 1982–1985, 1988,
   1999.
 

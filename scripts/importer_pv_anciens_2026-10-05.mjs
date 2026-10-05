@@ -33,14 +33,24 @@
 //   `resume_resolutions` la LECTURE rédigée (064) — ne remplace pas la première
 //   `sujet_entrees`      ce que ces PV apportent aux dossiers suivis (045)
 //
-// ⚠ LES 5 ENTRÉES `attente_pascal` NE S'APPLIQUENT PAS : deux dans « Plage »,
-// trois dans « Distraction zone C ». Elles sont seulement listées. Même règle
-// que les `a_verifier` du 30 septembre — et ce garde-fou a déjà servi : c'est
-// lui qui a évité d'inscrire trois numéros d'arrêtés faux.
+// ⚠ LES 5 ENTRÉES `attente_pascal` NE S'APPLIQUENT PAS PAR DÉFAUT : deux dans
+// « Plage », trois dans « Distraction zone C ». Elles sont seulement listées.
+// Même règle que les `a_verifier` du 30 septembre — et ce garde-fou a déjà
+// servi : c'est lui qui a évité d'inscrire trois numéros d'arrêtés faux.
+//
+// ⚠ `--avec-attente` LES APPLIQUE, et ce drapeau EXISTE PARCE QUE PASCAL A
+// TRANCHÉ (2026-10-05, « les 5 entrées en attente, applique-les »). Elles
+// portent toutes une exclusion par zone — route de Messery dispensée des frais
+// de voirie en 1968 et de téléphone en 1974, répartition sans lot C en 1982,
+// zone A exclue de la rampe en 1987 — c'est-à-dire la matière même du dossier
+// « Distraction zone C ». ⚠ Le drapeau reste EXPLICITE plutôt que de devenir le
+// défaut : le fichier de données continue de dire que ces lignes demandaient un
+// arbitrage, et c'est une information qu'un relecteur doit garder.
 //
 // Usage :
-//   node scripts/importer_pv_anciens_2026-10-05.mjs        essai à blanc
-//   node scripts/importer_pv_anciens_2026-10-05.mjs --go   écrit
+//   node scripts/importer_pv_anciens_2026-10-05.mjs                  essai à blanc
+//   node scripts/importer_pv_anciens_2026-10-05.mjs --go             écrit
+//   node scripts/importer_pv_anciens_2026-10-05.mjs --avec-attente   + les 5 arbitrées
 
 import { createClient } from '@supabase/supabase-js'
 import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
@@ -54,6 +64,7 @@ import { tagsDuTexte } from '../src/lib/pvArchiveLogic.js'
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const GO = process.argv.includes('--go')
 const SANS_TEXTE = process.argv.includes('--sans-texte')
+const AVEC_ATTENTE = process.argv.includes('--avec-attente')
 const SOURCE = join(RACINE, 'scripts', 'data', 'pv_anciens_2026-10-05.json')
 const DOSSIER = '/Users/pfa/Documents/_0_Privé/Maison/Nernier/_1_lotissement'
 const BUCKET = 'documents'
@@ -359,7 +370,7 @@ async function main() {
     if (!sujet) { soucis.push(`Sujet « ${titre} » introuvable : aucune de ses ${liste.length} entrées n’a été écrite.`); W(`| ${titre} | — | — | ❌ sujet introuvable |`); continue }
     let ajout = 0, attente = 0, deja = 0
     for (const e of liste) {
-      if (e.attente_pascal) { enAttente.push({ sujet: titre, ...e }); attente++; continue }
+      if (e.attente_pascal && !AVEC_ATTENTE) { enAttente.push({ sujet: titre, ...e }); attente++; continue }
       const quand = dateISO(e.date)
       if (!quand) { soucis.push(`« ${String(e.titre).slice(0, 44)} » (${titre}) : date « ${e.date} » illisible. Entrée non écrite.`); continue }
       // Idempotence : sujet + date + titre.
@@ -375,16 +386,27 @@ async function main() {
     W(`| ${titre} | ${ajout} | ${attente || '—'} | ${deja || '—'} |`)
   }
   W('')
-  W(`**${nouvellesEntrees.length} entrée(s) à écrire · ${enAttente.length} en attente de Pascal.**`)
+  W(`**${nouvellesEntrees.length} entrée(s) à écrire · ${enAttente.length} en attente${AVEC_ATTENTE ? ' (drapeau --avec-attente : les arbitrées sont incluses ci-dessus)' : ' de Pascal'}.**`)
   W('')
 
-  W(`## ⚠ ${enAttente.length} entrée(s) « en attente de Pascal » — NON écrites`)
-  W('')
-  for (const e of enAttente) {
-    W(`- **${e.date}** (${e.sujet}) — ${e.titre}`)
-    if (e.motif_attente) W(`  > ${e.motif_attente}`)
+  if (AVEC_ATTENTE) {
+    const arbitrees = Object.entries(d.memoire).flatMap(([t, l]) => l.filter((x) => x.attente_pascal).map((x) => ({ sujet: t, ...x })))
+    W(`## ⚠ ${arbitrees.length} entrée(s) « en attente » — ARBITRÉES PAR PASCAL, donc écrites`)
+    W('')
+    W('Elles portent toutes une **exclusion par zone**, matière du dossier « Distraction zone C ».')
+    W('Le fichier de données continue de les marquer `attente_pascal` : la trace de l’arbitrage reste.')
+    W('')
+    for (const e of arbitrees) W(`- **${e.date}** (${e.sujet}) — ${e.titre}`)
+    W('')
+  } else {
+    W(`## ⚠ ${enAttente.length} entrée(s) « en attente de Pascal » — NON écrites`)
+    W('')
+    for (const e of enAttente) {
+      W(`- **${e.date}** (${e.sujet}) — ${e.titre}`)
+      if (e.motif_attente) W(`  > ${e.motif_attente}`)
+    }
+    W('')
   }
-  W('')
 
   if (soucis.length) {
     W('## ⚠ À regarder')
@@ -463,7 +485,7 @@ async function main() {
 
   const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-')
   await mkdir(join(RACINE, 'export'), { recursive: true })
-  const out = join(RACINE, 'export', `pv_anciens_${stamp}${GO ? '' : '-essai'}.md`)
+  const out = join(RACINE, 'export', `pv_anciens${AVEC_ATTENTE ? '_attente' : ''}_${stamp}${GO ? '' : '-essai'}.md`)
   await writeFile(out, rapport.join('\n'))
   console.log(`\n📄 Rapport : ${out}`)
   if (soucis.length) process.exitCode = 1
