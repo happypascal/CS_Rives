@@ -1302,9 +1302,23 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
       refus de 1991) présentée comme établie alors que seul le lien de personne l'est.
     - ⚠ **LES TROIS ENTRÉES AJOUTÉES PASSENT AVANT LES PARAGRAPHES** : ceux d'Arbres et de Portails
       s'appuient dessus. Une synthèse qui cite un fait absent de la chronologie est invérifiable.
-    - **Non appliqué** : les trois entrées « si tu le souhaites » de la question 7 (statut juridique
-      1980 et l'article 42 de la loi de 1965, eaux pluviales 1976 conduite Grando, bouches d'incendie
-      1971). Demandé : les paragraphes, les corrections, **les trois** entrées — pas celles-là.
+    - **LES TROIS ENTRÉES DE LA QUESTION 7, AJOUTÉES ENSUITE** (même soir, « ajoute aussi les trois
+      entrées de la question 7 ») → **300 entrées**. ⚠ La question 7 ne les donnait qu'en **prose** :
+      il a fallu les rédiger, et elles sont donc **écrites par Claude Code**, non vérifiées contre les
+      PV. Elles ont été ajoutées **au document** plutôt que codées dans le script, avec cette
+      provenance en clair — c'est ce qui permet de les relire à un seul endroit.
+      - ⚠ **LES DATES SONT CELLES DES SÉANCES RÉELLES**, relevées dans `pv_archives` (14/08/1971,
+        31/07/1976, 26/07/1980), jamais choisies pour faire tomber l'entrée dans la bonne année.
+      - ⚠ **DEUX RÉSERVES PORTÉES DANS LE TEXTE DE L'ENTRÉE ELLE-MÊME** : le lien 1976 → 1981 (le
+        regard créé au droit de la même propriété) est **probable et écrit dans aucun des deux PV**, et
+        l'entrée de 1980 **qualifie** (« gérée comme une copropriété ») là où le PV ne fait que
+        notifier. Une réserve rangée ailleurs que dans le texte qu'elle qualifie ne se lit jamais.
+      - ⚠ **CONSÉQUENCE NON TRAITÉE, SIGNALÉE** : la synthèse « Statut juridique » annonce « **Deux**
+        signes anciens » (1988, 1997) d'une gestion sous la loi de 1965. L'entrée de **1980** en est un
+        troisième, et **le plus ancien** — le compte est donc à reprendre. Non corrigé faute d'arbitrage :
+        même règle que les titres « Trente ans… », on ne réécrit pas une synthèse de Claude sur une
+        déduction. **Mais un décompte faux dans une synthèse est exactement ce que ce registre
+        s'interdit.**
   - ⚠ **L'APOSTROPHE DE CES DEUX CHAMPS EST DROITE** (U+0027), alors que la convention d'UI du dépôt
     impose « ’ » : `sujets.contenu` vient des JSON de Claude et n'en contient aucune courbe. On aligne
     sur le **champ**, pas sur la règle générale — une apostrophe courbe au milieu d'un paragraphe

@@ -173,11 +173,19 @@ function lireTableau(titreSection, colonnes) {
 const PARAS = lireParagraphes()
 const CORRECTIONS = lireTableau('## Entrées de chronologie à corriger', 5)
 const AJOUTS = lireTableau('## Entrées à ajouter', 4)
+// ⚠ LA QUESTION 7 NE DONNAIT QUE DE LA PROSE : ces trois entrées ont été rédigées
+// par Claude Code et ajoutées au document le soir du 5 octobre, sur demande de
+// Pascal (« ajoute aussi les trois entrées de la question 7 »). Elles passent par
+// le MÊME tableau lu dans le document que les trois autres — pas par des valeurs
+// codées ici : c'est ce qui permet de les relire et de les corriger à un seul
+// endroit. Leurs dates sont celles des séances réelles, relevées dans
+// `pv_archives`, jamais choisies.
+const AJOUTS_Q7 = lireTableau('# Entrées de la question 7', 4) || []
 
 // ⚠ On refuse de tourner sur un document incomplet : écrire la moitié d'une
 // révision est pire que ne rien écrire — rien ne signalerait la moitié absente.
-const attendu = { paragraphes: 8, corrections: 8, ajouts: 3 }
-const lu = { paragraphes: PARAS.size, corrections: CORRECTIONS?.length ?? 0, ajouts: AJOUTS?.length ?? 0 }
+const attendu = { paragraphes: 8, corrections: 8, ajouts: 3, ajoutsQ7: 3 }
+const lu = { paragraphes: PARAS.size, corrections: CORRECTIONS?.length ?? 0, ajouts: AJOUTS?.length ?? 0, ajoutsQ7: AJOUTS_Q7.length }
 for (const [k, v] of Object.entries(attendu)) {
   if (lu[k] !== v) {
     console.error(`❌ Document inattendu : ${lu[k]} ${k} lus, ${v} attendus. Rien n'est écrit.`)
@@ -316,9 +324,9 @@ for (const [libelle, dateFR, champ, ancienDoc, nouveauDoc] of CORRECTIONS) {
 W('')
 
 // ── 2. Entrées ajoutées ──────────────────────────────────────────────────────
-W('## 2. Entrées de chronologie ajoutées')
+W(`## 2. Entrées de chronologie ajoutées (${AJOUTS.length} du tableau initial + ${AJOUTS_Q7.length} de la question 7)`)
 W('')
-for (const [libelle, dateFR, titre, texte] of AJOUTS) {
+for (const [libelle, dateFR, titre, texte] of [...AJOUTS, ...AJOUTS_Q7]) {
   const su = resolve(libelle)
   if (!su) { anomalies.push(`ajout : sujet « ${libelle} » introuvable.`); continue }
   const iso = dateFR.split('/').reverse().join('-')
@@ -407,9 +415,10 @@ W(`**${faitCorrections.length} correction(s) · ${faitAjouts.length} entrée(s) 
 W('')
 W(`Entrées : **${entreesAvant} → ${entreesAvant + faitAjouts.length}**. Aucune entrée supprimée ; \`pv_archives\` et \`resume_resolutions\` intacts.`)
 W('')
-W('Non appliqué, faute d’avoir été demandé — les entrées « si tu le souhaites » de la question 7 :')
+W('Les trois entrées de la **question 7** sont désormais incluses (demande de Pascal du 5 octobre) :')
 W('statut juridique 1980 (article 42 de la loi de 1965), eaux pluviales 1976 (conduite Grando),')
-W('biens communs 1971 (bouches d’incendie). Elles restent ouvertes.')
+W('biens communs 1971 (bouches d’incendie). ⚠ Rédigées par Claude Code d’après la prose de la')
+W('question 7 — à vérifier au même titre que le reste.')
 W('')
 
 // ── Écriture ─────────────────────────────────────────────────────────────────
