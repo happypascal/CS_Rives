@@ -1262,6 +1262,18 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   - **Aucun `resultat` sur les 42 entrées du lot**, les 5 comprises : le résultat est **dans le
     texte** (« unanimité », « refuse par 28 voix contre 3 »), tel que Claude (Cowork) l'a écrit. En
     déduire un remplirait une colonne de qualification par supposition.
+  - ⚠ **AJOUTER UNE ENTRÉE NE MET PAS À JOUR LA SYNTHÈSE** — et c'est le trou que la question de
+    Pascal a mis au jour (« tu as mis à jour les sujets ? », 2026-10-05). Les briefs disent « ne pas
+    modifier les synthèses », donc la chronologie de « Distraction zone C » remontait à 1968 pendant
+    que sa synthèse ouvrait encore son historique sur « En mars 2025 » : l'argument le plus ancien du
+    dossier était invisible à qui ne dépliait pas la chronologie. C'est la séparation voulue des deux
+    tables de la 045, **pas un automatisme** — `sujet_entrees` s'ajoute, `sujets.contenu` se *rédige*.
+    **Le vérifier après chaque lot qui fait reculer la date la plus ancienne d'un sujet.**
+    `scripts/ajouter_precedents_zones_2026-10-05.mjs` (deux éditions ciblées, idempotent).
+  - ⚠ **L'APOSTROPHE DE CES DEUX CHAMPS EST DROITE** (U+0027), alors que la convention d'UI du dépôt
+    impose « ’ » : `sujets.contenu` vient des JSON de Claude et n'en contient aucune courbe. On aligne
+    sur le **champ**, pas sur la règle générale — une apostrophe courbe au milieu d'un paragraphe
+    droit se voit. Vérifié avant d'écrire.
 - **Années encore manquantes** : 1955–1967, 1969–1970, 1972–1973, 1975, 1978–1979, 1982–1985, 1988,
   1999.
 
