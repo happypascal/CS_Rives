@@ -1215,6 +1215,40 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     manquant) ». `corriger_resolutions_archives.mjs` accepte donc **plusieurs valeurs antérieures**
     (`avant_aussi`) : sans cela, une base déjà corrigée et un ré-import — qui repose « Information »
     — ne pouvaient pas passer par la même règle.
+#### Le lot des PV anciens 1963-2000 (2026-10-05)
+> Douze documents versés par Pascal, lus sur l'image : **39 → 51 archives**, 78 résolutions,
+> 12 résumés rédigés, **37 entrées de mémoire** dans 8 sujets.
+> `scripts/importer_pv_anciens_2026-10-05.mjs`. Aucune migration.
+
+- ⚠ **LA DATE VIENT DU FICHIER DE DONNÉES, JAMAIS DU NOM.** Deux noms mentent :
+  `1963/PV AG 1963_06_23.pdf` est la séance du **29** juin, `1986/PV AG 1986_07_27.pdf` celle du
+  **26** juillet. Contrairement à `importer_pv_archives.mjs`, ce script ne déduit **rien** — et les
+  fichiers de Pascal ne sont pas renommés.
+- ⚠ **DEUX FORMATS DE DATE DANS LE MÊME FICHIER** : les archives en ISO, la mémoire en
+  **JJ/MM/AAAA**. Supposer l'un des deux fait échouer l'insertion (« date/time field value out of
+  range ») — constaté **après** que les douze archives étaient déjà écrites. On normalise, et on
+  refuse une date illisible au lieu d'en inventer une.
+- ⚠ **LE JSON NE NOMME PAS SES CHAMPS COMME LA BASE.** La source emploie `sujet` / `decision` /
+  `resultat_vote` (vocabulaire des résumés), `pv_archives.resolutions` porte `objet` / `resultat` /
+  `voix_texte`. Les recopier tels quels **passe l'insertion sans erreur** — c'est du jsonb — mais la
+  fiche affiche alors **trois colonnes vides**, et rien ne le signale. **Une insertion qui réussit
+  n'est pas une insertion qui est juste.** Le script traduit, et **répare** une archive restée dans
+  l'ancien vocabulaire.
+- ⚠ **AUCUNE VOIX N'EST CHIFFRÉE SUR CE LOT, ET C'EST DÉLIBÉRÉ.** Les PV de 1963 à 2000 écrivent
+  « 28 voix contre 3 », « 18/30 ; contre Badea, Chappaz… », « 11 voix contre 9 1/3 » : **zéro ligne
+  sur 78** au format canonique « Pour N · Contre M » — mesuré. Une dérivation automatique y
+  **fabrique** des nombres : « 9 1/3 » devient **91**, et « 28 voix contre 3 » range le 3 en
+  « contre » en perdant le 28. **Un nombre faux est pire qu'un nombre absent — et il a l'air vrai.**
+  `pour`/`contre`/`abstention` restent nuls, `voix_texte` garde le texte exact.
+- **1963 est un `releve_de_decisions`, 1982 un `compte_rendu_commission`** (063) : ni l'un ni l'autre
+  ne compte dans les années couvertes, comme 1988 (convocation). ⚠ **Aucune ligne dans
+  `assemblees_generales`** — règle fondatrice du fonds (057).
+- ⚠ **5 entrées `attente_pascal` NON écrites** (2 dans « Plage », 3 dans « Distraction zone C »),
+  seulement listées. Même garde-fou que les `a_verifier` du 30 septembre — celui qui a évité
+  d'inscrire trois numéros d'arrêtés faux.
+- **Années encore manquantes** : 1955–1967, 1969–1970, 1972–1973, 1975, 1978–1979, 1982–1985, 1988,
+  1999.
+
 #### Le RÉSUMÉ RÉDIGÉ des résolutions (migration 064, 2026-09-30)
 > Pascal : les résumés étaient **trop mécaniques** — une ligne par sous-résolution (10.1 à 10.6
 > pour un seul sujet), des intitulés obscurs, et aucune hiérarchie entre une décision qui engage le
