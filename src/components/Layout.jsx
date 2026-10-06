@@ -58,6 +58,13 @@ const SECTIONS = [
       { to: '/envois', label: 'Envois aux colotis' },
       { to: '/membres', label: 'Membres du CS' },
       { to: '/memoire', label: 'Mémoire de l’ASL' },
+      // ⚠ VOISINE DE LA MÉMOIRE, ET CE N'EST PAS UN HASARD : la mémoire porte
+      // le POURQUOI d'un dossier, les règles portent CE QUI S'APPLIQUE ENCORE.
+      // Deux questions différentes posées sur la même matière — les PV — d'où
+      // deux entrées côte à côte plutôt qu'un onglet de l'une dans l'autre.
+      // ⚠ Lue par TOUS : ces règles ont été votées en assemblée et adressées à
+      // tous les colotis. Seule l'écriture est réservée au bureau (066).
+      { to: '/regles', label: 'Règles de gestion' },
       // ⚠ PAS D'ENTRÉE « Archives des PV » ICI (arbitrage Pascal, 2026-09-25).
       // Elle y a figuré une journée. Le fonds se rejoint par un BOUTON en tête
       // de l'écran Assemblées Générales : on ne cherche pas le PV de 1978 en

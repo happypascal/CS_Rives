@@ -945,6 +945,64 @@ create unique index if not exists pv_archives_empreinte_idx
   on pv_archives ((document ->> 'sha256'))
   where (document ->> 'sha256') is not null;
 
+-- ------------------------------- règles de gestion permanentes (migration 066)
+-- ⚠ NI UNE DÉCISION, NI UN SUJET, NI UNE RÉSOLUTION : ce qui, une fois voté,
+-- S'APPLIQUE ENCORE. Une résolution de 2009 reste vraie comme fait voté et ne
+-- dit pas si elle s'applique toujours ; une règle doit pouvoir être ABROGÉE
+-- sans que son vote d'origine cesse d'avoir eu lieu.
+-- ⚠ ON NE DÉPLACE RIEN : la résolution reste dans `pv_archives.resolutions` ou
+-- dans `resolutions_ag`, la règle la CITE.
+-- ⚠ `delai` et `periodicite` sont du TEXTE, et l'application ne calcule AUCUNE
+-- échéance : « un mois », « sous 90 jours », « à compter du 91e jour après
+-- notification » n'ont pas de point de départ commun. La règle est rappelée,
+-- elle n'est pas armée.
+create table if not exists regles_gestion (
+  id               uuid primary key default gen_random_uuid(),
+  titre            text not null,
+  enonce           text not null,
+  categorie        text,
+  periodicite      text,
+  delai            text,
+  qui              text,
+  -- ⚠ Source citée en toutes lettres, liens FACULTATIFS : la règle de 1991 sur
+  -- les fossés vient d'une assemblée qui ne figurera jamais dans l'application.
+  -- Même patron que `mandats_cs.ag_id` nullable + `ag_libelle` (051).
+  source_annee     integer,
+  source_reference text,
+  pv_archive_id    uuid references pv_archives(id) on delete set null,
+  ag_id            uuid references assemblees_generales(id) on delete set null,
+  statut           text not null default 'en_vigueur',
+  fin_le           date,
+  fin_reference    text,
+  commentaire      text,
+  documents        jsonb not null default '[]'::jsonb,
+  cree_par         uuid references membres_cs(id) on delete set null,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  constraint regles_gestion_statut_check
+    check (statut in ('en_vigueur', 'suspendue', 'abrogee')),
+  -- ⚠ Une règle qui n'est plus en vigueur DOIT dire par quoi : sans cela, un
+  -- lecteur futur la croirait abrogée par erreur.
+  constraint regles_gestion_fin_motivee
+    check (statut = 'en_vigueur' or fin_reference is not null)
+);
+
+create index if not exists regles_gestion_statut_idx on regles_gestion (statut);
+create index if not exists regles_gestion_annee_idx  on regles_gestion (source_annee);
+
+create or replace function regles_gestion_touch()
+returns trigger language plpgsql as $touch_regle$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$touch_regle$;
+
+drop trigger if exists trg_regles_gestion_touch on regles_gestion;
+create trigger trg_regles_gestion_touch
+  before update on regles_gestion
+  for each row execute function regles_gestion_touch();
+
 -- ------------------------------------------- acceptation de la mention RGPD
 -- Portée par le membre : c'est un fait le concernant, et il n'a à l'accepter
 -- qu'une fois. Horodatée pour pouvoir dire QUAND elle a été acceptée — une
@@ -1805,6 +1863,21 @@ create policy "read_auth" on pv_archives
 
 drop policy if exists "pv_archives_bureau_write" on pv_archives;
 create policy "pv_archives_bureau_write" on pv_archives
+  for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+-- ⚠ Même régime que le fonds de PV et que la mémoire : LUE PAR TOUS, écrite par
+-- le bureau. Ces règles ont été votées en assemblée et adressées à tous les
+-- colotis — ce n'est PAS le registre des propriétaires.
+alter table regles_gestion enable row level security;
+
+drop policy if exists "read_auth" on regles_gestion;
+create policy "read_auth" on regles_gestion
+  for select to authenticated using (true);
+
+drop policy if exists "regles_gestion_bureau_write" on regles_gestion;
+create policy "regles_gestion_bureau_write" on regles_gestion
   for all to authenticated
   using (is_admin() or is_secretaire())
   with check (is_admin() or is_secretaire());

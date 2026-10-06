@@ -807,6 +807,39 @@ export const supabaseRepo = {
       .update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select())[0]
   },
 
+  // ---- Règles de gestion permanentes (migration 066) ----
+  // ⚠ Ce ne sont ni des décisions ni des résolutions : c'est ce qui, une fois
+  // voté, s'applique ENCORE. La résolution d'origine reste où elle est ; la
+  // règle la cite (`source_annee` + `source_reference`).
+  async listReglesGestion() {
+    return must(await supabase.from('regles_gestion').select('*'))
+  },
+
+  async getRegleGestion(id) {
+    return must(await supabase.from('regles_gestion').select('*').eq('id', id).maybeSingle())
+  },
+
+  async createRegleGestion(input) {
+    return must(await supabase.from('regles_gestion').insert(input).select())[0]
+  },
+
+  // ⚠ Payload explicite, jamais `...patch` : PostgREST rejette toute colonne
+  // inconnue et le mock, lui, l'avalerait sans rien dire — le bug ne se verrait
+  // qu'en prod. `created_at` et `cree_par` n'y figurent pas : ce sont des
+  // constats de saisie, ils ne se corrigent pas.
+  async updateRegleGestion(id, patch) {
+    const champs = ['titre', 'enonce', 'categorie', 'periodicite', 'delai', 'qui',
+      'source_annee', 'source_reference', 'pv_archive_id', 'ag_id',
+      'statut', 'fin_le', 'fin_reference', 'commentaire', 'documents']
+    const payload = Object.fromEntries(Object.entries(patch).filter(([k]) => champs.includes(k)))
+    return must(await supabase.from('regles_gestion').update(payload).eq('id', id).select())[0]
+  },
+
+  async deleteRegleGestion(id) {
+    must(await supabase.from('regles_gestion').delete().eq('id', id))
+    return { ok: true }
+  },
+
   // ---- Audit ----
   async listAudit(limit = 100) {
     return must(await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit))

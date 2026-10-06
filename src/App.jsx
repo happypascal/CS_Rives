@@ -24,6 +24,7 @@ import Parametres from './pages/Parametres'
 import Aide from './pages/Aide'
 import CommentFaire from './pages/CommentFaire'
 import SujetList from './pages/SujetList'
+import ReglesGestion from './pages/ReglesGestion'
 import SujetDetail from './pages/SujetDetail'
 import CommunicationsList from './pages/CommunicationsList'
 import CommunicationDetail from './pages/CommunicationDetail'
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="/proprietaires" element={<ProprietairesList />} />
             <Route path="/proprietaires/:id" element={<LotDetail />} />
             <Route path="/parametres" element={<Parametres />} />
+            <Route path="/regles" element={<ReglesGestion />} />
             <Route path="/memoire" element={<SujetList />} />
             <Route path="/memoire/:id" element={<SujetDetail />} />
             {/* Envois aux colotis (056) : la campagne se lit par tous, la liste

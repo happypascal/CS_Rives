@@ -811,6 +811,59 @@ export const MENUS = [
   },
 
   {
+    cle: 'regles',
+    menu: 'Règles de gestion',
+    // ⚠ Ouvert à tous, comme l'entrée de menu (066) : ces règles ont été votées
+    // en assemblée et adressées à tous les colotis. Seule l'ÉCRITURE est
+    // réservée au bureau, et c'est la `noteAcces` qui le dit.
+    visiblePar: TOUS,
+    aQuoi:
+      'Ce que les assemblées ont voté une fois et qui s’applique encore : le constat annuel des haies et sa mise en demeure, le constat d’huissier avant travaux, les intérêts de retard. Ces règles sont dispersées dans les procès-verbaux ; cet écran les rassemble et dit, pour chacune, d’où elle vient et si elle est toujours en vigueur.',
+    noteAcces:
+      'Cet écran est en lecture pour vous : seuls le président et le secrétaire inscrivent ou modifient une règle. C’est voulu — une règle de gestion vient d’un vote d’assemblée, elle ne se rédige pas au fil de l’eau comme une synthèse de la mémoire.',
+    actions: [
+      {
+        titre: 'Retrouver une règle',
+        pourQui: TOUS,
+        resume: 'Ce qui s’applique, à qui, sous quel délai.',
+        etapes: [
+          'Par défaut, l’écran ne montre que les règles « en vigueur ».',
+          'Cherchez par un mot (« haies », « huissier », « recouvrement »), ou filtrez par catégorie.',
+          'Chaque règle dit qui doit agir, sous quel délai, et de quelle assemblée elle vient.',
+          'Quand le procès-verbal est au fonds, la source est un lien : il ouvre l’archive.',
+        ],
+        alerte:
+          'L’application ne calcule aucune échéance et ne déclenche aucune alerte : elle rappelle la règle, elle ne la met pas en œuvre. La périodicité et le délai sont reproduits tels qu’ils figurent au procès-verbal, qui seul fait foi.',
+      },
+      {
+        titre: 'Inscrire une règle',
+        pourQui: ['secretaire'],
+        resume: 'Une obligation votée en assemblée, qui dure.',
+        etapes: [
+          'Cliquez sur « Inscrire une règle ».',
+          'Donnez un titre qui nomme CE QUE LA RÈGLE IMPOSE, jamais la question posée.',
+          'Rédigez l’énoncé tel qu’il s’applique, puis citez l’assemblée et la référence au PV.',
+          'Renseignez qui doit agir et le délai, écrit comme au procès-verbal (« un mois », « sous 90 jours »).',
+        ],
+        alerte:
+          'La source peut être citée en toutes lettres même si l’assemblée ne figure pas dans l’application : beaucoup de ces règles viennent d’assemblées antérieures au registre. On n’invente jamais une AG pour remplir un champ.',
+      },
+      {
+        titre: 'Abroger une règle sans l’effacer',
+        pourQui: ['secretaire'],
+        resume: 'Elle a cessé de s’appliquer, son vote a bien eu lieu.',
+        etapes: [
+          'Ouvrez la règle, « Modifier ».',
+          'Passez l’état en « Abrogée » ou « Suspendue ».',
+          'Indiquez par quoi elle a pris fin — une résolution, des statuts — et à quelle date.',
+        ],
+        alerte:
+          'Préférez toujours l’abrogation à la suppression : une règle supprimée ne laisse aucune trace de son vote, et un lecteur futur ne saura pas qu’elle a existé. L’application refuse d’ailleurs d’abroger sans dire par quoi.',
+      },
+    ],
+  },
+
+  {
     cle: 'parametres',
     menu: 'Paramètres',
     visiblePar: TOUS,

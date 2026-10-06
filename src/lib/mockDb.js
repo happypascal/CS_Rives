@@ -2012,6 +2012,73 @@ export const mockRepo = {
     return clone(a)
   },
 
+  // ---- Règles de gestion permanentes (migration 066) ----
+  // ⚠ Le mock REPRODUIT la garde de rôle pour que la démo montre le même refus,
+  // mais il ne prouve rien : seules les policies ferment (066, `is_admin() or
+  // is_secretaire()`). À éprouver sur staging, jamais ici.
+  async listReglesGestion() {
+    await delay()
+    return clone(load().regles_gestion || [])
+  },
+
+  async getRegleGestion(id) {
+    await delay()
+    return clone((load().regles_gestion || []).find((r) => r.id === id)) || null
+  },
+
+  async createRegleGestion(input) {
+    await delay()
+    const data = load()
+    const user = getSessionUser()
+    if (!(user?.role === 'admin' || user?.membre_role === 'secretaire')) {
+      throw new Error('Seuls le président et le secrétaire tiennent les règles de gestion.')
+    }
+    const r = {
+      id: uid(),
+      documents: [],
+      statut: 'en_vigueur',
+      ...input,
+      cree_par: user?.membre_id || null,
+      created_at: nowISO(),
+      updated_at: nowISO(),
+    }
+    data.regles_gestion = [...(data.regles_gestion || []), r]
+    save(data)
+    return clone(r)
+  },
+
+  async updateRegleGestion(id, patch) {
+    await delay()
+    const data = load()
+    const r = (data.regles_gestion || []).find((x) => x.id === id)
+    if (!r) throw new Error('Règle introuvable')
+    const user = getSessionUser()
+    if (!(user?.role === 'admin' || user?.membre_role === 'secretaire')) {
+      throw new Error('Seuls le président et le secrétaire tiennent les règles de gestion.')
+    }
+    // ⚠ Mêmes champs que le repo Supabase, et pas un de plus. `created_at` et
+    // `cree_par` sont des constats de saisie : ils ne se corrigent pas.
+    const champs = ['titre', 'enonce', 'categorie', 'periodicite', 'delai', 'qui',
+      'source_annee', 'source_reference', 'pv_archive_id', 'ag_id',
+      'statut', 'fin_le', 'fin_reference', 'commentaire', 'documents']
+    for (const [k, v] of Object.entries(patch)) if (champs.includes(k)) r[k] = v
+    r.updated_at = nowISO()
+    save(data)
+    return clone(r)
+  },
+
+  async deleteRegleGestion(id) {
+    await delay()
+    const data = load()
+    const user = getSessionUser()
+    if (!(user?.role === 'admin' || user?.membre_role === 'secretaire')) {
+      throw new Error('Seuls le président et le secrétaire tiennent les règles de gestion.')
+    }
+    data.regles_gestion = (data.regles_gestion || []).filter((r) => r.id !== id)
+    save(data)
+    return { ok: true }
+  },
+
   // ---- Audit ----
   async listAudit(limit = 100) {
     await delay()

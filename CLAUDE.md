@@ -938,6 +938,59 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - Le mock reproduit la garde de rôle pour que la démo montre le même refus — il ne **prouve** rien,
   seules les policies ferment. À éprouver sur staging.
 
+### Règles de gestion permanentes (migration 066) — ce qui, une fois voté, S'APPLIQUE ENCORE
+> Demande de Pascal (2026-10-06) : « les règles de gestion adoptées en AG qui doivent perdurer dans
+> le temps. Par exemple la visite avec le syndic pour la vérification des haies et la mise en
+> demeure de 1 mois pour tailler, mais il y en a certainement d'autres. »
+
+- ⚠ **NI UNE DÉCISION, NI UN SUJET, NI UNE RÉSOLUTION.** `decisions` est une délibération du conseil
+  qui se clôt ; `sujets` (045) est le fil d'un dossier et son POURQUOI — un dossier se referme ;
+  `resolutions_ag` dit ce qu'une assemblée a voté CE jour-là. Une règle répond à une question
+  qu'aucune des trois ne pose : **est-ce encore en vigueur ?** Une résolution de 2009 reste vraie
+  comme fait voté, et c'est pourquoi elle ne dit pas si elle s'applique toujours ; une règle doit
+  pouvoir être **abrogée** sans que son vote d'origine cesse d'avoir eu lieu.
+- ⚠ **ON NE DÉPLACE RIEN** : la résolution reste dans `pv_archives.resolutions` ou dans
+  `resolutions_ag`, la règle la **CITE**. Même raisonnement que le fonds de PV (057), qui ne crée
+  aucune assemblée fantôme.
+- ⚠ **L'APPLICATION NE CALCULE AUCUNE ÉCHÉANCE, ET N'EN CALCULERA PAS.** Elle ne dira jamais « la
+  visite des haies est due le 12 mai » : personne ne l'a constaté. `periodicite` et `delai` sont des
+  **libellés** qu'un oeil lit, pas une récurrence qu'un planificateur exécute. Les formes réelles le
+  rendent d'ailleurs impossible — « un mois », « sous 90 jours », « à compter du 91e jour après
+  notification », « dès que le retard excède 120 jours après la 1re relance » n'ont aucun point de
+  départ commun. **La règle est rappelée, elle n'est pas armée**, et l'écran le dit en toutes lettres.
+- ⚠ **`delai` EST DU TEXTE, PAS UN NOMBRE DE JOURS** — même raison que `presents_representes` en 062 :
+  structurer obligerait à inventer une unité et un point de départ que le PV ne donne pas.
+- ⚠ **SOURCE CITÉE EN TOUTES LETTRES, LIENS FACULTATIFS** (`source_annee` + `source_reference`,
+  `pv_archive_id` et `ag_id` nullables). Trois raisons rencontrées : la règle de 1991 sur les fossés
+  vient d'une assemblée absente de l'application ; son PV peut n'être pas encore scanné ; et une
+  même obligation est parfois **rappelée par plusieurs assemblées** (les haies en 2012, 2014 et
+  2019) — la citation littérale dit laquelle fait foi, une clé étrangère obligerait à choisir. Même
+  patron que `mandats_cs.ag_id` + `ag_libelle` (051).
+  - ⚠ **UN RAPPEL N'EST PAS UNE ADOPTION** : la source d'une règle est l'acte qui l'**institue**, pas
+    celui qui la répète. Les « Rappel obligation de tailler les haies » renvoient à l'article 15 du
+    cahier des charges de 1955.
+- ⚠ **`statut` EST STOCKÉ, JAMAIS DÉRIVÉ.** Une règle cesse de s'appliquer parce qu'une assemblée l'a
+  décidé, pas parce qu'une date est passée : rien ne permet de le déduire. Contrainte
+  `regles_gestion_fin_motivee` — **une règle qui n'est plus en vigueur DOIT dire par quoi**, sinon le
+  registre afficherait une règle morte sans que personne retrouve l'acte qui l'a tuée.
+- ⚠ **AUCUNE COLONNE « dernière application »** : elle inviterait à cocher une visite qui n'a
+  peut-être pas eu lieu, et le registre affirmerait un constat que personne n'a fait. Un fait daté a
+  déjà son emplacement — la chronologie d'un sujet (045) ou le journal d'un projet (029).
+- **Catégorie et périodicité LIBRES**, sans contrainte de valeur (même choix qu'en 031 et 045) ; les
+  libellés suggérés vivent dans `src/lib/regleLogic.js`, versionnés avec le code.
+- **Lue par TOUS, écrite par le bureau** — régime du fonds de PV (057) : ces règles ont été votées en
+  assemblée et adressées à tous les colotis. **Ce n'est pas le registre des propriétaires.** Entrée
+  de menu **voisine de la Mémoire**, et ce n'est pas un hasard : la mémoire porte le POURQUOI, les
+  règles portent CE QUI S'APPLIQUE ENCORE — deux questions posées sur la même matière, les PV.
+- ⚠ **LE CONTENU N'EST PAS DE MOI** (arbitrage Pascal, 2026-10-06 : « c'est Claude qui trouvera les
+  points à ajouter »). L'écran est livré **vide**. Une recherche mécanique a produit des **pistes**
+  (`export/regles_candidates_2026-10-06.md`, 54 résolutions et 40 entrées, beaucoup de faux
+  positifs : un appel de fonds exigible au 1er juillet porte une échéance sans être une règle), et le
+  format attendu est décrit dans `A_REMPLIR_regles_gestion_2026-10-06.md`.
+- ⚠ **« Conformément au vote en AG » (rés. 28 de 2025) NE NOMME PAS L'ASSEMBLÉE** : la règle des
+  haies est plus ancienne que 2025 et son origine reste à retrouver. Inscrire 2025 comme source
+  serait commode et probablement faux.
+
 ### Envois aux colotis (migration 056) — un HISTORIQUE, pas un outil d'envoi
 > Les messages collectifs partent d'un **AppleScript**, depuis Mail, sur le Mac de Pascal, et son
 > journal est **écrasé à chaque campagne**. Convoquer, relancer, informer sont des actes de gestion :
@@ -1599,7 +1652,7 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 Tables : `membres_cs`, `mandats_cs`, `parametres`, `assemblees_generales`, `resolutions_ag`, `projets`,
 `decisions`, `votes`, `questions_reponses`, `signature_batches`, `decision_status_history`,
 `decisions_historique`, `cron_runs`, `lots`, `proprietaires`, `comptes_ag`, `audit_log`,
-`communications`, `communication_destinataires`, `pv_archives`.
+`communications`, `communication_destinataires`, `pv_archives`, `regles_gestion`.
 
 Helpers (`security definer`, `search_path = public`) :
 - `is_admin()` → email JWT = membre `role='president'` et `actif`
