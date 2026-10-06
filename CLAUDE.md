@@ -990,6 +990,37 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
 - ⚠ **« Conformément au vote en AG » (rés. 28 de 2025) NE NOMME PAS L'ASSEMBLÉE** : la règle des
   haies est plus ancienne que 2025 et son origine reste à retrouver. Inscrire 2025 comme source
   serait commode et probablement faux.
+- **LES 17 RÈGLES, INSCRITES LE 2026-10-06** (`scripts/importer_regles_gestion_2026-10-06.mjs`,
+  brief + `scripts/data/regles_gestion_2026-10-06.json`) : **16 en vigueur, 1 abrogée**.
+  - ⚠ **MES DEUX HYPOTHÈSES DE DÉPART ÉTAIENT FAUSSES**, et Claude les a corrigées sur le texte des
+    PV. « AG 2025, rés. 28 » l'était **deux fois** : l'assemblée s'est tenue le **19 janvier 2026**
+    (l'application la range sous l'exercice 2025, cf. 061) et le point 28 est la **Conclusion**, pas
+    une résolution. Et l'origine de la règle des haies n'est pas là : la mise en demeure suivie de
+    travaux aux frais du défaillant a été votée le **27 juillet 1991 (rés. VIII)**. Le point 28 n'est
+    qu'un rappel. **Chercher par motifs trouve des candidates, jamais une source.**
+  - ⚠ **UN RAPPEL N'EST PAS UNE ADOPTION** — écartés à ce titre : les rappels sur les haies de 1990,
+    1993, 1998, 2001, 2012, 2014, 2019, 2020 et 2021, et l'information du président de 2016.
+    Écartés aussi : les **cotisations annuelles** au fonds de travaux (chacune vaut pour un
+    exercice), la rés. 13 de 2026 (**un article des statuts**, pas une règle de gestion — seule la
+    rés. 14, taux et barème, est inscrite), la rés. 15 (échéance unique du 31/10/2026) et les règles
+    **déjà portées par les statuts** du 15/09/2026, qui ne sont pas dupliquées ici.
+  - ⚠ **L'AG DU 19/01/2026 N'EXISTE PAS DANS `assemblees_generales`** — le brief annonçait un lien
+    vers elle ; elle n'est au registre que comme **archive**. Les cinq règles qui en viennent
+    pointent donc vers l'archive. C'est le brief lui-même qui tranche (« ne créer aucune AG pour
+    remplir un lien »), et le rapport le dit en clair. **Vérifier l'existence d'une cible avant de
+    promettre un lien.**
+  - ⚠ **DEUX LIENS QUAND LES DEUX EXISTENT** (quatre règles du 15/09/2026) : l'écran rend alors
+    celui de l'**AG**, qui porte les résolutions vivantes et leur rattachement budgétaire, l'archive
+    n'en portant que le scan.
+  - ⚠ **`source_date_ag` N'EST PAS STOCKÉ** : la colonne n'existe pas, il ne sert qu'à résoudre les
+    liens. Passé tel quel dans l'insert, PostgREST rejetterait la ligne entière.
+  - **« 30 jours » corrigé en « un mois »** dans l'entrée de mémoire du 19/01/2026, le PV disant
+    « un mois ». ⚠ Ce n'est **pas** une équivalence : les deux ne tombent pas le même jour selon le
+    mois, et devant des travaux d'office aux frais d'un coloti, un jour d'écart est un écart de fond.
+  - ⚠ **La règle de 1968 est la seule abrogée**, par les statuts du 15/09/2026 (art. 8 et 13) — avec
+    sa date et sa référence de fin, comme la contrainte l'exige.
+  - **`export_md.mjs` la rend en vrac** en fin de fichier, sous les tables non mises en forme : le
+    filet a fonctionné, la table neuve n'a pas disparu en silence. La mettre en forme reste à faire.
 
 ### Envois aux colotis (migration 056) — un HISTORIQUE, pas un outil d'envoi
 > Les messages collectifs partent d'un **AppleScript**, depuis Mail, sur le Mac de Pascal, et son

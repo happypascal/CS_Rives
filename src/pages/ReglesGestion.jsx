@@ -307,12 +307,20 @@ function LigneRegle({ r, peutEcrire, onEditer, onSupprimer }) {
           <div>
             <dt className="inline font-medium">Source : </dt>
             <dd className="inline">
-              {/* ⚠ Le lien n'apparaît QUE si l'archive est rattachée : un lien
+              {/* ⚠ Le lien n'apparaît QUE si une pièce est rattachée : un lien
                   mort vers un procès-verbal non scanné ferait croire à une
-                  pièce consultable. */}
-              {r.pv_archive_id
-                ? <Link to={`/ag/archives/${r.pv_archive_id}`} className="underline hover:text-navy-700">{source}</Link>
-                : source}
+                  pièce consultable.
+                  ⚠ L'ASSEMBLÉE PASSE AVANT L'ARCHIVE quand les deux existent
+                  (quatre règles de 2026 sont dans les deux) : la fiche d'AG
+                  porte les résolutions vivantes et leur rattachement
+                  budgétaire, l'archive n'en porte que le scan. ⚠ L'inverse est
+                  vrai pour le 19/01/2026, qui n'existe QUE comme archive : on
+                  ne fabrique pas une AG pour obtenir un lien. */}
+              {r.ag_id
+                ? <Link to={`/ag/${r.ag_id}`} className="underline hover:text-navy-700">{source}</Link>
+                : r.pv_archive_id
+                  ? <Link to={`/ag/archives/${r.pv_archive_id}`} className="underline hover:text-navy-700">{source}</Link>
+                  : source}
             </dd>
           </div>
         )}
