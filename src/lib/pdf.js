@@ -672,3 +672,120 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
 
   doc.save(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
+
+// =============================================================================
+// LE RAPPEL DES RÈGLES DE GESTION (migrations 066 et 067)
+//
+// Demande de Pascal (2026-10-06) : un PDF des règles, « attaché à chaque AG
+// comme rappel ». C'est la pièce qu'un coloti lit avant la séance, et que le
+// syndic peut opposer à qui n'entretient pas sa haie.
+//
+// ⚠ IL NE PORTE QUE LES RÈGLES EN VIGUEUR, et il le DIT en tête avec sa date
+// d'édition. Un rappel qui listerait une règle abrogée ferait exiger ce que
+// l'assemblée a défait — c'est précisément l'inverse du service rendu. Les
+// abrogées restent consultables à l'écran, avec la référence qui les a closes.
+//
+// ⚠ IL NE CALCULE AUCUNE ÉCHÉANCE, comme l'écran : périodicité et délai sont
+// reproduits tels qu'ils figurent au procès-verbal. La mention est imprimée,
+// pas sous-entendue — un document détaché de l'application doit porter seul ses
+// réserves, personne ne reviendra lire l'écran pour les retrouver.
+// =============================================================================
+
+/** Pied de page propre à ce document : celui du registre nommerait les décisions. */
+function paginateRegles(doc) {
+  const total = doc.getNumberOfPages()
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p)
+    font(doc, 'normal', 8, GREY)
+    text(doc, `${ORG.lotissement} — Règles de gestion permanentes`, M, PAGE_H - 8)
+    text(doc, `Page ${p} / ${total}`, PAGE_W - M, PAGE_H - 8, { align: 'right' })
+  }
+}
+
+function genererReglesPDF(regles, opts = {}) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  setupFont(doc)
+
+  // ⚠ Le filtrage est fait ICI et non par l'appelant : chaque appelant qui
+  // l'oublierait produirait un rappel contenant une règle abrogée.
+  const enVigueur = (regles || []).filter((r) => r.statut === 'en_vigueur')
+  const triees = [...enVigueur].sort((a, b) => (a.numero ?? Infinity) - (b.numero ?? Infinity))
+  const leJour = opts.date || new Date().toISOString().slice(0, 10)
+
+  font(doc, 'bold', 14, NAVY)
+  text(doc, 'RÈGLES DE GESTION PERMANENTES', PAGE_W / 2, 18, { align: 'center' })
+  font(doc, 'normal', 9, NAVY)
+  text(doc, `${ORG.name} — ${ORG.lotissement}, ${ORG.commune}`, PAGE_W / 2, 24, { align: 'center' })
+  doc.setDrawColor(...NAVY)
+  doc.setLineWidth(0.4)
+  doc.line(M, 28, PAGE_W - M, 28)
+
+  let y = 34
+  font(doc, 'normal', 9, INK)
+  const chapeau = `Règles votées en assemblée générale et toujours en vigueur au ${formatDate(leJour)}. `
+    + 'Chacune indique qui doit agir, sous quel délai, et de quelle assemblée elle est issue. '
+    + 'Les délais sont reproduits tels qu’ils figurent au procès-verbal, qui seul fait foi.'
+  for (const l of lines(doc, chapeau, CONTENT_W)) { text(doc, l, M, y); y += 4.2 }
+  y += 3
+
+  if (!triees.length) {
+    font(doc, 'normal', 10, GREY)
+    text(doc, 'Aucune règle en vigueur n’est inscrite à ce jour.', M, y)
+    paginateRegles(doc)
+    return doc
+  }
+
+  // Regroupées par catégorie, mais NUMÉROTÉES dans l'ordre absolu : on cite une
+  // règle par son numéro, jamais par sa place dans une rubrique.
+  const paquets = new Map()
+  for (const r of triees) paquets.set(r.categorie || 'Autres', [...(paquets.get(r.categorie || 'Autres') || []), r])
+
+  for (const [categorie, liste] of paquets) {
+    y = ensure(doc, y + 2, 14)
+    y = sectionTitle(doc, categorie.toUpperCase(), y)
+    for (const r of liste) {
+      // Hauteur approchée pour éviter de couper un titre de son énoncé : on
+      // réserve le titre + deux lignes, le reste peut enjamber.
+      y = ensure(doc, y, 16)
+      font(doc, 'bold', 10, NAVY)
+      const tete = `${r.numero ? `R${r.numero}. ` : ''}${r.titre}`
+      for (const l of lines(doc, tete, CONTENT_W)) { text(doc, l, M, y); y += 4.6 }
+
+      font(doc, 'normal', 9, INK)
+      for (const l of lines(doc, r.enonce || '', CONTENT_W)) {
+        y = ensure(doc, y, 5)
+        text(doc, l, M, y)
+        y += 4.2
+      }
+
+      // Les rubriques courtes, sur une ligne repliable.
+      const bouts = []
+      if (r.qui) bouts.push(`Qui : ${r.qui}`)
+      if (r.delai) bouts.push(`Délai : ${r.delai}`)
+      if (r.periodicite) bouts.push(`Périodicité : ${r.periodicite}`)
+      const source = [r.source_annee ? `AG ${r.source_annee}` : null, r.source_reference].filter(Boolean).join(' · ')
+      if (source) bouts.push(`Source : ${source}`)
+      if (bouts.length) {
+        font(doc, 'normal', 8, GREY)
+        for (const l of lines(doc, bouts.join('   ·   '), CONTENT_W)) {
+          y = ensure(doc, y, 5)
+          text(doc, l, M, y)
+          y += 3.8
+        }
+      }
+      y += 3
+    }
+  }
+
+  paginateRegles(doc)
+  return doc
+}
+
+export function downloadReglesPDF(regles, opts) {
+  genererReglesPDF(regles, opts).save(`regles-de-gestion-ASL-Rives-${new Date().toISOString().slice(0, 10)}.pdf`)
+}
+
+/** Le même document en Blob, pour l'attacher à une assemblée. */
+export function reglesPDFBlob(regles, opts) {
+  return genererReglesPDF(regles, opts).output('blob')
+}

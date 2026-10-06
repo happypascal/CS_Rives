@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { repo } from '../lib/api'
+import { reglesPDFBlob } from '../lib/pdf'
 import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Input, Select, Textarea, Modal, Spinner, Badge, eur, num, UploadProgress } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
@@ -247,6 +248,40 @@ export default function AGDetail() {
       setDocUpload(null)
     }
   }
+  // LE RAPPEL DES RÈGLES, JOINT À L'ASSEMBLÉE (066/067, demande de Pascal du
+  // 2026-10-06 : « attaché à chaque AG comme rappel »).
+  //
+  // ⚠ UNE COPIE FIGÉE, PAS UN LIEN VERS L'ÉCRAN. Le PDF est fabriqué au moment
+  // du clic et déposé comme n'importe quelle pièce : la convocation de 2027
+  // devra montrer les règles telles qu'elles étaient en 2027, même si une
+  // assemblée ultérieure en abroge une. Un lien dynamique réécrirait le passé —
+  // c'est le même raisonnement que le `composition_snapshot` d'une décision.
+  //
+  // ⚠ RIEN N'EST AUTOMATIQUE : le bouton est un geste du bureau. Attacher la
+  // pièce tout seul à chaque AG créerait des doublons sur les assemblées déjà
+  // convoquées, et imposerait un fichier à qui n'en veut pas.
+  const joindreRegles = async () => {
+    setDocError('')
+    setDocUpload({ name: 'Rappel des règles de gestion.pdf', value: 0 })
+    try {
+      const regles = await repo.listReglesGestion()
+      const enVigueur = regles.filter((r) => r.statut === 'en_vigueur')
+      // ⚠ On refuse plutôt que de produire un PDF vide : un rappel sans règle se
+      // lirait comme « le lotissement n'en a aucune ».
+      if (!enVigueur.length) throw new Error('aucune règle en vigueur à rappeler')
+      const blob = reglesPDFBlob(regles)
+      const nom = `Rappel des regles de gestion - ${new Date().toISOString().slice(0, 10)}.pdf`
+      const file = new File([blob], nom, { type: 'application/pdf' })
+      const record = await repo.uploadDocument('ag', id, file, (value) => setDocUpload((u) => (u ? { ...u, value } : u)))
+      await repo.updateAG(id, { documents: [...(ag.documents || []), { ...record, categorie: 'autre' }] })
+      await reload()
+    } catch (err) {
+      setDocError(`Rappel des règles impossible à joindre : ${err.message}`)
+    } finally {
+      setDocUpload(null)
+    }
+  }
+
   // « Retirer » ne supprime PAS l'objet du bucket — orphelins assumés, comme
   // pour les décisions : quelques Mo perdus valent mieux qu'un PV introuvable.
   const retirerDoc = async (doc) => {
@@ -449,6 +484,9 @@ export default function AGDetail() {
                 + Ajouter un fichier
                 <input type="file" className="hidden" disabled={Boolean(docUpload)} onChange={ajouterDoc} />
               </label>
+              <Button variant="secondary" disabled={Boolean(docUpload)} onClick={joindreRegles}>
+                + Rappel des règles
+              </Button>
               <p className="text-xs text-slate-400">
                 {Math.round(MAX_DOC_BYTES / 1024 / 1024)} Mo par fichier{BACKEND === 'mock' ? ' en mode démo' : ''}.
               </p>

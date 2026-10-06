@@ -63,13 +63,27 @@ export function valeursConnues(regles = [], champ, suggestions = []) {
   return [...new Set([...suggestions, ...vues])].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
+// ---- Le numéro (migration 067) ----------------------------------------------
+/**
+ * « R4 », ou rien tant que la règle n'en a pas.
+ *
+ * ⚠ LE NUMÉRO DIT L'ORDRE D'INSCRIPTION, JAMAIS L'ORDRE D'ADOPTION. Les huit
+ * premières ont été numérotées par année de vote croissante, mais une règle
+ * ancienne retrouvée demain prendra le numéro SUIVANT : renuméroter rendrait
+ * faux tout ce qui a déjà été cité. ⚠ Un numéro ne se réutilise pas davantage —
+ * une règle abrogée garde le sien (doctrine de la numérotation des décisions).
+ */
+export const numeroRegle = (r) => (r?.numero ? `R${r.numero}` : null)
+
 // ---- Tri --------------------------------------------------------------------
 /**
  * Les règles EN VIGUEUR d'abord — c'est la question que l'écran doit trancher
- * d'un coup d'oeil — puis la plus récente en tête : une règle de 2026 prime
- * presque toujours sur un rappel de 1991, et c'est elle qu'on vient vérifier.
- * ⚠ Le titre départage, pour que l'ordre soit déterministe entre deux règles
- * de la même année et que les deux backends rendent la même liste.
+ * d'un coup d'oeil — puis **par numéro croissant** : depuis la 067, le registre
+ * se lit dans l'ordre de ses numéros, comme tout registre numéroté. Avant, il
+ * se lisait de la plus récente à la plus ancienne ; un numéro affiché qui ne
+ * suivrait pas l'ordre de la liste donnerait à chercher au lieu de guider.
+ * ⚠ Une règle SANS numéro passe en fin de son groupe plutôt qu'en tête : un
+ * `null` traité comme zéro la ferait passer avant la n° 1.
  */
 export function trierRegles(regles = []) {
   const rang = { en_vigueur: 0, suspendue: 1, abrogee: 2 }
@@ -77,9 +91,9 @@ export function trierRegles(regles = []) {
     const ra = rang[a.statut] ?? 3
     const rb = rang[b.statut] ?? 3
     if (ra !== rb) return ra - rb
-    const aa = a.source_annee ?? 0
-    const ab = b.source_annee ?? 0
-    if (aa !== ab) return ab - aa
+    const na = a.numero ?? Infinity
+    const nb = b.numero ?? Infinity
+    if (na !== nb) return na - nb
     return (a.titre || '').localeCompare(b.titre || '', 'fr')
   })
 }
@@ -141,7 +155,7 @@ export function filtrerParTexte(regles = [], requete = '') {
   const q = requete.trim().toLowerCase()
   if (!q) return regles
   return regles.filter((r) =>
-    [r.titre, r.enonce, r.categorie, r.periodicite, r.delai, r.qui, r.source_reference, r.commentaire]
+    [numeroRegle(r), r.titre, r.enonce, r.categorie, r.periodicite, r.delai, r.qui, r.source_reference, r.commentaire]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(q)),
   )

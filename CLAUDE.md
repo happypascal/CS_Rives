@@ -1041,6 +1041,37 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
   - **`export_md.mjs` la rend en vrac** en fin de fichier, sous les tables non mises en forme : le
     filet a fonctionné, la table neuve n'a pas disparu en silence. La mettre en forme reste à faire.
 
+#### Numérotation et rappel en PDF (migration 067, 2026-10-06)
+- ⚠ **LE NUMÉRO DIT L'ORDRE D'INSCRIPTION, JAMAIS L'ORDRE D'ADOPTION.** Les huit premières règles
+  sont numérotées par année de vote croissante (R1 = 1968), si bien que le registre se lit dans
+  l'ordre où l'association s'est donné ses règles — mais une règle ancienne retrouvée demain prendra
+  le numéro **suivant**, pas sa place chronologique. Renuméroter rendrait faux tout ce qui a été
+  cité avant. ⚠ **Un numéro ne se réutilise pas** et **une règle abrogée garde le sien** : doctrine
+  de la numérotation des décisions (034) — devant un registre, un numéro réattribué fait dire à deux
+  textes différents la même chose.
+- ⚠ **ATTRIBUÉ PAR UN TRIGGER, PAS PAR L'ÉCRAN** : un `max + 1` côté client est faux dès que deux
+  personnes écrivent en même temps, et faux aussi quand la liste affichée est filtrée. Le trigger
+  respecte un numéro fourni, ce qui permet de reprendre une numérotation à l'import. **Le mock
+  reproduit le calcul**, sinon la démo afficherait des règles sans numéro là où la prod en montre.
+- **Le tri de l'écran suit désormais les numéros** dans chaque groupe de statut, au lieu du plus
+  récent d'abord : un numéro affiché qui ne suivrait pas l'ordre de la liste donnerait à chercher.
+- **LE RAPPEL EN PDF** (`downloadReglesPDF` / `reglesPDFBlob`), bouton sur l'écran et sur la fiche
+  d'AG (« + Rappel des règles »).
+  - ⚠ **IL NE PORTE QUE LES RÈGLES EN VIGUEUR, et le filtre est DANS le générateur** — pas chez
+    l'appelant, qui finirait par l'oublier. Un rappel listant une règle abrogée ferait exiger ce que
+    l'assemblée a défait. **Vérifié : le PDF est identique à l'octet** avec ou sans une abrogée en
+    entrée, et un jeu ne contenant qu'une abrogée rend le document « aucune règle en vigueur ».
+  - ⚠ **UNE COPIE FIGÉE, PAS UN LIEN** : la pièce jointe à l'AG de 2027 doit montrer les règles de
+    2027 même si une assemblée ultérieure en abroge une. Même raisonnement que le
+    `composition_snapshot` d'une décision. Le document porte sa **date d'édition** en tête.
+  - ⚠ **RIEN N'EST AUTOMATIQUE** : attacher la pièce seul à chaque AG créerait des doublons sur les
+    assemblées déjà convoquées. C'est un geste du bureau.
+  - ⚠ **Le PDF porte ses réserves lui-même** (aucune échéance calculée, le PV fait foi) : détaché de
+    l'application, personne ne reviendra lire l'écran pour les retrouver.
+  - ⚠ **Pied de page propre au document** : celui du module nomme le registre des décisions.
+  - ⚠ Le bouton de téléchargement est **ouvert à tous**, l'attachement au bureau : le rappel est fait
+    pour être diffusé, le réserver n'aurait rien protégé.
+
 ### Envois aux colotis (migration 056) — un HISTORIQUE, pas un outil d'envoi
 > Les messages collectifs partent d'un **AppleScript**, depuis Mail, sur le Mac de Pascal, et son
 > journal est **écrasé à chaque campagne**. Convoquer, relancer, informer sont des actes de gestion :

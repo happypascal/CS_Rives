@@ -828,7 +828,9 @@ export const supabaseRepo = {
   // qu'en prod. `created_at` et `cree_par` n'y figurent pas : ce sont des
   // constats de saisie, ils ne se corrigent pas.
   async updateRegleGestion(id, patch) {
-    const champs = ['titre', 'enonce', 'categorie', 'periodicite', 'delai', 'qui',
+    // ⚠ `numero` est modifiable (067) : il faut pouvoir corriger une reprise de
+    // numérotation. Il n'est PAS proposé au formulaire — le trigger l'attribue.
+    const champs = ['numero', 'titre', 'enonce', 'categorie', 'periodicite', 'delai', 'qui',
       'source_annee', 'source_reference', 'pv_archive_id', 'ag_id',
       'statut', 'fin_le', 'fin_reference', 'commentaire', 'documents']
     const payload = Object.fromEntries(Object.entries(patch).filter(([k]) => champs.includes(k)))

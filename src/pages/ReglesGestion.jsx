@@ -7,9 +7,10 @@ import { Card, Button, Input, Textarea, Select, Badge, Spinner, EmptyState, Moda
 import { useConfirm } from '../components/useConfirm'
 import { useIsMobile } from '../lib/useIsMobile'
 import { formatDate } from '../lib/format'
+import { downloadReglesPDF } from '../lib/pdf'
 import {
   STATUTS, STATUT_LABELS, STATUT_TONES, CATEGORIES, PERIODICITES,
-  valeursConnues, grouperParCategorie, libelleSource, manques, compter, filtrerParTexte,
+  valeursConnues, grouperParCategorie, libelleSource, manques, compter, filtrerParTexte, numeroRegle,
 } from '../lib/regleLogic'
 
 // =============================================================================
@@ -156,9 +157,26 @@ export default function ReglesGestion() {
       <PageHeader
         title="Règles de gestion"
         subtitle="Ce que les assemblées ont voté une fois et qui s’applique encore."
-        actions={peutEcrire && !isMobile ? (
-          <Button onClick={() => setForm({ ...VIDE })}>Inscrire une règle</Button>
-        ) : null}
+        actions={(
+          <div className="flex gap-2">
+            {/* ⚠ OUVERT À TOUS, et pas au seul bureau : le rappel des règles est
+                fait pour être diffusé — c'est la pièce qu'un coloti lit avant
+                l'assemblée. Le réserver à ceux qui peuvent écrire n'aurait
+                protégé rien du tout. Désactivé tant qu'aucune règle n'est en
+                vigueur : un PDF vide se lit comme « il n'y a pas de règles ». */}
+            <Button
+              variant="secondary"
+              onClick={() => downloadReglesPDF(regles)}
+              disabled={!compte.en_vigueur}
+              title={compte.en_vigueur ? undefined : 'Aucune règle en vigueur à rappeler'}
+            >
+              Rappel des règles (PDF)
+            </Button>
+            {peutEcrire && !isMobile && (
+              <Button onClick={() => setForm({ ...VIDE })}>Inscrire une règle</Button>
+            )}
+          </div>
+        )}
       />
 
       {error && <Card className="mb-4 border-red-200 px-5 py-3 text-sm text-red-700">{error}</Card>}
@@ -286,6 +304,13 @@ function LigneRegle({ r, peutEcrire, onEditer, onSupprimer }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            {/* ⚠ LE NUMÉRO AVANT LE TITRE : c'est par lui qu'on cite une règle
+                en séance ou dans un courrier au syndic. En badge, il se
+                confondrait avec le statut ; en tête de titre, il se lit comme
+                un numéro de registre. */}
+            {numeroRegle(r) && (
+              <span className="shrink-0 font-mono text-sm font-semibold text-slate-400">{numeroRegle(r)}</span>
+            )}
             <h3 className="font-medium text-navy-700">{r.titre}</h3>
             <Badge tone={STATUT_TONES[r.statut] || 'gray'}>{STATUT_LABELS[r.statut] || r.statut}</Badge>
             {r.periodicite && <Badge tone="navy">{r.periodicite}</Badge>}

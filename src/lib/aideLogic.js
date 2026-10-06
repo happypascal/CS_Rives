@@ -460,11 +460,24 @@ export const MENUS = [
       'Cet écran est en lecture pour vous : seuls le président et le secrétaire inscrivent ou modifient une règle. C’est voulu — une règle de gestion vient d’un vote d’assemblée, elle ne se rédige pas au fil de l’eau comme une synthèse de la mémoire.',
     actions: [
       {
+        titre: 'Joindre le rappel des règles à une assemblée',
+        pourQui: ['secretaire'],
+        resume: 'Un PDF des règles en vigueur, attaché à l’AG.',
+        etapes: [
+          'Depuis cet écran, « Rappel des règles (PDF) » télécharge le document.',
+          'Pour l’attacher à une assemblée : ouvrez la fiche de l’AG, bloc « Documents », « + Rappel des règles ».',
+          'Le fichier est déposé comme une pièce ordinaire, et reste consultable avec la convocation et le PV.',
+        ],
+        alerte:
+          'Le PDF ne contient que les règles EN VIGUEUR au jour où vous le produisez, et il porte cette date. C’est une copie figée : si une assemblée ultérieure abroge une règle, le document joint à l’AG de cette année-là continue de montrer ce qui s’appliquait alors — c’est voulu.',
+      },
+      {
         titre: 'Retrouver une règle',
         pourQui: TOUS,
         resume: 'Ce qui s’applique, à qui, sous quel délai.',
         etapes: [
-          'Par défaut, l’écran ne montre que les règles « en vigueur ».',
+          'Par défaut, l’écran ne montre que les règles « en vigueur », dans l’ordre de leurs numéros.',
+          'Chaque règle porte un numéro (R1, R2…) : c’est par lui qu’on la cite en séance ou dans un courrier.',
           'Cherchez par un mot (« haies », « huissier », « recouvrement »), ou filtrez par catégorie.',
           'Chaque règle dit qui doit agir, sous quel délai, et de quelle assemblée elle vient.',
           'Quand le procès-verbal est au fonds, la source est un lien : il ouvre l’archive.',

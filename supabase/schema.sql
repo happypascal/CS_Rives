@@ -958,6 +958,11 @@ create unique index if not exists pv_archives_empreinte_idx
 -- elle n'est pas armée.
 create table if not exists regles_gestion (
   id               uuid primary key default gen_random_uuid(),
+  -- ⚠ LE NUMÉRO DIT L'ORDRE D'INSCRIPTION, JAMAIS L'ORDRE D'ADOPTION (067), et
+  -- il ne se réutilise pas : une règle abrogée garde le sien. Doctrine de la
+  -- numérotation des décisions (034) — un numéro réattribué ferait dire à deux
+  -- textes différents la même chose.
+  numero           integer,
   titre            text not null,
   enonce           text not null,
   categorie        text,
@@ -987,6 +992,8 @@ create table if not exists regles_gestion (
     check (statut = 'en_vigueur' or fin_reference is not null)
 );
 
+create unique index if not exists regles_gestion_numero_idx
+  on regles_gestion (numero) where numero is not null;
 create index if not exists regles_gestion_statut_idx on regles_gestion (statut);
 create index if not exists regles_gestion_annee_idx  on regles_gestion (source_annee);
 
@@ -997,6 +1004,23 @@ begin
   return new;
 end;
 $touch_regle$;
+
+-- Attribue le numéro suivant quand il n'est pas fourni (067). Compte sur TOUTES
+-- les lignes, abrogées comprises : un numéro pris reste pris.
+create or replace function regles_gestion_numeroter()
+returns trigger language plpgsql as $num_regle$
+begin
+  if new.numero is null then
+    select coalesce(max(numero), 0) + 1 into new.numero from regles_gestion;
+  end if;
+  return new;
+end;
+$num_regle$;
+
+drop trigger if exists trg_regles_gestion_numeroter on regles_gestion;
+create trigger trg_regles_gestion_numeroter
+  before insert on regles_gestion
+  for each row execute function regles_gestion_numeroter();
 
 drop trigger if exists trg_regles_gestion_touch on regles_gestion;
 create trigger trg_regles_gestion_touch
