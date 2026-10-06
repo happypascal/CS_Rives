@@ -1019,6 +1019,25 @@ l'**email**, qui doit correspondre exactement entre Auth Users et `membres_cs`.
     mois, et devant des travaux d'office aux frais d'un coloti, un jour d'écart est un écart de fond.
   - ⚠ **La règle de 1968 est la seule abrogée**, par les statuts du 15/09/2026 (art. 8 et 13) — avec
     sa date et sa référence de fin, comme la contrainte l'exige.
+  - ⚠ **PUIS CONSOLIDÉES LE MÊME JOUR : 17 → 8** (fichier de données révisé à 10 h 43, **le brief
+    n'ayant PAS bougé** et annonçant toujours 17). Trois règles consolidées absorbent onze lignes :
+    les haies (1991 + 2013 + 2023 + le rappel de 2026), le fonds de travaux (trois lignes d'une même
+    rés. 10) et les prérogatives du conseil (1987 + rés. 12, 24, 25 de janvier + rés. 16 de
+    septembre). Les cinq autres gardent leur titre **et leur texte au caractère près**.
+    - ⚠ **UN GARDE FIGÉ SUR UN COMPTE REFUSE LA RÉVISION.** Le script exigeait 17 règles ; il a donc
+      rejeté le fichier **corrigé** — écueil exactement inverse de celui qu'il visait. Il vérifie
+      désormais que le fichier n'est pas vide, et c'est le **rapport** qui dit combien il en contient.
+    - ⚠ **UN TITRE INCHANGÉ NE GARANTIT PAS UN TEXTE INCHANGÉ.** S'arrêter au titre pour juger de
+      l'idempotence laissait en base un énoncé périmé sans que rien ne le signale. La comparaison
+      porte sur le CONTENU, champ par champ.
+    - ⚠ **`--remplacer` EST EXPLICITE, ET ABSENT PAR DÉFAUT** : effacer une règle en vigueur d'un
+      registre légal ne doit jamais être l'effet de bord d'un import. Sans lui, les lignes en trop
+      sont seulement LISTÉES.
+    - ⚠ **UNE RÈGLE A ÉTÉ PERDUE, SIGNALÉE AVANT ET ASSUMÉE** : « Largeur de l'allée des Précettes
+      maintenue à 3,5 m » (AG 2000, rés. 6) — « 3,5 » ne figure nulle part dans le jeu consolidé.
+      Signalée à Pascal, qui a réaffirmé d'appliquer le fichier. Elle reste dans
+      `backup/regles-gestion-2026-10-06T08-53-08`. **Si elle doit revenir, c'est de là qu'on la
+      reprend.**
   - **`export_md.mjs` la rend en vrac** en fin de fichier, sous les tables non mises en forme : le
     filet a fonctionné, la table neuve n'a pas disparu en silence. La mettre en forme reste à faire.
 
