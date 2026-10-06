@@ -448,6 +448,59 @@ export const MENUS = [
   },
 
   {
+    cle: 'regles',
+    menu: 'Règles de gestion',
+    // ⚠ Ouvert à tous, comme l'entrée de menu (066) : ces règles ont été votées
+    // en assemblée et adressées à tous les colotis. Seule l'ÉCRITURE est
+    // réservée au bureau, et c'est la `noteAcces` qui le dit.
+    visiblePar: TOUS,
+    aQuoi:
+      'Ce que les assemblées ont voté une fois et qui s’applique encore : le constat annuel des haies et sa mise en demeure, le constat d’huissier avant travaux, les intérêts de retard. Ces règles sont dispersées dans les procès-verbaux ; cet écran les rassemble et dit, pour chacune, d’où elle vient et si elle est toujours en vigueur.',
+    noteAcces:
+      'Cet écran est en lecture pour vous : seuls le président et le secrétaire inscrivent ou modifient une règle. C’est voulu — une règle de gestion vient d’un vote d’assemblée, elle ne se rédige pas au fil de l’eau comme une synthèse de la mémoire.',
+    actions: [
+      {
+        titre: 'Retrouver une règle',
+        pourQui: TOUS,
+        resume: 'Ce qui s’applique, à qui, sous quel délai.',
+        etapes: [
+          'Par défaut, l’écran ne montre que les règles « en vigueur ».',
+          'Cherchez par un mot (« haies », « huissier », « recouvrement »), ou filtrez par catégorie.',
+          'Chaque règle dit qui doit agir, sous quel délai, et de quelle assemblée elle vient.',
+          'Quand le procès-verbal est au fonds, la source est un lien : il ouvre l’archive.',
+        ],
+        alerte:
+          'L’application ne calcule aucune échéance et ne déclenche aucune alerte : elle rappelle la règle, elle ne la met pas en œuvre. La périodicité et le délai sont reproduits tels qu’ils figurent au procès-verbal, qui seul fait foi.',
+      },
+      {
+        titre: 'Inscrire une règle',
+        pourQui: ['secretaire'],
+        resume: 'Une obligation votée en assemblée, qui dure.',
+        etapes: [
+          'Cliquez sur « Inscrire une règle ».',
+          'Donnez un titre qui nomme CE QUE LA RÈGLE IMPOSE, jamais la question posée.',
+          'Rédigez l’énoncé tel qu’il s’applique, puis citez l’assemblée et la référence au PV.',
+          'Renseignez qui doit agir et le délai, écrit comme au procès-verbal (« un mois », « sous 90 jours »).',
+        ],
+        alerte:
+          'La source peut être citée en toutes lettres même si l’assemblée ne figure pas dans l’application : beaucoup de ces règles viennent d’assemblées antérieures au registre. On n’invente jamais une AG pour remplir un champ.',
+      },
+      {
+        titre: 'Abroger une règle sans l’effacer',
+        pourQui: ['secretaire'],
+        resume: 'Elle a cessé de s’appliquer, son vote a bien eu lieu.',
+        etapes: [
+          'Ouvrez la règle, « Modifier ».',
+          'Passez l’état en « Abrogée » ou « Suspendue ».',
+          'Indiquez par quoi elle a pris fin — une résolution, des statuts — et à quelle date.',
+        ],
+        alerte:
+          'Préférez toujours l’abrogation à la suppression : une règle supprimée ne laisse aucune trace de son vote, et un lecteur futur ne saura pas qu’elle a existé. L’application refuse d’ailleurs d’abroger sans dire par quoi.',
+      },
+    ],
+  },
+
+  {
     cle: 'budgets',
     menu: 'Budgets',
     visiblePar: TOUS,
@@ -492,6 +545,64 @@ export const MENUS = [
         ],
         alerte:
           'La signature électronique est aujourd’hui une simulation : le module réel n’est pas encore raccordé. Les signatures sur papier restent nécessaires.',
+      },
+    ],
+  },
+
+  {
+    cle: 'envois',
+    menu: 'Envois aux colotis',
+    visiblePar: TOUS,
+    aQuoi: 'Ce qui a été adressé aux propriétaires : le texte exact, la date, et à qui — y compris les campagnes antérieures, retrouvées après coup.',
+    // ⚠ La note d'accès dit les DEUX limites de l'écran, parce que les deux se
+    // prennent pour des pannes : on n'y envoie rien, et la liste nominative
+    // n'est pas ouverte à tous.
+    noteAcces:
+      'Vous pouvez lire toutes les campagnes et leur texte intégral. La liste nominative des destinataires est réservée au président et au secrétaire : ce sont les adresses du registre des propriétaires. Le nombre de destinataires, lui, reste visible.',
+    actions: [
+      {
+        titre: 'Relire un message envoyé aux colotis',
+        pourQui: TOUS,
+        resume: 'Le texte exact qui est parti, français et anglais.',
+        etapes: [
+          'Ouvrez « Envois aux colotis » : les campagnes sont rangées de la plus récente à la plus ancienne.',
+          'Cliquez sur l’objet pour ouvrir la fiche.',
+          'Le message y figure dans sa forme reçue : la version française, puis la version anglaise. Chaque destinataire n’a reçu qu’un seul message, contenant les deux.',
+        ],
+        alerte:
+          'Le texte n’est pas modifiable, par personne. C’est un fait survenu : corriger un message déjà parti réécrirait l’histoire.',
+      },
+      {
+        titre: 'Distinguer une campagne certaine d’une campagne reconstituée',
+        pourQui: TOUS,
+        resume: 'Toutes les campagnes ne se valent pas, et l’écran le dit.',
+        etapes: [
+          'Dans la liste, la colonne « Fiabilité » porte « Journal d’envoi » ou « Reconstituée ».',
+          'Une campagne « Journal d’envoi » est adossée au journal du script : chaque destinataire y est nommé, avec le sort de son message.',
+          'Une campagne « Reconstituée » a été retrouvée après coup — le journal est écrasé à chaque envoi. Sa date et sa liste ont été établies par recoupement, et la fiche dit à partir de quoi.',
+          'Sur une campagne reconstituée, chaque destinataire porte « Supposé envoyé » : il figurait sur la liste, aucun envoi vers lui n’a été constaté.',
+        ],
+        alerte:
+          'Les colonnes « Envoyés » et « Erreurs » affichent un tiret sur une campagne reconstituée, et non zéro : rien n’a été constaté, ce qui n’est pas la même chose qu’un échec.',
+      },
+      {
+        titre: 'Vérifier qui a reçu le message, et qui ne l’a pas reçu',
+        pourQui: ['president', 'secretaire'],
+        resume: 'La liste nominative, avec les échecs d’envoi.',
+        etapes: [
+          'Ouvrez la campagne : les destinataires sont listés dans l’ordre réel de l’envoi.',
+          'Un échec porte le message renvoyé par Mail, tel quel.',
+          'Les adresses signalées « hors registre » ne correspondent à aucun contact officiel du registre des propriétaires : contact périmé, ou destinataire qui n’est pas coloti. Vérifiez la fiche concernée — le prochain envoi manquerait la même personne.',
+        ],
+      },
+      {
+        titre: 'Annoter une campagne',
+        pourQui: ['president', 'secretaire'],
+        resume: 'Le seul champ modifiable de l’écran.',
+        etapes: [
+          'Ouvrez la campagne, saisissez le commentaire, enregistrez.',
+          'Écrivez-y ce qu’il faudra savoir en relisant cet envoi dans deux ans : une relance, une réponse reçue hors application, une erreur constatée après coup.',
+        ],
       },
     ],
   },
@@ -575,64 +686,6 @@ export const MENUS = [
         ],
         alerte:
           'N’enregistrez pas une mutation sans sa date réelle : ce sont les bornes de période qui font la valeur de l’historique. Mieux vaut un registre en retard qu’un registre faux.',
-      },
-    ],
-  },
-
-  {
-    cle: 'envois',
-    menu: 'Envois aux colotis',
-    visiblePar: TOUS,
-    aQuoi: 'Ce qui a été adressé aux propriétaires : le texte exact, la date, et à qui — y compris les campagnes antérieures, retrouvées après coup.',
-    // ⚠ La note d'accès dit les DEUX limites de l'écran, parce que les deux se
-    // prennent pour des pannes : on n'y envoie rien, et la liste nominative
-    // n'est pas ouverte à tous.
-    noteAcces:
-      'Vous pouvez lire toutes les campagnes et leur texte intégral. La liste nominative des destinataires est réservée au président et au secrétaire : ce sont les adresses du registre des propriétaires. Le nombre de destinataires, lui, reste visible.',
-    actions: [
-      {
-        titre: 'Relire un message envoyé aux colotis',
-        pourQui: TOUS,
-        resume: 'Le texte exact qui est parti, français et anglais.',
-        etapes: [
-          'Ouvrez « Envois aux colotis » : les campagnes sont rangées de la plus récente à la plus ancienne.',
-          'Cliquez sur l’objet pour ouvrir la fiche.',
-          'Le message y figure dans sa forme reçue : la version française, puis la version anglaise. Chaque destinataire n’a reçu qu’un seul message, contenant les deux.',
-        ],
-        alerte:
-          'Le texte n’est pas modifiable, par personne. C’est un fait survenu : corriger un message déjà parti réécrirait l’histoire.',
-      },
-      {
-        titre: 'Distinguer une campagne certaine d’une campagne reconstituée',
-        pourQui: TOUS,
-        resume: 'Toutes les campagnes ne se valent pas, et l’écran le dit.',
-        etapes: [
-          'Dans la liste, la colonne « Fiabilité » porte « Journal d’envoi » ou « Reconstituée ».',
-          'Une campagne « Journal d’envoi » est adossée au journal du script : chaque destinataire y est nommé, avec le sort de son message.',
-          'Une campagne « Reconstituée » a été retrouvée après coup — le journal est écrasé à chaque envoi. Sa date et sa liste ont été établies par recoupement, et la fiche dit à partir de quoi.',
-          'Sur une campagne reconstituée, chaque destinataire porte « Supposé envoyé » : il figurait sur la liste, aucun envoi vers lui n’a été constaté.',
-        ],
-        alerte:
-          'Les colonnes « Envoyés » et « Erreurs » affichent un tiret sur une campagne reconstituée, et non zéro : rien n’a été constaté, ce qui n’est pas la même chose qu’un échec.',
-      },
-      {
-        titre: 'Vérifier qui a reçu le message, et qui ne l’a pas reçu',
-        pourQui: ['president', 'secretaire'],
-        resume: 'La liste nominative, avec les échecs d’envoi.',
-        etapes: [
-          'Ouvrez la campagne : les destinataires sont listés dans l’ordre réel de l’envoi.',
-          'Un échec porte le message renvoyé par Mail, tel quel.',
-          'Les adresses signalées « hors registre » ne correspondent à aucun contact officiel du registre des propriétaires : contact périmé, ou destinataire qui n’est pas coloti. Vérifiez la fiche concernée — le prochain envoi manquerait la même personne.',
-        ],
-      },
-      {
-        titre: 'Annoter une campagne',
-        pourQui: ['president', 'secretaire'],
-        resume: 'Le seul champ modifiable de l’écran.',
-        etapes: [
-          'Ouvrez la campagne, saisissez le commentaire, enregistrez.',
-          'Écrivez-y ce qu’il faudra savoir en relisant cet envoi dans deux ans : une relance, une réponse reçue hors application, une erreur constatée après coup.',
-        ],
       },
     ],
   },
@@ -806,59 +859,6 @@ export const MENUS = [
           'Décrivez le fait : une réunion, un courrier, un refus, un devis.',
           'Citez les décisions par leur numéro : le registre en garde le texte exact.',
         ],
-      },
-    ],
-  },
-
-  {
-    cle: 'regles',
-    menu: 'Règles de gestion',
-    // ⚠ Ouvert à tous, comme l'entrée de menu (066) : ces règles ont été votées
-    // en assemblée et adressées à tous les colotis. Seule l'ÉCRITURE est
-    // réservée au bureau, et c'est la `noteAcces` qui le dit.
-    visiblePar: TOUS,
-    aQuoi:
-      'Ce que les assemblées ont voté une fois et qui s’applique encore : le constat annuel des haies et sa mise en demeure, le constat d’huissier avant travaux, les intérêts de retard. Ces règles sont dispersées dans les procès-verbaux ; cet écran les rassemble et dit, pour chacune, d’où elle vient et si elle est toujours en vigueur.',
-    noteAcces:
-      'Cet écran est en lecture pour vous : seuls le président et le secrétaire inscrivent ou modifient une règle. C’est voulu — une règle de gestion vient d’un vote d’assemblée, elle ne se rédige pas au fil de l’eau comme une synthèse de la mémoire.',
-    actions: [
-      {
-        titre: 'Retrouver une règle',
-        pourQui: TOUS,
-        resume: 'Ce qui s’applique, à qui, sous quel délai.',
-        etapes: [
-          'Par défaut, l’écran ne montre que les règles « en vigueur ».',
-          'Cherchez par un mot (« haies », « huissier », « recouvrement »), ou filtrez par catégorie.',
-          'Chaque règle dit qui doit agir, sous quel délai, et de quelle assemblée elle vient.',
-          'Quand le procès-verbal est au fonds, la source est un lien : il ouvre l’archive.',
-        ],
-        alerte:
-          'L’application ne calcule aucune échéance et ne déclenche aucune alerte : elle rappelle la règle, elle ne la met pas en œuvre. La périodicité et le délai sont reproduits tels qu’ils figurent au procès-verbal, qui seul fait foi.',
-      },
-      {
-        titre: 'Inscrire une règle',
-        pourQui: ['secretaire'],
-        resume: 'Une obligation votée en assemblée, qui dure.',
-        etapes: [
-          'Cliquez sur « Inscrire une règle ».',
-          'Donnez un titre qui nomme CE QUE LA RÈGLE IMPOSE, jamais la question posée.',
-          'Rédigez l’énoncé tel qu’il s’applique, puis citez l’assemblée et la référence au PV.',
-          'Renseignez qui doit agir et le délai, écrit comme au procès-verbal (« un mois », « sous 90 jours »).',
-        ],
-        alerte:
-          'La source peut être citée en toutes lettres même si l’assemblée ne figure pas dans l’application : beaucoup de ces règles viennent d’assemblées antérieures au registre. On n’invente jamais une AG pour remplir un champ.',
-      },
-      {
-        titre: 'Abroger une règle sans l’effacer',
-        pourQui: ['secretaire'],
-        resume: 'Elle a cessé de s’appliquer, son vote a bien eu lieu.',
-        etapes: [
-          'Ouvrez la règle, « Modifier ».',
-          'Passez l’état en « Abrogée » ou « Suspendue ».',
-          'Indiquez par quoi elle a pris fin — une résolution, des statuts — et à quelle date.',
-        ],
-        alerte:
-          'Préférez toujours l’abrogation à la suppression : une règle supprimée ne laisse aucune trace de son vote, et un lecteur futur ne saura pas qu’elle a existé. L’application refuse d’ailleurs d’abroger sans dire par quoi.',
       },
     ],
   },

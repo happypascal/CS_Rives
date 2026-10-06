@@ -50,6 +50,12 @@ import process from 'node:process'
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const GO = process.argv.includes('--go')
+// ⚠ `--remplacer` SUPPRIME les règles absentes du fichier. Sans lui, elles sont
+// seulement LISTÉES : effacer une règle de gestion encore en vigueur dans un
+// registre légal ne doit jamais être l'effet de bord d'un import. La
+// consolidation du 6 octobre fond 17 règles en 8 — les 9 qui disparaissent sont
+// reprises dans les consolidées, mais c'est au rapport de le montrer avant.
+const REMPLACER = process.argv.includes('--remplacer')
 const DONNEES = join(RACINE, 'scripts', 'data', 'regles_gestion_2026-10-06.json')
 
 // La correction de mémoire, mot pour mot.
@@ -98,8 +104,14 @@ const supabase = createClient(url, key, { auth: { persistSession: false } })
 // ── Lecture des données ──────────────────────────────────────────────────────
 const brut = JSON.parse(await readFile(DONNEES, 'utf8'))
 const REGLES = Array.isArray(brut) ? brut : (brut.regles || brut.regles_gestion || [])
-if (REGLES.length !== 17) {
-  console.error(`❌ ${REGLES.length} règles lues, 17 attendues. Rien n'est écrit.`)
+// ⚠ LE JEU A ÉTÉ CONSOLIDÉ LE 6 OCTOBRE À 10 H 43 : 17 règles fondues en 8,
+// alors que le brief, lui, n'a pas bougé et en annonce toujours 17. Un garde
+// figé à 17 aurait donc refusé le fichier RÉVISÉ — c'est l'écueil inverse de
+// celui qu'il visait. On vérifie désormais que le fichier n'est pas vide et
+// qu'il porte sa note de provenance, et le rapport dit combien de règles il
+// contient : c'est au lecteur de voir si le compte a changé.
+if (!REGLES.length) {
+  console.error('❌ Aucune règle lue dans le fichier de données. Rien n\'est écrit.')
   process.exit(1)
 }
 
@@ -148,18 +160,30 @@ if (GO) {
   W('')
 }
 
-const { data: existantes } = await supabase.from('regles_gestion').select('id,titre')
+const { data: existantes } = await supabase.from('regles_gestion').select('*')
 const parTitre = new Map((existantes || []).map((r) => [r.titre, r]))
 
 const aEcrire = []
 const dejaLa = []
+const aMettreAJour = []
 const anomalies = []
 const liens = []
 
 for (const r of REGLES) {
   if (!r.titre || !r.enonce) { anomalies.push(`règle sans titre ou sans énoncé : ${JSON.stringify(r).slice(0, 80)}`); continue }
-  // ⚠ L'idempotence porte sur le TITRE (demande du brief).
-  if (parTitre.has(r.titre)) { dejaLa.push(r.titre); continue }
+  // ⚠ L'idempotence porte sur le TITRE (demande du brief) — MAIS un titre
+  // identique ne garantit pas un texte identique. La consolidation du 6 octobre
+  // a réécrit des énoncés sous des titres inchangés : s'arrêter au titre
+  // laisserait en base un texte périmé, sans que rien ne le signale. On compare
+  // donc le CONTENU, et on met à jour ce qui a bougé.
+  const ancienne = parTitre.get(r.titre)
+  if (ancienne) {
+    const champsComparés = COLONNES.filter((c) => c !== 'documents' && c !== 'pv_archive_id' && c !== 'ag_id')
+    const ecarts = champsComparés.filter((c) => (r[c] ?? null) !== (ancienne[c] ?? null) && r[c] !== undefined)
+    if (!ecarts.length) { dejaLa.push(r.titre); continue }
+    aMettreAJour.push({ id: ancienne.id, titre: r.titre, ecarts, payload: Object.fromEntries(ecarts.map((c) => [c, r[c] ?? null])) })
+    continue
+  }
 
   // ⚠ Contrainte `regles_gestion_fin_motivee` : on la contrôle ICI pour que le
   // refus soit lisible, l'erreur de Postgres ne l'étant pas.
@@ -182,6 +206,11 @@ for (const r of REGLES) {
   aEcrire.push(ligne)
 }
 
+// ⚠ CE QUI EST EN BASE ET N'EST PLUS DANS LE FICHIER. On ne le devine pas : on
+// le nomme, et on ne l'efface que si `--remplacer` le demande expressément.
+const titresFichier = new Set(REGLES.map((r) => r.titre))
+const aRetirer = (existantes || []).filter((r) => !titresFichier.has(r.titre))
+
 W('## Les règles')
 W('')
 W('| Source | Titre | État | Lien |')
@@ -201,6 +230,24 @@ if (sansLien.length) {
   W(`⚠ **${sansLien.length} règle(s) sans lien** — la source est citée en toutes lettres, aucune AG n’est fabriquée :`)
   W('')
   for (const l of sansLien) W(`- ${l.date} — ${l.titre}`)
+  W('')
+}
+
+if (aMettreAJour.length) {
+  W(`## ${aMettreAJour.length} règle(s) au titre inchangé, mais au texte RÉVISÉ`)
+  W('')
+  for (const m of aMettreAJour) W(`- **${m.titre.slice(0, 70)}** — champs modifiés : ${m.ecarts.join(', ')}`)
+  W('')
+}
+
+if (aRetirer.length) {
+  W(`## ⚠ ${aRetirer.length} règle(s) en base, absentes du fichier`)
+  W('')
+  W(REMPLACER
+    ? '**`--remplacer` est actif : elles vont être SUPPRIMÉES.**'
+    : '**Elles ne sont PAS supprimées** — relancer avec `--remplacer` pour cela.')
+  W('')
+  for (const r of aRetirer) W(`- [${r.source_annee ?? '—'} · ${r.source_reference ?? '—'}] ${r.titre}`)
   W('')
 }
 
@@ -249,7 +296,7 @@ if (anomalies.length) {
 
 W('---')
 W('')
-W(`**${aEcrire.length} règle(s) à écrire · ${dejaLa.length} déjà en base · ${correction ? 1 : 0} correction de mémoire · ${anomalies.length} anomalie(s).**`)
+W(`**${aEcrire.length} à écrire · ${aMettreAJour.length} à mettre à jour · ${dejaLa.length} inchangées · ${aRetirer.length} ${REMPLACER ? 'à supprimer' : 'en trop (conservées)'} · ${correction ? 1 : 0} correction de mémoire · ${anomalies.length} anomalie(s).**`)
 W('')
 W('⚠ `source_date_ag` **n’est pas stocké** : la table n’a pas de colonne pour lui, il n’a servi qu’à')
 W('retrouver l’archive ou l’assemblée. **Aucune AG n’a été créée.**')
@@ -263,6 +310,16 @@ if (GO) {
     else console.log(`✅ ${aEcrire.length} règle(s) inscrite(s).`)
   } else {
     console.log('Rien à écrire — les règles sont déjà en base.')
+  }
+  for (const m of aMettreAJour) {
+    const { error } = await supabase.from('regles_gestion').update(m.payload).eq('id', m.id)
+    if (error) { console.error(`❌ mise à jour « ${m.titre} » : ${error.message}`); process.exitCode = 1 }
+    else console.log(`✏️  mise à jour · ${m.titre.slice(0, 60)} (${m.ecarts.join(', ')})`)
+  }
+  if (REMPLACER && aRetirer.length) {
+    const { error } = await supabase.from('regles_gestion').delete().in('id', aRetirer.map((r) => r.id))
+    if (error) { console.error(`❌ suppression : ${error.message}`); process.exitCode = 1 }
+    else console.log(`🗑  ${aRetirer.length} règle(s) remplacée(s) par les consolidées.`)
   }
   if (correction) {
     const { error } = await supabase.from('sujet_entrees').update({ contenu: correction.contenu }).eq('id', correction.id)

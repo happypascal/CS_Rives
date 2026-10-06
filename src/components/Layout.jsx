@@ -37,11 +37,31 @@ const SECTIONS = [
     items: [
       { to: '/projets', label: 'Projets' },
       { to: '/ag', label: 'Assemblées Générales' },
+      // ⚠ EN GESTION, PAS EN DONNÉES (Pascal, 2026-10-06). J'avais rangé cet
+      // écran à côté de la mémoire, par parenté de matière : les deux se lisent
+      // dans les PV. C'était le mauvais critère. La barre de gauche sépare ce
+      // qu'on FAIT de ce qu'on CONSULTE, et une règle de gestion commande une
+      // action — convoquer le constat des haies, exiger un constat d'huissier,
+      // consulter le conseil avant un marché. Elle se range donc avec les
+      // projets et les assemblées, juste après celles qui l'ont votée.
+      // ⚠ Lue par TOUS : ces règles ont été votées en assemblée et adressées à
+      // tous les colotis. Seule l'écriture est réservée au bureau (066).
+      { to: '/regles', label: 'Règles de gestion' },
       { to: '/budgets', label: 'Budgets' },
       { to: '/signatures', label: 'Signatures légales', visible: (a) => a.isAdmin || a.isSecretaire },
+      // ⚠ EN GESTION AUSSI (Pascal, 2026-10-06). Convoquer, relancer, informer
+      // sont des ACTES DE GESTION — c'est la phrase même qui ouvre la migration
+      // 056. L'écran n'était rangé en Données que parce qu'il se consulte ;
+      // c'est le mauvais critère, et il séparait l'envoi des assemblées et des
+      // décisions qu'il sert à annoncer.
+      // ⚠ Ouvert à TOUS, contrairement au registre des propriétaires : ce qu'on
+      // y lit est un acte de gestion et le texte d'un message déjà adressé à
+      // cinquante-cinq personnes. Seule la liste nominative des destinataires
+      // est fermée, sur la fiche elle-même.
+      { to: '/envois', label: 'Envois aux colotis' },
       // ⚠ « Messages aux propriétaires » A ÉTÉ RETIRÉ D'ICI (056). C'était une
       // entrée grisée qui annonçait l'envoi groupé à venir. Maintenant qu'il
-      // existe « Envois aux colotis » dans la section Données, deux entrées aux
+      // existe « Envois aux colotis » juste au-dessus, deux entrées aux
       // noms voisins — dont une morte — désorientent au lieu de guider : on ne
       // saurait plus laquelle regarder. L'envoi DEPUIS l'application reste à
       // faire (phase 2), et c'est l'écran des envois qui le dit, à sa place.
@@ -51,20 +71,8 @@ const SECTIONS = [
     titre: 'Données',
     items: [
       { to: '/proprietaires', label: 'Registre des propriétaires', visible: (a) => a.isAdmin || a.isSecretaire },
-      // ⚠ Ouvert à TOUS, contrairement au registre des propriétaires juste
-      // au-dessus : ce qu'on y lit est un acte de gestion et le texte d'un
-      // message déjà adressé à cinquante-cinq personnes. Seule la liste
-      // nominative des destinataires est fermée, sur la fiche elle-même.
-      { to: '/envois', label: 'Envois aux colotis' },
       { to: '/membres', label: 'Membres du CS' },
       { to: '/memoire', label: 'Mémoire de l’ASL' },
-      // ⚠ VOISINE DE LA MÉMOIRE, ET CE N'EST PAS UN HASARD : la mémoire porte
-      // le POURQUOI d'un dossier, les règles portent CE QUI S'APPLIQUE ENCORE.
-      // Deux questions différentes posées sur la même matière — les PV — d'où
-      // deux entrées côte à côte plutôt qu'un onglet de l'une dans l'autre.
-      // ⚠ Lue par TOUS : ces règles ont été votées en assemblée et adressées à
-      // tous les colotis. Seule l'écriture est réservée au bureau (066).
-      { to: '/regles', label: 'Règles de gestion' },
       // ⚠ PAS D'ENTRÉE « Archives des PV » ICI (arbitrage Pascal, 2026-09-25).
       // Elle y a figuré une journée. Le fonds se rejoint par un BOUTON en tête
       // de l'écran Assemblées Générales : on ne cherche pas le PV de 1978 en
