@@ -25,6 +25,36 @@ import { useAuth } from '../lib/AuthContext'
 // une archive qui montre seulement ce qu'elle contient laisse croire qu'elle est
 // complète. C'est cette liste qui dit ce qu'il reste à chercher dans le carton.
 
+// LES TROIS ÉTATS D'UNE CASE, DÉFINIS UNE SEULE FOIS — la frise et sa légende
+// lisent le même objet. Écrites deux fois, les couleurs finissent par diverger,
+// et une légende qui annonce une couleur que la frise n'emploie plus est pire
+// qu'une absence de légende : elle se lit sans être vérifiée.
+// ⚠ LE LIBELLÉ DE L'AMBRE DIT QUE L'ANNÉE MANQUE QUAND MÊME. C'est toute sa
+// raison d'être : 1988 porte sa convocation, 1963 un relevé de décisions, 1982
+// un compte rendu de commission — aucun n'est le procès-verbal, et ces années
+// restent dans la liste de ce qu'il faut retrouver. Un libellé qui dirait
+// seulement « autre document » laisserait croire l'année couverte.
+const ETATS_FRISE = {
+  pv: { classe: 'bg-navy-600', libelle: 'procès-verbal au fonds' },
+  autre: { classe: 'bg-amber-200', libelle: 'un autre document, mais le procès-verbal manque' },
+  rien: { classe: 'bg-slate-200', libelle: 'rien pour cette année' },
+}
+
+/** La légende des trois couleurs, sous la frise. */
+function LegendeFrise() {
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+      <span>Une case par année, de {PREMIERE_ANNEE} à aujourd’hui.</span>
+      {Object.entries(ETATS_FRISE).map(([clef, { classe, libelle }]) => (
+        <span key={clef} className="flex items-center gap-1.5">
+          <span className={`h-3 w-2 shrink-0 rounded-[2px] ${classe}`} />
+          {libelle}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 /** La frise 1955 → aujourd'hui : une case par année, pleine ou vide. */
 function Frise({ archives }) {
   const cetteAnnee = new Date().getFullYear()
@@ -66,7 +96,7 @@ function Frise({ archives }) {
         return (
           <span key={a} title={titre} className="flex w-2.5 flex-col items-center">
             <span
-              className={`h-4 w-2.5 rounded-[2px] ${n ? 'bg-navy-600' : autres ? 'bg-amber-200' : 'bg-slate-200'}`}
+              className={`h-4 w-2.5 rounded-[2px] ${(n ? ETATS_FRISE.pv : autres ? ETATS_FRISE.autre : ETATS_FRISE.rien).classe}`}
             />
             {/* L'ÉCHELLE — une année tous les cinq ans (Pascal, 2026-10-06).
                 ⚠ LE REPÈRE EST DANS LA COLONNE DE SON ANNÉE, pas sur une ligne
@@ -283,7 +313,7 @@ export default function PVArchivesList() {
           )}
         </div>
         <div className="mt-3"><Frise archives={archives} /></div>
-        <p className="mt-1 text-xs text-slate-400">Une case par année, de {PREMIERE_ANNEE} à aujourd’hui. Les cases claires n’ont aucun procès-verbal.</p>
+        <LegendeFrise />
         {voirTrous && (
           <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
             <p className="text-xs font-medium text-amber-900">Années sans aucun procès-verbal — à chercher :</p>
