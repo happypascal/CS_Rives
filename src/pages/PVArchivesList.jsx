@@ -64,11 +64,36 @@ function Frise({ archives }) {
           ? `${a} — ${n} procès-verbal${n > 1 ? 'aux' : ''}`
           : `${a} — aucun procès-verbal${autres ? ` (le fonds détient : ${autres.join(', ')})` : ''}`
         return (
-          <span
-            key={a}
-            title={titre}
-            className={`h-4 w-2.5 rounded-[2px] ${n ? 'bg-navy-600' : autres ? 'bg-amber-200' : 'bg-slate-200'}`}
-          />
+          <span key={a} title={titre} className="flex w-2.5 flex-col items-center">
+            <span
+              className={`h-4 w-2.5 rounded-[2px] ${n ? 'bg-navy-600' : autres ? 'bg-amber-200' : 'bg-slate-200'}`}
+            />
+            {/* L'ÉCHELLE — une année tous les cinq ans (Pascal, 2026-10-06).
+                ⚠ LE REPÈRE EST DANS LA COLONNE DE SON ANNÉE, pas sur une ligne
+                d'axe en dessous : la frise est en `flex-wrap`, et une rangée de
+                libellés posée sous la bande se décalerait d'un cran à chaque
+                retour à la ligne — c'est-à-dire exactement sur mobile, où elle
+                passe sur trois rangées. Porté par la case, le repère la suit où
+                qu'elle tombe.
+                ⚠ LA BANDE A UNE HAUTEUR FIXE sur TOUTES les colonnes, même sans
+                libellé : laissée libre, une rangée sans multiple de cinq serait
+                plus courte que les autres et la frise aurait l'air cassée.
+                ⚠ ÉCRIT EN VERTICAL (`writing-mode`) parce qu'une colonne mesure
+                10 px : « 1955 » à l'horizontale couvrirait quatre ans de frise
+                et ferait lire le repère à côté de sa case.
+                ⚠ `h-8` est MESURÉ, pas estimé : en vertical, quatre chiffres de
+                10 px occupent 23,8 px (la somme des chasses, pas la taille de
+                police), plus 4 px de trait. Un premier jet à `h-11` laissait
+                20 px de vide sous la frise. */}
+            <span className="flex h-8 flex-col items-center">
+              {a % 5 === 0 && (
+                <>
+                  <span className="h-1 w-px bg-slate-300" />
+                  <span className="text-[10px] leading-none text-slate-400 [writing-mode:vertical-rl]">{a}</span>
+                </>
+              )}
+            </span>
+          </span>
         )
       })}
     </div>
