@@ -2005,6 +2005,17 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
       pour l'appliquer si c'est la décision — **explicite, jamais par défaut**.
     - Si le besoin revient, la réponse est une **table de liaison** (ou `sujets_secondaires uuid[]`)
       : elle touche la chronologie, les compteurs et l'écran — une migration, pas un import.
+    - ⚠ **LES 30 KM/H NE SONT PAS UNE RÈGLE DE GESTION, ET NE DOIVENT PAS Y ÊTRE INSCRITS**
+      (Pascal, 2026-10-14). Ils sont appliqués depuis 1963 et rappelés en 2014, 2016 et 2017, mais
+      **aucune résolution ne les institue** : les porter dans `regles_gestion` ferait affirmer au
+      registre un vote qui n'a pas eu lieu. **Un vote formel est prévu en 2027** ; la règle entrera
+      à ce moment-là, ou plus tôt si un procès-verbal de 1963 portant un vote réapparaît.
+      - ⚠ **LE DOCUMENT DE 1963 EST DÉJÀ AU FONDS** — ce n'est pas une pièce à retrouver. C'est un
+        `releve_de_decisions` (« ni président, ni présents, ni votes », 2 pages, qualité bonne) :
+        par nature il ne porte **aucun vote**. Ce qui manquerait, c'est le procès-verbal de la même
+        séance — s'il a jamais existé. Ne pas confondre les deux en relisant cette ligne.
+      - Même esprit que les rappels écartés du jeu de règles : **un rappel n'est pas une adoption**,
+        et un usage constant n'est pas davantage un vote.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
