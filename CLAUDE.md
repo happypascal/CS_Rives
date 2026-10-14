@@ -2016,6 +2016,24 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
         séance — s'il a jamais existé. Ne pas confondre les deux en relisant cette ligne.
       - Même esprit que les rappels écartés du jeu de règles : **un rappel n'est pas une adoption**,
         et un usage constant n'est pas davantage un vote.
+  - **LE RÉSULTAT DE LA 2e CONSULTATION, POINT PAR POINT** (2026-10-14,
+    `scripts/corriger_consultation_2025_2026-10-14.mjs`). L'entrée du 17/04/2025 donnait une
+    **fourchette** (« 72,6 à 78,9 % des superficies ») ; Claude l'a recalculée sur l'export du
+    formulaire. ⚠ **La borne basse était fausse** : 72,6 % comptait comme favorable un commentaire
+    qui n'en était pas un — **le point 3 ne recueille que 70,3 %** et 37 avis favorables. Une
+    fourchette cache ce qu'un résultat point par point montre.
+    - ⚠ **LES SAUTS DE LIGNE DOIVENT SURVIVRE** : `sujet_entrees.contenu` est du HTML, un texte à
+      sauts de ligne s'y écrase en un bloc — et c'étaient précisément les **9 points sur 9 lignes**
+      qu'on venait chercher. Lignes vides en `<p>`, sauts simples en `<br>`, tout échappé.
+    - ⚠ **`sujet_entrees` N'A PAS D'HISTORIQUE** : la 065 n'a posé `historique` que sur `sujets`. La
+      version précédente de l'entrée est donc rangée dans l'historique du **sujet parent**, en la
+      NOMMANT (`entree: {id, date, titre}`) pour qu'on ne la prenne pas pour une ancienne synthèse.
+      ⚠ Vérifié avant d'écrire : `sujets.historique` **n'est lu par aucun écran**, l'y ajouter ne
+      change rien à la fiche. Un historique propre aux entrées serait une migration.
+    - **La pièce jointe était déjà là** — Pascal l'avait versée à la main. Le script compare sur le
+      **nom** et non sur le chemin (qui porte un uuid neuf à chaque envoi, et rejoindrait donc le
+      fichier à chaque exécution) ; identité confirmée à l'octet, 14 441, objet présent au bucket.
+    - La synthèse du sujet **ne cite pas** « 72,6 » : rien à y reprendre, et rien n'y a été touché.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu

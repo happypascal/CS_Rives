@@ -1,0 +1,26 @@
+{
+  "version": "2026-10-14",
+  "auteur": "Claude (Cowork), à la demande de Pascal Favre",
+  "regles": [
+    "Remplacer seulement le champ contenu de l'entrée désignée ; conserver auteur, date, pièces jointes.",
+    "Ne pas reformuler le texte fourni.",
+    "Conserver l'ancien texte dans l'historique (migration 065)."
+  ],
+  "corrections_entrees": [
+    {
+      "sujet": "Statut juridique du lotissement",
+      "date": "17/04/2025",
+      "titre_actuel": "2ème consultation sur 9 points de modification du cahier des charges",
+      "champ": "contenu",
+      "ancien": "",
+      "nouveau": "La consultation a été clôturée le 17 avril 2025. Participation : 42 colotis sur 50 et 84 857 m² sur 104 646, soit 84,0 % et 81,1 %.\n\nRésultats point par point. « Pour » = « Je suis d'accord », y compris un accord assorti d'une réserve. Pourcentages calculés sur les 50 colotis et les 104 646 m².\n1) Indivision : pour 38 (76 % ; 76 712 m², 73,3 %) ; contre 1 ; abstention 1 ; 2 réponses sans position.\n2) Définition des biens communs : pour 38 (76 % ; 76 425 m², 73,0 %) ; contre 0 ; abstention 0 ; 4 réponses sans position.\n3) Répartition des charges et des votes : pour 37 (74 % ; 73 593 m², 70,3 %) ; contre 2 ; abstention 1 ; 2 réponses sans position.\n4) Servitude perpétuelle : pour 40 (80 % ; 81 081 m², 77,5 %) ; contre 1 ; 1 réponse sans position.\n5) Règles de vote : pour 39, dont 1 avec réserve (78 % ; 78 737 m², 75,2 %) ; 3 réponses sans position.\n6) Rôle du conseil syndical et du syndic : pour 42, dont 1 avec réserve (84 % ; 84 857 m², 81,1 %).\n7) Organisation des assemblées générales : pour 40 (80 % ; 80 187 m², 76,6 %) ; 2 réponses sans position.\n8) Impact de la modification : pour 39, dont 1 avec réserve (78 % ; 77 677 m², 74,2 %) ; contre 2 ; abstention 1.\n9) Absence d'effet suspensif en cas de recours : pour 41 (82 % ; 82 531 m², 78,9 %) ; contre 1.\n\nContre et abstentions : SCI Violette contre les points 1, 3, 4, 8 et 9 ; Mme Deschamps-Jaquier contre le point 3 ; M. Vidal contre le point 8 ; M. Mey s'abstient sur les points 1, 3 et 8.\n\nCommentaires et réserves : point 1, Mme Liani (renvoi à un message WhatsApp) et Mme Deschamps-Jaquier (rester à 1/51e) ; point 2, SCI Violette (pourquoi l'accès à la plage ne serait plus commun), Mme Hartwig (frais des portails et aménagements des allées à la charge des seuls colotis de Rives et des Précettes), Mme Deschamps-Jaquier (d'accord si les charges des allées sont réduites pour la zone C, 30 % à leur charge) et Mme Janvier-Pargoux (exclure le point 3 pour le bord du lac, préciser les futurs biens communs) ; point 3, Mme Janvier-Pargoux (définir les « travaux spécifiques ») et M. Vidal (charges au prorata des surfaces, travaux à parts égales) ; point 4, Mme Liani (WhatsApp) ; point 5, SCI Violette (deux règles de majorité au lieu de trois), Mme Liani (WhatsApp), Mme Janvier-Pargoux (définir une « structure importante ») et Mme Deschamps-Jaquier (d'accord sur le principe si la répartition se fait à la surface) ; point 6, SCI Violette (d'accord sauf le délai de 30 jours) ; point 7, SCI Violette (vérifier les délais) et Mme Janvier-Pargoux (convocation par lettre recommandée électronique) ; point 8, Mme Janvier-Pargoux (d'accord, question sur les impayés).\n\nLe chiffre de 72,6 % donné auparavant comme minimum comptait comme favorable le commentaire de Mme Janvier-Pargoux sur le point 3 ; à la lettre, le point 3 recueille 37 avis favorables et 70,3 % des superficies. Source : export du formulaire de consultation, fichier « Modification_du_cahier_des_char2026-10-14_08_30_19.xlsx » (4_ASL/0-Modification du CdC).",
+      "motif": "Pascal : le résultat doit être donné point par point ; la fourchette « 72,6 à 78,9 % » était inexacte pour le point 3."
+    }
+  ],
+  "piece_jointe": {
+    "sujet": "Statut juridique du lotissement",
+    "date": "17/04/2025",
+    "fichier": "4_ASL/0-Modification du CdC/Modification_du_cahier_des_char2026-10-14_08_30_19.xlsx",
+    "libelle": "Résultats de la 2e consultation, réponses point par point"
+  }
+}
