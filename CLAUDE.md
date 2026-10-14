@@ -1996,6 +1996,10 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
     - **Appliqué : tout le reste** (sujet, 11 entrées, déplacement de 1974), et 1968 **laissée où
       elle est**, signalée au rapport. Faire le reste et nommer le point bloquant vaut mieux que
       tout suspendre à un arbitrage.
+    - ✅ **ARBITRÉ PAR PASCAL (2026-10-14) : l'entrée de 1968 RESTE dans « Portails ».** La question
+      est close, ce n'est plus un manque : « Circulation » compte **12 entrées** et non 13, et le
+      brief est sur ce point caduc. ⚠ **Ne pas la dupliquer ni la déplacer** en relisant le brief.
+      Le lien entre les deux sujets se fait par le texte, comme partout ailleurs dans la mémoire.
     - ⚠ **DUPLIQUER EST LE MODE DE RUINE QUE LA 045 ÉVITE** : deux lignes divergent dès la première
       correction, exactement ce que l'unicité du titre de sujet interdit. `--dupliquer-1968` existe
       pour l'appliquer si c'est la décision — **explicite, jamais par défaut**.
