@@ -1,0 +1,36 @@
+{
+  "version": "2026-10-14",
+  "auteur": "Claude (Cowork), à la demande de Pascal Favre",
+  "regles": [
+    "Ne rien supprimer : les deux entrées existantes (1968, 1974) sont déplacées, pas recréées.",
+    "Ne pas reformuler les textes fournis.",
+    "pv_archives et resume_resolutions ne sont pas touchés."
+  ],
+  "nouveau_sujet": {
+    "sujet": "Circulation, vitesse et stationnement",
+    "categorie": "Équipements",
+    "resume": "Vitesse, ralentisseurs, signalisation et stationnement dans les allées du lotissement. Les 30 km/h sont appliqués depuis 1963 mais n'ont jamais été votés ; les ralentisseurs ont été refusés en 1993.",
+    "synthese": [
+      {"titre": "Ce dont il s'agit", "texte": "Les allées de Rives et des Précettes sont des voies privées, réservées aux propriétaires dès 1963. La vitesse, la signalisation et le stationnement y relèvent du lotissement, la police municipale n'intervenant qu'à sa demande (2005, 2016)."},
+      {"titre": "Historique", "texte": "Le relevé de décisions de 1963 limite la vitesse à 30 km/h, sans vote formel. En 1974, des panneaux sens interdit et 30 km/h sont posés aux deux entrées, avec un STOP aux sorties. Un ralentisseur sur l'allée des Précettes est évoqué en 1990 ; trois ralentisseurs supplémentaires (22 500 F) sont adoptés en 1992 par 16 voix sur 50, mais ne sont pas posés, la majorité des deux tiers de l'article 26 n'étant pas atteinte, et sont refusés en 1993. En 2005, l'assemblée ouvre les voies à la police et à la gendarmerie pour verbaliser le stationnement sauvage. Les assemblées de 2014 (vitesse « raisonnée »), 2016 (marquage « ZONE 30 » aux deux entrées) et 2017 rappellent la règle, sans vote. En 2022, un STOP est posé au débouché de l'allée des Précettes sur la route de Messery, à la demande du maire."},
+      {"titre": "La règle aujourd'hui", "texte": "Aucune limitation de vitesse n'a jamais été votée par l'assemblée : les 30 km/h reposent sur une pratique constante depuis 1963, signalée aux entrées. Pour en faire une règle de gestion, il faudrait une résolution, par exemple à l'AG de 2027 : « vitesse limitée à 30 km/h dans le lotissement ; chaque coloti en informe ses invités et les entreprises qu'il fait intervenir »."}
+    ],
+    "entrees_a_ajouter": [
+      {"date": "29/06/1963", "titre": "Vitesse limitée à 30 km/h, route réservée aux propriétaires", "texte": "Relevé de décisions : entretien de la route et curage du fossé ; vitesse limitée à 30 km/h ; route réservée aux propriétaires, panneaux « voie privée ». Décision sans vote formel.", "source": "Relevé de décisions relu sur l'image le 5 octobre 2026.", "resultat": "Sans vote formel", "archive": true},
+      {"date": "01/07/1989", "titre": "Aménagement contre le stationnement (demande de M. Liani)", "texte": "Renvoyé à l'assemblée suivante.", "source": "Procès-verbal de l'assemblée générale ordinaire 1989.", "resultat": "Reportée", "archive": true},
+      {"date": "21/07/1990", "titre": "Ralentisseur allée des Précettes à examiner", "texte": "À examiner : miroir à la sortie et ralentisseur au milieu de l'allée des Précettes. Sans vote.", "source": "Procès-verbal de l'assemblée générale ordinaire 1990.", "resultat": "Sans vote formel", "archive": true},
+      {"date": "25/07/1992", "titre": "Trois ralentisseurs supplémentaires (22 500 F), non posés", "texte": "Adoptés par 16 voix sur 50 (11 contre, 1 abstention), mais non exécutés : la majorité des deux tiers de l'article 26 n'était pas atteinte.", "source": "Procès-verbal de l'assemblée générale ordinaire 1992, résolution VII.", "resultat": "Adoptée (non exécutée)", "archive": true},
+      {"date": "24/07/1993", "titre": "Ralentisseurs refusés", "texte": "Les ralentisseurs (22 500 F) sont remis au vote à la majorité des deux tiers de l'article 26 (34/51) et refusés ; une douzaine d'opposants, non chiffrés.", "source": "Procès-verbal de l'assemblée générale ordinaire 1993, résolution VI.", "resultat": "Rejetée", "archive": true},
+      {"date": "18/06/2005", "titre": "Accès de la police aux voies pour verbaliser le stationnement", "texte": "Accès permanent de la police et de la gendarmerie aux voies du lotissement, pour que la police municipale puisse verbaliser le stationnement sauvage. Adoptée à l'unanimité.", "source": "Procès-verbal de l'assemblée générale ordinaire 2005, résolution 7.", "resultat": "Adoptée", "archive": true},
+      {"date": "03/07/2010", "titre": "Stationnement sauvage à l'entrée côté village", "texte": "Le syndic interviendra auprès de la commune. Information.", "source": "Procès-verbal de l'assemblée générale ordinaire 2010, résolution 11.", "resultat": "Information", "archive": true},
+      {"date": "28/06/2014", "titre": "Vitesse « raisonnée » : rappel", "texte": "« Pour des raisons de sécurité, il est rappelé que la vitesse de circulation à l'intérieur du lotissement doit être raisonnée. Chaque copropriétaire devra indiquer cette règle à ses invités et aux corporations de métier qu'il fait intervenir. » Sans vote.", "source": "Procès-verbal de l'assemblée générale ordinaire 2014, point 14.", "resultat": "Sans vote formel", "archive": true},
+      {"date": "03/09/2016", "titre": "Marquage « ZONE 30 » aux deux entrées ; verbalisation du stationnement", "texte": "Point 13 : « Sur les 2 entrées, une écriture au sol « ZONE 30 » sera réalisée. » Point 12 : à la demande des colotis, la police municipale pourra verbaliser les automobilistes mal stationnés. Sans vote.", "source": "Procès-verbal de l'assemblée générale ordinaire 2016, points 12 et 13.", "resultat": "Sans vote formel", "archive": true},
+      {"date": "18/09/2017", "titre": "Rappel du respect de la vitesse", "texte": "Questions diverses : rappeler le respect de la vitesse au sein du lotissement. Sans vote.", "source": "Procès-verbal de l'assemblée générale ordinaire 2017, questions diverses.", "resultat": "Sans vote formel", "archive": true},
+      {"date": "19/11/2022", "titre": "STOP au débouché de l'allée des Précettes", "texte": "Panneau STOP et ligne d'arrêt au débouché de l'allée des Précettes sur la route de Messery, à la demande du maire (600 € TTC, charges courantes). Adoptée par 2 700 voix contre 200.", "source": "Procès-verbal de l'assemblée générale ordinaire 2022, résolutions 13.1 à 13.4.", "resultat": "Adoptée", "archive": true}
+    ],
+    "entrees_a_deplacer": [
+      {"depuis": "Portails et fermeture du lotissement", "date": "03/08/1968", "titre_actuel": "Panneaux « Propriété privée » aux deux entrées", "action": "copier_le_rattachement", "motif": "L'entrée concerne aussi la fermeture : la rattacher aux deux sujets."},
+      {"depuis": "Portails et fermeture du lotissement", "date": "31/08/1974", "titre_actuel": "Sens interdit et 30 km/h aux entrées", "action": "deplacer", "motif": "L'entrée concerne la circulation, pas les portails."}
+    ]
+  }
+}

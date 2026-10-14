@@ -1984,6 +1984,23 @@ fichier. **Reproduire cette densité** : ici un commentaire qui dit pourquoi une
       l'id du SUJET** — convention 046, le sujet existe au moment de l'envoi, l'entrée pas encore.
     - ⚠ **L'objet est retiré du bucket si l'insertion échoue** : une pièce téléversée que rien ne
       cite est invisible, et rien ne la signale (leçon du 2026-09-29).
+  - **« CIRCULATION, VITESSE ET STATIONNEMENT »** (2026-10-14,
+    `scripts/importer_memoire_circulation_2026-10-14.mjs`). Pascal cherchait la règle des 30 km/h :
+    **elle n'a jamais été votée** — appliquée depuis 1963, les ralentisseurs refusés en 1993 — et la
+    mémoire n'en gardait que deux traces, rangées sous « Portails ». **15 sujets, 311 entrées.**
+  - ⚠ **UNE ENTRÉE N'APPARTIENT QU'À UN SEUL SUJET** — `sujet_entrees.sujet_id` est unique et
+    `not null`, il n'existe aucune table de liaison. Le brief du 14 octobre demandait de rattacher
+    l'entrée de 1968 **aux deux** sujets (circulation ET fermeture) : **impossible sans migration**.
+    Ses propres comptes le disaient d'ailleurs sans le voir — 13 entrées dans le nouveau sujet,
+    1968 conservée dans « Portails », et un total n'augmentant que de 11 : dupliquer ferait +12.
+    - **Appliqué : tout le reste** (sujet, 11 entrées, déplacement de 1974), et 1968 **laissée où
+      elle est**, signalée au rapport. Faire le reste et nommer le point bloquant vaut mieux que
+      tout suspendre à un arbitrage.
+    - ⚠ **DUPLIQUER EST LE MODE DE RUINE QUE LA 045 ÉVITE** : deux lignes divergent dès la première
+      correction, exactement ce que l'unicité du titre de sujet interdit. `--dupliquer-1968` existe
+      pour l'appliquer si c'est la décision — **explicite, jamais par défaut**.
+    - Si le besoin revient, la réponse est une **table de liaison** (ou `sujets_secondaires uuid[]`)
+      : elle touche la chronologie, les compteurs et l'écran — une migration, pas un import.
   - ⚠ **Limite assumée, v1** : aucun lien formel vers les décisions et les projets. On cite les
     numéros dans le texte. Une table de liaison s'ajoutera si l'usage la réclame.
 - **MANUEL organisé par ENTRÉE DE MENU** (`src/lib/aideLogic.js` + `pages/Aide.jsx`), contenu
