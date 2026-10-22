@@ -78,14 +78,94 @@ export function apportDe(proprietaire, source) {
   return SOURCES[source](proprietaire).filter((d) => d.email || d.telephone)
 }
 
-/** Les adresses à mettre en destinataires d'un envoi, dédoublonnées. */
+// ============================================================================
+// LE POINT DE LECTURE UNIQUE — titulaires (068) si la période en a, 044 sinon
+//
+// ⚠ BASCULE PAR PÉRIODE, PAS PAR DRAPEAU GLOBAL. Une période qui porte des
+// titulaires est décrite par eux ; les autres gardent les colonnes de 044.
+// Un drapeau global aurait obligé à tout migrer d'un coup, et une reprise
+// partielle aurait rendu la moitié des lots muets.
+//
+// ⚠ ET IL N'Y A QU'UN SEUL ENDROIT OÙ CETTE RÈGLE VIT. Sept lecteurs en
+// dépendent — la liste du registre et son tri par e-mail, la fiche du lot, le
+// PDF du notaire, le tableur du notaire, le rapprochement des envois, plus les
+// deux réimplémentations de `export_md.mjs` et de
+// `REQUETE_export_destinataires.sql`. Dupliquer la bascule, c'est accepter
+// qu'un écran convoque quelqu'un qu'un autre ne convoque plus.
+//
+// ⚠ Le repo DOIT attacher `proprietaire.titulaires` (listLots et getLot le
+// font). Sans eux, la fonction retombe sur 044 — ce qui est le comportement
+// juste pour une période non reprise, mais serait un silence trompeur si le
+// repo oubliait la jointure. D'où `aDesTitulaires()`, que les écrans affichent.
+// ============================================================================
+
+/** La période est-elle décrite par des titulaires ? */
+export function aDesTitulaires(proprietaire) {
+  return titulairesActifs(proprietaire).length > 0
+}
+
+function titulairesActifs(proprietaire) {
+  const liste = proprietaire?.titulaires
+  return Array.isArray(liste) ? liste.filter((t) => !t.date_fin) : []
+}
+
+/**
+ * Les destinataires d'une convocation, sous la même forme que `destinataires`
+ * ({ nom, email, telephone, source }) pour que les sept lecteurs n'aient rien
+ * à changer. `source` porte le RÔLE quand la période est reprise.
+ *
+ * ⚠ `refus_electronique` ne retire PAS la personne : elle reste destinataire,
+ * et c'est la liste postale qui la servira. La retirer ici ferait disparaître
+ * des convocations quelqu'un qui a seulement demandé du papier (art. 8).
+ */
+export function destinatairesDuLot(proprietaire) {
+  const titulaires = titulairesActifs(proprietaire)
+  if (!titulaires.length) return destinataires(proprietaire)
+  return titulaires
+    .filter((t) => t.destinataire_convocations)
+    .filter((t) => (t.email || '').trim() || (t.telephone || '').trim() || (t.adresse_postale || '').trim())
+    .map((t) => ({
+      nom: [t.civilite, t.prenom, t.nom].map((x) => (x || '').trim()).filter(Boolean).join(' '),
+      email: t.email || null,
+      telephone: t.telephone || null,
+      source: t.role,
+      titulaire_id: t.id,
+      refus_electronique: Boolean(t.refus_electronique),
+      adresse_postale: t.adresse_postale || null,
+    }))
+}
+
+/**
+ * Les adresses à mettre en destinataires d'un envoi, dédoublonnées.
+ *
+ * ⚠ Passe par `destinatairesDuLot`, donc bascule avec le reste. Et ⚠ ÉCARTE
+ * celui qui a demandé le courrier postal : lui écrire un e-mail serait passer
+ * outre une demande expresse (art. 8 et 13). Il n'en disparaît pas pour autant,
+ * `destinatairesDuLot` le rend toujours — c'est à l'appelant d'en faire une
+ * ligne de liste postale.
+ */
 export function emailsOfficiels(proprietaire) {
-  return [...new Set(destinataires(proprietaire).map((d) => d.email).filter(Boolean))]
+  return [...new Set(
+    destinatairesDuLot(proprietaire)
+      .filter((d) => !d.refus_electronique)
+      .map((d) => d.email)
+      .filter(Boolean),
+  )]
 }
 
 /** Aucun destinataire joignable : le lot est hors de portée d'une convocation. */
 export function contactIncomplet(proprietaire) {
-  return destinataires(proprietaire).length === 0
+  return destinatairesDuLot(proprietaire).length === 0
+}
+
+// Le mandataire, pour le TRI de la liste. ⚠ Le rôle est écrit en clair plutôt
+// qu'importé de `titulaireLogic` : ce module est lu par `export_md.mjs`, hors
+// du bundle, et une chaîne de dépendances de plus y serait une chance de plus
+// de casser le script. La valeur, elle, est la même des deux côtés.
+function mandatairePourTri(proprietaire) {
+  const t = titulairesActifs(proprietaire).find((x) => x.role === 'mandataire')
+  if (t) return [t.prenom, t.nom].filter(Boolean).join(' ') || t.email || ''
+  return proprietaire?.mandataire_nom || proprietaire?.mandataire_email || ''
 }
 
 // ============================================================================
@@ -116,7 +196,10 @@ export const TRIS = [
   { cle: 'email', valeur: (l) => emailsOfficiels(l.proprietaire)[0] || '' },
   // Le mandataire se range sur son NOM quand il existe, sinon sur son adresse :
   // une fiche sans nom doit rejoindre les autres mandataires, pas les vides.
-  { cle: 'mandataire', valeur: (l) => l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email || '' },
+  // ⚠ Bascule comme le reste (068) : sur une période reprise, le mandataire est
+  // un RÔLE et non plus une colonne. Trier sur `mandataire_nom` y rangerait la
+  // parcelle chez les vides alors que la fiche affiche un mandataire.
+  { cle: 'mandataire', valeur: (l) => mandatairePourTri(l.proprietaire) },
 ]
 
 // Le tri choisi est mémorisé PAR NAVIGATEUR : on consulte ce registre en

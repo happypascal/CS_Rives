@@ -8,7 +8,8 @@ import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, todayISO, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, apportDe, lireTri, trierLots } from '../lib/proprietaireLogic'
+import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, apportDe, lireTri, trierLots, aDesTitulaires } from '../lib/proprietaireLogic'
+import TitulairesLot from '../components/TitulairesLot'
 
 // Champs du propriétaire, déclarés une fois : la saisie du propriétaire actuel
 // et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
@@ -152,6 +153,9 @@ function Contenu() {
   }
 
   const cochees = sourcesCochees(form)
+  // La période est-elle décrite par ses titulaires (068) ? Si oui, les cases de
+  // 044 ne commandent plus les envois et passent en lecture seule.
+  const reprisParTitulaires = aDesTitulaires(lot?.proprietaire)
   const listeDestinataires = destinataires(form)
 
   const rang = parcelles.findIndex((x) => x.id === id)
@@ -393,6 +397,17 @@ function Contenu() {
             </div>
           </Card>
 
+          {/* LES TITULAIRES (068), avant la fiche du propriétaire : c'est
+              désormais eux qui portent les personnes, les adresses et les
+              envois. La carte du dessous reste la PÉRIODE de propriété. */}
+          {lot.proprietaire && (
+            <TitulairesLot
+              proprietaire={lot.proprietaire}
+              peutSaisir={peutSaisir}
+              onChange={reload}
+            />
+          )}
+
           <Card>
             <CardHeader
               title="Propriétaire actuel"
@@ -480,6 +495,20 @@ function Contenu() {
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Destinataires des convocations
                 </p>
+                {/* ⚠ CES CASES NE COMMANDENT PLUS RIEN DÈS QUE LA PÉRIODE A DES
+                    TITULAIRES (068), et elles passent alors en lecture seule.
+                    Les laisser modifiables, c'était deux formulaires écrivant la
+                    même adresse : ils divergent à la première correction, et
+                    rien ne le signale. Elles restent AFFICHÉES — ce sont elles
+                    qui ont servi jusqu'ici, et elles disent d'où vient la
+                    reprise. */}
+                {reprisParTitulaires && (
+                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
+                    Ce lot est décrit par ses <strong>titulaires</strong>, plus haut : ce sont eux
+                    qui déterminent les envois. Ces cases ne servent plus et sont conservées en
+                    lecture seule, telles qu’elles étaient avant la reprise.
+                  </p>
+                )}
                 <div className="mb-3 grid gap-2 sm:grid-cols-2">
                   {CONTACTS.map((c) => (
                     <label key={c} className="flex items-center gap-2 text-sm text-slate-600">
@@ -498,7 +527,7 @@ function Contenu() {
                             return { ...f, contacts_officiels: apres.length ? apres : [CONTACT_PROPRIETAIRE] }
                           })
                         }
-                        disabled={!peutSaisir}
+                        disabled={!peutSaisir || reprisParTitulaires}
                       />
                       {CONTACT_LABELS[c]}
                       {/* ⚠ Une case reste cochable même sans coordonnée — on peut
@@ -517,16 +546,25 @@ function Contenu() {
                     propre bloc, sans quoi on créerait une seconde copie qui
                     divergerait. */}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Input label="Email du propriétaire" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone du propriétaire" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir} />
+                  <Input label="Email du propriétaire" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir || reprisParTitulaires} />
+                  <Input label="Téléphone du propriétaire" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir || reprisParTitulaires} />
                 </div>
 
                 {/* Le résultat, tel qu'il partira. Le montrer évite de croire
-                    qu'une case cochée suffit quand la source est vide. */}
+                    qu'une case cochée suffit quand la source est vide.
+                    ⚠ MAIS PLUS QUAND LA PÉRIODE EST REPRISE : afficher ici une
+                    liste de destinataires que les envois n'emploient plus serait
+                    pire que de ne rien afficher — deux listes contradictoires
+                    sur le même écran, dont rien ne dit laquelle fait foi. */}
                 <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Recevront la convocation
+                  {reprisParTitulaires ? 'Ancien calcul, sans effet' : 'Recevront la convocation'}
                 </p>
-                {listeDestinataires.length === 0 ? (
+                {reprisParTitulaires ? (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Les destinataires de ce lot sont ceux de la carte <strong>Titulaires du lot</strong>,
+                    en haut de cette fiche.
+                  </p>
+                ) : listeDestinataires.length === 0 ? (
                   <p className="mt-1 text-xs font-medium text-amber-700">
                     Aucune des sources cochées ne porte de coordonnées : ce lot n’est joignable par aucun moyen officiel.
                   </p>

@@ -9,6 +9,12 @@
 import { PROJET_ACTION_STATUT } from './projetLogic'
 import { compareProjets } from './projetLogic'
 import { compareResolutions, numeroResolution } from './agLogic'
+import {
+  compareTitulaires,
+  ROLES as ROLES_TITULAIRE,
+  ROLES_SANS_VOTE as ROLES_TITULAIRE_SANS_VOTE,
+  ROLES_REPRESENTABLES as ROLES_TITULAIRE_REPRESENTABLES,
+} from './titulaireLogic'
 import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
@@ -332,6 +338,8 @@ function seed() {
   // fichiers du syndic — inventer des noms et des adresses de personnes dans un
   // jeu de démonstration serait exactement ce que la mention RGPD interdit.
   const lots = []
+  // Titulaires d un lot (068) : vide en demo, comme les lots eux-memes.
+  const titulaires = []
   const proprietaires = []
 
   // Fil d'échanges du projet voirie : montre le cas d'usage — deux membres qui
@@ -479,7 +487,7 @@ function seed() {
     },
   ]
 
-  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, comptes_ag, audit_log, communications, communication_destinataires, pv_archives }
+  return { accounts, membres_cs, mandats_cs, parametres, assemblees_generales, resolutions_ag, projets, decisions, votes, questions_reponses, signature_batches, decision_status_history, decisions_historique, cron_runs, questions_reponses_projet, journal_projet, lots, proprietaires, titulaires, comptes_ag, audit_log, communications, communication_destinataires, pv_archives }
 }
 
 // ---------------------------------------------------------------- store
@@ -568,6 +576,66 @@ function getSessionUserId() {
 function aLaMain(d, user) {
   if (!avantSoumission(d)) return true
   return Boolean(user) && d.created_by === user.membre_id
+}
+
+// ------------------------------------------------- titulaires d'un lot (068)
+// Les titulaires d'une période, dans l'ordre partagé par les deux backends.
+function titulairesDe(data, proprietaireId) {
+  return clone((data.titulaires || []).filter((t) => t.proprietaire_id === proprietaireId))
+    .sort(compareTitulaires)
+}
+
+// ⚠ LE MIROIR DES CONTRAINTES DE LA 068. Le mock est plus permissif que
+// PostgREST et masque des bugs de prod : ici, c'est l'inverse qu'on veut — que
+// la démo refuse exactement ce que la base refuse. Chaque garde porte le nom de
+// sa contrainte SQL ; modifier l'une oblige à modifier l'autre.
+function gardeTitulaire(data, t) {
+  if (!(t.nom || '').trim()) throw new Error('Le nom est obligatoire.')
+  // titulaires_role_check
+  if (!ROLES_TITULAIRE.includes(t.role)) throw new Error(`Rôle inconnu : ${t.role}`)
+  // titulaires_periode_coherente
+  if (t.date_debut && t.date_fin && t.date_fin < t.date_debut) {
+    throw new Error('La fin du titulaire ne peut pas précéder son début.')
+  }
+  // titulaires_votant_interdit (art. 6)
+  if (t.est_membre_votant && ROLES_TITULAIRE_SANS_VOTE.includes(t.role)) {
+    throw new Error('Un nu-propriétaire, un représentant légal ou un mandataire ne vote pas en son nom (art. 6).')
+  }
+  // titulaires_usufruitier_votant (art. 6)
+  if (t.role === 'usufruitier' && !t.date_fin && !t.est_membre_votant) {
+    throw new Error('L’usufruitier prend seul la qualité de membre de l’association (art. 6) : il doit être le membre votant.')
+  }
+  // titulaires_representant_est_detenteur (art. 6, « par l'un d'eux »)
+  if (t.est_representant_designe && !ROLES_TITULAIRE_REPRESENTABLES.includes(t.role)) {
+    throw new Error('Seul un indivisaire ou un co-propriétaire peut être le représentant désigné (art. 6).')
+  }
+  // Les deux index partiels : au plus un votant, au plus un représentant, par
+  // période en cours. ⚠ On s'exclut soi-même, sinon modifier une ligne déjà
+  // votante se refuserait elle-même.
+  const freres = (data.titulaires || []).filter((x) =>
+    x.proprietaire_id === t.proprietaire_id && x.id !== t.id && !x.date_fin)
+  if (t.est_membre_votant && !t.date_fin && freres.some((x) => x.est_membre_votant)) {
+    throw new Error('Ce lot a déjà un membre votant : retirez-le d’abord (un lot n’a qu’une voix, art. 9).')
+  }
+  if (t.est_representant_designe && !t.date_fin && freres.some((x) => x.est_representant_designe)) {
+    throw new Error('Ce lot a déjà un représentant désigné : retirez-le d’abord.')
+  }
+}
+
+// Bascule d'un drapeau unique par période : on RETIRE avant de POSER, l'ordre
+// imposé par l'index partiel. `titulaireId` nul = plus personne.
+async function basculerDrapeau(repoCible, champ, proprietaireId, titulaireId) {
+  const data = load()
+  for (const t of (data.titulaires || [])) {
+    if (t.proprietaire_id === proprietaireId && !t.date_fin && t[champ]) {
+      t[champ] = false
+      t.updated_at = nowISO()
+    }
+  }
+  save(data)
+  if (!titulaireId) return { ok: true }
+  await repoCible.updateTitulaire(titulaireId, { [champ]: true })
+  return { ok: true }
 }
 
 // ---------------------------------------------------------------- session/auth
@@ -1761,7 +1829,10 @@ export const mockRepo = {
       const actuel = periodes.find((p) => !p.date_cession) || null
       return {
         ...l,
-        proprietaire: actuel ? clone(actuel) : null,
+        // ⚠ Les TITULAIRES sont attachés à la période (068) : c'est eux que
+        // `destinatairesDuLot` lit dès qu'elle est reprise. Oubliés ici, toute
+        // la liste retomberait sur les colonnes de 044, sans rien signaler.
+        proprietaire: actuel ? { ...clone(actuel), titulaires: titulairesDe(data, actuel.id) } : null,
         anciens: periodes.filter((p) => p.date_cession).length,
         superficie_totale: total,
         part: total > 0 && l.superficie ? (Number(l.superficie) / total) * 100 : null,
@@ -1776,12 +1847,79 @@ export const mockRepo = {
     const l = (data.lots || []).find((x) => x.id === id)
     if (!l) return null
     const periodes = (data.proprietaires || []).filter((p) => p.lot_id === id)
+      .map((p) => ({ ...clone(p), titulaires: titulairesDe(data, p.id) }))
     return {
       ...clone(l),
-      proprietaire: clone(periodes.find((p) => !p.date_cession) || null),
+      proprietaire: periodes.find((p) => !p.date_cession) || null,
       // Historique du plus récent au plus ancien : on remonte le temps.
-      historique: clone(periodes.filter((p) => p.date_cession).sort((a, b) => (a.date_cession < b.date_cession ? 1 : -1))),
+      historique: periodes.filter((p) => p.date_cession).sort((a, b) => (a.date_cession < b.date_cession ? 1 : -1)),
     }
+  },
+
+  // ---- Titulaires d'un lot (migration 068) ----
+  //
+  // ⚠ LE MOCK REPRODUIT LES CONTRAINTES DE LA BASE, et ce n'est pas du zèle :
+  // `Object.assign` avale n'importe quoi, alors que PostgREST refuse. Une
+  // saisie « qui marche en démo » et qui échoue en production est exactement ce
+  // que ce miroir évite — même raison que `appliquerCycle` pour les décisions.
+  async createTitulaire(proprietaireId, input) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    data.titulaires ||= []
+    const t = {
+      id: uid(),
+      proprietaire_id: proprietaireId,
+      est_personne_morale: false,
+      civilite: null, prenom: null, fonction: null, quote_part: null,
+      adresse_postale: null, pays: null, adresse_a_verifier: false,
+      email: null, telephone: null, langue: null, refus_electronique: false,
+      est_membre_votant: false, est_representant_designe: false,
+      designation_documents: [],
+      destinataire_convocations: true, destinataire_notification_pv: true,
+      date_debut: null, date_fin: null, observations: null,
+      created_at: nowISO(), updated_at: nowISO(),
+      ...input,
+    }
+    gardeTitulaire(data, t)
+    data.titulaires.push(t)
+    audit(data, 'titulaires', t.id, 'create', `Titulaire ${t.nom} ajouté`)
+    save(data)
+    return clone(t)
+  },
+
+  async updateTitulaire(id, patch) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    const t = (data.titulaires || []).find((x) => x.id === id)
+    if (!t) throw new Error('Titulaire introuvable')
+    gardeTitulaire(data, { ...t, ...patch })
+    Object.assign(t, patch, { updated_at: nowISO() })
+    audit(data, 'titulaires', id, 'update', `Titulaire ${t.nom} modifié`)
+    save(data)
+    return clone(t)
+  },
+
+  async deleteTitulaire(id) {
+    await delay()
+    this._gardeBureau()
+    const data = load()
+    const t = (data.titulaires || []).find((x) => x.id === id)
+    data.titulaires = (data.titulaires || []).filter((x) => x.id !== id)
+    audit(data, 'titulaires', id, 'delete', `Titulaire ${t?.nom || id} supprimé`)
+    save(data)
+    return { ok: true }
+  },
+
+  // ⚠ ORDRE IMPOSÉ : retirer le votant précédent AVANT de poser le nouveau,
+  // sinon l'index partiel de la base refuserait la seconde écriture. Le mock
+  // applique le même ordre pour que la démo échoue aux mêmes endroits.
+  async designerMembreVotant(proprietaireId, titulaireId) {
+    return basculerDrapeau(this, 'est_membre_votant', proprietaireId, titulaireId)
+  },
+  async designerRepresentant(proprietaireId, titulaireId) {
+    return basculerDrapeau(this, 'est_representant_designe', proprietaireId, titulaireId)
   },
 
   async createLot(input) {
@@ -1820,7 +1958,11 @@ export const mockRepo = {
     const l = (data.lots || []).find((x) => x.id === id)
     data.lots = (data.lots || []).filter((x) => x.id !== id)
     // Miroir du `on delete cascade` : l'historique part avec le lot.
+    const periodesParties = (data.proprietaires || []).filter((p) => p.lot_id === id).map((p) => p.id)
     data.proprietaires = (data.proprietaires || []).filter((p) => p.lot_id !== id)
+    // …et les titulaires avec leur période (068, `on delete cascade`). Oubliés,
+    // ils resteraient en mémoire rattachés à une période qui n'existe plus.
+    data.titulaires = (data.titulaires || []).filter((t) => !periodesParties.includes(t.proprietaire_id))
     audit(data, 'lots', id, 'delete', `Lot ${l?.numero || id} supprimé`)
     save(data)
     return { ok: true }
@@ -1874,6 +2016,17 @@ export const mockRepo = {
       }
       actuel.date_cession = date_mutation
       actuel.updated_at = nowISO()
+      // ⚠ LES TITULAIRES SORTANTS SE CLOSENT AVEC LEUR PÉRIODE (068). Laissés
+      // ouverts, le registre afficherait l'ancien propriétaire comme titulaire
+      // actuel d'un lot qu'il a vendu — et son membre votant resterait en place,
+      // bloquant l'index partiel pour l'entrant. Clore ICI, et non dans l'écran :
+      // l'ancienne modale de mutation existe toujours et passerait à côté.
+      for (const t of (data.titulaires || [])) {
+        if (t.proprietaire_id === actuel.id && !t.date_fin) {
+          t.date_fin = date_mutation
+          t.updated_at = nowISO()
+        }
+      }
     }
     const p = {
       id: uid(), lot_id: lotId, est_societe: false, dirigeant_nom: null, dirigeant_fonction: null,

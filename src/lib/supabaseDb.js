@@ -5,6 +5,7 @@ import { supabase } from './supabase'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config'
 import { computeAGBudgets, computeProjectBudgets } from './mockDb'
 import { compareProjets } from './projetLogic'
+import { compareTitulaires } from './titulaireLogic'
 
 function must(result) {
   if (result.error) throw new Error(result.error.message)
@@ -653,6 +654,12 @@ export const supabaseRepo = {
   async listLots() {
     const lots = must(await supabase.from('lots').select('*').order('numero'))
     const periodes = must(await supabase.from('proprietaires').select('*'))
+    // Les TITULAIRES (068) sont attachés à leur période : c'est eux que
+    // `destinatairesDuLot` lit quand la période est reprise. ⚠ `.catch(() => [])`
+    // serait ici une erreur — une liste vide se lirait « pas encore reprise » et
+    // ferait retomber tout le registre sur les colonnes de 044, en silence.
+    const titulaires = must(await supabase.from('titulaires').select('*'))
+    for (const p of periodes) p.titulaires = titulaires.filter((t) => t.proprietaire_id === p.id)
     // TANTIÈME dérivé, jamais stocké — même calcul que le mock. Dénominateur =
     // total des superficies RENSEIGNÉES : tant que le registre est incomplet,
     // les parts sont provisoires, et l'écran le dit.
@@ -672,11 +679,61 @@ export const supabaseRepo = {
     const l = must(await supabase.from('lots').select('*').eq('id', id).maybeSingle())
     if (!l) return null
     const periodes = must(await supabase.from('proprietaires').select('*').eq('lot_id', id))
+    if (periodes.length) {
+      const titulaires = must(await supabase.from('titulaires').select('*')
+        .in('proprietaire_id', periodes.map((p) => p.id)))
+      // Triés comme ils se lisent : les détenteurs d'abord, puis ceux qui
+      // représentent ou relaient, et les clos en dernier.
+      for (const p of periodes) {
+        p.titulaires = titulaires
+          .filter((t) => t.proprietaire_id === p.id)
+          .sort(compareTitulaires)
+      }
+    }
     return {
       ...l,
       proprietaire: periodes.find((x) => !x.date_cession) || null,
       historique: periodes.filter((x) => x.date_cession).sort((a, b) => (a.date_cession < b.date_cession ? 1 : -1)),
     }
+  },
+
+  // ---- Titulaires d'un lot (migration 068) ----
+  //
+  // ⚠ Aucune garde applicative : `titulaires_bureau` ferme la table au président
+  // et au secrétaire, en lecture comme en écriture. Éprouvé le 22 octobre par
+  // usurpation des trois rôles (`supabase/verifier_acces_titulaires.sql`) : le
+  // trésorier voit zéro ligne.
+  async createTitulaire(proprietaireId, input) {
+    return must(await supabase.from('titulaires')
+      .insert({ ...input, proprietaire_id: proprietaireId }).select())[0]
+  },
+  async updateTitulaire(id, patch) {
+    // `updated_at` est posé par le trigger `trg_titulaires_touch`.
+    return must(await supabase.from('titulaires').update(patch).eq('id', id).select())[0]
+  },
+  async deleteTitulaire(id) {
+    must(await supabase.from('titulaires').delete().eq('id', id))
+    return { ok: true }
+  },
+  // ⚠ ORDRE IMPOSÉ, et c'est pourquoi c'est UNE méthode du repo et non deux
+  // appels de l'écran : l'index partiel `titulaires_votant_par_propriete`
+  // refuse un second votant, donc il faut retirer AVANT de poser. Non atomique
+  // — si la seconde écriture échoue, le lot se retrouve SANS votant, ce que les
+  // contrôles affichent ; l'inverse (deux votants) ne se verrait pas.
+  // Même raisonnement que `enregistrerMutation` (035) et que la réélection (051).
+  async designerMembreVotant(proprietaireId, titulaireId) {
+    must(await supabase.from('titulaires').update({ est_membre_votant: false })
+      .eq('proprietaire_id', proprietaireId).is('date_fin', null).eq('est_membre_votant', true))
+    if (!titulaireId) return { ok: true }
+    must(await supabase.from('titulaires').update({ est_membre_votant: true }).eq('id', titulaireId).select())
+    return { ok: true }
+  },
+  async designerRepresentant(proprietaireId, titulaireId) {
+    must(await supabase.from('titulaires').update({ est_representant_designe: false })
+      .eq('proprietaire_id', proprietaireId).is('date_fin', null).eq('est_representant_designe', true))
+    if (!titulaireId) return { ok: true }
+    must(await supabase.from('titulaires').update({ est_representant_designe: true }).eq('id', titulaireId).select())
+    return { ok: true }
   },
   async createLot(input) {
     return must(await supabase.from('lots').insert(input).select())[0]
@@ -709,6 +766,14 @@ export const supabaseRepo = {
       must(await supabase.from('proprietaires')
         .update({ date_cession: date_mutation, updated_at: new Date().toISOString() })
         .eq('id', actuels[0].id).select())
+      // ⚠ LES TITULAIRES SORTANTS SE CLOSENT AVEC LEUR PÉRIODE (068). Laissés
+      // ouverts, le registre afficherait l'ancien propriétaire comme titulaire
+      // actuel d'un lot qu'il a vendu, et son membre votant bloquerait l'index
+      // partiel pour l'entrant. Clore ICI, et non dans l'écran : l'ancienne
+      // modale de mutation existe toujours et passerait à côté.
+      must(await supabase.from('titulaires')
+        .update({ date_fin: date_mutation })
+        .eq('proprietaire_id', actuels[0].id).is('date_fin', null))
     }
     return must(await supabase.from('proprietaires')
       .insert({ ...nouveau, lot_id: lotId, date_acquisition: date_mutation }).select())[0]
