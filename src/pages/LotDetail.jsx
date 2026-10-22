@@ -448,24 +448,31 @@ function Contenu() {
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Dirigeant(s) de la société
                   </p>
+                  {reprisParTitulaires && (
+                    <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
+                      Deux dirigeants au plus ici, et une seule adresse pour les deux. Dans la
+                      carte <strong>Titulaires du lot</strong>, chacun est une ligne, avec sa
+                      propre adresse — et il peut y en avoir trois.
+                    </p>
+                  )}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-3">
-                      <Input label="Nom du dirigeant" value={form.dirigeant_nom} onChange={set('dirigeant_nom')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir} placeholder="gérant, président, autre…" />
-                      <Input label="Email" type="email" value={form.dirigeant_email} onChange={set('dirigeant_email')} readOnly={!peutSaisir} />
+                      <Input label="Nom du dirigeant" value={form.dirigeant_nom} onChange={set('dirigeant_nom')} readOnly={!peutSaisir || reprisParTitulaires} />
+                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir || reprisParTitulaires} placeholder="gérant, président, autre…" />
+                      <Input label="Email" type="email" value={form.dirigeant_email} onChange={set('dirigeant_email')} readOnly={!peutSaisir || reprisParTitulaires} />
                       <Input label="Téléphone" value={form.dirigeant_telephone} onChange={set('dirigeant_telephone')} readOnly={!peutSaisir} />
                     </div>
                     <div className="space-y-3">
-                      <Input label="Nom du second dirigeant" value={form.dirigeant_nom_2} onChange={set('dirigeant_nom_2')} readOnly={!peutSaisir} />
-                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir} placeholder="gérant, associé, autre…" />
-                      <Input label="Email" type="email" value={form.dirigeant_email_2} onChange={set('dirigeant_email_2')} readOnly={!peutSaisir} />
+                      <Input label="Nom du second dirigeant" value={form.dirigeant_nom_2} onChange={set('dirigeant_nom_2')} readOnly={!peutSaisir || reprisParTitulaires} />
+                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir || reprisParTitulaires} placeholder="gérant, associé, autre…" />
+                      <Input label="Email" type="email" value={form.dirigeant_email_2} onChange={set('dirigeant_email_2')} readOnly={!peutSaisir || reprisParTitulaires} />
                       <Input label="Téléphone" value={form.dirigeant_telephone_2} onChange={set('dirigeant_telephone_2')} readOnly={!peutSaisir} />
                     </div>
                   </div>
                   {/* Une seule adresse : en pratique deux dirigeants d'une même
                       SCI se joignent au même siège. */}
                   <div className="mt-3">
-                    <Input label="Adresse de la société" value={form.adresse_dirigeant} onChange={set('adresse_dirigeant')} readOnly={!peutSaisir} />
+                    <Input label="Adresse de la société" value={form.adresse_dirigeant} onChange={set('adresse_dirigeant')} readOnly={!peutSaisir || reprisParTitulaires} />
                   </div>
                 </div>
               )}
@@ -599,17 +606,25 @@ function Contenu() {
                   <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
                   d’une seule superficie.
                 </p>
+                {reprisParTitulaires && (
+                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
+                    Ce bloc ne décrit que <strong>deux</strong> personnes, et c’est la limite que la
+                    carte <strong>Titulaires du lot</strong> lève : une indivision peut en compter
+                    trois ou plus. Les personnes de ce lot s’ajoutent et se modifient là-haut ;
+                    ces champs restent affichés tels qu’ils étaient avant la reprise.
+                  </p>
+                )}
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir} />
-                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir} />
+                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir || reprisParTitulaires} />
+                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir || reprisParTitulaires} />
+                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir || reprisParTitulaires} />
                 </div>
                 {/* La QUALIFICATION, distincte du fait d'être deux : on peut
                     détenir à deux sans être en indivision (communauté entre
                     époux, tontine). Non cochée, la case dit « on ne l'affirme
                     pas », pas « ce n'en est pas une ». */}
                 <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" checked={form.est_indivision} onChange={set('est_indivision')} disabled={!peutSaisir} />
+                  <input type="checkbox" checked={form.est_indivision} onChange={set('est_indivision')} disabled={!peutSaisir || reprisParTitulaires} />
                   Le bien est détenu en <strong>indivision</strong>
                 </label>
               </div>
@@ -627,10 +642,16 @@ function Contenu() {
                   La personne à contacter à la place du propriétaire. Distincte d’un dirigeant :
                   le dirigeant engage la société, le mandataire ne fait que relayer.
                 </p>
+                {reprisParTitulaires && (
+                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
+                    Le mandataire de ce lot est désormais un <strong>rôle</strong> dans la carte
+                    Titulaires du lot, où il peut y en avoir plus d’un.
+                  </p>
+                )}
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <Input label="Nom du mandataire" value={form.mandataire_nom} onChange={set('mandataire_nom')} readOnly={!peutSaisir} />
-                  <Input label="Email du mandataire" type="email" value={form.mandataire_email} onChange={set('mandataire_email')} readOnly={!peutSaisir} />
-                  <Input label="Téléphone du mandataire" value={form.mandataire_telephone} onChange={set('mandataire_telephone')} readOnly={!peutSaisir} />
+                  <Input label="Nom du mandataire" value={form.mandataire_nom} onChange={set('mandataire_nom')} readOnly={!peutSaisir || reprisParTitulaires} />
+                  <Input label="Email du mandataire" type="email" value={form.mandataire_email} onChange={set('mandataire_email')} readOnly={!peutSaisir || reprisParTitulaires} />
+                  <Input label="Téléphone du mandataire" value={form.mandataire_telephone} onChange={set('mandataire_telephone')} readOnly={!peutSaisir || reprisParTitulaires} />
                 </div>
               </div>
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
