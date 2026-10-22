@@ -6,7 +6,8 @@ import { Card, Button, Input, Modal, Spinner, EmptyState, num } from '../compone
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { destinataires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import { destinatairesDuLot, aDesTitulaires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import { controles, ROLE_LABELS } from '../lib/titulaireLogic'
 import { formatDate } from '../lib/format'
 import { downloadRegistreNotairePDF } from '../lib/pdf'
 import { classeurXLSX, colotisNotaireLignes, COLOTIS_LARGEURS, downloadXLSX } from '../lib/xlsx'
@@ -68,6 +69,9 @@ function Contenu() {
   const [busy, setBusy] = useState(false)
   const [exportOuvert, setExportOuvert] = useState(false)
   const [seulementSansActe, setSeulementSansActe] = useState(false)
+  // ⚠ Les deux filtres s'excluent : cumulés, une liste vide ne dirait pas
+  // lequel des deux l'a vidée.
+  const [seulementACompleter, setSeulementACompleter] = useState(false)
 
   const reload = async () => {
     setError('')
@@ -87,11 +91,31 @@ function Contenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ⚠ CE QUI MANQUE, LOT PAR LOT (068). Sans cela, savoir QUELS lots sont
+  // incomplets obligeait à ouvrir les cinquante fiches — « je ne vois pas les
+  // 17 ambre dans la liste » (Pascal, 22 octobre). Un décompte qu'on annonce et
+  // qu'on ne peut pas parcourir ne sert à rien.
+  // ⚠ Calculé seulement sur les périodes REPRISES : une période encore décrite
+  // par les colonnes de 044 n'a pas de titulaires, et le crier « aucun
+  // titulaire » sur tout le registre noierait les vrais manques.
+  const alertesParLot = useMemo(() => {
+    const m = new Map()
+    for (const l of lots) {
+      if (!l.proprietaire || !(l.proprietaire.titulaires || []).length) continue
+      const a = controles(l.proprietaire.titulaires)
+      if (a.length) m.set(l.id, a)
+    }
+    return m
+  }, [lots])
+  const aCompleter = alertesParLot.size
+
   const filtres = useMemo(() => {
     const terme = q.trim().toLowerCase()
     const base = seulementSansActe
       ? lots.filter((l) => l.proprietaire && !l.proprietaire.acte_transmis_le)
-      : lots
+      : seulementACompleter
+        ? lots.filter((l) => alertesParLot.has(l.id))
+        : lots
     const liste = terme
       ? base.filter((l) =>
           [l.numero, l.numero_syndic, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
@@ -103,7 +127,7 @@ function Contenu() {
     // ⚠ Même fonction que celle dont se sert la navigation de la fiche : c'est
     // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
     return trierLots(liste, tri)
-  }, [lots, q, tri, seulementSansActe])
+  }, [lots, q, tri, seulementSansActe, seulementACompleter, alertesParLot])
 
   // ⚠ L'EXPORT PORTE SUR TOUT LE REGISTRE, jamais sur la recherche en cours.
   // Un « état des colotis » amputé des lignes qui ne correspondaient pas au
@@ -115,6 +139,7 @@ function Contenu() {
   // Une indivision compte pour UN propriétaire : deux personnes, mais une seule
   // propriété — une part de charges, une voix. Les compter pour deux gonflerait
   // le total au-dessus du nombre réel de colotis.
+
   const proprietaires = lots.filter((l) => l.proprietaire).length
   // ⚠ On compte les indivisions DÉCLARÉES, pas les biens à deux noms : détenir
   // à deux n'est pas être en indivision (communauté entre époux, tontine).
@@ -204,6 +229,17 @@ function Contenu() {
           {/* ⚠ Le suivi des titres a sa case parce que c'est une ÉCHÉANCE, pas
               une statistique : au 31 octobre, chaque titre manquant devient une
               recherche facturée 100 € au propriétaire (résolution n° 15). */}
+          {/* ⚠ Les manques des titulaires (068) ont leur tuile, au même titre
+              que les titres : ce sont des obligations statutaires non remplies
+              — un représentant d'indivision que personne n'a désigné (art. 6),
+              une personne à notifier qu'on ne sait pas joindre (art. 13). */}
+          {aCompleter > 0 && (
+            <Total
+              valeur={`${aCompleter}`}
+              libelle="parcelle(s) à compléter"
+              alerte="titulaires incomplets"
+            />
+          )}
           <Total
             valeur={`${avecActe} / ${proprietaires}`}
             libelle="titre(s) reçu(s) par le notaire"
@@ -228,10 +264,19 @@ function Contenu() {
                 poser à cet écran en octobre, elle doit se déclencher d'un clic et
                 se voir enfoncée. Masqué s'il n'y a rien à relancer — un filtre
                 qui ne filtrerait rien est du bruit. */}
+            {aCompleter > 0 && (
+              <Button
+                variant={seulementACompleter ? 'primary' : 'secondary'}
+                onClick={() => { setSeulementACompleter((v) => !v); setSeulementSansActe(false) }}
+                title="N’afficher que les parcelles dont les titulaires sont incomplets"
+              >
+                À compléter ({aCompleter})
+              </Button>
+            )}
             {sansActe > 0 && (
               <Button
                 variant={seulementSansActe ? 'primary' : 'secondary'}
-                onClick={() => setSeulementSansActe((v) => !v)}
+                onClick={() => { setSeulementSansActe((v) => !v); setSeulementACompleter(false) }}
                 title="N’afficher que les propriétaires dont le notaire n’a pas encore reçu le titre"
               >
                 Sans titre ({sansActe})
@@ -358,16 +403,29 @@ function Contenu() {
                           <span className="block text-xs text-amber-700">titre non reçu</span>
                         )
                       )}
+                      {/* ⚠ CE QUI MANQUE, SUR LA LIGNE. Le compte seul ne sert à
+                          rien si l'on ne sait pas quelles parcelles il désigne.
+                          Le détail reste sur la fiche : ici on dit qu'il y a
+                          quelque chose à y faire, pas quoi. */}
+                      {alertesParLot.has(l.id) && (
+                        <span className="mt-0.5 block text-xs font-medium text-amber-700">
+                          ⚠ {alertesParLot.get(l.id).length} point(s) à compléter
+                        </span>
+                      )}
                       {/* Le dirigeant sous la raison sociale : pour une SCI, le
-                          nom seul ne dit pas à qui l'on s'adresse. */}
-                      {l.proprietaire?.dirigeant_nom && (
+                          nom seul ne dit pas à qui l'on s'adresse.
+                          ⚠ Masqué dès que la période est reprise : les dirigeants
+                          y sont des titulaires, et la liste des destinataires
+                          juste au-dessus les nomme déjà. Les deux ensemble
+                          affichaient la même personne deux fois. */}
+                      {!aDesTitulaires(l.proprietaire) && l.proprietaire?.dirigeant_nom && (
                         <span className="block text-xs text-slate-400">
                           {l.proprietaire.dirigeant_fonction ? `${l.proprietaire.dirigeant_fonction} : ` : ''}{l.proprietaire.dirigeant_nom}
                         </span>
                       )}
                       {/* Le second dirigeant : lui aussi engage la SCI, donc vote
                           et signe pour elle. */}
-                      {l.proprietaire?.dirigeant_nom_2 && (
+                      {!aDesTitulaires(l.proprietaire) && l.proprietaire?.dirigeant_nom_2 && (
                         <span className="block text-xs text-slate-400">
                           {l.proprietaire.dirigeant_fonction_2 ? `${l.proprietaire.dirigeant_fonction_2} : ` : ''}{l.proprietaire.dirigeant_nom_2}
                         </span>
@@ -376,7 +434,7 @@ function Contenu() {
                         // TOUS les destinataires, pas seulement le premier : une
                         // convocation part à plusieurs, et n'en montrer qu'un
                         // laisserait croire que les autres ne sont pas prévenus.
-                        const liste = destinataires(l.proprietaire)
+                        const liste = destinatairesDuLot(l.proprietaire)
                         if (l.proprietaire && liste.length === 0) {
                           return <span className="block text-xs font-medium text-amber-700">injoignable</span>
                         }
@@ -386,9 +444,15 @@ function Contenu() {
                             {/* D'où vient l'adresse : sans cela on croirait écrire
                                 au propriétaire alors qu'on écrit à son relais ou
                                 à l'un de ses dirigeants. */}
+                            {/* ⚠ `source` est une source de 044 OU un rôle de
+                                068 : la bascule se fait période par période, et
+                                une liste mêle donc les deux. Sans la seconde
+                                table, un lot repris afficherait « undefined ». */}
                             {d.source !== CONTACT_PROPRIETAIRE && (
                               <span className="block italic text-slate-400">
-                                {CONTACT_LABELS[d.source].toLowerCase()}{d.nom ? ` — ${d.nom}` : ''}
+                                {(CONTACT_LABELS[d.source] || ROLE_LABELS[d.source] || d.source).toLowerCase()}
+                                {d.nom ? ` — ${d.nom}` : ''}
+                                {d.refus_electronique && <span className="not-italic text-amber-700"> · courrier postal</span>}
                               </span>
                             )}
                             {d.email && d.telephone && (
@@ -404,7 +468,7 @@ function Contenu() {
                           l'inverse quand une indivision naît d'une succession.
                           Le bloc est visuellement détaché pour qu'on ne prête
                           pas à l'un les coordonnées de l'autre. */}
-                      {l.proprietaire?.nom_2 && (
+                      {!aDesTitulaires(l.proprietaire) && l.proprietaire?.nom_2 && (
                         <span className="mt-1 block border-t border-navy-50 pt-1">
                           <span className="block text-xs text-slate-600">
                             et {l.proprietaire.nom_2}
@@ -420,7 +484,23 @@ function Contenu() {
                         saurait pas à qui appartient l'adresse. Une fiche peut
                         n'avoir que l'adresse, le nom restant à établir. */}
                     <td className="px-4 py-3 text-slate-600">
-                      {l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email ? (
+                      {/* ⚠ Sur une période reprise, le mandataire est un RÔLE et
+                          non une colonne : on lit le titulaire, sinon la colonne
+                          se figerait sur la valeur d'avant la reprise et ne
+                          suivrait plus les corrections. */}
+                      {(() => {
+                        const t068 = (l.proprietaire?.titulaires || [])
+                          .find((x) => !x.date_fin && x.role === 'mandataire')
+                        if (!t068) return null
+                        return (
+                          <>
+                            {[t068.civilite, t068.prenom, t068.nom].filter(Boolean).join(' ')}
+                            {t068.email && <span className="block text-xs text-slate-500">{t068.email}</span>}
+                            {t068.telephone && <span className="block whitespace-nowrap text-xs text-slate-500">{t068.telephone}</span>}
+                          </>
+                        )
+                      })()}
+                      {!aDesTitulaires(l.proprietaire) && (l.proprietaire?.mandataire_nom || l.proprietaire?.mandataire_email) ? (
                         <>
                           {l.proprietaire.mandataire_nom || <span className="italic text-slate-400">nom inconnu</span>}
                           {l.proprietaire.mandataire_email && (

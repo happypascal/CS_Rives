@@ -46,6 +46,12 @@ function Contenu() {
   const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', numero_syndic: '', observations: '' })
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
+  // ⚠ L'ANCIENNE FICHE EST REPLIÉE PAR DÉFAUT sur une période reprise.
+  // Affichée, elle décrivait les mêmes personnes une seconde fois, en grisé et
+  // sur trois écrans — « il reste le propriétaire et l'ancien propriétaire,
+  // c'est pas clair du tout » (Pascal, 22 octobre). Deux descriptions du même
+  // lot sur la même page, c'est une de trop, même quand l'une est inerte.
+  const [voirAncienneFiche, setVoirAncienneFiche] = useState(false)
   const [confirm, confirmModal] = useConfirm()
   // Les parcelles voisines, pour naviguer sans repasser par la liste. Rangées
   // dans L'ORDRE DU TRI CHOISI DANS LA LISTE (mémorisé par navigateur) : trier
@@ -420,6 +426,13 @@ function Contenu() {
                   <input type="checkbox" checked={form.est_societe} onChange={set('est_societe')} disabled={!peutSaisir} />
                   Le propriétaire est une société (SCI)
                 </label>
+                {reprisParTitulaires && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Ce nom est le <strong>libellé de la période</strong> au registre : il apparaît
+                    dans la liste des parcelles et sur les documents. Les personnes, elles, sont
+                    dans la carte Titulaires du lot.
+                  </p>
+                )}
               </div>
               {/* DIRIGEANTS : organes de la société propriétaire, affichés
                   seulement si le propriétaire EST une société. Sur une personne
@@ -443,7 +456,7 @@ function Contenu() {
                   l'ASL : l'un comme l'autre peut voter et signer pour la société.
                   N'en nommer qu'un laissait le registre muet sur celui qui se
                   présenterait à l'assemblée. */}
-              {form.est_societe && (
+              {form.est_societe && (!reprisParTitulaires || voirAncienneFiche) && (
                 <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Dirigeant(s) de la société
@@ -490,6 +503,29 @@ function Contenu() {
                   placeholder={'12 rte de Messery\n74140 Nernier'}
                 />
               </div>
+              {/* ⚠ UNE SEULE DESCRIPTION DU LOT À L'ÉCRAN. Les quatre blocs qui
+                  suivent — destinataires, second propriétaire, dirigeants,
+                  mandataire — décrivent des PERSONNES, et ce sont les titulaires
+                  qui le font désormais. On les replie plutôt que de les
+                  supprimer : ils disent d'où vient la reprise, et la donnée est
+                  toujours en base. */}
+              {reprisParTitulaires && (
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    className="text-sm text-navy-700 underline decoration-navy-300 hover:text-navy-900"
+                    onClick={() => setVoirAncienneFiche((v) => !v)}
+                  >
+                    {voirAncienneFiche ? 'Masquer' : 'Afficher'} la fiche d’avant la reprise
+                  </button>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Les personnes de ce lot — propriétaires, dirigeants, mandataire — sont dans la
+                    carte <strong>Titulaires du lot</strong>, plus haut. L’ancienne fiche ne portait
+                    que deux noms ; elle est conservée en lecture seule.
+                  </p>
+                </div>
+              )}
+
               {/* DESTINATAIRES OFFICIELS — qui reçoit les convocations.
                   ⚠ On convoque TOUS ceux qui doivent l'être, pas un seul : les
                   deux indivisaires d'une indivision, l'usufruitier et le
@@ -498,6 +534,7 @@ function Contenu() {
                   Le registre stocke les cases cochées, jamais les adresses :
                   corriger l'e-mail du mandataire met la convocation à jour sans
                   qu'on y pense, et décocher n'efface rien. */}
+              {(!reprisParTitulaires || voirAncienneFiche) && (
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Destinataires des convocations
@@ -588,6 +625,7 @@ function Contenu() {
                   </ul>
                 )}
               </div>
+              )}
               {/* INDIVISION — deux personnes, mais UNE propriété : une part de
                   charges, une voix, une période. C'est pourquoi le second
                   indivisaire tient sur la MÊME ligne du registre : le mettre sur
@@ -597,6 +635,7 @@ function Contenu() {
                   propriétaire (demande de Pascal) : l'adresse de communication,
                   l'e-mail et le téléphone valent pour la propriété entière, et
                   les couper par un second nom faisait douter de qui ils sont. */}
+              {(!reprisParTitulaires || voirAncienneFiche) && (
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Second propriétaire
@@ -628,12 +667,14 @@ function Contenu() {
                   Le bien est détenu en <strong>indivision</strong>
                 </label>
               </div>
+              )}
               {/* MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint
                   pas le propriétaire lui-même (colotis étrangers surtout).
                   Affiché pour TOUT propriétaire, société ou non : un particulier
                   résidant à l'étranger passe par un intermédiaire tout autant
                   qu'une SCI, et une SCI peut avoir ses dirigeants au loin ET
                   un mandataire sur place. Ce n'est PAS un dirigeant. */}
+              {(!reprisParTitulaires || voirAncienneFiche) && (
               <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Mandataire (intermédiaire)
@@ -654,6 +695,7 @@ function Contenu() {
                   <Input label="Téléphone du mandataire" value={form.mandataire_telephone} onChange={set('mandataire_telephone')} readOnly={!peutSaisir || reprisParTitulaires} />
                 </div>
               </div>
+              )}
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
               <div className="sm:col-span-2">
                 <Textarea label="Observations" rows={2} value={form.observations} onChange={set('observations')} readOnly={!peutSaisir} />
