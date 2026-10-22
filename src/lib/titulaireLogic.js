@@ -75,10 +75,19 @@ export const ROLES_DETENTEURS = [ROLE_PLEIN, ROLE_INDIVISAIRE, ROLE_CO, ROLE_USU
 // L'écran doit refuser AVANT la base, le message de Postgres étant illisible.
 export const ROLES_SANS_VOTE = [ROLE_NU, ROLE_REPRESENTANT, ROLE_MANDATAIRE]
 
-// Qui peut être désigné représentant d'une indivision : l'un des détenteurs,
-// « et par l'un d'eux » dit l'art. 6 — jamais un dirigeant, qui représente de
-// plein droit, ni un mandataire de contact.
-export const ROLES_REPRESENTABLES = [ROLE_INDIVISAIRE, ROLE_CO]
+// ⚠ LE REPRÉSENTANT DÉSIGNÉ N'EXISTE QUE POUR UNE INDIVISION (correction de
+// Pascal, 22 octobre). L'art. 6 ne le prévoit que là : « Au cas où un des lots
+// est la propriété indivise de plusieurs personnes, les indivisaires ne peuvent
+// se faire représenter que par l'un d'eux. » Deux époux qui détiennent ensemble
+// sans indivision ne doivent rien désigner — le leur réclamer prêterait aux
+// statuts une obligation qu'ils ne portent pas, et c'est exactement ce qu'un
+// registre légal ne doit pas faire. Sur 17 lots détenus à deux, 4 seulement sont
+// des indivisions déclarées.
+//
+// ⚠ Et c'est bien la DÉTENTION qui est en cause, pas le vote : la voix du lot
+// est unique (art. 9), donc un couple a toujours un membre votant. Ce qu'il n'a
+// pas, c'est un représentant au sens de l'art. 6.
+export const ROLES_REPRESENTABLES = [ROLE_INDIVISAIRE]
 
 export const LIGNE_VIDE = {
   role: ROLE_PLEIN,
@@ -220,16 +229,18 @@ export function controles(titulaires) {
     return out
   }
 
-  const porteurs = detenteurs(titulaires)
   const votants = liste.filter((t) => t.est_membre_votant)
 
-  // 1. Détention à plusieurs sans représentant désigné (art. 6). ⚠ Vaut aussi
-  //    pour `co_proprietaire` : la question « qui porte la voix ? » est la même,
-  //    que la forme de la détention soit qualifiée ou non.
-  if (porteurs.length > 1 && !liste.some((t) => t.est_representant_designe)) {
+  // 1. INDIVISION sans représentant désigné (art. 6).
+  //    ⚠ `indivisaire` SEULEMENT, pas `co_proprietaire` : l'article ne vise que
+  //    la propriété indivise. Appliqué à toute détention à deux, ce contrôle
+  //    réclamait une désignation à treize couples qui n'en doivent aucune — un
+  //    reproche sans fondement, et treize alertes qui noyaient les quatre vraies.
+  const indivisaires = liste.filter((t) => t.role === ROLE_INDIVISAIRE)
+  if (indivisaires.length > 1 && !liste.some((t) => t.est_representant_designe)) {
     out.push({
       gravite: 'statutaire',
-      texte: `${porteurs.length} détenteurs, aucun représentant désigné : les statuts veulent qu’ils se fassent représenter par l’un d’eux (art. 6). Tant que personne n’est désigné, le membre votant est une supposition.`,
+      texte: `Indivision à ${indivisaires.length}, sans représentant désigné : les statuts veulent que les indivisaires se fassent représenter par l’un d’eux (art. 6).`,
     })
   }
 
@@ -268,18 +279,18 @@ export function controles(titulaires) {
     }
   }
 
-  // 5. Notifié du PV sur une adresse HÉRITÉE (art. 13 et 28) — le contrôle que
-  //    les quatre autres ne voient pas. Une adresse reprise de la fiche n'est
-  //    pas la « demeure respective » de cette personne, et c'est précisément
-  //    celle-là qui empêche un recommandé de valoir.
-  for (const t of liste) {
-    if (t.destinataire_notification_pv && t.adresse_a_verifier && !(t.email || '').trim()) {
-      out.push({
-        gravite: 'statutaire',
-        texte: `${nomComplet(t)} doit être notifié du procès-verbal, mais son adresse est reprise de la fiche du lot et il n’a pas d’e-mail propre (art. 13 et 28).`,
-      })
-    }
-  }
+  // ⚠ LE CINQUIÈME CONTRÔLE A ÉTÉ RETIRÉ (Pascal, 22 octobre : « il n'y a pas
+  //    d'adresse à confirmer »). Il signalait toute adresse reprise de la fiche
+  //    du lot comme douteuse. Or ces personnes-là sont, dans leur quasi-totalité,
+  //    des conjoints qui habitent la MÊME maison dans le lotissement : cette
+  //    adresse EST leur demeure au sens de l'art. 28, et un recommandé les y
+  //    atteint. Quinze injonctions sans objet, sur un écran où chaque ligne doit
+  //    appeler une action.
+  //
+  //    ⚠ La colonne `adresse_a_verifier` RESTE : elle constate un fait — cette
+  //    adresse n'a pas été déclarée par cette personne — et la fiche l'affiche
+  //    discrètement. Ce fait ne devient un manque que si l'intéressé vit
+  //    ailleurs, ce que le registre ne sait pas. On constate, on ne reproche pas.
 
   // Les deux invariants que la base ne peut pas porter : un check ne compte
   // pas ses lignes sœurs (cf. en-tête de la 068).

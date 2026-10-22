@@ -239,7 +239,11 @@ export default function TitulairesLot({ proprietaire, peutSaisir, onChange }) {
 // ---------------------------------------------------------------- une ligne
 function LigneTitulaire({ t, peutSaisir, busy, onModifier, onClore, onSupprimer, onVotant, onRepresentant }) {
   const peutVoter = !ROLES_SANS_VOTE.includes(t.role)
-  const peutRepresenter = ROLES_REPRESENTABLES.includes(t.role)
+  // ⚠ Le bouton reste offert à qui porte DÉJÀ la désignation, même si son rôle
+  // ne la permet plus : une ligne marquée avant la correction du 22 octobre
+  // (0B 239, un co-propriétaire) doit pouvoir être démarquée depuis l'écran,
+  // sinon le drapeau devient indélogeable sans passer par la base.
+  const peutRepresenter = ROLES_REPRESENTABLES.includes(t.role) || t.est_representant_designe
   return (
     <li className="px-5 py-4">
       <div className="flex flex-wrap items-baseline gap-2">
