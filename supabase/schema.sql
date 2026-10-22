@@ -738,6 +738,145 @@ create trigger trg_proprietaires_normalize_email
   on proprietaires
   for each row execute function proprietaires_normalize_email();
 
+-- --------------------------------------------------------------- titulaires
+-- TOUS LES TITULAIRES D'UN LOT (migration 068). Une ligne par PERSONNE,
+-- rattachée à une PÉRIODE de propriété — pas au lot (même raisonnement que le
+-- titre de propriété en 059 : une mutation ouvre une période neuve).
+--
+-- Les colonnes de 038 à 044 ne savaient décrire que deux personnes et UNE
+-- adresse. Les statuts du 15 septembre 2026 exigent plus : une indivision de
+-- trois personnes (art. 6), l'usufruitier seul membre qui informe le
+-- nu-propriétaire (art. 6), une adresse par personne (art. 28 — élection de
+-- domicile « en leur demeure respective »), le représentant désigné d'une
+-- indivision et la pièce qui le désigne (art. 6).
+--
+-- ⚠ ELLE NE PÈSE AUCUNE VOIX. Les voix suivent `lots.superficie` (art. 9) et
+-- les m² de chaque AG sont saisis puis figés sur elle (054).
+-- `est_membre_votant` dit QUI porte la voix du lot, jamais combien elle pèse.
+--
+-- ⚠ `mandataire` est l'intermédiaire de contact de la 037, PAS le mandataire de
+-- l'art. 6 (porteur d'un pouvoir écrit pour UNE assemblée, lui-même membre de
+-- l'association). Les confondre ferait croire qu'un contact peut voter — d'où la
+-- contrainte qui lui interdit `est_membre_votant`.
+--
+-- ⚠ `co_proprietaire` n'est pas un synonyme d'`indivisaire` : c'est la détention
+-- à deux dont la qualification n'est PAS connue (doctrine de la 040 — le
+-- registre constate, il ne qualifie pas à la place du notaire). Il se notifie
+-- comme un indivisaire : tout propriétaire est membre (art. 1).
+create table if not exists titulaires (
+  id                  uuid primary key default gen_random_uuid(),
+  proprietaire_id     uuid not null references proprietaires(id) on delete cascade,
+  role                text not null,
+  -- ⚠ Distinct de `proprietaires.est_societe`, qui qualifie la PÉRIODE.
+  est_personne_morale boolean not null default false,
+  civilite            text,
+  nom                 text not null,
+  prenom              text,
+  -- Gérant, président, associé (art. 6).
+  fonction            text,
+  -- Telle qu'elle se lit à l'acte (« 1/3 en nue-propriété »).
+  quote_part          text,
+  adresse_postale     text,
+  pays                text,
+  -- ⚠ L'adresse vient de la fiche dont elle a été reprise, pas de la personne :
+  -- elle ne vaut pas élection de domicile (art. 28). Une COLONNE et non une
+  -- mention dans `observations`, pour que le contrôle soit calculable.
+  adresse_a_verifier  boolean not null default false,
+  email               text,
+  telephone           text,
+  -- Sans contrainte de valeur, comme `communication_destinataires.langue`.
+  langue              text,
+  -- Art. 8 et 13 : « sauf demande expresse contraire d'un coloti ».
+  refus_electronique  boolean not null default false,
+  est_membre_votant        boolean not null default false,
+  est_representant_designe boolean not null default false,
+  -- La désignation écrite signée des indivisaires. Convention de 012 ; le chemin
+  -- porte l'id du PROPRIÉTAIRE (la période existe à l'envoi, la ligne non) —
+  -- même raison qu'en 046 et 050. ⚠ Policies de Storage DÉDIÉES, plus bas.
+  designation_documents    jsonb not null default '[]'::jsonb,
+  destinataire_convocations    boolean not null default true,
+  destinataire_notification_pv boolean not null default true,
+  date_debut          date,
+  date_fin            date,                            -- nulle = titulaire actuel
+  observations        text,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
+alter table titulaires drop constraint if exists titulaires_role_check;
+alter table titulaires add constraint titulaires_role_check
+  check (role in ('plein_proprietaire', 'indivisaire', 'co_proprietaire',
+                  'usufruitier', 'nu_proprietaire', 'representant_legal',
+                  'mandataire'));
+
+alter table titulaires drop constraint if exists titulaires_periode_coherente;
+alter table titulaires add constraint titulaires_periode_coherente
+  check (date_fin is null or date_debut is null or date_fin >= date_debut);
+
+-- Art. 6 : le nu-propriétaire ne vote pas, et celui qui agit POUR un autre ne
+-- vote jamais en son nom propre.
+alter table titulaires drop constraint if exists titulaires_votant_interdit;
+alter table titulaires add constraint titulaires_votant_interdit
+  check (not (est_membre_votant
+              and role in ('nu_proprietaire', 'representant_legal', 'mandataire')));
+
+-- Art. 6 : « l'usufruitier prend seul la qualité de membre de l'association ».
+-- ⚠ ORDRE IMPOSÉ à la saisie : clore ou dévoter le votant précédent, PUIS créer
+-- l'usufruitier — sinon l'index partiel refuse. Même ordre que la réélection
+-- (051) et que `enregistrerMutation` (035).
+alter table titulaires drop constraint if exists titulaires_usufruitier_votant;
+alter table titulaires add constraint titulaires_usufruitier_votant
+  check (role <> 'usufruitier' or date_fin is not null or est_membre_votant);
+
+-- Art. 6 : « les indivisaires ne peuvent se faire représenter que par l'un
+-- d'eux » — donc jamais un dirigeant (qui représente de plein droit) ni un
+-- mandataire de contact.
+alter table titulaires drop constraint if exists titulaires_representant_est_detenteur;
+alter table titulaires add constraint titulaires_representant_est_detenteur
+  check (not est_representant_designe
+         or role in ('indivisaire', 'co_proprietaire'));
+
+-- AU PLUS un membre votant et un représentant désigné par période en cours.
+-- ⚠ « AU MOINS un » n'est pas exprimable : un check ne compte pas ses lignes
+-- sœurs, et un trigger d'état bloquerait l'instant où une mutation a clos le
+-- votant sortant sans avoir créé l'entrant. C'est un AVERTISSEMENT applicatif.
+create unique index if not exists titulaires_votant_par_propriete
+  on titulaires (proprietaire_id) where est_membre_votant and date_fin is null;
+create unique index if not exists titulaires_representant_par_propriete
+  on titulaires (proprietaire_id) where est_representant_designe and date_fin is null;
+create index if not exists titulaires_propriete_idx
+  on titulaires (proprietaire_id, date_debut);
+create index if not exists titulaires_email_idx
+  on titulaires (email) where email is not null;
+
+-- E-mail canonique, comme `membres_cs` (018) et `proprietaires` (035).
+create or replace function titulaires_normalise_email()
+returns trigger language plpgsql set search_path = public as $normalise_email_tit$
+begin
+  if new.email is not null then
+    new.email := lower(btrim(new.email));
+  end if;
+  return new;
+end $normalise_email_tit$;
+
+drop trigger if exists trg_titulaires_normalise_email on titulaires;
+create trigger trg_titulaires_normalise_email
+  before insert or update of email
+  on titulaires
+  for each row execute function titulaires_normalise_email();
+
+create or replace function titulaires_touch()
+returns trigger language plpgsql as $touch_tit$
+begin
+  new.updated_at := now();
+  return new;
+end $touch_tit$;
+
+drop trigger if exists trg_titulaires_touch on titulaires;
+create trigger trg_titulaires_touch
+  before update on titulaires
+  for each row execute function titulaires_touch();
+
 -- =============================================================================
 -- HISTORIQUE DES ENVOIS AUX COLOTIS (migration 056)
 --
@@ -799,6 +938,12 @@ create table if not exists communication_destinataires (
   -- soit un contact périmé, soit quelqu'un qui n'est pas coloti. Les deux cas
   -- doivent rester VISIBLES. On ne crée jamais un propriétaire à cette occasion.
   proprietaire_id  uuid references proprietaires(id),
+  -- La PERSONNE rapprochée (migration 068). ⚠ `on delete set null` et non le
+  -- défaut : la chaîne `lots` → `proprietaires` → `titulaires` est en cascade, et
+  -- un envoi passé est un FAIT qui doit survivre à la suppression de la
+  -- personne. Sans cette clause, supprimer un lot échouerait dès qu'un de ses
+  -- titulaires a été destinataire d'une campagne.
+  titulaire_id     uuid references titulaires(id) on delete set null,
   rang             integer,
   created_at       timestamptz not null default now(),
   unique (communication_id, email)
@@ -808,6 +953,8 @@ create index if not exists communications_date_idx
   on communications (date_envoi desc);
 create index if not exists communication_destinataires_comm_idx
   on communication_destinataires (communication_id);
+create index if not exists communication_destinataires_titulaire_idx
+  on communication_destinataires (titulaire_id) where titulaire_id is not null;
 
 -- =============================================================================
 -- ARCHIVES DES PROCÈS-VERBAUX D'ASSEMBLÉE DEPUIS 1955 (migration 057)
@@ -1057,13 +1204,21 @@ create trigger trg_membres_audit_rgpd
 -- =============================================================================
 -- Row Level Security — PRÉSIDENT ET SECRÉTAIRE UNIQUEMENT
 --
--- ⚠ Ces deux tables ne figurent PAS dans la boucle `read_auth` du schéma : il
+-- ⚠ Ces TROIS tables ne figurent PAS dans la boucle `read_auth` du schéma : il
 -- n'y a donc AUCUNE lecture par défaut. Un membre ordinaire, un trésorier, ne
 -- voient rien — pas même le nombre de lots. C'est l'inverse du reste de
 -- l'application, et c'est délibéré : ce sont des données personnelles de tiers.
+--
+-- ⚠ `titulaires` (068) en porte ENCORE PLUS que `proprietaires` : une adresse
+-- postale, un e-mail et un téléphone par indivisaire, par nu-propriétaire, par
+-- dirigeant. Le brief du 22 octobre demandait « mêmes règles que `proprietaires` »
+-- ET « lecture par le conseil », qui sont opposées — tout le point de la 035
+-- étant que le conseil ne lit PAS ce registre. Tranché par la nature de la
+-- donnée, et confirmé par Pascal le 22 octobre.
 -- =============================================================================
 alter table lots          enable row level security;
 alter table proprietaires enable row level security;
+alter table titulaires    enable row level security;
 
 drop policy if exists "lots_bureau" on lots;
 create policy "lots_bureau" on lots for all to authenticated
@@ -1072,6 +1227,11 @@ create policy "lots_bureau" on lots for all to authenticated
 
 drop policy if exists "proprietaires_bureau" on proprietaires;
 create policy "proprietaires_bureau" on proprietaires for all to authenticated
+  using (is_admin() or is_secretaire())
+  with check (is_admin() or is_secretaire());
+
+drop policy if exists "titulaires_bureau" on titulaires;
+create policy "titulaires_bureau" on titulaires for all to authenticated
   using (is_admin() or is_secretaire())
   with check (is_admin() or is_secretaire());
 
@@ -1956,6 +2116,43 @@ create policy "documents_brouillon_prive" on storage.objects
       where d.id::text = (storage.foldername(name))[2]
     )
   );
+
+-- …ET la même exception pour les DONNÉES PERSONNELLES (migration 068). Les
+-- désignations de représentant d'indivision sont les premières pièces jointes à
+-- données personnelles de l'application, et `documents_read_auth` ci-dessus
+-- ouvre TOUT le bucket à tout membre connecté : sans cette garde, un trésorier
+-- lirait la pièce pendant que la ligne qui la cite lui est fermée par la 035 —
+-- la RLS contournée par la porte de derrière.
+--
+-- RESTRICTIVE et ADDITIVE, comme sa sœur. Le premier segment est testé d'abord,
+-- donc aucun autre préfixe n'est concerné.
+drop policy if exists "documents_proprietaires_bureau_read" on storage.objects;
+create policy "documents_proprietaires_bureau_read" on storage.objects
+  as restrictive for select to authenticated
+  using (
+    (storage.foldername(name))[1] is distinct from 'proprietaires'
+    or public.is_admin()
+    or public.is_secretaire()
+  );
+
+-- Et dans l'autre sens : `documents_insert_membre` ouvre le dépôt à tout membre
+-- actif, sur n'importe quel préfixe. Un fichier déposé sous `proprietaires/` par
+-- quelqu'un qui n'y a pas accès serait invisible à son déposant, citable par
+-- personne, et porterait des données personnelles dans un préfixe réservé.
+drop policy if exists "documents_proprietaires_bureau_insert" on storage.objects;
+create policy "documents_proprietaires_bureau_insert" on storage.objects
+  as restrictive for insert to authenticated
+  with check (
+    (storage.foldername(name))[1] is distinct from 'proprietaires'
+    or public.is_admin()
+    or public.is_secretaire()
+  );
+
+-- ⚠ CONSTATÉ, sans conséquence : `documents_delete` réserve la suppression au
+-- président (ou à l'owner d'une décision), donc un secrétaire ne peut pas
+-- effacer du bucket une désignation qu'il a déposée. Sans effet réel —
+-- « Retirer » n'efface jamais l'objet du Storage (orphelins assumés, 012), et
+-- c'est ce qui rend le partage d'une pièce entre deux lignes sûr depuis la 046.
 
 -- Écriture : tout membre ACTIF, et jamais sous une décision ENREGISTRÉE. La
 -- policy n'exige pas que la décision existe déjà : à la création, le fichier
