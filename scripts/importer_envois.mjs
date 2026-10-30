@@ -122,6 +122,18 @@ async function chargerRegistre() {
     .from('proprietaires').select('*').is('date_cession', null)
   if (error) throw new Error(`Lecture du registre des propriétaires : ${error.message}`)
 
+  // ⚠ LES TITULAIRES DOIVENT ÊTRE ATTACHÉS (068). `emailsOfficiels` passe par
+  // `destinatairesDuLot`, qui prend les titulaires dès que la période en a et
+  // retombe sur les colonnes de 044 sinon. Sans cette jointure, la retombée est
+  // SILENCIEUSE : le script lisait l'ancien modèle et déclarait « inconnue du
+  // registre » une adresse qu'il venait lui-même d'en tirer.
+  const { data: titulaires, error: eT } = await supabase
+    .from('titulaires').select('*').is('date_fin', null)
+  if (eT) throw new Error(`Lecture des titulaires : ${eT.message}`)
+  for (const p of proprios || []) {
+    p.titulaires = (titulaires || []).filter((t) => t.proprietaire_id === p.id)
+  }
+
   const officiels = new Map()
   const connus = new Map()
   for (const p of proprios || []) {
@@ -132,6 +144,12 @@ async function chargerRegistre() {
     // « inconnue au registre » de « présente mais pas contact officiel ».
     for (const champ of ['email', 'email_2', 'dirigeant_email', 'dirigeant_email_2', 'mandataire_email']) {
       const v = (p[champ] || '').trim().toLowerCase()
+      if (v) connus.set(v, p)
+    }
+    // …et toutes celles des titulaires, destinataires ou non : c'est ce qui
+    // distingue « inconnue au registre » de « présente, mais pas destinataire ».
+    for (const t of p.titulaires || []) {
+      const v = (t.email || '').trim().toLowerCase()
       if (v) connus.set(v, p)
     }
   }
@@ -296,8 +314,14 @@ async function importerDossierCourant(registre) {
 
   const { lignes, nonRapproches, horsListe } = construireLignes(journal.destinataires, tsv, registre)
 
-  if (journal.nbAnnonce != null && journal.nbAnnonce !== journal.destinataires.length) {
-    soucis.push(`Le journal annonce ${journal.nbAnnonce} destinataires mais en détaille ${journal.destinataires.length}.`)
+  // ⚠ « Destinataires : N » du journal compte les ENVOIS, pas les adresses :
+  // depuis le 30 octobre 2026 un envoi peut viser plusieurs personnes (une SCI
+  // et son mandataire). Plus d'adresses que d'envois est donc NORMAL, et le
+  // signaler comme une anomalie userait l'attention sur le reste du rapport.
+  // Moins d'adresses que d'envois, en revanche, veut dire que des lignes
+  // manquent au journal — et ça, il faut le dire.
+  if (journal.nbAnnonce != null && journal.destinataires.length < journal.nbAnnonce) {
+    soucis.push(`Le journal annonce ${journal.nbAnnonce} envois mais n'en détaille que ${journal.destinataires.length} : des lignes manquent.`)
   }
   if (horsListe.length) {
     soucis.push(`${horsListe.length} adresse(s) du journal absente(s) de \`${FICHIERS.tsv}\` — nom et langue inconnus : ${horsListe.join(', ')}`)

@@ -95,7 +95,15 @@ export function parserJournal(texte, soucis = []) {
     if (!m) continue
     const [, rang, , verdict, reste] = m
     if (verdict === 'OK') {
-      destinataires.push({ rang: +rang, email: reste.trim(), statut: 'envoye', message_erreur: null })
+      // ⚠ UNE LIGNE PEUT PORTER PLUSIEURS ADRESSES, séparées par « ; » : depuis
+      // la relance des titres du 30 octobre 2026, un envoi s'adresse au LOT, et
+      // une SCI a un dirigeant ET un mandataire. Stockée telle quelle, la chaîne
+      // « a@x.fr;b@y.fr » entrait en base comme UNE adresse, qui ne se
+      // rapprochait d'aucun propriétaire et n'était joignable par personne.
+      // Chaque adresse devient donc sa propre ligne, au même rang.
+      for (const e of reste.split(';').map((x) => x.trim()).filter(Boolean)) {
+        destinataires.push({ rang: +rang, email: e, statut: 'envoye', message_erreur: null })
+      }
     } else {
       // « <adresse> : <message> » — l'adresse d'abord, le message est libre et
       // peut lui-même contenir des deux-points.
@@ -152,10 +160,15 @@ export function parserTsv(texte) {
     if (!ligne.trim()) continue
     const [nom, email, langue] = ligne.split('\t')
     if (!email) continue
-    out.set(email.trim().toLowerCase(), {
-      nom: (nom || '').trim() || null,
-      langue: (langue || '').trim().toUpperCase() || null,
-    })
+    // ⚠ Même raison que dans le journal : une ligne du TSV peut viser plusieurs
+    // adresses pour un seul envoi. Chacune doit pouvoir être retrouvée ici,
+    // sinon le nom et la langue manquent à celles qui suivent la première.
+    for (const e of email.split(';').map((x) => x.trim()).filter(Boolean)) {
+      out.set(e.toLowerCase(), {
+        nom: (nom || '').trim() || null,
+        langue: (langue || '').trim().toUpperCase() || null,
+      })
+    }
   }
   return out
 }
