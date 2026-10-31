@@ -587,6 +587,27 @@ create table if not exists lots (
   -- ⚠ Ne jamais s'en servir comme clé : la clé est `numero` (la parcelle).
   numero_syndic       text,
   adresse_lotissement text,                   -- adresse dans le lotissement
+  -- LA NUMÉROTATION D'ORIGINE, celle du cahier des charges de 1955
+  -- (migration 069). Le cahier désigne les terrains par « lot n° 13,
+  -- zone A » ; la 035 notait qu'aucun document connu ne reliait cette
+  -- numérotation aux parcelles actuelles. L'état annoté de Me Garnier du
+  -- 30/10/2026 l'a rétablie pour 26 parcelles, lue dans les actes.
+  -- ⚠ Le couple (zone, numero_origine) est unique — six parcelles portent
+  -- le n° 4, chacune dans une zone différente — mais SANS CONTRAINTE : on
+  -- ne connaît que la moitié des parcelles, une valeur s'est déjà révélée
+  -- fausse à la relecture de l'acte, et « 3 et 5 » n'entre dans aucun
+  -- index. Le doublon est signalé à l'écran, jamais refusé.
+  -- ⚠ TEXTE et non entier : 0B 247+263 porte DEUX lots (« 3 et 5 ») —
+  -- c'est la parcelle à 1,81 lot — et l'état écrit « Lot 09 » avec son
+  -- zéro. Même raisonnement que `presents_representes` (062).
+  -- ⚠ CE N'EST PAS UNE CLÉ : `numero`, la parcelle cadastrale, reste le
+  -- seul identifiant vérifiable. Ne jamais s'en servir pour retrouver un lot.
+  zone                text,                   -- A à E ; était en texte libre dans `observations`
+  numero_origine      text,
+  -- D'où vient la valeur, en toutes lettres : les sources n'ont pas la
+  -- même force — une annotation manuscrite relevée sur un scan ne vaut
+  -- pas la mention portée à l'acte. Même patron que `regles_gestion` (066).
+  origine_source      text,
   -- ASSIETTE des voix en AG (vote au prorata des superficies) et des charges.
   -- Une superficie fausse ne produit pas un affichage faux : elle produit un
   -- vote faux et un appel de fonds faux. `numeric(10,2)` — les surfaces
@@ -705,6 +726,9 @@ create unique index if not exists proprietaires_actuel_par_lot
   on proprietaires (lot_id) where date_cession is null;
 
 create index if not exists proprietaires_lot_idx on proprietaires (lot_id, date_acquisition desc);
+
+-- Retrouver un lot du cahier des charges de 1955 (069). Pas d'unicité.
+create index if not exists lots_origine_idx on lots (zone, numero_origine);
 
 -- E-mail canonique, comme `membres_cs` (migration 018) : la casse a déjà cassé
 -- l'appariement d'identité une fois en production. Ce registre étant destiné à

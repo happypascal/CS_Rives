@@ -189,6 +189,14 @@ export const TRIS = [
   { cle: 'superficie', valeur: (l) => (l.superficie != null ? String(l.superficie) : ''), numerique: true },
   { cle: 'numero_syndic', valeur: (l) => l.numero_syndic || '', numerique: true },
   { cle: 'adresse_lotissement', valeur: (l) => l.adresse_lotissement || '' },
+  // La numérotation d'ORIGINE (069). ⚠ On trie sur « zone + numéro », et le
+  // numéro est COMPLÉTÉ À GAUCHE : en texte, « 10 » passerait avant « 2 », et
+  // `numeric` ne servirait à rien sur une chaîne qui commence par la zone.
+  // Les parcelles sans numéro connu — la moitié — se rangent à la fin.
+  {
+    cle: 'lot_origine',
+    valeur: (l) => (l.numero_origine ? `${l.zone || 'Z'}${String(l.numero_origine).padStart(4, '0')}` : 'ZZZZZ'),
+  },
   { cle: 'adresse_communication', valeur: (l) => l.proprietaire?.adresse_communication || '' },
   { cle: 'proprietaire', valeur: (l) => l.proprietaire?.nom || '' },
   // Tri sur la PREMIÈRE adresse de convocation : c'est celle qui apparaît en

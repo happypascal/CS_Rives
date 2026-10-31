@@ -43,7 +43,7 @@ function Contenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState(CHAMPS_VIDES)
-  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', numero_syndic: '', observations: '' })
+  const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', numero_syndic: '', observations: '', zone: '', numero_origine: '', origine_source: '' })
   const [busy, setBusy] = useState(false)
   const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
   // ⚠ L'ANCIENNE FICHE EST REPLIÉE PAR DÉFAUT sur une période reprise.
@@ -80,10 +80,15 @@ function Contenu() {
       const l = await repo.getLot(id)
       setLot(l)
       if (l) {
-        setLotForm({ numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '' })
+        // ⚠ Un SEUL objet, réutilisé pour le formulaire ET pour l'instantané :
+        // écrits deux fois, ils divergent dès qu'une colonne s'ajoute — et la
+        // divergence se lit « fiche modifiée » sur une fiche qu'on vient
+        // d'ouvrir. C'est ce qui venait de se produire avec `zone`.
+        const champsLot = { numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '', zone: l.zone || '', numero_origine: l.numero_origine || '', origine_source: l.origine_source || '' }
+        setLotForm(champsLot)
         const champs = { ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) }
         setForm(champs)
-        setInitial({ champs, lot: { numero: l.numero || '', adresse_lotissement: l.adresse_lotissement || '', superficie: l.superficie ?? '', nombre_lots: l.nombre_lots ?? '1', numero_syndic: l.numero_syndic || '', observations: l.observations || '' } })
+        setInitial({ champs, lot: champsLot })
       }
     } catch (e) {
       setError(e?.message || 'Chargement impossible.')
@@ -233,6 +238,11 @@ function Contenu() {
         nombre_lots: nombreLots,
         numero_syndic: lotForm.numero_syndic || null,
         observations: lotForm.observations || null,
+        // ⚠ La zone est normalisée en MAJUSCULE : « e » et « E » désignent la
+        // même zone, et deux graphies feraient deux groupes au tri.
+        zone: lotForm.zone.trim().toUpperCase() || null,
+        numero_origine: lotForm.numero_origine.trim() || null,
+        origine_source: lotForm.origine_source.trim() || null,
       })
       await repo.saveProprietaire(id, {
         ...form,
@@ -396,6 +406,43 @@ function Contenu() {
                   Assiette du <strong>poids de vote en AG</strong> (vote au prorata des superficies) et de la{' '}
                   <strong>répartition des charges</strong>. Une superficie fausse fausse les deux.
                 </p>
+              </div>
+              {/* LA NUMÉROTATION D'ORIGINE — celle du cahier des charges de
+                  1955, qui désigne les terrains par « lot n° 13, zone A »
+                  (migration 069). Le registre ne connaissait que la parcelle
+                  cadastrale : aucun document ne reliait les deux, jusqu'à
+                  l'état annoté que Me Garnier a remis le 30 octobre 2026.
+                  ⚠ Ce n'est PAS une clé. La parcelle reste le seul identifiant
+                  vérifiable ; ceci est une information historique, connue pour
+                  la moitié des parcelles seulement. */}
+              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Numérotation d’origine (cahier des charges de 1955)
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input label="Zone" value={lotForm.zone} onChange={setLotChamp('zone')} readOnly={!peutSaisir} placeholder="A à E" />
+                  <Input label="N° de lot d’origine" value={lotForm.numero_origine} onChange={setLotChamp('numero_origine')} readOnly={!peutSaisir} placeholder="ex : 7" />
+                </div>
+                <div className="mt-3">
+                  <Input label="D’où vient ce numéro" value={lotForm.origine_source} onChange={setLotChamp('origine_source')} readOnly={!peutSaisir} placeholder="ex : mention portée à l’acte de vente" />
+                </div>
+                {/* ⚠ La source n'est pas une décoration : vingt-cinq de ces
+                    numéros viennent d'une annotation manuscrite relevée sur un
+                    scan, un seul de l'acte lui-même — et une lecture s'est déjà
+                    révélée fausse. C'est ce champ qui dira, dans dix ans,
+                    laquelle relire. */}
+                <p className="mt-2 text-xs text-slate-500">
+                  C’est ainsi que le <strong>cahier des charges de 1955</strong> et les actes
+                  désignent les terrains. Le couple <strong>zone + numéro</strong> identifie un lot ;
+                  le numéro seul ne suffit pas. ⚠ L’identifiant du registre reste la{' '}
+                  <strong>parcelle cadastrale</strong>, en haut de cette fiche.
+                </p>
+                {!lotForm.numero_origine && (
+                  <p className="mt-1 text-xs text-amber-700">
+                    Numéro d’origine inconnu — il se lit sur l’acte de propriété, et ne se déduit
+                    ni de la parcelle ni de la zone.
+                  </p>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <Textarea label="Observations sur le lot" rows={2} value={lotForm.observations} onChange={setLotChamp('observations')} readOnly={!peutSaisir} />

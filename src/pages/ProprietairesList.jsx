@@ -34,7 +34,7 @@ const COLONNES = [
     // une parcelle n'est pas un lot — deux d'entre elles pèsent 1,81 et 1,19 lot,
     // soit 51 lots pour 50 parcelles. Le nombre de lots se lit sur la fiche.
     libelle: 'Parcelle',
-    tris: [['lot', 'parcelle'], ['superficie', 'surface'], ['numero_syndic', 'n° Foncia']],
+    tris: [['lot', 'parcelle'], ['superficie', 'surface'], ['numero_syndic', 'n° Foncia'], ['lot_origine', 'lot 1955']],
   },
   { libelle: 'Adresse de la parcelle', tris: [['adresse_lotissement', 'adresse']] },
   { libelle: 'Adresse de communication', tris: [['adresse_communication', 'adresse']] },
@@ -118,7 +118,11 @@ function Contenu() {
         : lots
     const liste = terme
       ? base.filter((l) =>
-          [l.numero, l.numero_syndic, l.adresse_lotissement, l.proprietaire?.nom, l.proprietaire?.nom_2,
+          [l.numero, l.numero_syndic, l.adresse_lotissement,
+           // Le lot d'origine se cherche : c'est sous ce nom que le cahier des
+           // charges de 1955 et les actes désignent les terrains.
+           l.numero_origine && `lot ${l.numero_origine}`, l.zone && `zone ${l.zone}`,
+           l.proprietaire?.nom, l.proprietaire?.nom_2,
            l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
            l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
             .filter(Boolean).join(' ').toLowerCase().includes(terme),
@@ -375,6 +379,17 @@ function Contenu() {
                           référence étrangère tenue par un tiers. */}
                       {l.numero_syndic && (
                         <span className="block text-xs text-slate-400">Foncia {l.numero_syndic}</span>
+                      )}
+                      {/* La numérotation d'ORIGINE (069) — celle du cahier des
+                          charges de 1955. ⚠ Zone et numéro ensemble, jamais le
+                          numéro seul : six parcelles portent le n° 4, chacune
+                          dans une zone différente. Affiché seulement s'il est
+                          connu — il manque sur la moitié des parcelles, et une
+                          mention vide sur chaque ligne n'apprendrait rien. */}
+                      {l.numero_origine && (
+                        <span className="block text-xs text-navy-600">
+                          lot {l.numero_origine}{l.zone ? `, zone ${l.zone}` : ''} <span className="text-slate-400">(1955)</span>
+                        </span>
                       )}
                     </td>
 
