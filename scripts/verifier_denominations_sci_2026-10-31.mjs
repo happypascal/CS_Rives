@@ -170,8 +170,9 @@ const NATURES = {
 }
 const estUneSociete = (n) => String(n || '').startsWith('6') || String(n || '').startsWith('5')
 
-async function chercher(q) {
-  const u = `${API}?q=${encodeURIComponent(q)}&per_page=10`
+async function chercher(q, { departement } = {}) {
+  const u = `${API}?q=${encodeURIComponent(q)}&per_page=25`
+    + (departement ? `&departement=${departement}` : '')
   const r = await fetch(u, { headers: { accept: 'application/json' } })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   const d = await r.json()
@@ -191,6 +192,16 @@ async function chercher(q) {
     dirigeants: (x.dirigeants || [])
       .filter((p) => p.type_dirigeant === 'personne physique')
       .map((p) => `${(p.prenoms || '').split(' ')[0]} ${p.nom}`.trim()),
+    // ⚠ LES PATRONYMES SÉPARÉMENT, et c'est ce qui fait la validité du
+    // recoupement. Comparer la chaîne entière revient à comparer aussi les
+    // PRÉNOMS : le script a retenu pour 0B 216 une « MARGUERITE » dont la
+    // gérante est Catherine CHAVANNE, au seul motif que notre représentante
+    // légale s'appelle Catherine DELUCINGE. Un prénom commun ne prouve
+    // strictement rien — un patronyme, si.
+    patronymes: (x.dirigeants || [])
+      .filter((p) => p.type_dirigeant === 'personne physique')
+      .flatMap((p) => String(p.nom || '').split(/[\s()]+/))
+      .filter(Boolean),
   }))
 }
 
@@ -220,9 +231,24 @@ for (const s of societes) {
     // Nernier, dirigeants Lüscher et Schwitzgebel — n'y figurait pas. Le
     // script concluait « à vérifier » sur une société parfaitement trouvable.
     // Les deux listes sont fusionnées et dédoublonnées par SIREN.
-    const [sans, avec] = [await chercher(noyau), await chercher(`SCI ${noyau}`)]
+    // ⚠ ET UNE TROISIÈME PASSE, RESTREINTE À LA HAUTE-SAVOIE. « SCI MARGUERITE »
+    // rend plus de DIX MILLE résultats, triés par pertinence : celle du
+    // lotissement — 7 avenue Alsace-Lorraine à Annemasse, dirigeantes Baud et
+    // Delucinge — n'était dans aucune des deux premières pages. Le script a
+    // conclu « à vérifier à la main » sur une société parfaitement trouvable,
+    // et c'est Pascal qui l'a identifiée.
+    //
+    // ⚠ Le département ne RESTREINT pas la recherche, il l'ÉLARGIT : les trois
+    // passes sont fusionnées. Filtrer sur le 74 seul écarterait Kitka (siège à
+    // La Réunion) et Violette (Toulouse) — le siège d'une SCI est souvent le
+    // domicile de son gérant, pas le lot.
+    const [sans, avec, local] = [
+      await chercher(noyau),
+      await chercher(`SCI ${noyau}`),
+      await chercher(noyau, { departement: '74' }),
+    ]
     const parSiren = new Map()
-    for (const r of [...sans, ...avec]) if (!parSiren.has(r.siren)) parSiren.set(r.siren, r)
+    for (const r of [...sans, ...avec, ...local]) if (!parSiren.has(r.siren)) parSiren.set(r.siren, r)
     trouves = [...parSiren.values()]
     // Pause courte : l'API publique est limitée en débit, et une rafale de
     // requêtes se fait refuser silencieusement.
@@ -243,11 +269,16 @@ for (const s of societes) {
   // retient celle dont un dirigeant porte un patronyme que NOTRE registre
   // rattache déjà à ce lot. C'est le seul recoupement indépendant disponible :
   // il vient de notre base d'un côté, du RNE de l'autre.
-  const patronymes = new Set(
+  // ⚠ LA COMPARAISON PORTE SUR LE PATRONYME DÉCLARÉ AU RNE, pas sur la chaîne
+  // « prénom nom ». Côté nous on garde tous les mots — le format des colonnes
+  // de 042 est libre (« Delucinge Catherine ») — mais côté RNE on ne compare
+  // qu'au nom de famille. Sans cela, « Catherine » suffisait à apparier deux
+  // sociétés sans rapport.
+  const nôtres = new Set(
     s.dirigeantsConnus.flatMap((n) => normaliser(n).split(' ')).filter((m) => m.length > 2),
   )
   const parDirigeant = exacts.filter((t) =>
-    t.dirigeants.some((d) => normaliser(d).split(' ').some((m) => patronymes.has(m))))
+    t.patronymes.some((p) => nôtres.has(normaliser(p))))
 
   // ⚠ LE SIÈGE NE DÉPARTAGE QU'EN DERNIER, et seulement s'il est à NERNIER —
   // c'est-à-dire dans le lotissement lui-même. Ailleurs il ne prouve rien :
@@ -256,19 +287,28 @@ for (const s of societes) {
   // comme telle dans le rapport : elle est probable, pas établie.
   const aNernier = exacts.filter((t) => t.cp === '74140' && /NERNIER/i.test(t.commune))
 
+  // ⚠ DEUX CANDIDATES PEUVENT CORRESPONDRE PAR DIRIGEANT — une société
+  // radiée et celle qui l'a remplacée, par exemple. Le siège les départage
+  // alors, et l'étiquette doit dire que les dirigeants concordent AUSSI :
+  // « siège à Nernier (à confirmer) » tout court laissait croire qu'on avait
+  // choisi sur la seule adresse, ce qui aurait été bien plus faible.
+  const dirigeantEtNernier = parDirigeant.filter((t) => aNernier.includes(t))
+
   const retenu = parDirigeant.length === 1 ? parDirigeant
-    : exacts.length === 1 ? exacts
-      : aNernier.length === 1 ? aNernier
-        : []
+    : dirigeantEtNernier.length === 1 ? dirigeantEtNernier
+      : exacts.length === 1 ? exacts
+        : aNernier.length === 1 ? aNernier
+          : []
 
   lignes.push({
     ...s,
     candidats: trouves.slice(0, 6),
     exacts: retenu,
     preuve: parDirigeant.length === 1 ? 'dirigeant'
-      : exacts.length === 1 ? 'seule société de ce nom'
-        : aNernier.length === 1 ? 'siège à Nernier (à confirmer)'
-          : null,
+      : dirigeantEtNernier.length === 1 ? 'dirigeant + siège à Nernier'
+        : exacts.length === 1 ? 'seule société de ce nom'
+          : aNernier.length === 1 ? 'siège à Nernier (à confirmer)'
+            : null,
     homonymes: exacts.length > 1 ? exacts.length : 0,
   })
 }
