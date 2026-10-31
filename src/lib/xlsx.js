@@ -29,8 +29,12 @@
 // d'un second fichier XML et d'un index à tenir juste. Le volume n'est pas le
 // problème ici, la justesse l'est.
 // ============================================================================
-import { formatDate } from './format'
-import { emailsOfficiels } from './proprietaireLogic'
+// ⚠ EXTENSIONS EXPLICITES. Vite résout `./format` aussi bien que
+// `./format.js` ; Node, lui, exige le `.js`. Sans elles, ce module ne peut pas
+// être importé depuis `scripts/` — et c'est pourtant lui qui sait écrire un
+// classeur qu'Excel ouvre correctement dans les deux locales.
+import { formatDate } from './format.js'
+import { emailsOfficiels } from './proprietaireLogic.js'
 
 // ---------------------------------------------------------------- CRC-32
 // Table calculée une fois. ⚠ Le ZIP est refusé sans CRC juste — c'est la seule
