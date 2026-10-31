@@ -341,9 +341,13 @@ function Contenu() {
                     elle, et c'est le premier réflexe à avoir en préparant une AG.
                     Les repérer d'un coup d'œil évite de les traiter comme les
                     autres.
-                    ⚠ La couleur ne porte pas seule l'information : le nom commence
-                    par « SCI » et la fiche le dit aussi — un daltonien ou une
-                    impression en noir et blanc n'y perdent rien. */}
+                    ⚠ La couleur ne porte pas seule l'information : une mention
+                    « société » suit le nom, et la fiche le dit aussi — un
+                    daltonien ou une impression en noir et blanc n'y perdent rien.
+                    ⚠ CE COMMENTAIRE A ÉTÉ FAUX JUSQU'AU 31 OCTOBRE : il
+                    affirmait que « le nom commence par SCI », alors que neuf des
+                    quatorze sociétés du lotissement sont déclarées sans le sigle.
+                    La couleur portait donc bien seule l'information pour elles. */}
                 {filtres.map((l) => (
                   <tr
                     key={l.id}
@@ -404,6 +408,29 @@ function Contenu() {
                         pour reconstituer un interlocuteur. */}
                     <td className="px-4 py-3 text-slate-700">
                       {l.proprietaire?.nom || <span className="italic text-slate-400">vacant</span>}
+                      {/* ⚠ LA QUALITÉ DE SOCIÉTÉ EST ÉCRITE, PAS DEVINÉE DU NOM.
+                          Le commentaire du corps de tableau affirmait que « le
+                          nom commence par SCI » — c'est faux pour NEUF sociétés
+                          sur quatorze. Vérifié au registre officiel le
+                          31 octobre : Logudoro, Jeanlu, Precettes, Maison du
+                          Lac, Le Clapotis, GABISAM, Entre Lac et Montagnes et
+                          Kitka sont déclarées SANS le sigle — ce sont les
+                          annuaires du web qui préfixent la forme juridique à la
+                          dénomination. Sans cette mention, la couleur ambre
+                          portait seule l'information, ce que ce tableau
+                          s'interdit, et « Logudoro » se lisait comme un nom de
+                          personne. C'est la remarque de Pascal (« il n'y a
+                          jamais SCI »).
+                          ⚠ « société » et non « SCI » : la FORME exacte n'est
+                          pas en base — on sait qu'il s'agit d'une personne
+                          morale, pas si c'est une SCI, une SARL ou autre chose.
+                          Écrire « SCI » serait réintroduire par l'affichage la
+                          supposition qu'on vient de retirer du nom. */}
+                      {l.proprietaire?.est_societe && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                          société
+                        </span>
+                      )}
                       {/* ⚠ L'état du titre SOUS le nom, pas en colonne : une
                           sixième colonne aurait élargi un tableau déjà dense,
                           alors que l'information se lit avec la personne à qui
