@@ -72,6 +72,24 @@ const CORRECTIONS = [
   },
 ]
 
+// ⚠ PRÉNOM ET NOM INVERSÉS — trouvé le 31 octobre en vérifiant les dirigeants
+// à la demande de Pascal. C'est l'erreur de saisie la plus difficile à voir :
+// la fiche se lit sans heurt, « Mehdi Deena » n'a l'air faux qu'à qui connaît
+// la personne. Le RNE déclare « DEENA MEHDI », GÉRANTE de la SCI Precettes
+// (SIREN 509403119) — donc Deena est le prénom et Mehdi le patronyme.
+//
+// ⚠ CE N'EST PAS COSMÉTIQUE. Le registre trie et cherche sur le patronyme,
+// l'export notaire et les convocations l'impriment, et c'est la gérante — la
+// personne qui vote et signe pour la société en assemblée.
+const INVERSIONS = [
+  {
+    parcelle: '0B 240',
+    avant: { prenom: 'Mehdi', nom: 'Deena' },
+    apres: { prenom: 'Deena', nom: 'Mehdi' },
+    source: 'RNE, SIREN 509403119 : « DEENA MEHDI (BOUGARY) », gérante et associée indéfiniment responsable.',
+  },
+]
+
 // Celles qu'on vérifie SANS les toucher : si l'une a bougé, c'est que
 // quelqu'un a corrigé ailleurs et le rapport doit le dire.
 const VERIFICATIONS = [
@@ -121,7 +139,7 @@ const { data: periodes, error: eP } = await supabase
 if (eP) { console.error(`❌ Lecture de \`proprietaires\` : ${eP.message}`); process.exit(1) }
 
 const { data: titulaires, error: eT } = await supabase
-  .from('titulaires').select('id,nom,proprietaire_id,est_personne_morale').is('date_fin', null)
+  .from('titulaires').select('id,nom,prenom,proprietaire_id,est_personne_morale').is('date_fin', null)
 if (eT) { console.error(`❌ Lecture de \`titulaires\` : ${eT.message}`); process.exit(1) }
 
 const lignes = []
@@ -159,6 +177,26 @@ for (const c of CORRECTIONS) {
   lignes.push({ ...c, verdict: 'à corriger', detail: `titulaire « ${t.nom} » → « ${c.apres} » · période « ${periode.nom} » → « ${c.apres} »` })
 }
 
+// ── Les inversions prénom / nom ─────────────────────────────────────────────
+const inversionsAEcrire = []
+for (const inv of INVERSIONS) {
+  const lot = lotParNumero.get(inv.parcelle)
+  const periode = lot && periodes.find((p) => p.lot_id === lot.id)
+  if (!periode) { lignes.push({ parcelle: inv.parcelle, avant: '—', apres: '—', siren: '', motif: inv.source, verdict: 'période introuvable' }); continue }
+  const cibles = titulaires.filter((t) => t.proprietaire_id === periode.id
+    && t.prenom === inv.avant.prenom && t.nom === inv.avant.nom)
+  const dejaFait = titulaires.some((t) => t.proprietaire_id === periode.id
+    && t.prenom === inv.apres.prenom && t.nom === inv.apres.nom)
+  const etiquette = { parcelle: inv.parcelle, avant: `${inv.avant.prenom} ${inv.avant.nom}`, apres: `${inv.apres.prenom} ${inv.apres.nom}`, siren: '', motif: inv.source }
+  if (dejaFait) { lignes.push({ ...etiquette, verdict: 'déjà corrigé' }); continue }
+  if (cibles.length !== 1) {
+    lignes.push({ ...etiquette, verdict: `REFUSÉ — ${cibles.length} titulaire(s) correspondent à « ${inv.avant.prenom} ${inv.avant.nom} »` })
+    continue
+  }
+  inversionsAEcrire.push({ titulaire: cibles[0], inv })
+  lignes.push({ ...etiquette, verdict: 'à corriger' })
+}
+
 for (const v of VERIFICATIONS) {
   const lot = lotParNumero.get(v.parcelle)
   const periode = lot && periodes.find((p) => p.lot_id === lot.id)
@@ -179,17 +217,30 @@ for (const v of VERIFICATIONS) {
 // n'est qu'un champ » est exactement celle qui manque le jour où l'on s'est
 // trompé de ligne.
 const jour = new Date().toISOString().slice(0, 10)
-if (GO && aEcrire.length) {
+if (GO && (aEcrire.length || inversionsAEcrire.length)) {
   await mkdir(join(RACINE, 'backup'), { recursive: true })
   const horodate = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   await writeFile(
     join(RACINE, 'backup', `denominations-sci-${horodate}.json`),
-    JSON.stringify(aEcrire.map((a) => ({
-      titulaire_id: a.titulaire.id, nom: a.titulaire.nom,
-      proprietaire_id: a.periode.id, nom_periode: a.nomPeriodeAvant,
-    })), null, 2),
+    JSON.stringify({
+      denominations: aEcrire.map((a) => ({
+        titulaire_id: a.titulaire.id, nom: a.titulaire.nom,
+        proprietaire_id: a.periode.id, nom_periode: a.nomPeriodeAvant,
+      })),
+      inversions: inversionsAEcrire.map((i) => ({
+        titulaire_id: i.titulaire.id, prenom: i.titulaire.prenom, nom: i.titulaire.nom,
+      })),
+    }, null, 2),
     'utf8',
   )
+}
+
+// ⚠ L'inversion se pose en UN SEUL update : écrire le prénom puis le nom
+// laisserait, entre les deux, une ligne portant deux fois la même valeur.
+for (const i of GO ? inversionsAEcrire : []) {
+  const r = await supabase.from('titulaires')
+    .update({ prenom: i.inv.apres.prenom, nom: i.inv.apres.nom }).eq('id', i.titulaire.id).select()
+  if (r.error) { console.error(`❌ titulaire ${i.titulaire.id} : ${r.error.message}`); process.exit(1) }
 }
 
 for (const a of GO ? aEcrire : []) {

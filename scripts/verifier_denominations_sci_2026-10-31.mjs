@@ -108,7 +108,8 @@ if (e1) { console.error(`❌ Lecture de \`titulaires\` : ${e1.message}`); proces
 // rôle `representant_legal` (068). Sans ce recoupement, huit sociétés sur
 // quatorze restent ambiguës — « VIOLETTE » rend cinq sociétés en France.
 const { data: periodes, error: e2 } = await supabase
-  .from('proprietaires').select('id,lot_id,nom,est_societe,dirigeant_nom,dirigeant_nom_2')
+  .from('proprietaires')
+  .select('id,lot_id,nom,est_societe,dirigeant_nom,dirigeant_nom_2,dirigeant_fonction,dirigeant_fonction_2')
   .is('date_cession', null)
 if (e2) { console.error(`❌ Lecture de \`proprietaires\` : ${e2.message}`); process.exit(1) }
 
@@ -124,14 +125,30 @@ const periodeDe = new Map(periodes.map((p) => [p.id, p]))
 const { data: tousTitulaires } = await supabase
   .from('titulaires').select('nom,prenom,role,proprietaire_id').is('date_fin', null)
 
+// ⚠ APPARIEMENTS TRANCHÉS À LA MAIN, parce que la recherche ne les trouve pas.
+// Ce n'est PAS coder un résultat dans le vérificateur : c'est enregistrer un
+// arbitrage humain, daté et motivé, exactement comme les exceptions nommées de
+// `corriger_pv_archives.mjs`. Sans cela, la société concernée resterait
+// éternellement « à vérifier » et ses dirigeants ne seraient jamais contrôlés.
+const APPARIEMENTS_ARBITRES = {
+  '0B 216': {
+    siren: '448709139',
+    motif: 'Identifiée par Pascal le 31 octobre 2026 : 7 avenue Alsace-Lorraine, '
+      + '74100 Annemasse. Introuvable par recherche — « SCI MARGUERITE » rend '
+      + 'plus de dix mille résultats et celle-ci n’est dans aucune des '
+      + 'premières pages.',
+  },
+}
+
 const societes = titulaires.map((t) => {
   const p = periodeDe.get(t.proprietaire_id)
-  // Les personnes que NOUS rattachons à cette société : ses représentants
-  // légaux (068) et les dirigeants hérités de la 042.
+  // Les personnes que NOUS rattachons à cette société. Deux sources, et elles
+  // ne se valent pas : les titulaires `representant_legal` (068) portent nom
+  // et prénom séparés, les colonnes de la 042 un texte libre.
+  const representants = (tousTitulaires || [])
+    .filter((x) => x.proprietaire_id === t.proprietaire_id && x.role === 'representant_legal')
   const nôtres = [
-    ...(tousTitulaires || [])
-      .filter((x) => x.proprietaire_id === t.proprietaire_id && x.role === 'representant_legal')
-      .map((x) => `${x.prenom || ''} ${x.nom}`.trim()),
+    ...representants.map((x) => `${x.prenom || ''} ${x.nom}`.trim()),
     p?.dirigeant_nom || '',
     p?.dirigeant_nom_2 || '',
   ].filter(Boolean)
@@ -141,6 +158,14 @@ const societes = titulaires.map((t) => {
     nom_periode: p?.nom || '',
     parcelle: p ? lotDe.get(p.lot_id) || '' : '',
     dirigeantsConnus: [...new Set(nôtres)],
+    // Les PATRONYMES que nous portons, pour la comparaison des dirigeants.
+    // ⚠ Pris sur le champ `nom` du titulaire, jamais sur la chaîne entière :
+    // comparer « Catherine » à « Catherine » apparierait deux sociétés sans
+    // rapport, ce qui est précisément arrivé sur 0B 216.
+    patronymesConnus: representants.map((x) => x.nom).filter(Boolean),
+    // Nom ET prénom séparés, pour pouvoir détecter l'INVERSION des deux.
+    representants: representants.map((x) => ({ nom: x.nom || '', prenom: x.prenom || '' })),
+    fonctionsConnues: [p?.dirigeant_fonction, p?.dirigeant_fonction_2].filter(Boolean),
   }
 }).sort((a, b) => a.nom_titulaire.localeCompare(b.nom_titulaire, 'fr'))
 
@@ -202,6 +227,22 @@ async function chercher(q, { departement } = {}) {
       .filter((p) => p.type_dirigeant === 'personne physique')
       .flatMap((p) => String(p.nom || '').split(/[\s()]+/))
       .filter(Boolean),
+    // ⚠ LA QUALITÉ DISTINGUE LE GÉRANT DE L'ASSOCIÉ, et la distinction n'est
+    // pas formelle : dans une SCI, c'est le GÉRANT qui représente la société
+    // et qui engage donc son vote et sa signature en assemblée. Un « associé
+    // indéfiniment responsable » est tenu des dettes, il ne représente rien.
+    // Les confondre ferait convoquer la mauvaise personne — et c'est la faute
+    // que la 042 a corrigée en séparant la CATÉGORIE de la FONCTION.
+    personnes: (x.dirigeants || [])
+      .filter((p) => p.type_dirigeant === 'personne physique')
+      .map((p) => ({
+        patronyme: String(p.nom || '').split(/[\s()]+/)[0] || '',
+        patronymeComplet: String(p.nom || ''),
+        prenom: (p.prenoms || '').split(' ')[0] || '',
+        affiche: `${(p.prenoms || '').split(' ')[0]} ${p.nom}`.trim(),
+        qualite: p.qualite || '',
+        gerant: /g[ée]rant|pr[ée]sident/i.test(p.qualite || ''),
+      })),
   }))
 }
 
@@ -293,6 +334,24 @@ for (const s of societes) {
   // « siège à Nernier (à confirmer) » tout court laissait croire qu'on avait
   // choisi sur la seule adresse, ce qui aurait été bien plus faible.
   const dirigeantEtNernier = parDirigeant.filter((t) => aNernier.includes(t))
+
+  // ⚠ L'ARBITRAGE HUMAIN PASSE AVANT TOUT LE RESTE. Quand un SIREN a été
+  // tranché à la main, on va le chercher par son identifiant — pas par son
+  // nom, qui est justement ce qui n'a pas marché.
+  const arbitre = APPARIEMENTS_ARBITRES[s.parcelle]
+  if (arbitre) {
+    let parSiren = trouves.find((t) => t.siren === arbitre.siren)
+    if (!parSiren) {
+      try {
+        parSiren = (await chercher(arbitre.siren)).find((t) => t.siren === arbitre.siren)
+        await new Promise((r) => setTimeout(r, 400))
+      } catch { /* on retombe sur le traitement ordinaire */ }
+    }
+    if (parSiren) {
+      lignes.push({ ...s, candidats: trouves.slice(0, 6), exacts: [parSiren], preuve: 'arbitré à la main', arbitre })
+      continue
+    }
+  }
 
   const retenu = parDirigeant.length === 1 ? parDirigeant
     : dirigeantEtNernier.length === 1 ? dirigeantEtNernier
@@ -397,6 +456,96 @@ if (!divergentes.length) {
 } else {
   for (const l of divergentes) {
     out.push(`- **${l.parcelle}** — nous : « ${l.nom_titulaire} » · RNE : « ${l.exacts[0].nom} »`)
+  }
+}
+out.push('')
+
+// ── LES DIRIGEANTS ──────────────────────────────────────────────────────────
+// Demande de Pascal, 31 octobre : « vérifie aussi les dirigeants dans le
+// registre ». Le 28 août, trois sur douze étaient faux — le gérant de Logudoro
+// était Marc Pais et non Laurent, celui de Kitka Nicolas Kah et non Isabelle
+// Kittler, et l'associée de Precettes avait été prise pour une mandataire.
+//
+// ⚠ TROIS ÉCARTS DE NATURES DIFFÉRENTES, et les confondre rendrait la liste
+// illisible :
+//   - chez nous mais plus au RNE  → a pu céder ses parts ou démissionner ;
+//   - au RNE mais pas chez nous   → manque au registre, s'il est GÉRANT ;
+//   - associé non gérant           → n'est PAS une anomalie : il n'a pas à
+//     figurer comme représentant, il ne représente rien.
+// ⚠ LA COMPARAISON SE FAIT PAR MOTS, PAS PAR CHAÎNES ÉGALES. Les noms
+// composés et les noms d'usage l'imposent : notre registre porte « Valérie
+// Schwitzgebel Lüscher » là où le RNE déclare le patronyme « SCHWITZGEBEL »
+// et le nom d'usage « SCHWITZGEBEL LÜSCHER ». Une égalité stricte signalait
+// un écart sur une saisie parfaitement juste.
+const mots = (s) => new Set(normaliser(s).split(' ').filter((m) => m.length > 2))
+const seRecoupent = (a, b) => [...mots(a)].some((m) => mots(b).has(m))
+
+const ecarts = []
+for (const l of lignes) {
+  const e = (l.exacts || [])[0]
+  if (!e) continue
+  const gerants = e.personnes.filter((p) => p.gerant)
+  // ⚠ Si le RNE ne qualifie AUCUN dirigeant de gérant — cas des SCI où tous
+  // sont « associé indéfiniment responsable » — on ne peut rien exiger : on
+  // compare alors à l'ensemble, et le rapport le dit.
+  const aComparer = gerants.length ? gerants : e.personnes
+  const manquants = aComparer.filter((p) =>
+    !l.representants.some((r) => seRecoupent(p.patronymeComplet, r.nom)))
+  const enTrop = l.representants.filter((r) =>
+    !e.personnes.some((p) => seRecoupent(p.patronymeComplet, r.nom))
+    // ⚠ Une personne dont le prénom et le nom sont inversés n'est pas « en
+    // trop » : elle est bien dirigeante, c'est sa saisie qui est fautive.
+    // La compter deux fois ferait croire à deux problèmes distincts.
+    && !e.personnes.some((p) => seRecoupent(r.prenom, p.patronymeComplet) && seRecoupent(r.nom, p.prenom)))
+
+  // ⚠ PRÉNOM ET NOM INVERSÉS : l'erreur de saisie la plus difficile à voir,
+  // parce que la fiche se lit sans heurt — « Mehdi Deena » n'a l'air faux
+  // qu'à qui connaît la personne. On la détecte en croisant : notre PRÉNOM
+  // correspond à leur PATRONYME, et notre NOM à leur prénom.
+  const inverses = []
+  for (const r of l.representants) {
+    for (const p of e.personnes) {
+      if (seRecoupent(r.prenom, p.patronymeComplet) && seRecoupent(r.nom, p.prenom)) {
+        inverses.push({ nôtre: r, leur: p })
+      }
+    }
+  }
+
+  if (manquants.length || enTrop.length || inverses.length) {
+    ecarts.push({ l, e, manquants, enTrop, inverses, sansGerantDeclare: !gerants.length })
+  }
+}
+
+out.push('## Les dirigeants')
+out.push('')
+out.push('> ⚠ Dans une SCI, c’est le **gérant** qui représente la société, donc qui')
+out.push('> vote et signe en assemblée. Un « associé indéfiniment responsable » est')
+out.push('> tenu des dettes et ne représente rien : son absence de notre registre')
+out.push('> n’est pas une anomalie, et l’y inscrire comme représentant en serait une.')
+out.push('')
+if (!ecarts.length) {
+  out.push('Aucun écart : pour chaque société appariée, les gérants déclarés au RNE')
+  out.push('sont ceux que porte le registre.')
+} else {
+  for (const x of ecarts) {
+    out.push(`### ${x.l.nom_titulaire} — parcelle ${x.l.parcelle}`)
+    out.push('')
+    out.push(`- Chez nous : ${x.l.dirigeantsConnus.join(', ') || '_personne_'}`)
+    out.push(`- Au RNE : ${x.e.personnes.map((p) => `${p.affiche} (${p.qualite || 'qualité non précisée'})`).join(' · ')}`)
+    for (const i of x.inverses) {
+      out.push(`- 🔴 **PRÉNOM ET NOM INVERSÉS** : nous portons prénom « ${i.nôtre.prenom} », nom « ${i.nôtre.nom} » ;`
+        + ` le RNE déclare « ${i.leur.affiche} » (${i.leur.qualite || 'qualité non précisée'}).`)
+    }
+    if (x.manquants.length) {
+      out.push(`- ⚠ **Absent(s) de notre registre** : ${x.manquants.map((p) => p.affiche).join(', ')}`)
+    }
+    if (x.enTrop.length) {
+      out.push(`- ⚠ **Chez nous mais pas au RNE** : ${x.enTrop.map((r) => `${r.prenom} ${r.nom}`.trim()).join(', ')} — a pu céder ses parts ou démissionner, à vérifier sur pièce.`)
+    }
+    if (x.sansGerantDeclare) {
+      out.push('- _Le RNE ne qualifie aucun de ces dirigeants de gérant : la comparaison porte sur l’ensemble._')
+    }
+    out.push('')
   }
 }
 out.push('')
