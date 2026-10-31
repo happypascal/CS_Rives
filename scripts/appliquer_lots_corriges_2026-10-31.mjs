@@ -48,7 +48,6 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import { inflateRawSync } from 'node:zlib'
-import { Buffer } from 'node:buffer'
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 const GO = process.argv.includes('--go')
