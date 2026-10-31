@@ -2,7 +2,10 @@
 // `titulaireLogic` n'importe rien. `ROLES_DETENTEURS` y est défini une fois —
 // le recopier ici ferait qu'un rôle ajouté un jour serait détenteur dans la
 // carte des titulaires et pas dans le libellé de la période.
-import { ROLES_DETENTEURS } from './titulaireLogic'
+// ⚠ L'EXTENSION `.js` EST OBLIGATOIRE : Vite la devine, Node en ESM non — et
+// les scripts de `scripts/` importent ce module directement. Le dépôt a déjà
+// buté dessus avec `xlsx.js`.
+import { ROLES_DETENTEURS } from './titulaireLogic.js'
 
 // ============================================================================
 // Registre des propriétaires — les DESTINATAIRES OFFICIELS
@@ -148,9 +151,90 @@ function titulairesActifs(proprietaire) {
 export function libelleDeLaPeriode(proprietaire) {
   return titulairesActifs(proprietaire)
     .filter((t) => ROLES_DETENTEURS.includes(t.role))
-    .map((t) => [t.prenom, t.nom].map((x) => (x || '').trim()).filter(Boolean).join(' '))
+    .sort(ordreDuLibelle)
+    .map(nommerDetenteur)
     .filter(Boolean)
     .join(' / ')
+}
+
+/**
+ * L'ordre des détenteurs dans le libellé.
+ *
+ * ⚠ IL DOIT ÊTRE DÉTERMINÉ, ET IL NE L'ÉTAIT PAS. Sans tri, l'ordre est celui
+ * que la base renvoie — c'est-à-dire aucun ordre garanti : le premier essai a
+ * produit « Mme Gladkov / Danil Gladkov » et « Mme Junod / Alain Junod », et
+ * rien n'aurait empêché le même lot de s'intituler autrement au recalcul
+ * suivant. Un libellé qui bouge tout seul dans un registre légal, c'est une
+ * ligne de liste et une ligne d'export qui changent sans que personne n'ait
+ * rien fait.
+ *
+ * ⚠ LE MEMBRE VOTANT D'ABORD, parce que c'est lui qui porte la voix du lot
+ * (art. 9) : le nommer en tête n'est pas une politesse, c'est dire qui
+ * représente la propriété. Le reste suit l'ordre alphabétique du patronyme,
+ * qui a le mérite d'être stable.
+ */
+function ordreDuLibelle(a, b) {
+  if (Boolean(a.est_membre_votant) !== Boolean(b.est_membre_votant)) {
+    return a.est_membre_votant ? -1 : 1
+  }
+  return `${a.nom || ''} ${a.prenom || ''}`.localeCompare(`${b.nom || ''} ${b.prenom || ''}`, 'fr')
+}
+
+/**
+ * Comment une personne se nomme dans le libellé d'une période.
+ *
+ * ⚠ LA CIVILITÉ REMPLACE LE PRÉNOM QUAND IL MANQUE (demande de Pascal,
+ * 31 octobre). Dix-neuf titulaires du registre n'ont pas de prénom — les
+ * états du syndic n'en donnaient pas — et le libellé se réduisait alors au
+ * patronyme seul : « Hartwig », « Pargoux ». Sur un couple, « Pargoux /
+ * Pargoux » ne dit même plus qu'il s'agit de deux personnes.
+ *
+ * ⚠ ET ELLE NE S'AJOUTE PAS AU PRÉNOM. « M. Jean Ferran » alourdit une liste
+ * de cinquante lignes sans rien apprendre : le prénom suffit à identifier.
+ * La civilité est un REMPLAÇANT, pas un préfixe — c'est tout ce qui reste
+ * quand on ne connaît pas le prénom.
+ *
+ * ⚠ Et une personne morale n'en porte jamais : « M. SCI Logudoro » serait
+ * absurde. Son nom est sa dénomination, un point c'est tout.
+ */
+export function nommerDetenteur(t) {
+  const nom = (t?.nom || '').trim()
+  if (!nom) return ''
+  if (t?.est_personne_morale) return nom
+  const prenom = (t?.prenom || '').trim()
+  if (prenom) return `${prenom} ${nom}`
+  const civilite = (t?.civilite || '').trim()
+  return civilite ? `${civilite} ${nom}` : nom
+}
+
+/**
+ * Les noms d'une période pour les DOCUMENTS qui partent à l'étude — le PDF de
+ * l'état des colotis et son classeur.
+ *
+ * ⚠ `nom_2` N'EST AJOUTÉ QUE S'IL N'EST PAS DÉJÀ DANS LE LIBELLÉ. Depuis le
+ * 31 octobre, `nom` nomme TOUS les détenteurs (« Danil Gladkov / Mme
+ * Gladkov ») tandis que `nom_2` porte encore le second propriétaire hérité de
+ * la 038. Les concaténer sans regarder donnait « Danil Gladkov / Mme Gladkov /
+ * Gladkov Mme » dans le document envoyé au notaire.
+ *
+ * ⚠ ON LE GARDE POUR AUTANT : sur une période sans titulaires, `nom_2` est le
+ * seul endroit où la seconde personne soit nommée. Le retirer ferait réclamer
+ * un seul titre là où deux sont dus.
+ *
+ * ⚠ Comparaison par MOTS : « Gladkov Mme » et « Mme Gladkov » sont la même
+ * personne écrite dans deux ordres, et une égalité stricte ne le verrait pas.
+ *
+ * Partagée par le PDF et le classeur : deux recettes pour le même nom
+ * divergent au premier changement, et c'est le même document qui part.
+ */
+export function composerNoms(p) {
+  const nom = (p?.nom || '').trim()
+  const second = (p?.nom_2 || '').trim()
+  if (!second) return nom
+  const mots = (s) => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((m) => m.length > 2)
+  const motsDuSecond = mots(second)
+  const dejaLa = motsDuSecond.length > 0 && motsDuSecond.every((m) => mots(nom).includes(m))
+  return dejaLa ? nom : [nom, second].filter(Boolean).join(' / ')
 }
 
 /**

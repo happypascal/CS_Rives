@@ -34,7 +34,7 @@
 // être importé depuis `scripts/` — et c'est pourtant lui qui sait écrire un
 // classeur qu'Excel ouvre correctement dans les deux locales.
 import { formatDate } from './format.js'
-import { emailsOfficiels } from './proprietaireLogic.js'
+import { emailsOfficiels, composerNoms } from './proprietaireLogic.js'
 
 // ---------------------------------------------------------------- CRC-32
 // Table calculée une fois. ⚠ Le ZIP est refusé sans CRC juste — c'est la seule
@@ -216,7 +216,12 @@ export function colotisNotaireLignes(lots) {
   const entetes = ['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie (m²)', 'Acte reçu le', 'Observations']
   const corps = (lots || []).map((l) => {
     const p = l.proprietaire
-    const noms = p ? [p.nom, p.nom_2].filter(Boolean).join(' / ') : ''
+    // ⚠ MÊME RECETTE QUE LE PDF, et importée plutôt que recopiée : les deux
+    // documents partent à la même étude, et deux compositions du même nom
+    // divergent au premier changement. Depuis le 31 octobre, `nom` nomme déjà
+    // tous les détenteurs — y ajouter `nom_2` sans regarder répétait la
+    // seconde personne.
+    const noms = p ? composerNoms(p) : ''
     return [
       l.numero || '',
       // ⚠ Une parcelle vacante reste dans le fichier, dite comme telle : une

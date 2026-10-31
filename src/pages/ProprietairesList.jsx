@@ -49,6 +49,21 @@ const COLONNES = [
   },
 ]
 
+// Cette personne figure-t-elle déjà dans le libellé de la période ?
+//
+// ⚠ DEUX FORMES À TESTER, ET C'EST LE PIÈGE. `destinatairesDuLot` compose le
+// nom avec la CIVILITÉ — « M. Danil Gladkov » — tandis que le libellé n'y met
+// la civilité que lorsque le prénom manque : « Danil Gladkov / Mme Gladkov ».
+// Ne tester que la forme avec civilité ferait répéter tous ceux qui ont un
+// prénom, c'est-à-dire la quasi-totalité ; ne tester que la forme sans
+// civilité ferait répéter ceux qui n'en ont pas. On teste les deux.
+const CIVILITES = /^(M\.|Mme|Mlle|M)\s+/i
+function dejaAuLibelle(libelle, nom) {
+  const l = libelle || ''
+  if (!l || !nom) return false
+  return l.includes(nom) || l.includes(nom.replace(CIVILITES, ''))
+}
+
 export default function ProprietairesList() {
   return (
     <RgpdGate>
@@ -480,7 +495,19 @@ function Contenu() {
                         if (l.proprietaire && liste.length === 0) {
                           return <span className="block text-xs font-medium text-amber-700">injoignable</span>
                         }
-                        return liste.map((d, i) => (
+                        return liste.map((d, i) => {
+                          // ⚠ UNE LIGNE QUI N'APPREND RIEN NE S'AFFICHE PAS.
+                          // Depuis que le libellé nomme tous les détenteurs,
+                          // un indivisaire sans adresse électronique ni
+                          // téléphone ne laissait plus qu'un « indivisaire »
+                          // orphelin — répété cinq fois sur l'indivision de la
+                          // parcelle 0B 247+263. Le registre compte des
+                          // titulaires sans e-mail : ce cas est courant, pas
+                          // théorique.
+                          const rôle = d.source !== CONTACT_PROPRIETAIRE
+                          const nom = d.nom && !dejaAuLibelle(l.proprietaire?.nom, d.nom) ? d.nom : ''
+                          if (!d.email && !d.telephone && !nom && !d.refus_electronique) return null
+                          return (
                           <span key={`${d.source}-${i}`} className="mt-0.5 block text-xs text-slate-500">
                             {d.email || d.telephone}
                             {/* D'où vient l'adresse : sans cela on croirait écrire
@@ -490,10 +517,20 @@ function Contenu() {
                                 068 : la bascule se fait période par période, et
                                 une liste mêle donc les deux. Sans la seconde
                                 table, un lot repris afficherait « undefined ». */}
-                            {d.source !== CONTACT_PROPRIETAIRE && (
+                            {/* ⚠ LE NOM N'EST RÉPÉTÉ QUE S'IL N'EST PAS DÉJÀ AU
+                                LIBELLÉ. Depuis que celui-ci nomme TOUS les
+                                détenteurs — « Danil Gladkov / Mme Gladkov » —
+                                le redire ligne par ligne recrée exactement le
+                                doublon que Pascal a signalé sur la fiche le
+                                31 octobre : les mêmes noms deux fois sur le
+                                même écran. On garde le RÔLE, qui lui n'est
+                                nulle part ailleurs, et le nom ne reparaît que
+                                pour ceux qui ne possèdent pas — le dirigeant
+                                d'une SCI, un mandataire, un nu-propriétaire. */}
+                            {rôle && (
                               <span className="block italic text-slate-400">
                                 {(CONTACT_LABELS[d.source] || ROLE_LABELS[d.source] || d.source).toLowerCase()}
-                                {d.nom ? ` — ${d.nom}` : ''}
+                                {nom ? ` — ${nom}` : ''}
                                 {d.refus_electronique && <span className="not-italic text-amber-700"> · courrier postal</span>}
                               </span>
                             )}
@@ -501,7 +538,8 @@ function Contenu() {
                               <span className="block whitespace-nowrap text-slate-400">{d.telephone}</span>
                             )}
                           </span>
-                        ))
+                          )
+                        })
                       })()}
                       {/* LE SECOND INDIVISAIRE, avec SES propres coordonnées.
                           Deux noms, une seule propriété — une part de charges,

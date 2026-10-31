@@ -10,7 +10,7 @@ import { tally, tallySummary, engagementApprouve, VOTE_LABELS, phaseOf } from '.
 import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
-import { emailsOfficiels } from './proprietaireLogic'
+import { emailsOfficiels, composerNoms } from './proprietaireLogic'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -557,7 +557,17 @@ const nombre = (n) => pdfText(new Intl.NumberFormat('fr-FR').format(Number(n) ||
 function nomsDuLot(lot) {
   const p = lot.proprietaire
   if (!p) return null
-  return pdfText([p.nom, p.nom_2].filter(Boolean).join(' / '))
+  // ⚠ `nom_2` N'EST AJOUTÉ QUE S'IL N'EST PAS DÉJÀ DANS LE LIBELLÉ. Depuis le
+  // 31 octobre, `nom` nomme TOUS les détenteurs — « Danil Gladkov / Mme
+  // Gladkov » — tandis que `nom_2` porte encore le second propriétaire hérité
+  // de la 038. Les concaténer sans regarder donnait « Danil Gladkov / Mme
+  // Gladkov / Gladkov Mme » dans l'état envoyé au notaire.
+  // On le garde quand même pour les périodes sans titulaires, où lui seul
+  // connaît la seconde personne.
+  // ⚠ `composerNoms` vit dans `proprietaireLogic`, pas ici : `xlsx.js` emploie
+  // la même recette et il est importé par des scripts Node — le faire
+  // dépendre de ce module y chargerait jspdf pour rien.
+  return pdfText(composerNoms(p))
 }
 
 export function downloadRegistreNotairePDF(lots, opts = {}) {
