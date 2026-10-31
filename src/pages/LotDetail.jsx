@@ -8,17 +8,29 @@ import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, apportDe, lireTri, trierLots, aDesTitulaires } from '../lib/proprietaireLogic'
+// ⚠ `CONTACTS`, `CONTACT_LABELS`, `destinataires` et `apportDe` ne sont plus
+// importés ici : les cases de 044 ont quitté cet écran. Ils servent encore
+// ailleurs — `destinatairesDuLot` les emploie comme REPLI pour les périodes
+// sans titulaires, et la liste des parcelles les lit. Ne pas les supprimer de
+// `proprietaireLogic` au motif que la fiche ne s'en sert plus.
+import { CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots } from '../lib/proprietaireLogic'
 import TitulairesLot from '../components/TitulairesLot'
 import AssistantMutation from '../components/AssistantMutation'
+import PiecesJointes from '../components/PiecesJointes'
 
-// Champs de la période de propriété telle que la 044 la décrivait.
+// Champs de la période de propriété.
 //
-// ⚠ ILS NE SERVENT PLUS QU'À L'ANCIENNE FICHE, celle qu'on déplie sur une
-// période reprise avant la 068 pour relire ce qui y avait été saisi. Une
-// MUTATION n'y touche plus : elle passe par `AssistantMutation`, qui ouvre la
-// période neuve avec ses titulaires et laisse ces colonnes vides. Les remplir
-// à nouveau ici ferait retomber le lot sur l'ancien modèle.
+// ⚠ LES COLONNES DE 044 Y SONT ENCORE, ALORS QUE PLUS AUCUN CHAMP DE L'ÉCRAN
+// NE LES MONTRE — `nom_2`, `dirigeant_*`, `mandataire_*`, `contacts_officiels`,
+// `email`, `telephone`, `est_indivision`. C'est délibéré et c'est ce qui rend
+// le retrait du 31 octobre SÛR : le formulaire les charge et les renvoie
+// telles quelles, si bien qu'un enregistrement de la fiche ne les efface pas.
+// Les retirer d'ici, en revanche, viderait ces colonnes au premier clic sur
+// « Enregistrer » — sur cinquante périodes d'un registre légal, en silence.
+//
+// Ce que l'écran montre encore : le nom (libellé de la période), l'adresse de
+// communication, la date d'acquisition, les observations, le suivi du titre
+// (059) et la pièce (070). Les PERSONNES sont dans la carte Titulaires du lot.
 const CHAMPS_VIDES = {
   nom: '', est_societe: false, dirigeant_nom: '', dirigeant_fonction: '',
   adresse_communication: '', adresse_dirigeant: '', email: '', telephone: '',
@@ -29,6 +41,10 @@ const CHAMPS_VIDES = {
   contacts_officiels: [CONTACT_PROPRIETAIRE],
   date_acquisition: '', observations: '',
   acte_transmis_le: '', acte_observations: '',
+  // La pièce qui prouve la période (migration 070). Elle, se saisit bien ici :
+  // l'assistant ne la demande qu'à la mutation, et les 51 périodes déjà au
+  // registre n'ont jamais eu d'endroit où la ranger.
+  documents: [],
 }
 
 export default function LotDetail() {
@@ -54,12 +70,6 @@ function Contenu() {
   // du choix de la forme (vente, donation, démembrement, succession) jusqu'aux
   // titulaires de la période neuve. La page n'a plus qu'à l'ouvrir.
   const [mutationOuverte, setMutationOuverte] = useState(false)
-  // ⚠ L'ANCIENNE FICHE EST REPLIÉE PAR DÉFAUT sur une période reprise.
-  // Affichée, elle décrivait les mêmes personnes une seconde fois, en grisé et
-  // sur trois écrans — « il reste le propriétaire et l'ancien propriétaire,
-  // c'est pas clair du tout » (Pascal, 22 octobre). Deux descriptions du même
-  // lot sur la même page, c'est une de trop, même quand l'une est inerte.
-  const [voirAncienneFiche, setVoirAncienneFiche] = useState(false)
   const [confirm, confirmModal] = useConfirm()
   // Les parcelles voisines, pour naviguer sans repasser par la liste. Rangées
   // dans L'ORDRE DU TRI CHOISI DANS LA LISTE (mémorisé par navigateur) : trier
@@ -171,11 +181,11 @@ function Contenu() {
     )
   }
 
-  const cochees = sourcesCochees(form)
-  // La période est-elle décrite par ses titulaires (068) ? Si oui, les cases de
-  // 044 ne commandent plus les envois et passent en lecture seule.
-  const reprisParTitulaires = aDesTitulaires(lot?.proprietaire)
-  const listeDestinataires = destinataires(form)
+  // ⚠ `aDesTitulaires` N'EST PLUS INTERROGÉ ICI, et c'est le signe que le
+  // retrait est complet : plus un seul champ de cette fiche ne change selon que
+  // la période est décrite par ses titulaires ou par les colonnes de 044. La
+  // question se pose désormais au seul endroit qui en dépend, la carte
+  // Titulaires du lot — et dans la liste des parcelles.
 
   const rang = parcelles.findIndex((x) => x.id === id)
   const precedente = rang > 0 ? parcelles[rang - 1] : null
@@ -252,9 +262,22 @@ function Contenu() {
         numero_origine: lotForm.numero_origine.trim() || null,
         origine_source: lotForm.origine_source.trim() || null,
       })
+      // ⚠ `est_societe` EST DÉRIVÉ, PLUS SAISI (31 octobre). La case posait la
+      // même question que `est_personne_morale` sur chaque titulaire, et deux
+      // champs pour la même chose divergent dès la première correction. La
+      // colonne, elle, reste : c'est elle que la liste des parcelles lit pour
+      // signaler les sociétés.
+      // ⚠ On ne dérive QUE si la période a des titulaires. Sans eux, il n'y a
+      // rien d'où déduire, et écraser par `false` effacerait une qualification
+      // que quelqu'un a posée — on garde alors ce que la base porte déjà.
+      const titulairesActifs = (lot.proprietaire?.titulaires || []).filter((t) => !t.date_fin)
+      const estSociete = titulairesActifs.length
+        ? titulairesActifs.some((t) => t.est_personne_morale && t.role !== 'nu_proprietaire')
+        : Boolean(form.est_societe)
       await repo.saveProprietaire(id, {
         ...form,
         nom: form.nom.trim(),
+        est_societe: estSociete,
         date_acquisition: form.date_acquisition || null,
         dirigeant_nom: form.dirigeant_nom || null,
         dirigeant_fonction: form.dirigeant_fonction || null,
@@ -437,73 +460,27 @@ function Contenu() {
             <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Input label="Nom du propriétaire (ou raison sociale)" value={form.nom} onChange={set('nom')} readOnly={!peutSaisir} required />
-                <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" checked={form.est_societe} onChange={set('est_societe')} disabled={!peutSaisir} />
-                  Le propriétaire est une société (SCI)
-                </label>
-                {reprisParTitulaires && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Ce nom est le <strong>libellé de la période</strong> au registre : il apparaît
-                    dans la liste des parcelles et sur les documents. Les personnes, elles, sont
-                    dans la carte Titulaires du lot.
-                  </p>
-                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  Ce nom est le <strong>libellé de la période</strong> au registre : il apparaît dans
+                  la liste des parcelles, dans les exports et sur les documents. Les personnes, elles,
+                  sont dans la carte <strong>Titulaires du lot</strong>.
+                </p>
+                {/* ⚠ LA CASE « SOCIÉTÉ » A ÉTÉ RETIRÉE, PAS LA COLONNE. Elle
+                    posait la même question que `est_personne_morale` sur chaque
+                    titulaire, et deux réponses pour la même chose se
+                    contredisent dès la première correction. `est_societe` est
+                    désormais DÉRIVÉ des détenteurs à l'enregistrement (cf.
+                    `enregistrer`) — la liste des parcelles continue d'y lire
+                    quelles périodes sont des sociétés. */}
               </div>
-              {/* DIRIGEANTS : organes de la société propriétaire, affichés
-                  seulement si le propriétaire EST une société. Sur une personne
-                  physique ces champs n'ont aucun sens.
-
-                  ⚠ « Dirigeant » est la CATÉGORIE, « gérant » une FONCTION parmi
-                  d'autres (président, associé) — c'est le champ Fonction qui la
-                  porte. Nommer le champ « gérant » puis y ranger un président
-                  écrivait dans un registre légal une qualité que l'intéressé n'a
-                  pas (correction Pascal, migration 042).
-
-                  ⚠ La Fonction RECOPIE le registre officiel (gouv.fr), « autre »
-                  compris — c'est une transcription, pas un champ à compléter au
-                  jugé. Deux dirigeants du lotissement la portent réellement.
-
-                  ⚠ À ne pas confondre avec le mandataire plus bas : le dirigeant
-                  ENGAGE la société, le mandataire ne fait que relayer.
-
-                  Deux colonnes parce que la CO-DIRECTION est le cas ordinaire
-                  d'une SCI familiale, et qu'elle a des effets concrets pour
-                  l'ASL : l'un comme l'autre peut voter et signer pour la société.
-                  N'en nommer qu'un laissait le registre muet sur celui qui se
-                  présenterait à l'assemblée. */}
-              {form.est_societe && (!reprisParTitulaires || voirAncienneFiche) && (
-                <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Dirigeant(s) de la société
-                  </p>
-                  {reprisParTitulaires && (
-                    <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
-                      Deux dirigeants au plus ici, et une seule adresse pour les deux. Dans la
-                      carte <strong>Titulaires du lot</strong>, chacun est une ligne, avec sa
-                      propre adresse — et il peut y en avoir trois.
-                    </p>
-                  )}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
-                      <Input label="Nom du dirigeant" value={form.dirigeant_nom} onChange={set('dirigeant_nom')} readOnly={!peutSaisir || reprisParTitulaires} />
-                      <Input label="Fonction" value={form.dirigeant_fonction} onChange={set('dirigeant_fonction')} readOnly={!peutSaisir || reprisParTitulaires} placeholder="gérant, président, autre…" />
-                      <Input label="Email" type="email" value={form.dirigeant_email} onChange={set('dirigeant_email')} readOnly={!peutSaisir || reprisParTitulaires} />
-                      <Input label="Téléphone" value={form.dirigeant_telephone} onChange={set('dirigeant_telephone')} readOnly={!peutSaisir} />
-                    </div>
-                    <div className="space-y-3">
-                      <Input label="Nom du second dirigeant" value={form.dirigeant_nom_2} onChange={set('dirigeant_nom_2')} readOnly={!peutSaisir || reprisParTitulaires} />
-                      <Input label="Fonction" value={form.dirigeant_fonction_2} onChange={set('dirigeant_fonction_2')} readOnly={!peutSaisir || reprisParTitulaires} placeholder="gérant, associé, autre…" />
-                      <Input label="Email" type="email" value={form.dirigeant_email_2} onChange={set('dirigeant_email_2')} readOnly={!peutSaisir || reprisParTitulaires} />
-                      <Input label="Téléphone" value={form.dirigeant_telephone_2} onChange={set('dirigeant_telephone_2')} readOnly={!peutSaisir} />
-                    </div>
-                  </div>
-                  {/* Une seule adresse : en pratique deux dirigeants d'une même
-                      SCI se joignent au même siège. */}
-                  <div className="mt-3">
-                    <Input label="Adresse de la société" value={form.adresse_dirigeant} onChange={set('adresse_dirigeant')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  </div>
-                </div>
-              )}
+              {/* ⚠ LE FILET DU RETRAIT EST DANS LA CARTE « TITULAIRES DU LOT »,
+                  PAS ICI. Une période sans titulaire n'est plus décrite par
+                  personne depuis que les quatre blocs de 044 ont quitté cet
+                  écran, et il faut le dire — mais à UN seul endroit, celui où
+                  l'on agit : le bouton « + Titulaire » y est à côté du message.
+                  Le répéter dans cette carte faisait deux bandeaux identiques
+                  sur le même écran, ce que le retrait vise précisément à
+                  supprimer. */}
               <div className="sm:col-span-2">
                 {/* Textarea et non Input : l'adresse s'écrit comme sur une
                     enveloppe — voie, puis code postal et ville, puis le pays
@@ -518,199 +495,6 @@ function Contenu() {
                   placeholder={'12 rte de Messery\n74140 Nernier'}
                 />
               </div>
-              {/* ⚠ UNE SEULE DESCRIPTION DU LOT À L'ÉCRAN. Les quatre blocs qui
-                  suivent — destinataires, second propriétaire, dirigeants,
-                  mandataire — décrivent des PERSONNES, et ce sont les titulaires
-                  qui le font désormais. On les replie plutôt que de les
-                  supprimer : ils disent d'où vient la reprise, et la donnée est
-                  toujours en base. */}
-              {reprisParTitulaires && (
-                <div className="sm:col-span-2">
-                  <button
-                    type="button"
-                    className="text-sm text-navy-700 underline decoration-navy-300 hover:text-navy-900"
-                    onClick={() => setVoirAncienneFiche((v) => !v)}
-                  >
-                    {voirAncienneFiche ? 'Masquer' : 'Afficher'} la fiche d’avant la reprise
-                  </button>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Les personnes de ce lot — propriétaires, dirigeants, mandataire — sont dans la
-                    carte <strong>Titulaires du lot</strong>, plus haut. L’ancienne fiche ne portait
-                    que deux noms ; elle est conservée en lecture seule.
-                  </p>
-                </div>
-              )}
-
-              {/* DESTINATAIRES OFFICIELS — qui reçoit les convocations.
-                  ⚠ On convoque TOUS ceux qui doivent l'être, pas un seul : les
-                  deux indivisaires d'une indivision, l'usufruitier et le
-                  nu-propriétaire d'une donation démembrée, le dirigeant d'une SCI
-                  et son mandataire sur place. D'où des cases, pas un choix unique.
-                  Le registre stocke les cases cochées, jamais les adresses :
-                  corriger l'e-mail du mandataire met la convocation à jour sans
-                  qu'on y pense, et décocher n'efface rien. */}
-              {(!reprisParTitulaires || voirAncienneFiche) && (
-              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Destinataires des convocations
-                </p>
-                {/* ⚠ CES CASES NE COMMANDENT PLUS RIEN DÈS QUE LA PÉRIODE A DES
-                    TITULAIRES (068), et elles passent alors en lecture seule.
-                    Les laisser modifiables, c'était deux formulaires écrivant la
-                    même adresse : ils divergent à la première correction, et
-                    rien ne le signale. Elles restent AFFICHÉES — ce sont elles
-                    qui ont servi jusqu'ici, et elles disent d'où vient la
-                    reprise. */}
-                {reprisParTitulaires && (
-                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
-                    Ce lot est décrit par ses <strong>titulaires</strong>, plus haut : ce sont eux
-                    qui déterminent les envois. Ces cases ne servent plus et sont conservées en
-                    lecture seule, telles qu’elles étaient avant la reprise.
-                  </p>
-                )}
-                <div className="mb-3 grid gap-2 sm:grid-cols-2">
-                  {CONTACTS.map((c) => (
-                    <label key={c} className="flex items-center gap-2 text-sm text-slate-600">
-                      <input
-                        type="checkbox"
-                        checked={cochees.includes(c)}
-                        onChange={(e) =>
-                          setForm((f) => {
-                            const avant = sourcesCochees(f)
-                            const apres = e.target.checked
-                              ? [...avant, c]
-                              : avant.filter((x) => x !== c)
-                            // ⚠ Jamais aucune case : un ensemble vide voudrait
-                            // dire « ne convoquer personne ». Décocher la
-                            // dernière retombe sur le propriétaire.
-                            return { ...f, contacts_officiels: apres.length ? apres : [CONTACT_PROPRIETAIRE] }
-                          })
-                        }
-                        disabled={!peutSaisir || reprisParTitulaires}
-                      />
-                      {CONTACT_LABELS[c]}
-                      {/* ⚠ Une case reste cochable même sans coordonnée — on peut
-                          vouloir la cocher avant de saisir l'adresse. Mais son
-                          absence d'effet doit se VOIR, sinon la case laisse croire
-                          que la personne est convoquée. */}
-                      {apportDe(form, c).length === 0 && (
-                        <span className="text-xs italic text-slate-400">sans coordonnées</span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-
-                {/* Les coordonnées du propriétaire se saisissent ici — c'est SA
-                    fiche. Celles des autres sources se modifient dans leur
-                    propre bloc, sans quoi on créerait une seconde copie qui
-                    divergerait. */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input label="Email du propriétaire" type="email" value={form.email} onChange={set('email')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  <Input label="Téléphone du propriétaire" value={form.telephone} onChange={set('telephone')} readOnly={!peutSaisir || reprisParTitulaires} />
-                </div>
-
-                {/* Le résultat, tel qu'il partira. Le montrer évite de croire
-                    qu'une case cochée suffit quand la source est vide.
-                    ⚠ MAIS PLUS QUAND LA PÉRIODE EST REPRISE : afficher ici une
-                    liste de destinataires que les envois n'emploient plus serait
-                    pire que de ne rien afficher — deux listes contradictoires
-                    sur le même écran, dont rien ne dit laquelle fait foi. */}
-                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {reprisParTitulaires ? 'Ancien calcul, sans effet' : 'Recevront la convocation'}
-                </p>
-                {reprisParTitulaires ? (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Les destinataires de ce lot sont ceux de la carte <strong>Titulaires du lot</strong>,
-                    en haut de cette fiche.
-                  </p>
-                ) : listeDestinataires.length === 0 ? (
-                  <p className="mt-1 text-xs font-medium text-amber-700">
-                    Aucune des sources cochées ne porte de coordonnées : ce lot n’est joignable par aucun moyen officiel.
-                  </p>
-                ) : (
-                  <ul className="mt-1 space-y-0.5">
-                    {listeDestinataires.map((d, i) => (
-                      <li key={`${d.source}-${i}`} className="text-xs text-slate-600">
-                        <span className="text-slate-400">{CONTACT_LABELS[d.source]} — </span>
-                        {d.nom || <span className="italic text-slate-400">nom inconnu</span>}
-                        {d.email ? ` · ${d.email}` : ''}
-                        {d.telephone ? ` · ${d.telephone}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              )}
-              {/* INDIVISION — deux personnes, mais UNE propriété : une part de
-                  charges, une voix, une période. C'est pourquoi le second
-                  indivisaire tient sur la MÊME ligne du registre : le mettre sur
-                  une seconde ligne compterait la parcelle, la superficie et les
-                  voix en double.
-                  ⚠ Placé APRÈS les coordonnées officielles du premier
-                  propriétaire (demande de Pascal) : l'adresse de communication,
-                  l'e-mail et le téléphone valent pour la propriété entière, et
-                  les couper par un second nom faisait douter de qui ils sont. */}
-              {(!reprisParTitulaires || voirAncienneFiche) && (
-              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Second propriétaire
-                </p>
-                <p className="mb-3 text-xs text-slate-500">
-                  À renseigner si le bien est détenu par deux personnes. Il reste{' '}
-                  <strong>une seule propriété</strong> : une part de charges et une voix, au prorata
-                  d’une seule superficie.
-                </p>
-                {reprisParTitulaires && (
-                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
-                    Ce bloc ne décrit que <strong>deux</strong> personnes, et c’est la limite que la
-                    carte <strong>Titulaires du lot</strong> lève : une indivision peut en compter
-                    trois ou plus. Les personnes de ce lot s’ajoutent et se modifient là-haut ;
-                    ces champs restent affichés tels qu’ils étaient avant la reprise.
-                  </p>
-                )}
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Input label="Nom du second propriétaire" value={form.nom_2} onChange={set('nom_2')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  <Input label="Email" type="email" value={form.email_2} onChange={set('email_2')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  <Input label="Téléphone" value={form.telephone_2} onChange={set('telephone_2')} readOnly={!peutSaisir || reprisParTitulaires} />
-                </div>
-                {/* La QUALIFICATION, distincte du fait d'être deux : on peut
-                    détenir à deux sans être en indivision (communauté entre
-                    époux, tontine). Non cochée, la case dit « on ne l'affirme
-                    pas », pas « ce n'en est pas une ». */}
-                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" checked={form.est_indivision} onChange={set('est_indivision')} disabled={!peutSaisir || reprisParTitulaires} />
-                  Le bien est détenu en <strong>indivision</strong>
-                </label>
-              </div>
-              )}
-              {/* MANDATAIRE — l'intermédiaire à qui l'on parle quand on n'atteint
-                  pas le propriétaire lui-même (colotis étrangers surtout).
-                  Affiché pour TOUT propriétaire, société ou non : un particulier
-                  résidant à l'étranger passe par un intermédiaire tout autant
-                  qu'une SCI, et une SCI peut avoir ses dirigeants au loin ET
-                  un mandataire sur place. Ce n'est PAS un dirigeant. */}
-              {(!reprisParTitulaires || voirAncienneFiche) && (
-              <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Mandataire (intermédiaire)
-                </p>
-                <p className="mb-3 text-xs text-slate-500">
-                  La personne à contacter à la place du propriétaire. Distincte d’un dirigeant :
-                  le dirigeant engage la société, le mandataire ne fait que relayer.
-                </p>
-                {reprisParTitulaires && (
-                  <p className="mb-3 rounded-md border border-navy-200 bg-white px-3 py-2 text-xs text-navy-800">
-                    Le mandataire de ce lot est désormais un <strong>rôle</strong> dans la carte
-                    Titulaires du lot, où il peut y en avoir plus d’un.
-                  </p>
-                )}
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Input label="Nom du mandataire" value={form.mandataire_nom} onChange={set('mandataire_nom')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  <Input label="Email du mandataire" type="email" value={form.mandataire_email} onChange={set('mandataire_email')} readOnly={!peutSaisir || reprisParTitulaires} />
-                  <Input label="Téléphone du mandataire" value={form.mandataire_telephone} onChange={set('mandataire_telephone')} readOnly={!peutSaisir || reprisParTitulaires} />
-                </div>
-              </div>
-              )}
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
               <div className="sm:col-span-2">
                 <Textarea label="Observations" rows={2} value={form.observations} onChange={set('observations')} readOnly={!peutSaisir} />
@@ -749,6 +533,32 @@ function Contenu() {
                 {!form.acte_transmis_le && (
                   <p className="mt-2 text-xs text-amber-700">Aucun titre reçu à ce jour.</p>
                 )}
+              </div>
+
+              {/* ------------------------------ L'ACTE LUI-MÊME (070)
+                  ⚠ À NE PAS CONFONDRE AVEC LE BLOC DU DESSUS, et c'est pour
+                  cela qu'il est séparé : celui-là enregistre ce que le NOTAIRE
+                  a reçu, celui-ci conserve la pièce que le CONSEIL détient. Une
+                  date dans l'un ne dit rien de l'autre.
+                  L'assistant de mutation la demande à la vente ; ici, c'est le
+                  seul endroit où les périodes déjà au registre peuvent recevoir
+                  la leur.
+                  ⚠ Le chemin porte l'id du LOT (`proprietaires/<lot>/…`), pas
+                  celui de la période — convention 046 et 050, et le préfixe est
+                  fermé au bureau par les deux policies restrictives de la 068. */}
+              <div className="sm:col-span-3">
+                <PiecesJointes
+                  scope="proprietaires"
+                  entityId={lot.id}
+                  label="Acte de propriété conservé par le conseil"
+                  documents={form.documents}
+                  onChange={(docs) => setForm((f) => ({ ...f, documents: docs }))}
+                  readOnly={!peutSaisir}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  L’acte de vente, de donation ou de notoriété qui ouvre cette période. Il suit le
+                  PROPRIÉTAIRE : à la prochaine mutation, il reste attaché à celui qui a acheté.
+                </p>
               </div>
             </div>
             {peutSaisir && (

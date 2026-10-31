@@ -642,25 +642,28 @@ export const MENUS = [
       {
         titre: 'Compléter une fiche',
         pourQui: ['president', 'secretaire'],
-        resume: 'Coordonnées, dirigeants, mandataire.',
+        resume: 'Ce qui décrit la parcelle et la période — les personnes sont ailleurs.',
         etapes: [
           'Ouvrez la parcelle depuis la liste.',
           'Renseignez la superficie — elle sert d’assiette aux voix en AG et aux charges.',
-          'Pour une société, nommez ses dirigeants ; pour un colotis injoignable, son mandataire.',
+          'La carte « Propriétaire actuel » ne porte que ce qui décrit la PÉRIODE : son libellé au registre, l’adresse de communication du lot, la date d’acquisition, les observations et le titre.',
+          'Les personnes — propriétaires, indivisaires, dirigeants, mandataires — sont dans la carte « Titulaires du lot », une ligne chacune.',
           'Les flèches ← → ou celles du clavier passent à la parcelle suivante, dans l’ordre du tri.',
         ],
+        alerte:
+          'Le nom de la carte « Propriétaire actuel » est le LIBELLÉ de la période : il sert aux listes, aux exports et aux documents. Il ne remplace pas les titulaires, et ce n’est pas lui qui détermine qui est convoqué.',
       },
       {
-        titre: 'Choisir les destinataires des convocations',
+        titre: 'Décider qui reçoit les convocations',
         pourQui: ['president', 'secretaire'],
-        resume: 'Plusieurs personnes, pas une seule.',
+        resume: 'Plusieurs personnes, pas une seule — et cela se règle sur chaque titulaire.',
         etapes: [
-          'Sur la fiche, cochez les sources : le propriétaire, le second propriétaire, les dirigeants, le mandataire.',
-          'L’encart « Recevront la convocation » montre exactement ce qui partira.',
-          'Une case sans coordonnées est signalée « sans coordonnées » : elle ne produit aucun destinataire.',
+          'Ouvrez la carte « Titulaires du lot ».',
+          'Sur chaque personne, deux réglages indépendants : les convocations et la notification des procès-verbaux.',
+          'Une personne sans adresse électronique ni adresse postale est signalée par les contrôles en tête de la carte : cochée destinataire, elle ne recevra rien.',
         ],
         alerte:
-          'On convoque tous ceux qui doivent l’être : les deux indivisaires, l’usufruitier et le nu-propriétaire, le dirigeant et son mandataire sur place.',
+          'On convoque tous ceux qui doivent l’être : les indivisaires, l’usufruitier ET le nu-propriétaire, le dirigeant d’une société et son mandataire sur place. ⚠ Les anciennes cases « destinataires officiels » ont été retirées de la fiche le 31 octobre 2026 : elles ne décrivaient que deux personnes et une adresse. Elles ne subsistent qu’en base, et ne commandent les envois que pour une période qui n’a encore aucun titulaire.',
       },
       {
         titre: 'Noter les titres de propriété reçus par le notaire',

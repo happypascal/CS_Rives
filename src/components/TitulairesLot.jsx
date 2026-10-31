@@ -47,6 +47,16 @@ export default function TitulairesLot({ proprietaire, peutSaisir, onChange }) {
   // téléversée deux fois (patron de la 046).
   const piecesDuDossier = titulaires.flatMap((t) => t.designation_documents || [])
 
+  // Ce que les colonnes de 044 portent encore, nommé en toutes lettres. Sert au
+  // seul bandeau de la période sans titulaire : depuis que ces champs ont quitté
+  // la fiche (31 octobre), rien d'autre à l'écran ne dit qu'ils existent, et un
+  // silence se lirait « il n'y a rien ».
+  const ancienneSaisie = [
+    proprietaire?.nom_2 && 'un second propriétaire',
+    proprietaire?.dirigeant_nom && 'un dirigeant',
+    proprietaire?.mandataire_nom && 'un mandataire',
+  ].filter(Boolean)
+
   const agir = async (action) => {
     setBusy(true)
     setError('')
@@ -121,22 +131,32 @@ export default function TitulairesLot({ proprietaire, peutSaisir, onChange }) {
         <div className="mx-5 mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
       )}
 
-      {/* ⚠ LA PÉRIODE NON REPRISE LE DIT. Sans ce bandeau, une fiche vide se
-          lirait « ce lot n'a pas de titulaires » alors que ses destinataires
-          sont simplement encore lus sur les colonnes de 044. */}
+      {/* ⚠ LA PÉRIODE NON REPRISE LE DIT, et le ton a changé le 31 octobre.
+          Tant que les cases de 044 étaient à l'écran, l'absence de titulaire
+          n'était qu'un état transitoire et le bandeau y renvoyait : « plus bas
+          sur cette fiche ». Ces cases ont été retirées — le renvoi pointait donc
+          vers un bloc qui n'existe plus, ce qui est pire que pas de message.
+          Et la situation elle-même a changé de nature : une période sans
+          titulaire n'est plus décrite par personne À L'ÉCRAN. On le dit en
+          ambre, et on nomme ce que la base porte encore pour que personne ne
+          croie la donnée perdue. */}
       {!liste.length ? (
         <div className="px-5 py-5">
-          <p className="text-sm text-slate-600">
-            Aucun titulaire inscrit pour cette période. Les convocations de ce lot sont donc
-            encore calculées sur les <strong>anciennes cases « destinataires officiels »</strong>,
-            plus bas sur cette fiche.
-          </p>
-          {peutSaisir && (
-            <p className="mt-2 text-xs text-slate-500">
-              Dès qu’un titulaire est inscrit ici, c’est cette liste qui fait foi pour les envois,
-              et les anciennes cases ne servent plus.
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-medium text-amber-900">
+              Aucun titulaire inscrit pour cette période.
             </p>
-          )}
+            <p className="mt-1 text-xs text-amber-900">
+              Personne n’est nommé pour ce lot : ni convocation, ni notification de procès-verbal
+              n’en sortira.{peutSaisir && <> Ajoutez-les avec « + Titulaire ».</>}
+              {ancienneSaisie.length > 0 && (
+                <> L’ancienne fiche portait encore {ancienneSaisie.join(', ')} : ces valeurs sont
+                conservées en base et figurent à l’export, et les envois les emploient tant que
+                cette liste est vide — mais elles ne décrivent que deux personnes et une adresse,
+                ce qui est la limite que cette carte lève.</>
+              )}
+            </p>
+          </div>
         </div>
       ) : (
         <>
