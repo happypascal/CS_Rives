@@ -13,7 +13,7 @@ import { useIsMobile } from '../lib/useIsMobile'
 // ailleurs — `destinatairesDuLot` les emploie comme REPLI pour les périodes
 // sans titulaires, et la liste des parcelles les lit. Ne pas les supprimer de
 // `proprietaireLogic` au motif que la fiche ne s'en sert plus.
-import { CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots } from '../lib/proprietaireLogic'
+import { CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots, aDesTitulaires, libelleDeLaPeriode, adresseDeLaPeriode } from '../lib/proprietaireLogic'
 import TitulairesLot from '../components/TitulairesLot'
 import AssistantMutation from '../components/AssistantMutation'
 import PiecesJointes from '../components/PiecesJointes'
@@ -181,11 +181,11 @@ function Contenu() {
     )
   }
 
-  // ⚠ `aDesTitulaires` N'EST PLUS INTERROGÉ ICI, et c'est le signe que le
-  // retrait est complet : plus un seul champ de cette fiche ne change selon que
-  // la période est décrite par ses titulaires ou par les colonnes de 044. La
-  // question se pose désormais au seul endroit qui en dépend, la carte
-  // Titulaires du lot — et dans la liste des parcelles.
+  // La période est-elle décrite par ses titulaires ? Si oui, son libellé et son
+  // adresse se DÉDUISENT d'eux au lieu d'être ressaisis à côté.
+  const reprisParTitulaires = aDesTitulaires(lot?.proprietaire)
+  const nomDerive = libelleDeLaPeriode(lot?.proprietaire)
+  const adresseDerivee = adresseDeLaPeriode(lot?.proprietaire)
 
   const rang = parcelles.findIndex((x) => x.id === id)
   const precedente = rang > 0 ? parcelles[rang - 1] : null
@@ -274,9 +274,16 @@ function Contenu() {
       const estSociete = titulairesActifs.length
         ? titulairesActifs.some((t) => t.est_personne_morale && t.role !== 'nu_proprietaire')
         : Boolean(form.est_societe)
+      // ⚠ LE LIBELLÉ ET L'ADRESSE SUIVENT LES TITULAIRES, mais ne les
+      // EFFACENT jamais : une dérivation vide garde ce que la base porte.
+      // `nom` est `not null` et sert de libellé au registre, à la liste, au PDF
+      // du notaire et au classeur ; et seize titulaires repris n'avaient
+      // aucune adresse propre au 22 octobre — dériver `null` depuis eux aurait
+      // supprimé l'adresse de communication que la reprise avait conservée.
       await repo.saveProprietaire(id, {
         ...form,
-        nom: form.nom.trim(),
+        nom: nomDerive || form.nom.trim(),
+        adresse_communication: adresseDerivee || form.adresse_communication || null,
         est_societe: estSociete,
         date_acquisition: form.date_acquisition || null,
         dirigeant_nom: form.dirigeant_nom || null,
@@ -295,7 +302,9 @@ function Contenu() {
         telephone_2: form.telephone_2 || null,
         est_indivision: Boolean(form.est_indivision),
         contacts_officiels: sourcesCochees(form),
-        adresse_communication: form.adresse_communication || null,
+        // (`adresse_communication` est posée plus haut, dérivée des titulaires.
+        //  ⚠ Ne pas la reposer ici : en JavaScript c'est la DERNIÈRE clé qui
+        //  l'emporte, et la dérivation serait écrasée sans erreur ni avertissement.)
         adresse_dirigeant: form.adresse_dirigeant || null,
         email: form.email || null,
         telephone: form.telephone || null,
@@ -458,21 +467,57 @@ function Contenu() {
               subtitle="Pour changer de propriétaire, utilisez « Enregistrer une mutation » — l’ancien passe alors à l’historique."
             />
             <div className="grid gap-4 px-5 py-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Input label="Nom du propriétaire (ou raison sociale)" value={form.nom} onChange={set('nom')} readOnly={!peutSaisir} required />
-                <p className="mt-1 text-xs text-slate-500">
-                  Ce nom est le <strong>libellé de la période</strong> au registre : il apparaît dans
-                  la liste des parcelles, dans les exports et sur les documents. Les personnes, elles,
-                  sont dans la carte <strong>Titulaires du lot</strong>.
-                </p>
-                {/* ⚠ LA CASE « SOCIÉTÉ » A ÉTÉ RETIRÉE, PAS LA COLONNE. Elle
-                    posait la même question que `est_personne_morale` sur chaque
-                    titulaire, et deux réponses pour la même chose se
-                    contredisent dès la première correction. `est_societe` est
-                    désormais DÉRIVÉ des détenteurs à l'enregistrement (cf.
-                    `enregistrer`) — la liste des parcelles continue d'y lire
-                    quelles périodes sont des sociétés. */}
-              </div>
+              {/* ⚠ NI LE NOM NI L'ADRESSE NE SE SAISISSENT QUAND LA PÉRIODE A
+                  DES TITULAIRES — question de Pascal, 31 octobre : « je ne
+                  comprends pas pourquoi il y a ces 2 blocs avec les mêmes noms
+                  et adresse ». Il avait raison : la carte juste au-dessus
+                  nommait les deux indivisaires avec leur adresse, et celle-ci
+                  les redemandait dans deux champs à remplir. Les deux colonnes
+                  restent — la liste, le PDF du notaire et le classeur les
+                  lisent — mais elles sont CALCULÉES à l'enregistrement, comme
+                  le tantième ou le budget d'un projet. Corriger une personne
+                  corrige le libellé, au lieu de le laisser diverger.
+                  Elles ne reparaissent en saisie que pour une période sans
+                  aucun titulaire, où il n'y a rien d'où les tirer. */}
+              {reprisParTitulaires ? (
+                <div className="sm:col-span-2 rounded-md border border-navy-100 bg-navy-50/40 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Au registre, cette période s’intitule
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-navy-900">{nomDerive || form.nom}</p>
+                  {/* ⚠ ON MONTRE L'ADRESSE QUE LA COLONNE PORTE VRAIMENT, pas
+                      seulement celle qu'on sait dériver. Quand l'interlocuteur
+                      principal n'a pas d'adresse propre, la dérivation ne
+                      remplace rien — la valeur reprise reste en base et part
+                      dans la liste des parcelles. Ne montrer que le dérivé
+                      laisserait l'écran muet sur une donnée qui existe et qui
+                      s'affiche ailleurs. */}
+                  {(adresseDerivee || form.adresse_communication) && (
+                    <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
+                      {adresseDerivee || form.adresse_communication}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-slate-500">
+                    Composé des <strong>détenteurs</strong> de la carte Titulaires du lot — un
+                    dirigeant, un mandataire ou un nu-propriétaire n’y figurent pas, ils ne sont pas
+                    propriétaires. C’est ce libellé qui part dans la liste des parcelles, les exports
+                    et les documents.
+                    {adresseDerivee
+                      ? ' L’adresse est celle de l’interlocuteur principal : le représentant désigné, à défaut le membre votant.'
+                      : form.adresse_communication
+                        ? ' ⚠ L’adresse affichée est celle que portait la fiche avant la reprise : l’interlocuteur principal n’en a pas de propre. Renseignez-la sur sa ligne, plus haut, pour qu’elle suive les corrections.'
+                        : ' Aucune adresse : ni l’interlocuteur principal ni la fiche n’en portent.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <Input label="Nom du propriétaire (ou raison sociale)" value={form.nom} onChange={set('nom')} readOnly={!peutSaisir} required />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Ce nom est le <strong>libellé de la période</strong> au registre. Dès qu’un
+                    titulaire sera inscrit, il se composera tout seul à partir des détenteurs.
+                  </p>
+                </div>
+              )}
               {/* ⚠ LE FILET DU RETRAIT EST DANS LA CARTE « TITULAIRES DU LOT »,
                   PAS ICI. Une période sans titulaire n'est plus décrite par
                   personne depuis que les quatre blocs de 044 ont quitté cet
@@ -481,20 +526,23 @@ function Contenu() {
                   Le répéter dans cette carte faisait deux bandeaux identiques
                   sur le même écran, ce que le retrait vise précisément à
                   supprimer. */}
-              <div className="sm:col-span-2">
-                {/* Textarea et non Input : l'adresse s'écrit comme sur une
-                    enveloppe — voie, puis code postal et ville, puis le pays
-                    seulement s'il n'est pas la France. Un champ d'une ligne ne
-                    peut ni saisir ni restituer ces retours. */}
-                <Textarea
-                  label="Adresse de communication officielle"
-                  rows={3}
-                  value={form.adresse_communication}
-                  onChange={set('adresse_communication')}
-                  readOnly={!peutSaisir}
-                  placeholder={'12 rte de Messery\n74140 Nernier'}
-                />
-              </div>
+              {/* L'adresse de communication ne se saisit plus que sur une
+                  période sans titulaire, pour la même raison que le nom.
+                  Textarea et non Input : une adresse s'écrit comme sur une
+                  enveloppe — voie, puis code postal et ville — et un champ
+                  d'une ligne ne peut ni saisir ni restituer ces retours. */}
+              {!reprisParTitulaires && (
+                <div className="sm:col-span-2">
+                  <Textarea
+                    label="Adresse de communication officielle"
+                    rows={3}
+                    value={form.adresse_communication}
+                    onChange={set('adresse_communication')}
+                    readOnly={!peutSaisir}
+                    placeholder={'12 rte de Messery\n74140 Nernier'}
+                  />
+                </div>
+              )}
               <Input label="Propriétaire depuis le" type="date" value={form.date_acquisition} onChange={set('date_acquisition')} readOnly={!peutSaisir} />
               <div className="sm:col-span-2">
                 <Textarea label="Observations" rows={2} value={form.observations} onChange={set('observations')} readOnly={!peutSaisir} />

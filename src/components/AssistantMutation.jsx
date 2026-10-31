@@ -5,8 +5,9 @@ import PiecesJointes from './PiecesJointes'
 import { formatDate, todayISO } from '../lib/format'
 import {
   SCENARIOS, scenarioDe, titulairesDeMutation, erreurDeMutation, versPayload,
-  MUTATION_USUFRUIT, MUTATION_SUCCESSION, ROLE_LABELS, ROLE_NU,
+  MUTATION_USUFRUIT, MUTATION_SUCCESSION, ROLE_LABELS, ROLES_DETENTEURS,
 } from '../lib/titulaireLogic'
+import { libelleDeLaPeriode } from '../lib/proprietaireLogic'
 
 // ============================================================================
 // L'ASSISTANT DE MUTATION (brief du 22 octobre, livré le 31)
@@ -103,8 +104,14 @@ export default function AssistantMutation({ lot, open, onClose, onFait }) {
       // c'est le libellé qui part dans les listes, les exports et les PDF, et
       // deux champs pour la même chose divergent dès la première correction.
       // Le nu-propriétaire n'y figure pas — il n'est pas membre (art. 6).
-      const detenteurs = titulaires.filter((t) => t.role !== ROLE_NU)
-      const nom = detenteurs.map((t) => [t.prenom, t.nom].filter(Boolean).join(' ')).join(' / ')
+      //
+      // ⚠ UNE SEULE RÈGLE, PARTAGÉE AVEC LA FICHE DU LOT. `libelleDeLaPeriode`
+      // recompose ce libellé à chaque enregistrement de fiche : s'il employait
+      // une autre définition du détenteur que celle d'ici, le simple fait
+      // d'ouvrir une fiche et de l'enregistrer renommerait la période que la
+      // mutation venait d'ouvrir.
+      const nom = libelleDeLaPeriode({ titulaires })
+      const detenteurs = titulaires.filter((t) => ROLES_DETENTEURS.includes(t.role))
       await repo.enregistrerMutationAvecTitulaires(lot.id, {
         date_mutation: date,
         periode: {

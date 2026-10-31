@@ -1,3 +1,9 @@
+// ⚠ Seule dépendance de ce module, et elle ne peut pas boucler :
+// `titulaireLogic` n'importe rien. `ROLES_DETENTEURS` y est défini une fois —
+// le recopier ici ferait qu'un rôle ajouté un jour serait détenteur dans la
+// carte des titulaires et pas dans le libellé de la période.
+import { ROLES_DETENTEURS } from './titulaireLogic'
+
 // ============================================================================
 // Registre des propriétaires — les DESTINATAIRES OFFICIELS
 //
@@ -107,6 +113,68 @@ export function aDesTitulaires(proprietaire) {
 function titulairesActifs(proprietaire) {
   const liste = proprietaire?.titulaires
   return Array.isArray(liste) ? liste.filter((t) => !t.date_fin) : []
+}
+
+// ============================================================================
+// CE QUE LA PÉRIODE DIT D'ELLE-MÊME, DÉRIVÉ DE SES TITULAIRES
+//
+// Question de Pascal, 31 octobre : « je ne comprends pas pourquoi il y a ces
+// 2 blocs avec les mêmes noms et adresse ». Il avait raison, et c'est ce qui
+// restait du doublon après le retrait des quatre blocs de 044 : la carte
+// Titulaires nommait Ferran et Delachaux avec leur adresse, et la carte
+// Propriétaire actuel redemandait « Jean Ferran / Marie Delachaux » et la même
+// adresse, dans deux champs à remplir.
+//
+// ⚠ LES DEUX COLONNES RESTENT, ET DOIVENT RESTER JUSTES. `proprietaires.nom`
+// est `not null` et c'est lui que lisent la liste des parcelles, le PDF du
+// notaire et le classeur ; `adresse_communication` porte une colonne et un tri
+// de la liste. On ne les supprime donc pas : on les CALCULE, comme le tantième
+// ou le budget d'un projet. Corriger une personne corrige alors le libellé,
+// au lieu de le laisser diverger en silence.
+// ============================================================================
+
+/**
+ * Le libellé de la période : les DÉTENTEURS, et eux seuls.
+ *
+ * ⚠ PAS « tous les titulaires ». Un représentant légal, un mandataire ou un
+ * nu-propriétaire ne sont pas propriétaires : les joindre au libellé ferait
+ * dire au registre, à la liste et au PDF du notaire que le gérant d'une SCI
+ * possède le lot. C'est `ROLES_DETENTEURS` qui tranche — plein propriétaire,
+ * indivisaire, co-propriétaire, usufruitier (art. 6 : c'est lui le membre).
+ *
+ * Renvoie une chaîne vide s'il n'y a aucun détenteur nommé : l'appelant garde
+ * alors ce que la base porte, plutôt que de vider une colonne `not null`.
+ */
+export function libelleDeLaPeriode(proprietaire) {
+  return titulairesActifs(proprietaire)
+    .filter((t) => ROLES_DETENTEURS.includes(t.role))
+    .map((t) => [t.prenom, t.nom].map((x) => (x || '').trim()).filter(Boolean).join(' '))
+    .filter(Boolean)
+    .join(' / ')
+}
+
+/**
+ * L'adresse de communication du lot : celle de l'INTERLOCUTEUR PRINCIPAL.
+ *
+ * ⚠ Une seule adresse « du lot » n'a plus de sens depuis la 068 — les statuts
+ * font élection de domicile en la demeure respective de chacun (art. 28), et
+ * les envois emploient l'adresse de chaque titulaire (`destinatairesDuLot`).
+ * Cette colonne ne sert plus qu'à la LISTE, qui montre une adresse par ligne :
+ * on y met donc celle de la personne à qui l'on s'adresse en premier — le
+ * représentant désigné d'une indivision (art. 6), à défaut le membre votant,
+ * à défaut le premier détenteur.
+ *
+ * ⚠ Renvoie une chaîne vide si cette personne n'a pas d'adresse propre. Une
+ * dérivation qui rendrait `null` EFFACERAIT l'adresse reprise de périodes dont
+ * les titulaires n'ont pas tous une adresse — seize l'avaient été au 22 octobre.
+ */
+export function adresseDeLaPeriode(proprietaire) {
+  const actifs = titulairesActifs(proprietaire)
+  const detenteurs = actifs.filter((t) => ROLES_DETENTEURS.includes(t.role))
+  const principal = actifs.find((t) => t.est_representant_designe)
+    || actifs.find((t) => t.est_membre_votant)
+    || detenteurs[0]
+  return (principal?.adresse_postale || '').trim()
 }
 
 /**
