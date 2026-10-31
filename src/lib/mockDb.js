@@ -2045,6 +2045,58 @@ export const mockRepo = {
     return clone(p)
   },
 
+  // MUTATION AVEC TITULAIRES (068) — miroir de `supabaseDb`.
+  //
+  // ⚠ MÊME ORDRE IMPOSÉ, et le mock le respecte pour que la démo échoue aux
+  // mêmes endroits : clore les titulaires sortants, clore la période, ouvrir la
+  // neuve, créer ses titulaires. `gardeTitulaire` rejoue au passage les cinq
+  // contraintes de la 068 — un seul votant, l'usufruitier qui doit voter, le
+  // représentant désigné qui doit être l'un des détenteurs.
+  async enregistrerMutationAvecTitulaires(lotId, { date_mutation, periode, titulaires }) {
+    await delay()
+    this._gardeBureau()
+    if (!date_mutation) throw new Error('La date de mutation est obligatoire.')
+    const data = load()
+    data.proprietaires ||= []
+    data.titulaires ||= []
+    const actuel = data.proprietaires.find((p) => p.lot_id === lotId && !p.date_cession)
+    if (actuel) {
+      if (actuel.date_acquisition && date_mutation < actuel.date_acquisition) {
+        throw new Error('La mutation ne peut pas précéder l’acquisition du propriétaire actuel.')
+      }
+      for (const t of data.titulaires) {
+        if (t.proprietaire_id === actuel.id && !t.date_fin) {
+          t.date_fin = date_mutation
+          t.updated_at = nowISO()
+        }
+      }
+      actuel.date_cession = date_mutation
+      actuel.updated_at = nowISO()
+    }
+    const p = {
+      id: uid(), lot_id: lotId, est_societe: false, est_indivision: false,
+      contacts_officiels: ['proprietaire'], date_cession: null, observations: null,
+      created_at: nowISO(), updated_at: nowISO(),
+      ...periode, date_acquisition: date_mutation,
+    }
+    data.proprietaires.push(p)
+    for (const brut of (titulaires || [])) {
+      const t = {
+        id: uid(), proprietaire_id: p.id, est_personne_morale: false,
+        adresse_a_verifier: false, refus_electronique: false,
+        est_membre_votant: false, est_representant_designe: false,
+        designation_documents: [], destinataire_convocations: true,
+        destinataire_notification_pv: true, date_fin: null,
+        created_at: nowISO(), updated_at: nowISO(), ...brut,
+      }
+      gardeTitulaire(data, t)
+      data.titulaires.push(t)
+    }
+    audit(data, 'proprietaires', p.id, 'create', `Mutation du lot : ${p.nom}`)
+    save(data)
+    return clone(p)
+  },
+
   // Acceptation de la mention RGPD : une fois, horodatée, tracée.
   async accepterRgpdRegistre(membreId) {
     await delay()

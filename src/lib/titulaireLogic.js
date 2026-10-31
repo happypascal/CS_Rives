@@ -113,6 +113,40 @@ export const LIGNE_VIDE = {
   observations: '',
 }
 
+// ⚠ `null` de la base contre chaîne vide du formulaire : `{ ...LIGNE_VIDE,
+// ...ligne }` ne suffit PAS, puisque `null` écrase la valeur vide du modèle
+// (seul `undefined` laisse celle de gauche) et qu'un `.trim()` planterait
+// ensuite. Même piège que `sansNull` dans `Membres.jsx` — et on traite TOUS les
+// champs d'un coup, parce que les traiter un à un est ce qui avait produit le bug.
+export function versFormulaire(t) {
+  const out = { ...LIGNE_VIDE, id: t.id, designation_documents: t.designation_documents || [] }
+  for (const champ of Object.keys(LIGNE_VIDE)) {
+    const v = t[champ]
+    out[champ] = v === null || v === undefined ? LIGNE_VIDE[champ] : v
+  }
+  return out
+}
+
+// …et l'inverse : une chaîne vide repart en `null`, pour que la base ne
+// conserve pas des champs « renseignés mais vides » que les contrôles
+// compteraient comme présents.
+//
+// ⚠ IL FAUT PASSER PAR ICI, ET PAS SEULEMENT PAR PROPRETÉ. `date_debut` et
+// `date_fin` sont des colonnes `date` : une chaîne vide y fait échouer
+// l'insertion entière (22007), et c'est tout l'enregistrement d'une mutation
+// qui tombe. Le mock, lui, l'avalerait — le défaut ne se verrait qu'en
+// production. C'est pourquoi la fonction vit ici et non dans un écran : la
+// fiche du lot ET l'assistant de mutation écrivent dans la même table.
+export function versPayload(f) {
+  const out = {}
+  for (const champ of Object.keys(LIGNE_VIDE)) {
+    const v = f[champ]
+    out[champ] = typeof v === 'string' ? (v.trim() || null) : v
+  }
+  out.designation_documents = f.designation_documents || []
+  return out
+}
+
 // L'ordre dans lequel les titulaires se lisent, PARTAGÉ PAR LES DEUX BACKENDS
 // (comme `compareResolutions` l'est pour les résolutions) : les détenteurs
 // d'abord, puis ceux qui représentent ou relaient, et les clos en dernier. Le
@@ -322,6 +356,129 @@ export function erreurDeSaisie(ligne) {
   }
   if (ligne.date_debut && ligne.date_fin && ligne.date_fin < ligne.date_debut) {
     return 'La fin ne peut pas précéder le début.'
+  }
+  return null
+}
+
+// ============================================================================
+// L'ASSISTANT DE MUTATION (brief du 22 octobre, livré le 31)
+//
+// Une mutation n'est pas un changement de nom : c'est une PÉRIODE qui se ferme
+// et une autre qui s'ouvre, avec des personnes dont les rôles dépendent de
+// l'acte. Quatre formes, et elles ne se traitent pas de la même façon.
+//
+// ⚠ LE DÉLAI DE QUINZE JOURS NE VAUT PAS POUR TOUTES. L'article 22 vise la
+// « vente ou donation EN PLEINE PROPRIÉTÉ », et rien d'autre : ni la donation
+// avec réserve d'usufruit, ni la succession n'y sont nommées. Afficher le délai
+// sur ces deux-là inventerait une obligation statutaire — exactement ce qu'un
+// registre légal ne doit jamais faire. Vérifié dans le texte le 22 octobre.
+// ============================================================================
+
+export const MUTATION_VENTE = 'vente'
+export const MUTATION_DONATION = 'donation'
+export const MUTATION_USUFRUIT = 'donation_usufruit'
+export const MUTATION_SUCCESSION = 'succession'
+
+export const SCENARIOS = [
+  {
+    cle: MUTATION_VENTE,
+    titre: 'Vente',
+    aide: 'Le bien change de mains à titre onéreux. L’acquéreur prend la place du vendeur dans l’association (art. 1).',
+    // Un seul acquéreur détient en plein ; à plusieurs, on ne qualifie pas —
+    // c'est la doctrine de la 040, le registre constate et le notaire qualifie.
+    roleUnique: ROLE_PLEIN,
+    rolePlusieurs: ROLE_CO,
+    delaiQuinzeJours: true,
+    piece: 'Acte de vente',
+  },
+  {
+    cle: MUTATION_DONATION,
+    titre: 'Donation en pleine propriété',
+    aide: 'Le donataire reçoit la pleine propriété. Il devient membre de l’association au même titre qu’un acquéreur.',
+    roleUnique: ROLE_PLEIN,
+    rolePlusieurs: ROLE_CO,
+    delaiQuinzeJours: true,
+    piece: 'Acte de donation',
+  },
+  {
+    cle: MUTATION_USUFRUIT,
+    titre: 'Donation avec réserve d’usufruit',
+    // ⚠ C'est le cas que l'ancien modèle ne savait pas écrire : il n'avait que
+    // deux cases pour des personnes qui n'ont pas le même droit.
+    aide: 'Le donateur garde l’usufruit, le donataire reçoit la nue-propriété. ⚠ L’usufruitier prend SEUL la qualité de membre de l’association et porte la voix du lot ; il doit informer le nu-propriétaire des décisions prises (art. 6).',
+    roleUnique: ROLE_USUFRUITIER,
+    rolePlusieurs: ROLE_USUFRUITIER,
+    roleSecond: ROLE_NU,
+    libelleSecond: 'Nu-propriétaire',
+    delaiQuinzeJours: false,
+    piece: 'Acte de donation',
+  },
+  {
+    cle: MUTATION_SUCCESSION,
+    titre: 'Succession',
+    aide: 'Les héritiers recueillent le bien. ⚠ S’ils sont plusieurs, ils ne peuvent se faire représenter que par l’un d’eux (art. 6) — désignez-le sur la fiche une fois la mutation enregistrée.',
+    roleUnique: ROLE_PLEIN,
+    rolePlusieurs: ROLE_INDIVISAIRE,
+    delaiQuinzeJours: false,
+    piece: 'Acte de notoriété ou attestation du notaire',
+  },
+]
+
+export const scenarioDe = (cle) => SCENARIOS.find((s) => s.cle === cle) || SCENARIOS[0]
+
+/**
+ * Les titulaires à créer, d'après le scénario et les personnes saisies.
+ *
+ * ⚠ LE MEMBRE VOTANT EST POSÉ ICI, et une seule fois : c'est l'invariant que
+ * la base ne peut pas porter (un `check` ne compte pas ses lignes sœurs), et
+ * le laisser à l'écran ferait repasser chaque mutation par l'ordre imposé du
+ * drapeau. En cas de démembrement c'est l'usufruitier, sans discussion
+ * possible (art. 6) ; sinon le premier détenteur saisi.
+ */
+export function titulairesDeMutation(scenarioCle, personnes, { date_debut } = {}) {
+  const s = scenarioDe(scenarioCle)
+  const utiles = (personnes || []).filter((p) => (p.nom || '').trim())
+  const principaux = utiles.filter((p) => !p.second)
+  const seconds = utiles.filter((p) => p.second)
+
+  const role = principaux.length > 1 ? s.rolePlusieurs : s.roleUnique
+  const out = principaux.map((p, i) => ({
+    ...LIGNE_VIDE,
+    ...p,
+    role,
+    est_membre_votant: i === 0,
+    date_debut: date_debut || '',
+  }))
+  for (const p of seconds) {
+    out.push({
+      ...LIGNE_VIDE,
+      ...p,
+      role: s.roleSecond || ROLE_NU,
+      // ⚠ Le nu-propriétaire ne vote pas, mais il EST notifié : l'usufruitier
+      // doit l'informer des décisions, et le registre doit donc savoir où le
+      // joindre. La contrainte `titulaires_votant_interdit` l'exclut du vote.
+      est_membre_votant: false,
+      date_debut: date_debut || '',
+    })
+  }
+  // ⚠ `second` est un drapeau de SAISIE, pas une colonne : il dit quel bloc du
+  // formulaire a produit la ligne. Laissé dans le payload, PostgREST rejetterait
+  // l'insert entier pour colonne inconnue — et le mock l'avalerait en silence.
+  return out.map(({ second: _second, ...reste }) => reste)
+}
+
+/** Ce qui empêche d'enregistrer la mutation, dit en clair. */
+export function erreurDeMutation(scenarioCle, personnes, date_mutation) {
+  if (!date_mutation) return 'La date de la mutation est obligatoire.'
+  const utiles = (personnes || []).filter((p) => (p.nom || '').trim())
+  if (!utiles.some((p) => !p.second)) return 'Il faut au moins un nouveau propriétaire.'
+  const s = scenarioDe(scenarioCle)
+  if (s.cle === MUTATION_USUFRUIT && !utiles.some((p) => p.second)) {
+    return 'Une donation avec réserve d’usufruit suppose un nu-propriétaire : c’est lui que l’usufruitier devra informer (art. 6).'
+  }
+  for (const t of titulairesDeMutation(scenarioCle, personnes, {})) {
+    const faute = erreurDeSaisie(t)
+    if (faute) return faute
   }
   return null
 }

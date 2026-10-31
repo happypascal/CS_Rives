@@ -2,18 +2,23 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Textarea, Modal, Spinner, Badge } from '../components/ui'
+import { Card, CardHeader, Button, Input, Textarea, Spinner, Badge } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { RgpdGate } from '../components/RgpdGate'
-import { formatDate, todayISO, parseMontant } from '../lib/format'
+import { formatDate, parseMontant } from '../lib/format'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { CONTACTS, CONTACT_LABELS, CONTACT_PROPRIETAIRE, sourcesCochees, destinataires, apportDe, lireTri, trierLots, aDesTitulaires } from '../lib/proprietaireLogic'
 import TitulairesLot from '../components/TitulairesLot'
+import AssistantMutation from '../components/AssistantMutation'
 
-// Champs du propriétaire, déclarés une fois : la saisie du propriétaire actuel
-// et celle du nouveau propriétaire lors d'une mutation demandent EXACTEMENT les
-// mêmes informations. Deux formulaires écrits séparément finiraient par diverger.
+// Champs de la période de propriété telle que la 044 la décrivait.
+//
+// ⚠ ILS NE SERVENT PLUS QU'À L'ANCIENNE FICHE, celle qu'on déplie sur une
+// période reprise avant la 068 pour relire ce qui y avait été saisi. Une
+// MUTATION n'y touche plus : elle passe par `AssistantMutation`, qui ouvre la
+// période neuve avec ses titulaires et laisse ces colonnes vides. Les remplir
+// à nouveau ici ferait retomber le lot sur l'ancien modèle.
 const CHAMPS_VIDES = {
   nom: '', est_societe: false, dirigeant_nom: '', dirigeant_fonction: '',
   adresse_communication: '', adresse_dirigeant: '', email: '', telephone: '',
@@ -45,7 +50,10 @@ function Contenu() {
   const [form, setForm] = useState(CHAMPS_VIDES)
   const [lotForm, setLotForm] = useState({ numero: '', adresse_lotissement: '', superficie: '', nombre_lots: '1', numero_syndic: '', observations: '', zone: '', numero_origine: '', origine_source: '' })
   const [busy, setBusy] = useState(false)
-  const [mutation, setMutation] = useState(null) // { date_mutation, ...champs } quand la modale est ouverte
+  // Une mutation ne se saisit plus ici : c'est `AssistantMutation` qui la mène,
+  // du choix de la forme (vente, donation, démembrement, succession) jusqu'aux
+  // titulaires de la période neuve. La page n'a plus qu'à l'ouvrir.
+  const [mutationOuverte, setMutationOuverte] = useState(false)
   // ⚠ L'ANCIENNE FICHE EST REPLIÉE PAR DÉFAUT sur une période reprise.
   // Affichée, elle décrivait les mêmes personnes une seconde fois, en grisé et
   // sur trois écrans — « il reste le propriétaire et l'ancien propriétaire,
@@ -284,46 +292,6 @@ function Contenu() {
     }
   }
 
-  const enregistrerMutation = async () => {
-    if (!mutation.nom.trim() || !mutation.date_mutation) return
-    setBusy(true)
-    try {
-      const { date_mutation, ...nouveau } = mutation
-      await repo.enregistrerMutation(id, {
-        date_mutation,
-        ...nouveau,
-        nom: nouveau.nom.trim(),
-        dirigeant_nom: nouveau.dirigeant_nom || null,
-        dirigeant_fonction: nouveau.dirigeant_fonction || null,
-        dirigeant_email: nouveau.dirigeant_email || null,
-        dirigeant_telephone: nouveau.dirigeant_telephone || null,
-        dirigeant_nom_2: nouveau.dirigeant_nom_2 || null,
-        dirigeant_fonction_2: nouveau.dirigeant_fonction_2 || null,
-        dirigeant_email_2: nouveau.dirigeant_email_2 || null,
-        dirigeant_telephone_2: nouveau.dirigeant_telephone_2 || null,
-        mandataire_nom: nouveau.mandataire_nom || null,
-        mandataire_email: nouveau.mandataire_email || null,
-        mandataire_telephone: nouveau.mandataire_telephone || null,
-        nom_2: nouveau.nom_2 || null,
-        email_2: nouveau.email_2 || null,
-        telephone_2: nouveau.telephone_2 || null,
-        est_indivision: Boolean(nouveau.est_indivision),
-        contacts_officiels: sourcesCochees(nouveau),
-        adresse_communication: nouveau.adresse_communication || null,
-        adresse_dirigeant: nouveau.adresse_dirigeant || null,
-        email: nouveau.email || null,
-        telephone: nouveau.telephone || null,
-        observations: nouveau.observations || null,
-      })
-      setMutation(null)
-      await reload()
-    } catch (e) {
-      alert(e.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const supprimer = async () => {
     if (!(await confirm({
       title: `Supprimer le lot ${lot.numero} ?`,
@@ -353,7 +321,7 @@ function Contenu() {
             </Button>
             <Link to="/proprietaires"><Button variant="secondary">Retour au registre</Button></Link>
             {peutSaisir && (
-              <Button variant="secondary" onClick={() => setMutation({ ...CHAMPS_VIDES, date_mutation: todayISO() })}>
+              <Button variant="secondary" onClick={() => setMutationOuverte(true)}>
                 Enregistrer une mutation
               </Button>
             )}
@@ -825,108 +793,22 @@ function Contenu() {
         </div>
       </div>
 
-      <Modal
-        open={Boolean(mutation)}
-        onClose={() => setMutation(null)}
-        title={`Lot ${lot.numero} — mutation`}
-        wide
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setMutation(null)}>Annuler</Button>
-            <Button onClick={enregistrerMutation} disabled={busy || !mutation?.nom?.trim() || !mutation?.date_mutation}>
-              Enregistrer la mutation
-            </Button>
-          </>
-        }
-      >
-        {mutation && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              {lot.proprietaire
-                ? <>À cette date, <strong>{lot.proprietaire.nom}</strong> cesse d’être propriétaire et passe à l’historique. Le nouveau propriétaire prend sa suite.</>
-                : <>Le lot n’a pas de propriétaire enregistré : cette mutation en pose un premier.</>}
-            </p>
-            <Input label="Date de la mutation" type="date" value={mutation.date_mutation} onChange={(e) => setMutation((m) => ({ ...m, date_mutation: e.target.value }))} required />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Input label="Nom du nouveau propriétaire (ou raison sociale)" value={mutation.nom} onChange={(e) => setMutation((m) => ({ ...m, nom: e.target.value }))} required />
-                <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" checked={mutation.est_societe} onChange={(e) => setMutation((m) => ({ ...m, est_societe: e.target.checked }))} />
-                  Le nouveau propriétaire est une société
-                </label>
-              </div>
-              {mutation.est_societe && (
-                <>
-                  <Input label="Nom du dirigeant" value={mutation.dirigeant_nom} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_nom: e.target.value }))} />
-                  <Input label="Fonction" value={mutation.dirigeant_fonction} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_fonction: e.target.value }))} />
-                  <div className="sm:col-span-2">
-                    <Input label="Adresse de la société" value={mutation.adresse_dirigeant} onChange={(e) => setMutation((m) => ({ ...m, adresse_dirigeant: e.target.value }))} />
-                  </div>
-                  <Input label="Email du dirigeant" type="email" value={mutation.dirigeant_email} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_email: e.target.value }))} />
-                  <Input label="Téléphone du dirigeant" value={mutation.dirigeant_telephone} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_telephone: e.target.value }))} />
-                  {/* Co-direction : cas ordinaire d'une SCI familiale. */}
-                  <Input label="Nom du second dirigeant" value={mutation.dirigeant_nom_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_nom_2: e.target.value }))} />
-                  <Input label="Fonction" value={mutation.dirigeant_fonction_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_fonction_2: e.target.value }))} />
-                  <Input label="Email du second dirigeant" type="email" value={mutation.dirigeant_email_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_email_2: e.target.value }))} />
-                  <Input label="Téléphone du second dirigeant" value={mutation.dirigeant_telephone_2} onChange={(e) => setMutation((m) => ({ ...m, dirigeant_telephone_2: e.target.value }))} />
-                </>
-              )}
-              <div className="sm:col-span-2">
-                <Textarea
-                  label="Adresse de communication officielle"
-                  rows={3}
-                  value={mutation.adresse_communication}
-                  onChange={(e) => setMutation((m) => ({ ...m, adresse_communication: e.target.value }))}
-                />
-              </div>
-              <Input label="Email" type="email" value={mutation.email} onChange={(e) => setMutation((m) => ({ ...m, email: e.target.value }))} />
-              <Input label="Téléphone" value={mutation.telephone} onChange={(e) => setMutation((m) => ({ ...m, telephone: e.target.value }))} />
-              {/* Les destinataires se choisissent dès la mutation : sans cela
-                  le nouveau propriétaire arriverait toujours seul destinataire,
-                  y compris quand on ne connaît que son mandataire. */}
-              <div className="sm:col-span-2 flex flex-wrap gap-4">
-                <span className="text-sm text-slate-500">Convocations —</span>
-                {CONTACTS.map((c) => (
-                  <label key={c} className="flex items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={sourcesCochees(mutation).includes(c)}
-                      onChange={(e) =>
-                        setMutation((m) => {
-                          const avant = sourcesCochees(m)
-                          const apres = e.target.checked ? [...avant, c] : avant.filter((x) => x !== c)
-                          return { ...m, contacts_officiels: apres.length ? apres : [CONTACT_PROPRIETAIRE] }
-                        })
-                      }
-                    />
-                    {CONTACT_LABELS[c]}
-                  </label>
-                ))}
-              </div>
-              {/* Second indivisaire APRÈS les coordonnées officielles, même ordre
-                  que la fiche : celles du dessus valent pour la propriété
-                  entière, les couper par un second nom faisait douter de qui
-                  elles sont. */}
-              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
-                <Input label="Second propriétaire" value={mutation.nom_2} onChange={(e) => setMutation((m) => ({ ...m, nom_2: e.target.value }))} />
-                <Input label="Email" type="email" value={mutation.email_2} onChange={(e) => setMutation((m) => ({ ...m, email_2: e.target.value }))} />
-                <Input label="Téléphone" value={mutation.telephone_2} onChange={(e) => setMutation((m) => ({ ...m, telephone_2: e.target.value }))} />
-                <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-600 sm:col-span-3">
-                  <input type="checkbox" checked={mutation.est_indivision} onChange={(e) => setMutation((m) => ({ ...m, est_indivision: e.target.checked }))} />
-                  Le bien est détenu en indivision
-                </label>
-              </div>
-              {/* Le mandataire suit le PROPRIÉTAIRE, pas le lot : le nouveau
-                  venu a le sien, ou n'en a pas. Il ne s'hérite jamais. */}
-              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-3">
-                <Input label="Nom du mandataire" value={mutation.mandataire_nom} onChange={(e) => setMutation((m) => ({ ...m, mandataire_nom: e.target.value }))} />
-                <Input label="Email du mandataire" type="email" value={mutation.mandataire_email} onChange={(e) => setMutation((m) => ({ ...m, mandataire_email: e.target.value }))} />
-                <Input label="Téléphone du mandataire" value={mutation.mandataire_telephone} onChange={(e) => setMutation((m) => ({ ...m, mandataire_telephone: e.target.value }))} />
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* ⚠ L'ASSISTANT A REMPLACÉ LA MODALE DE MUTATION (31 octobre), et ce
+          n'était pas un changement de présentation. Celle d'avant remplissait
+          `nom_2`, `dirigeant_*`, `mandataire_*` et `contacts_officiels` — les
+          colonnes de la 044 — sans créer un seul titulaire. Comme
+          `destinatairesDuLot` bascule PÉRIODE PAR PÉRIODE, le lot vendu
+          retombait silencieusement sur l'ancien modèle : le registre repartait
+          en arrière à la première vente, et seule la fiche du lot le montrait.
+          ⚠ Elle ne savait pas non plus écrire un démembrement : deux cases
+          indifférenciées pour un usufruitier et un nu-propriétaire, qui n'ont
+          pas le même droit (art. 6). */}
+      <AssistantMutation
+        lot={lot}
+        open={mutationOuverte}
+        onClose={() => setMutationOuverte(false)}
+        onFait={reload}
+      />
 
       {/* Paire flottante, collée au bord gauche du contenu — juste à droite du
           menu. Les flèches de l'en-tête obligeaient à remonter en haut de page

@@ -778,6 +778,45 @@ export const supabaseRepo = {
     return must(await supabase.from('proprietaires')
       .insert({ ...nouveau, lot_id: lotId, date_acquisition: date_mutation }).select())[0]
   },
+  // MUTATION AVEC TITULAIRES (068) — l'assistant du 31 octobre.
+  //
+  // ⚠ ORDRE IMPOSÉ, et il n'est pas négociable : clore les titulaires sortants,
+  // clore la période, ouvrir la neuve, créer ses titulaires. L'index partiel
+  // `proprietaires_actuel_par_lot` (035) refuse deux propriétaires en cours, et
+  // `titulaires_votant_par_propriete` (068) refuse deux votants.
+  //
+  // ⚠ NON ATOMIQUE, comme `enregistrerMutation` dont il reprend le patron. Si la
+  // dernière écriture échoue, le lot a une période neuve SANS titulaire : la
+  // fiche l'affiche en toutes lettres et les contrôles le crient. L'inverse —
+  // deux périodes ouvertes, ou l'ancien propriétaire encore titulaire d'un lot
+  // vendu — ne se verrait pas.
+  //
+  // ⚠ Et c'est CE chemin qui remplace l'ancien : sans lui, une vente recréait
+  // une période décrite par les colonnes de 044, et le lot retombait en silence
+  // sur l'ancien modèle — le registre repartait en arrière à la première vente.
+  async enregistrerMutationAvecTitulaires(lotId, { date_mutation, periode, titulaires }) {
+    if (!date_mutation) throw new Error('La date de mutation est obligatoire.')
+    const actuels = must(await supabase.from('proprietaires').select('id,date_acquisition')
+      .eq('lot_id', lotId).is('date_cession', null))
+    if (actuels.length) {
+      if (actuels[0].date_acquisition && date_mutation < actuels[0].date_acquisition) {
+        throw new Error('La mutation ne peut pas précéder l’acquisition du propriétaire actuel.')
+      }
+      must(await supabase.from('titulaires').update({ date_fin: date_mutation })
+        .eq('proprietaire_id', actuels[0].id).is('date_fin', null))
+      must(await supabase.from('proprietaires')
+        .update({ date_cession: date_mutation, updated_at: new Date().toISOString() })
+        .eq('id', actuels[0].id).select())
+    }
+    const neuve = must(await supabase.from('proprietaires')
+      .insert({ ...periode, lot_id: lotId, date_acquisition: date_mutation }).select())[0]
+    if (titulaires?.length) {
+      must(await supabase.from('titulaires')
+        .insert(titulaires.map((t) => ({ ...t, proprietaire_id: neuve.id }))).select())
+    }
+    return neuve
+  },
+
   // Acceptation de la mention RGPD. Tracée en base par `trg_membres_audit_rgpd`.
   //
   // ⚠ RPC et non `update` (migration 048). `membres_cs` ne porte que `read_auth`

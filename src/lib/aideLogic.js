@@ -691,14 +691,17 @@ export const MENUS = [
       {
         titre: 'Enregistrer une mutation',
         pourQui: ['president', 'secretaire'],
-        resume: 'Un changement de propriétaire.',
+        resume: 'Un changement de propriétaire — vente, donation, démembrement ou succession.',
         etapes: [
           'Sur la fiche, cliquez sur « Enregistrer une mutation ».',
-          'Saisissez la DATE DE L’ACTE : elle clôt la période de l’ancien propriétaire et ouvre celle du nouveau.',
-          'Renseignez le nouveau propriétaire et ses coordonnées.',
+          'Choisissez la NATURE de la mutation. C’est elle qui décide des rôles : un acquéreur détient en plein, deux acquéreurs sont co-propriétaires, des héritiers sont indivisaires, et une donation avec réserve d’usufruit distingue l’usufruitier du nu-propriétaire.',
+          'Saisissez la DATE DE L’ACTE : elle clôt la période de l’ancien propriétaire, clôt ses titulaires, et ouvre celle du nouveau.',
+          'Nommez les nouveaux titulaires, un bloc par personne — « + Personne » pour une indivision ou un couple. Cochez « Société » si c’est une SCI.',
+          'Joignez l’acte si vous l’avez : il reste attaché à cette période, donc à celui qui a acheté.',
+          'Avant d’enregistrer, relisez « Seront inscrits » : le bandeau dit qui portera la voix du lot.',
         ],
         alerte:
-          'N’enregistrez pas une mutation sans sa date réelle : ce sont les bornes de période qui font la valeur de l’historique. Mieux vaut un registre en retard qu’un registre faux.',
+          'N’enregistrez pas une mutation sans sa date réelle : ce sont les bornes de période qui font la valeur de l’historique. Mieux vaut un registre en retard qu’un registre faux. ⚠ Le rappel des quinze jours ne s’affiche que pour une vente et une donation en pleine propriété — l’article 22 ne vise rien d’autre, et une succession n’y est pas soumise. ⚠ Dans une donation avec réserve d’usufruit, c’est l’usufruitier SEUL qui est membre et qui vote (art. 6) ; le nu-propriétaire figure au registre parce que l’usufruitier doit l’informer des décisions.',
       },
     ],
   },
@@ -1207,19 +1210,26 @@ export const PARCOURS = [
       {
         titre: 'Ouvrir la parcelle et cliquer sur « Enregistrer une mutation »',
         texte:
-          'Saisissez la date : elle clôt la période de l’ancien propriétaire et ouvre celle du nouveau, d’un seul geste.',
+          'Saisissez la date : elle clôt la période de l’ancien propriétaire, clôt ses titulaires, et ouvre la période neuve, d’un seul geste.',
       },
       {
-        titre: 'Renseigner le nouveau propriétaire',
+        titre: 'Choisir la nature de la mutation',
         texte:
-          'Nom, adresse de communication, coordonnées. Pour une société, ses dirigeants ; pour un colotis injoignable, son mandataire.',
+          'Vente, donation en pleine propriété, donation avec réserve d’usufruit, succession. Ce choix décide des rôles que prendront les personnes, et c’est pour cela qu’il est demandé en premier.',
         alerte:
-          'Rien ne s’hérite : ni les coordonnées, ni le mandataire, ni le second propriétaire. C’est voulu — l’acquéreur n’a aucune raison de partager le relais de son vendeur.',
+          'Une donation avec réserve d’usufruit n’est pas une vente à deux noms : l’usufruitier prend SEUL la qualité de membre et porte la voix du lot, le nu-propriétaire est informé par lui (art. 6). Et le délai de quinze jours de l’article 22 ne vaut que pour la vente et la donation en pleine propriété — l’écran ne le rappelle donc que là.',
       },
       {
-        titre: 'Choisir les destinataires des convocations',
+        titre: 'Nommer les nouveaux titulaires',
         texte:
-          'Cochez les sources utiles et vérifiez l’encart « Recevront la convocation » : c’est ce qui partira réellement.',
+          'Un bloc par personne, « + Personne » pour une indivision ou un couple. Chacun a ses propres coordonnées et sa propre adresse — les statuts font élection de domicile en la demeure respective de chacun (art. 28). Laissée vide, l’adresse du lot est posée à sa place et marquée « à confirmer ».',
+        alerte:
+          'Rien ne s’hérite du vendeur : ni les coordonnées, ni le mandataire. C’est voulu — l’acquéreur n’a aucune raison de partager le relais de son vendeur.',
+      },
+      {
+        titre: 'Compléter sur la fiche ce que l’assistant ne demande pas',
+        texte:
+          'Le dirigeant d’une société s’ajoute ensuite dans « Titulaires du lot », comme représentant légal ; le mandataire d’un coloti injoignable de même ; et le représentant désigné d’une indivision s’y désigne avec sa pièce.',
       },
       {
         titre: 'Vérifier auprès du registre officiel, si c’est une société',

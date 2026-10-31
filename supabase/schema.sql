@@ -706,6 +706,19 @@ create table if not exists proprietaires (
   acte_transmis_le      date,
   acte_observations     text,
 
+  -- LA PIÈCE QUI PROUVE LA PÉRIODE (migration 070) : acte de vente, acte de
+  -- donation, acte de notoriété — ce que l'assistant de mutation demande.
+  -- ⚠ CE N'EST PAS `acte_transmis_le` : celui-là enregistre ce que le NOTAIRE
+  -- communique, l'application ne reçoit aucun acte. Ranger un acte de vente ici
+  -- ne dit rien de ce que Me Garnier a reçu.
+  -- ⚠ ET PAS `titulaires.designation_documents` (068) non plus, qui porte la
+  -- désignation du représentant d'une indivision (art. 6) : une colonne ne doit
+  -- jamais porter une seconde signification que son nom contredit.
+  -- ⚠ Le chemin du fichier porte l'id du LOT, pas celui de la période : au
+  -- moment du dépôt la période n'existe pas encore — c'est tout l'objet de
+  -- l'assistant. Même convention qu'en 046 et 050.
+  documents             jsonb not null default '[]',
+
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now(),
 

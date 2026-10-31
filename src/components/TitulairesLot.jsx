@@ -8,6 +8,7 @@ import {
   ROLES, ROLE_LABELS, ROLE_AIDES, ROLE_TONES, ROLE_CO, ROLE_NU, ROLE_MANDATAIRE,
   ROLE_REPRESENTANT, ROLE_USUFRUITIER, ROLES_REPRESENTABLES, ROLES_SANS_VOTE,
   LIGNE_VIDE, actifs, clos, controles, erreurDeSaisie, nomComplet,
+  versFormulaire, versPayload,
 } from '../lib/titulaireLogic'
 
 // ============================================================================
@@ -483,29 +484,8 @@ function FormulaireTitulaire({ valeur, onChange, proprietaireId, piecesDuDossier
   )
 }
 
-// ⚠ `null` de la base contre chaîne vide du formulaire : `{ ...LIGNE_VIDE,
-// ...ligne }` ne suffit PAS, puisque `null` écrase la valeur vide du modèle
-// (seul `undefined` laisse celle de gauche) et qu'un `.trim()` planterait
-// ensuite. Même piège que `sansNull` dans `Membres.jsx` — et on traite TOUS les
-// champs d'un coup, parce que les traiter un à un est ce qui avait produit le bug.
-function versFormulaire(t) {
-  const out = { ...LIGNE_VIDE, id: t.id, designation_documents: t.designation_documents || [] }
-  for (const champ of Object.keys(LIGNE_VIDE)) {
-    const v = t[champ]
-    out[champ] = v === null || v === undefined ? LIGNE_VIDE[champ] : v
-  }
-  return out
-}
-
-// …et l'inverse : une chaîne vide repart en `null`, pour que la base ne
-// conserve pas des champs « renseignés mais vides » que les contrôles
-// compteraient comme présents.
-function versPayload(f) {
-  const out = {}
-  for (const champ of Object.keys(LIGNE_VIDE)) {
-    const v = f[champ]
-    out[champ] = typeof v === 'string' ? (v.trim() || null) : v
-  }
-  out.designation_documents = f.designation_documents || []
-  return out
-}
+// ⚠ `versFormulaire` et `versPayload` ont déménagé dans `titulaireLogic.js`
+// (31 octobre) : l'assistant de mutation écrit dans la même table, et une
+// seconde copie aurait divergé au premier champ ajouté. C'est `versPayload` qui
+// garantit qu'une date vide repart en `null` et non en chaîne vide — sans quoi
+// l'insertion entière échoue côté Postgres, en silence côté mock.
