@@ -46,6 +46,14 @@ const GO = process.argv.includes('--go')
 
 const ETAT = 'État annoté de Me Garnier du 30/10/2026 (annotation manuscrite, non vérifiée sur l’acte)'
 const ACTE = 'Acte de vente du propriétaire, lu le 31/10/2026 — « lot numéro QUATRE (4) de la Zone E »'
+// ⚠ LA SOURCE LA PLUS FORTE DES TROIS, et c'est inattendu pour un plan : les
+// deux documents de la mairie (« Lots phase I » et le « plan de masse »)
+// portent le numéro de PARCELLE et le numéro de LOT côte à côte, sur le même
+// dessin. Ce n'est donc pas un rapprochement par le nom — c'est la
+// correspondance elle-même, écrite par le géomètre.
+// ⚠ Elle ne vaut QUE pour la zone A : c'est la seule où les deux plans portent
+// les numéros de parcelle. Ailleurs ils ne donnent que des noms.
+const PLAN = 'Plans de la mairie (« Lots phase I » et plan de masse), où le numéro de parcelle et le numéro de lot figurent côte à côte — zone A seulement'
 
 // Les 26 correspondances relevées. ⚠ Le numéro est écrit TEL QU'IL SE LIT :
 // « 09 » garde son zéro, « 3 et 5 » reste tel quel — 0B 247+263 est la parcelle
@@ -60,6 +68,15 @@ const RELEVE = [
   ['0B 226', '1', ETAT], ['0B 198', '16', ETAT], ['0B 202', '4', ETAT],
   ['0B 474+263', '1', ETAT], ['0B 197', '15', ETAT], ['0B 245', '8', ETAT],
   ['0B 230', '4', ETAT], ['0B 247+263', '3 et 5', ETAT],
+
+  // ── Ajout du 31 octobre, depuis les plans de la mairie ──────────────────
+  // ⚠ Les plans CONFIRMENT six des lectures de l'état annoté (0B 200, 202,
+  // 204, 205, 207, 208) sans aucune contradiction, et les noms de 1955 y
+  // survivent encore : PRIVAT en 207, VOLLBRECHT en 206, Pargoux en 199,
+  // Trosselli en 205. C'est cette concordance qui autorise à retenir les six
+  // parcelles que l'état ne couvrait pas.
+  ['0B 199', '1', PLAN], ['0B 201', '3', PLAN], ['0B 203', '5', PLAN],
+  ['0B 206', '8', PLAN], ['0B 209', '11', PLAN], ['0B 210', '12', PLAN],
 ]
 
 async function lireEnvFichier() {
