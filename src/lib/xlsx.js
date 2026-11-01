@@ -149,6 +149,12 @@ function zip(fichiers) {
  */
 export function classeurXLSX(lignes, opts = {}) {
   const nomFeuille = xml((opts.feuille || 'Feuille 1').slice(0, 31))
+  // ⚠ Les colonnes CENTRÉES sont désignées par leur index. Centrer par défaut
+  // serait un mauvais service : un nom ou une phrase centrés se lisent mal
+  // d'une ligne à l'autre, l'œil n'ayant plus de bord gauche où revenir. Ce
+  // sont les colonnes COURTES — un numéro, une surface, une zone — qui y
+  // gagnent.
+  const centrees = new Set(opts.centrees || [])
 
   const colonnes = opts.largeurs?.length
     ? `<cols>${opts.largeurs.map((l, i) => `<col min="${i + 1}" max="${i + 1}" width="${l}" customWidth="1"/>`).join('')}</cols>`
@@ -164,11 +170,12 @@ export function classeurXLSX(lignes, opts = {}) {
       // « 1 240,50 » interprétées en nombre perdraient leur zéro de tête ou leur
       // virgule selon la locale d'ouverture — on retombe sur le défaut qu'on
       // vient de corriger. Un état à annoter n'a rien à calculer.
-      // ⚠ `s="1"` RENVOIE AU STYLE wrapText, et sans lui un retour à la ligne
-      // dans une cellule ne s'affiche PAS : Excel le stocke, l'affiche comme
-      // un espace, et la cellule paraît porter une seule ligne. Les titulaires
-      // d'une indivision y seraient collés bout à bout.
-      return `<c r="${refCellule(c, r)}" s="1" t="inlineStr"><is><t xml:space="preserve">${xml(t)}</t></is></c>`
+      // ⚠ `s="1"` ET `s="2"` RENVOIENT AUX STYLES wrapText — à gauche et
+      // centré. Sans style, un retour à la ligne dans une cellule ne
+      // s'affiche PAS : Excel le stocke, le rend comme un espace, et la
+      // cellule paraît porter une seule ligne. Les titulaires d'une
+      // indivision y seraient collés bout à bout.
+      return `<c r="${refCellule(c, r)}" s="${centrees.has(c) ? 2 : 1}" t="inlineStr"><is><t xml:space="preserve">${xml(t)}</t></is></c>`
     }).join('')
     return `<row r="${r + 1}">${cellules}</row>`
   }).join('')
@@ -179,7 +186,7 @@ export function classeurXLSX(lignes, opts = {}) {
   const feuille = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${colonnes}<sheetData>${corps}</sheetData></worksheet>`
 
-  // ⚠ UN SEUL STYLE, ET IL PORTE `wrapText`. Un classeur sans `styles.xml`
+  // ⚠ DEUX STYLES, ET TOUS DEUX PORTENT `wrapText`. Un classeur sans `styles.xml`
   // n'a que le style 0, qui ne replie rien : une cellule multiligne s'y lit
   // sur une seule ligne, tronquée par la colonne voisine. `vertical="top"`
   // avec : sur une ligne haute de cinq indivisaires, une parcelle centrée
@@ -188,7 +195,7 @@ export function classeurXLSX(lignes, opts = {}) {
   // vides-par-défaut : Excel refuse d'ouvrir un `styles.xml` qui n'a pas au
   // moins une police, un remplissage, une bordure et un format de cellule.
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top" horizontal="center"/></xf></cellXfs></styleSheet>`
 
   return zip([
     {

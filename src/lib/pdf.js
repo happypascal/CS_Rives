@@ -634,13 +634,18 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
     // ⚠ LA COLONNE DES PERSONNES PREND LA PLACE RESTANTE (`auto`) : c'est la
     // seule qui empile plusieurs lignes — jusqu'à cinq indivisaires sur la
     // parcelle 0B 247+263 — et la brider la couperait au milieu d'un nom.
+    // ⚠ TOUT CENTRÉ SAUF LES DEUX COLONNES DE TEXTE. Les titulaires et le
+    // titre portent des noms et des phrases, parfois sur plusieurs lignes :
+    // centrées, chaque ligne commencerait à un endroit différent et l'œil
+    // n'aurait plus de bord gauche où revenir — une indivision de cinq
+    // personnes en deviendrait illisible.
     columnStyles: {
-      0: { cellWidth: 24 },
-      1: { cellWidth: 20, halign: 'right' },
-      2: { cellWidth: 18, halign: 'right' },
+      0: { cellWidth: 24, halign: 'center' },
+      1: { cellWidth: 20, halign: 'center' },
+      2: { cellWidth: 18, halign: 'center' },
       3: { cellWidth: 16, halign: 'center' },
       4: { cellWidth: 12, halign: 'center' },
-      5: { cellWidth: 26 },
+      5: { cellWidth: 26, halign: 'center' },
       6: { cellWidth: 'auto' },
       7: { cellWidth: 44 },
     },

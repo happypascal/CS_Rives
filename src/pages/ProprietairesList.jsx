@@ -18,7 +18,7 @@ import { classeurXLSX, downloadXLSX } from '../lib/xlsx'
 // ⚠ Les colonnes de l'état des colotis ont déménagé dans `etatColotis.js` le
 // 1er novembre : le PDF et le classeur les composent désormais au même
 // endroit, et c'est ce qui garantit qu'ils disent la même chose à l'étude.
-import { etatColotisLignes, ETAT_COLOTIS_LARGEURS } from '../lib/etatColotis'
+import { etatColotisLignes, ETAT_COLOTIS_LARGEURS, ETAT_COLOTIS_CENTREES } from '../lib/etatColotis'
 
 // Colonnes de la liste, déclarées en table plutôt qu'en JSX : l'en-tête, les
 // tris et les cellules se lisent alors au même endroit.
@@ -704,6 +704,7 @@ function ExportNotaireModal({ open, onClose, lots }) {
               const octets = classeurXLSX(etatColotisLignes(lots), {
                 feuille: 'État des colotis',
                 largeurs: ETAT_COLOTIS_LARGEURS,
+                centrees: ETAT_COLOTIS_CENTREES,
               })
               downloadXLSX(`etat-colotis-ASL-Rives-${new Date().toISOString().slice(0, 10)}.xlsx`, octets)
               onClose()

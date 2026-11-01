@@ -110,12 +110,17 @@ export function statutDuTitreTexte(proprietaire) {
   return libelle
 }
 
-// ⚠ Le NOMBRE DE LOTS n'est pas le nombre de lignes : deux parcelles pèsent
-// 1,81 et 1,19 lot, soit 51 lots pour 50 parcelles (038). La colonne existe
-// précisément pour que ce total soit juste.
-const nombre = (v, min = 2) => (v == null || v === ''
+// ⚠ AUCUNE DÉCIMALE INUTILE. « 800,00 m² » et « 1,00 lot » sur quarante-huit
+// lignes noient les quelques valeurs qui en portent vraiment — 612,5 m², et
+// surtout les 1,81 et 1,19 lot de la parcelle partagée à 81/19. Les décimales
+// restent quand elles disent quelque chose : c'est `maximumFractionDigits`
+// qui les autorise, `minimumFractionDigits` qui les imposerait.
+//
+// ⚠ On ne touche PAS à la valeur, seulement à son écriture : la superficie
+// est l'assiette des voix et des charges, et un arrondi déplacerait des voix.
+const nombre = (v) => (v == null || v === ''
   ? ''
-  : new Intl.NumberFormat('fr-FR', { minimumFractionDigits: min, maximumFractionDigits: 2 }).format(v))
+  : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(v))
 
 export const ETAT_COLOTIS_ENTETES = [
   'Parcelle', 'Superficie (m²)', 'Nombre de lots', 'N° d’origine', 'Zone',
@@ -123,7 +128,18 @@ export const ETAT_COLOTIS_ENTETES = [
 ]
 
 /** Largeurs en caractères — la colonne des personnes est la longue. */
-export const ETAT_COLOTIS_LARGEURS = [13, 14, 13, 11, 7, 18, 40, 34]
+export const ETAT_COLOTIS_LARGEURS = [13, 13, 12, 11, 7, 18, 40, 34]
+
+/**
+ * Les colonnes CENTRÉES : tout sauf les titulaires et le titre.
+ *
+ * ⚠ ET C'EST BIEN L'EXCEPTION QUI COMPTE. Ces deux colonnes-là portent des
+ * NOMS et des PHRASES, parfois sur plusieurs lignes ; centrées, chaque ligne
+ * commencerait à un endroit différent et l'œil n'aurait plus de bord gauche
+ * où revenir — une indivision de cinq personnes deviendrait illisible. Les
+ * six autres sont courtes et y gagnent.
+ */
+export const ETAT_COLOTIS_CENTREES = [0, 1, 2, 3, 4, 5]
 
 /**
  * Une ligne par parcelle, dans l'ordre reçu.
@@ -139,10 +155,7 @@ export function etatColotisLignes(lots) {
     return [
       l.numero || '',
       nombre(l.superficie),
-      // ⚠ Le nombre de lots s'écrit « 1 » et non « 1,00 » : deux décimales sur
-      // quarante-huit lignes qui valent 1 noieraient les deux seules qui ne
-      // valent pas 1 — 1,81 et 1,19, la parcelle partagée à 81/19.
-      nombre(l.nombre_lots, 0),
+      nombre(l.nombre_lots),
       l.numero_origine || '',
       l.zone || '',
       p ? formeDeDetention(p) : '',
