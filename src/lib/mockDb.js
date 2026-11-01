@@ -1990,6 +1990,10 @@ export const mockRepo = {
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       contacts_officiels: ['proprietaire'],
+      // ⚠ Même défaut que la colonne `not null` de la 071 : sans lui, la démo
+      // afficherait « pas envoyé » là où la prod affiche un statut, et le
+      // menu de la fiche naîtrait sur une valeur que la contrainte refuse.
+      acte_statut: 'non_envoye', acte_declare_le: null,
       date_acquisition: null, date_cession: null, observations: null,
       created_at: nowISO(), updated_at: nowISO(), ...patch,
     }
@@ -2036,6 +2040,10 @@ export const mockRepo = {
       mandataire_nom: null, mandataire_email: null, mandataire_telephone: null,
       nom_2: null, email_2: null, telephone_2: null, est_indivision: false,
       contacts_officiels: ['proprietaire'],
+      // ⚠ Même défaut que la colonne `not null` de la 071 : sans lui, la démo
+      // afficherait « pas envoyé » là où la prod affiche un statut, et le
+      // menu de la fiche naîtrait sur une valeur que la contrainte refuse.
+      acte_statut: 'non_envoye', acte_declare_le: null,
       date_cession: null, observations: null, created_at: nowISO(), updated_at: nowISO(),
       ...nouveau, date_acquisition: date_mutation,
     }
@@ -2076,6 +2084,7 @@ export const mockRepo = {
     const p = {
       id: uid(), lot_id: lotId, est_societe: false, est_indivision: false,
       contacts_officiels: ['proprietaire'], date_cession: null, observations: null,
+      acte_statut: 'non_envoye', acte_declare_le: null,
       created_at: nowISO(), updated_at: nowISO(),
       ...periode, date_acquisition: date_mutation,
     }

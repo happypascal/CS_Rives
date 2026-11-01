@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, CardHeader, Button, Input, Textarea, Spinner, Badge } from '../components/ui'
+import { Card, CardHeader, Button, Input, Textarea, Select, Spinner, Badge } from '../components/ui'
 import { useConfirm } from '../components/useConfirm'
 import { RgpdGate } from '../components/RgpdGate'
 import { formatDate, parseMontant } from '../lib/format'
@@ -17,6 +17,10 @@ import { CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots, aDesTitulaire
 import TitulairesLot from '../components/TitulairesLot'
 import AssistantMutation from '../components/AssistantMutation'
 import PiecesJointes from '../components/PiecesJointes'
+import {
+  TITRE_STATUTS, TITRE_LABELS, TITRE_AIDES, TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_RECU,
+  statutDuTitre, erreurDeTitre, titreRecuParLeNotaire,
+} from '../lib/titreLogic'
 
 // Champs de la période de propriété.
 //
@@ -41,6 +45,10 @@ const CHAMPS_VIDES = {
   contacts_officiels: [CONTACT_PROPRIETAIRE],
   date_acquisition: '', observations: '',
   acte_transmis_le: '', acte_observations: '',
+  // OÙ EN EST LE TITRE (071). ⚠ Le défaut est `non_envoye` et non une chaîne
+  // vide : la colonne est `not null`, et un formulaire qui naîtrait vide
+  // enverrait une valeur que la contrainte refuse.
+  acte_statut: TITRE_NON_ENVOYE, acte_declare_le: '',
   // La pièce qui prouve la période (migration 070). Elle, se saisit bien ici :
   // l'assistant ne la demande qu'à la mutation, et les 51 périodes déjà au
   // registre n'ont jamais eu d'endroit où la ranger.
@@ -186,6 +194,11 @@ function Contenu() {
   const reprisParTitulaires = aDesTitulaires(lot?.proprietaire)
   const nomDerive = libelleDeLaPeriode(lot?.proprietaire)
   const adresseDerivee = adresseDeLaPeriode(lot?.proprietaire)
+  // ⚠ Passe par `statutDuTitre` et non par `form.acte_statut` brut : une
+  // période antérieure à la 071, ou une fiche de démo, n'a pas de statut en
+  // mémoire, et le menu afficherait « pas envoyé » sur un titre que le notaire
+  // a pourtant confirmé.
+  const statutSaisi = statutDuTitre(form)
 
   const rang = parcelles.findIndex((x) => x.id === id)
   const precedente = rang > 0 ? parcelles[rang - 1] : null
@@ -225,9 +238,35 @@ function Contenu() {
 
   // Renvoie true si l'enregistrement a abouti. La navigation s'en sert : on ne
   // quitte pas une fiche dont la sauvegarde vient d'échouer.
+  // Ce que les trois colonnes du titre vaudront réellement. ⚠ Calculé ICI,
+  // avant la garde, parce que c'est là-dessus qu'elle doit porter : un champ
+  // masqué garde sa valeur dans l'état du formulaire.
+  const champsDuTitre = {
+    acte_statut: statutSaisi,
+    // ⚠ La date de réception part avec le statut qui ne l'admet pas : la
+    // contrainte `proprietaires_acte_statut_coherent` (071) refuserait la
+    // ligne, et la garder en douce ferait dire au registre que le notaire a
+    // confirmé un titre qu'on vient de remettre en attente.
+    acte_transmis_le: titreRecuParLeNotaire({ acte_statut: statutSaisi })
+      ? (form.acte_transmis_le || null) : null,
+    acte_declare_le: form.acte_declare_le || null,
+  }
+
   const enregistrer = async () => {
     if (!form.nom.trim()) {
       setError('Le nom du propriétaire est obligatoire.')
+      return false
+    }
+    // ⚠ LA GARDE PORTE SUR CE QU'ON VA ÉCRIRE, PAS SUR LE FORMULAIRE BRUT.
+    // Les champs de date sont MASQUÉS quand le statut ne les admet pas, mais
+    // leur valeur reste dans l'état : passer un titre « incomplet » à « à
+    // vérifier » laissait donc une date de réception invisible, que la garde
+    // refusait — l'enregistrement échouait et le message s'affichait en haut
+    // de page, hors de l'écran. On ne voyait rien, et rien ne s'enregistrait.
+    // Constaté en éprouvant l'écran, pas en le relisant.
+    const fauteDeTitre = erreurDeTitre({ ...form, ...champsDuTitre })
+    if (fauteDeTitre) {
+      setError(fauteDeTitre)
       return false
     }
     setBusy(true)
@@ -311,7 +350,12 @@ function Contenu() {
         observations: form.observations || null,
         // ⚠ Chaîne vide → null, jamais l'inverse : '' ferait échouer la
         // contrainte de date, et « pas transmis » est bien une absence.
-        acte_transmis_le: form.acte_transmis_le || null,
+        // ⚠ ET LA DATE DE RÉCEPTION EST EFFACÉE SI LE STATUT N'EST PLUS
+        // « reçu » : la contrainte `proprietaires_acte_statut_coherent` (071)
+        // refuserait la ligne, et la garder en douce ferait dire au registre
+        // que le notaire a confirmé un titre qu'on vient de remettre en
+        // attente. Même chose pour la déclaration, qui n'a de sens qu'avant.
+        ...champsDuTitre,
         acte_observations: form.acte_observations || null,
       })
       await reload()
@@ -560,15 +604,51 @@ function Contenu() {
                   Résolution n° 15 de l’AG 2026 : chaque coloti adresse son titre au notaire avant le
                   31 octobre. À renseigner d’après l’état que le notaire retourne.
                 </p>
+                {/* ⚠ LE STATUT D'ABORD, LES DATES ENSUITE. C'est lui qu'on
+                    lit, lui qui part au tableau de l'étude, et les deux dates
+                    ne font que le préciser — l'une pour « à vérifier »,
+                    l'autre pour « reçu ». */}
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <Input
-                    label="Reçu par le notaire le"
-                    type="date"
-                    value={form.acte_transmis_le}
-                    onChange={set('acte_transmis_le')}
-                    readOnly={!peutSaisir}
-                  />
-                  <div className="sm:col-span-2">
+                  <Select
+                    label="Où en est ce titre"
+                    value={statutSaisi}
+                    onChange={set('acte_statut')}
+                    disabled={!peutSaisir}
+                  >
+                    {TITRE_STATUTS.map((s) => (
+                      <option key={s} value={s}>{TITRE_LABELS[s]}</option>
+                    ))}
+                  </Select>
+                  {/* La date de DÉCLARATION n'a de sens que tant que le
+                      notaire n'a pas confirmé : après, c'est sa date qui
+                      compte. On la garde affichée en « reçu » si elle existe —
+                      elle raconte le délai — mais on ne la demande plus. */}
+                  {(statutSaisi === TITRE_A_VERIFIER || form.acte_declare_le) && (
+                    <Input
+                      label="Le coloti déclare avoir envoyé le"
+                      type="date"
+                      value={form.acte_declare_le}
+                      onChange={set('acte_declare_le')}
+                      readOnly={!peutSaisir}
+                    />
+                  )}
+                  {/* ⚠ La date de réception vaut pour « reçu » ET pour « reçu
+                      mais incomplet » : dans les deux cas le notaire a bien
+                      reçu quelque chose ce jour-là. Elle reste interdite aux
+                      deux autres états, que la contrainte
+                      `proprietaires_acte_statut_coherent` (071) refuse — et un
+                      champ qu'on remplit avant d'être refusé par Postgres est
+                      un piège. */}
+                  {titreRecuParLeNotaire({ acte_statut: statutSaisi }) && (
+                    <Input
+                      label="Reçu par le notaire le"
+                      type="date"
+                      value={form.acte_transmis_le}
+                      onChange={set('acte_transmis_le')}
+                      readOnly={!peutSaisir}
+                    />
+                  )}
+                  <div className="sm:col-span-3">
                     <Input
                       label="Observation du notaire"
                       value={form.acte_observations}
@@ -578,9 +658,14 @@ function Contenu() {
                     />
                   </div>
                 </div>
-                {!form.acte_transmis_le && (
-                  <p className="mt-2 text-xs text-amber-700">Aucun titre reçu à ce jour.</p>
-                )}
+                {/* ⚠ CE QUE L'ÉTAT VEUT DIRE, ÉCRIT. « À vérifier » se lit
+                    spontanément « on ne le croit pas » — or c'est le constat
+                    d'une contradiction entre ce que le coloti déclare et ce
+                    que l'état du notaire montre. Un statut mal compris ne
+                    sera pas employé. */}
+                <p className={`mt-2 text-xs ${statutSaisi === TITRE_RECU ? 'text-slate-500' : 'text-amber-700'}`}>
+                  {TITRE_AIDES[statutSaisi]}
+                </p>
               </div>
 
               {/* ------------------------------ L'ACTE LUI-MÊME (070)

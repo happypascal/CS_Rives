@@ -706,6 +706,28 @@ create table if not exists proprietaires (
   acte_transmis_le      date,
   acte_observations     text,
 
+  -- OÙ EN EST LE TITRE (migration 071). ⚠ La 059 n'avait que deux états, et le
+  -- second était un SILENCE — pas de date, donc rien. Or ce silence recouvre
+  -- deux situations opposées : le coloti n'a rien envoyé, ou il affirme l'avoir
+  -- fait et l'état du notaire ne le montre pas. Les confondre fait relancer
+  -- quelqu'un qui a déjà fait ce qu'on lui demande, devant une recherche
+  -- facturée 100 € au propriétaire (résolution n° 15 de l'AG 2026).
+  -- ⚠ STOCKÉ et non dérivé, contrairement à la doctrine habituelle du dépôt :
+  -- « à vérifier » ne se déduit d'aucune colonne, seul le conseil peut le poser
+  -- au vu d'un courriel. ⚠ Et fondu en UN statut plutôt qu'en deux colonnes
+  -- (notaire / coloti) — arbitrage de Pascal : ce registre doit produire un
+  -- tableau à renvoyer à l'étude, et une colonne qui se lit en un mot y vaut
+  -- mieux que deux dont le lecteur fait la synthèse.
+  -- ⚠ QUATRE ÉTATS, et les deux du milieu étaient invisibles : un titre
+  -- INCOMPLET portait une date de réception, donc comptait comme reçu — le
+  -- registre affirmait un dossier clos alors que l'étude attend une pièce.
+  acte_statut           text not null default 'non_envoye'
+    check (acte_statut in ('non_envoye', 'a_verifier', 'incomplet', 'recu')),
+  -- Précision du statut « à vérifier », jamais un statut concurrent : « le
+  -- coloti déclare avoir envoyé le 12 octobre » est ce que le notaire peut
+  -- recouper, « à vérifier » tout court ne lui apprend rien.
+  acte_declare_le       date,
+
   -- LA PIÈCE QUI PROUVE LA PÉRIODE (migration 070) : acte de vente, acte de
   -- donation, acte de notoriété — ce que l'assistant de mutation demande.
   -- ⚠ CE N'EST PAS `acte_transmis_le` : celui-là enregistre ce que le NOTAIRE
@@ -728,7 +750,20 @@ create table if not exists proprietaires (
 
   -- On ne transmet pas le titre d'un bien qu'on ne possède pas encore.
   constraint proprietaires_acte_apres_acquisition
-    check (acte_transmis_le is null or date_acquisition is null or acte_transmis_le >= date_acquisition)
+    check (acte_transmis_le is null or date_acquisition is null or acte_transmis_le >= date_acquisition),
+
+  -- ⚠ DEUX COLONNES QUI DISENT LA MÊME CHOSE FINISSENT PAR SE CONTREDIRE : une
+  -- date de réception communiquée par le notaire interdit les statuts qui
+  -- disent le contraire. ⚠ Elle reste COMPATIBLE avec « incomplet » — le
+  -- notaire a bien reçu quelque chose ce jour-là, c'est ce que ce statut
+  -- constate. ⚠ Et l'inverse est permis : on peut apprendre qu'un titre est
+  -- arrivé sans savoir quel jour, exiger la date obligerait à en inventer une.
+  constraint proprietaires_acte_statut_coherent
+    check (acte_transmis_le is null or acte_statut in ('recu', 'incomplet')),
+
+  -- On ne déclare pas avoir envoyé le titre d'un bien qu'on ne possède pas.
+  constraint proprietaires_declaration_apres_acquisition
+    check (acte_declare_le is null or date_acquisition is null or acte_declare_le >= date_acquisition)
 );
 
 -- UN SEUL propriétaire actuel par lot. Index partiel : les lignes historiques

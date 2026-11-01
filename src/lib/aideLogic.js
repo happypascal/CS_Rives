@@ -666,17 +666,19 @@ export const MENUS = [
           'On convoque tous ceux qui doivent l’être : les indivisaires, l’usufruitier ET le nu-propriétaire, le dirigeant d’une société et son mandataire sur place. ⚠ Les anciennes cases « destinataires officiels » ont été retirées de la fiche le 31 octobre 2026 : elles ne décrivaient que deux personnes et une adresse. Elles ne subsistent qu’en base, et ne commandent les envois que pour une période qui n’a encore aucun titulaire.',
       },
       {
-        titre: 'Noter les titres de propriété reçus par le notaire',
+        titre: 'Suivre les titres de propriété',
         pourQui: ['president', 'secretaire'],
-        resume: 'Recopier l’état que le notaire retourne, et voir qui manque.',
+        resume: 'Quatre états : pas envoyé, à vérifier, incomplet, reçu.',
         etapes: [
-          'Le compteur en haut du registre indique combien de titres ont été reçus sur le nombre de propriétaires.',
-          'Le bouton « Sans titre » ne laisse que ceux dont le notaire n’a rien reçu — c’est la liste à relancer.',
-          'Ouvrez une fiche : le bloc « Titre de propriété » porte la date de réception et l’observation du notaire.',
-          'La date se renseigne d’après ce que le notaire vous communique ; l’application ne le devine pas.',
+          'Le compteur en haut du registre indique combien de titres le notaire a reçus, sur le nombre de propriétaires.',
+          'Trois boutons filtrent la liste : « Pas envoyé » donne ceux à relancer, « À vérifier » ceux dont l’envoi est contesté, « Incomplet » ceux dont il manque une pièce.',
+          'Ouvrez une fiche : le bloc « Titre de propriété » porte le statut, puis la date qui le précise.',
+          'Quand un coloti vous écrit qu’il a envoyé son titre : passez-le « À vérifier » et notez la date qu’il indique.',
+          'Quand le notaire confirme la réception : passez-le « Reçu » et notez sa date à lui.',
+          'S’il a reçu le titre mais qu’il manque une pièce — l’acquisition d’origine par exemple : « Reçu mais incomplet », avec la date de réception et ce qui manque en observation.',
         ],
         alerte:
-          'Le suivi est attaché au PROPRIÉTAIRE, pas à la parcelle : après une mutation, le nouvel arrivant repart sans titre reçu — c’est le sien que le notaire attend, pas celui du vendeur.',
+          '⚠ « À vérifier » n’est PAS un doute sur la parole du coloti : c’est le constat d’une contradiction entre ce qu’il déclare et ce que l’état du notaire montre. C’est à l’étude de la lever. Ne pas l’employer comme une case d’attente. ⚠ « Incomplet » n’est pas « reçu » : le dossier n’est pas clos, et c’est tout l’objet de ce statut — avant, un titre incomplet portait une date de réception et comptait donc comme abouti. ⚠ Et le registre ne constate rien : les deux dates viennent, l’une du coloti, l’autre du notaire. ⚠ Le suivi est attaché au PROPRIÉTAIRE, pas à la parcelle : après une mutation, le nouvel arrivant repart à « pas envoyé » — c’est son titre que le notaire attend, pas celui du vendeur.',
       },
       {
         titre: 'Envoyer la liste des colotis au notaire',

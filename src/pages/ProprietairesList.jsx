@@ -8,6 +8,10 @@ import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { destinatairesDuLot, aDesTitulaires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
 import { controles, ROLE_LABELS } from '../lib/titulaireLogic'
+import {
+  compterTitres, statutDuTitre, TITRE_LABELS_COURTS, TITRE_TONS,
+  TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_INCOMPLET, TITRE_RECU,
+} from '../lib/titreLogic'
 import { formatDate } from '../lib/format'
 import { downloadRegistreNotairePDF } from '../lib/pdf'
 import { classeurXLSX, colotisNotaireLignes, COLOTIS_LARGEURS, downloadXLSX } from '../lib/xlsx'
@@ -57,6 +61,15 @@ const COLONNES = [
 // Ne tester que la forme avec civilité ferait répéter tous ceux qui ont un
 // prénom, c'est-à-dire la quasi-totalité ; ne tester que la forme sans
 // civilité ferait répéter ceux qui n'en ont pas. On teste les deux.
+// Les tons de `titreLogic` rendus en classes Tailwind. ⚠ Ici et non dans la
+// logique : celle-ci est partagée avec le PDF et le classeur, qui ne
+// connaissent pas Tailwind.
+const COULEURS_TITRE = {
+  green: 'text-emerald-700',
+  amber: 'text-amber-700',
+  red: 'text-red-700',
+}
+
 const CIVILITES = /^(M\.|Mme|Mlle|M)\s+/i
 function dejaAuLibelle(libelle, nom) {
   const l = libelle || ''
@@ -83,7 +96,10 @@ function Contenu() {
   const [nouveau, setNouveau] = useState('')
   const [busy, setBusy] = useState(false)
   const [exportOuvert, setExportOuvert] = useState(false)
-  const [seulementSansActe, setSeulementSansActe] = useState(false)
+  // ⚠ UN SEUL ÉTAT POUR TROIS FILTRES, et non trois booléens : deux cases
+  // cochées en même temps donneraient une liste vide sans raison visible.
+  // `null` = aucun filtre de titre.
+  const [filtreTitre, setFiltreTitre] = useState(null)
   // ⚠ Les deux filtres s'excluent : cumulés, une liste vide ne dirait pas
   // lequel des deux l'a vidée.
   const [seulementACompleter, setSeulementACompleter] = useState(false)
@@ -126,8 +142,11 @@ function Contenu() {
 
   const filtres = useMemo(() => {
     const terme = q.trim().toLowerCase()
-    const base = seulementSansActe
-      ? lots.filter((l) => l.proprietaire && !l.proprietaire.acte_transmis_le)
+    // ⚠ Le filtre porte sur UN statut nommé, plus sur « pas de date » : les
+    // trois états se filtrent du même geste, et « à vérifier » ne se confond
+    // plus avec « pas envoyé ».
+    const base = filtreTitre
+      ? lots.filter((l) => l.proprietaire && statutDuTitre(l.proprietaire) === filtreTitre)
       : seulementACompleter
         ? lots.filter((l) => alertesParLot.has(l.id))
         : lots
@@ -146,7 +165,7 @@ function Contenu() {
     // ⚠ Même fonction que celle dont se sert la navigation de la fiche : c'est
     // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
     return trierLots(liste, tri)
-  }, [lots, q, tri, seulementSansActe, seulementACompleter, alertesParLot])
+  }, [lots, q, tri, filtreTitre, seulementACompleter, alertesParLot])
 
   // ⚠ L'EXPORT PORTE SUR TOUT LE REGISTRE, jamais sur la recherche en cours.
   // Un « état des colotis » amputé des lignes qui ne correspondaient pas au
@@ -175,8 +194,15 @@ function Contenu() {
   // ⚠ Le dénominateur est le nombre de PROPRIÉTAIRES, pas de parcelles : on ne
   // réclame pas un titre à une parcelle vacante, et l'y compter ferait croire à
   // un retard qui n'existe pas.
-  const avecActe = lots.filter((l) => l.proprietaire?.acte_transmis_le).length
-  const sansActe = lots.filter((l) => l.proprietaire && !l.proprietaire.acte_transmis_le).length
+  // ⚠ TROIS ÉTATS DEPUIS LA 071, plus deux. Compter « sans titre » comme
+  // l'absence de date mettait dans le même sac celui qui n'a rien envoyé et
+  // celui qui déclare l'avoir fait — et c'est ce qui a fait relancer des
+  // colotis à jour le 30 octobre.
+  const titres = compterTitres(lots)
+  const avecActe = titres[TITRE_RECU]
+  const sansActe = titres[TITRE_NON_ENVOYE]
+  const aVerifier = titres[TITRE_A_VERIFIER]
+  const incomplets = titres[TITRE_INCOMPLET]
 
   const trierPar = (cle) =>
     setTri((t) => {
@@ -259,11 +285,17 @@ function Contenu() {
               alerte="titulaires incomplets"
             />
           )}
+          {/* ⚠ LA TUILE DIT MAINTENANT LES TROIS ÉTATS. Annoncer « 11 / 50 »
+              et « 39 manquants » mettait les colotis à jour dans la colonne
+              des retardataires — c'est ce chiffre qui a servi à bâtir la
+              relance du 30 octobre. */}
           <Total
             valeur={`${avecActe} / ${proprietaires}`}
             libelle="titre(s) reçu(s) par le notaire"
-            detail={sansActe === 0 && proprietaires > 0 ? 'tous transmis' : null}
-            alerte={sansActe > 0 ? `${sansActe} manquant(s)` : null}
+            detail={[aVerifier > 0 ? `${aVerifier} à vérifier` : null,
+              incomplets > 0 ? `${incomplets} incomplet(s)` : null].filter(Boolean).join(' · ')
+              || (sansActe === 0 && proprietaires > 0 ? 'tous transmis' : null)}
+            alerte={sansActe > 0 ? `${sansActe} pas envoyé(s)` : null}
           />
         </Card>
       )}
@@ -286,19 +318,42 @@ function Contenu() {
             {aCompleter > 0 && (
               <Button
                 variant={seulementACompleter ? 'primary' : 'secondary'}
-                onClick={() => { setSeulementACompleter((v) => !v); setSeulementSansActe(false) }}
+                onClick={() => { setSeulementACompleter((v) => !v); setFiltreTitre(null) }}
                 title="N’afficher que les parcelles dont les titulaires sont incomplets"
               >
                 À compléter ({aCompleter})
               </Button>
             )}
+            {/* ⚠ DEUX BOUTONS, PAS UN. « Sans titre » mettait dans le même
+                sac celui qui n'a rien envoyé et celui qui déclare l'avoir
+                fait : c'est ce qui a fait relancer des colotis à jour. Les
+                deux populations ne se traitent pas pareil — l'une se relance,
+                l'autre se vérifie auprès de l'étude. */}
+            {aVerifier > 0 && (
+              <Button
+                variant={filtreTitre === TITRE_A_VERIFIER ? 'primary' : 'secondary'}
+                onClick={() => { setFiltreTitre((v) => (v === TITRE_A_VERIFIER ? null : TITRE_A_VERIFIER)); setSeulementACompleter(false) }}
+                title="Le coloti déclare avoir envoyé son titre, l’état du notaire ne le montre pas"
+              >
+                À vérifier ({aVerifier})
+              </Button>
+            )}
+            {incomplets > 0 && (
+              <Button
+                variant={filtreTitre === TITRE_INCOMPLET ? 'primary' : 'secondary'}
+                onClick={() => { setFiltreTitre((v) => (v === TITRE_INCOMPLET ? null : TITRE_INCOMPLET)); setSeulementACompleter(false) }}
+                title="Le notaire a reçu une pièce, mais il en manque une autre"
+              >
+                Incomplet ({incomplets})
+              </Button>
+            )}
             {sansActe > 0 && (
               <Button
-                variant={seulementSansActe ? 'primary' : 'secondary'}
-                onClick={() => { setSeulementSansActe((v) => !v); setSeulementACompleter(false) }}
-                title="N’afficher que les propriétaires dont le notaire n’a pas encore reçu le titre"
+                variant={filtreTitre === TITRE_NON_ENVOYE ? 'primary' : 'secondary'}
+                onClick={() => { setFiltreTitre((v) => (v === TITRE_NON_ENVOYE ? null : TITRE_NON_ENVOYE)); setSeulementACompleter(false) }}
+                title="N’afficher que les propriétaires qui n’ont pas envoyé leur titre"
               >
-                Sans titre ({sansActe})
+                Pas envoyé ({sansActe})
               </Button>
             )}
           </div>
@@ -451,15 +506,29 @@ function Contenu() {
                           alors que l'information se lit avec la personne à qui
                           on va la réclamer. Rien n'est affiché sur une parcelle
                           vacante — on ne réclame pas un titre à personne. */}
-                      {l.proprietaire && (
-                        l.proprietaire.acte_transmis_le ? (
-                          <span className="block text-xs text-emerald-700" title={l.proprietaire.acte_observations || undefined}>
-                            titre reçu le {formatDate(l.proprietaire.acte_transmis_le)}
+                      {/* ⚠ TROIS ÉTATS DEPUIS LA 071, et le troisième porte sa
+                          date : « à vérifier » tout court ne dit pas depuis
+                          quand le coloti affirme avoir envoyé, or c'est
+                          exactement ce que l'étude peut recouper. */}
+                      {l.proprietaire && (() => {
+                        const s = statutDuTitre(l.proprietaire)
+                        // ⚠ La couleur vient de `TITRE_TONS`, pas d'une
+                        // cascade de conditions : écrite à la main, elle
+                        // oubliait « incomplet », qui tombait dans le rouge
+                        // des dossiers où rien n'a été fait — alors que le
+                        // notaire a bien reçu quelque chose.
+                        const couleur = COULEURS_TITRE[TITRE_TONS[s]]
+                        const quand = s === TITRE_RECU || s === TITRE_INCOMPLET
+                          ? l.proprietaire.acte_transmis_le
+                          : s === TITRE_A_VERIFIER ? l.proprietaire.acte_declare_le
+                            : null
+                        return (
+                          <span className={`block text-xs ${couleur}`} title={l.proprietaire.acte_observations || undefined}>
+                            titre : {TITRE_LABELS_COURTS[s].toLowerCase()}
+                            {quand ? ` le ${formatDate(quand)}` : ''}
                           </span>
-                        ) : (
-                          <span className="block text-xs text-amber-700">titre non reçu</span>
                         )
-                      )}
+                      })()}
                       {/* ⚠ CE QUI MANQUE, SUR LA LIGNE. Le compte seul ne sert à
                           rien si l'on ne sait pas quelles parcelles il désigne.
                           Le détail reste sur la fiche : ici on dit qu'il y a
