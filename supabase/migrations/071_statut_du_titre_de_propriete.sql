@@ -93,7 +93,7 @@ alter table proprietaires
     default 'non_envoye',
   add column if not exists acte_declare_le date;
 
--- Les trois etats, et rien d autre. ⚠ Contrainte de VALEUR ici, alors
+-- Les quatre etats, et rien d autre. ⚠ Contrainte de VALEUR ici, alors
 -- que le depot laisse libres les categories (031, 045, 066) : celles-la
 -- sont des libelles que personne ne teste, celui-ci commande un
 -- compteur, un filtre et une colonne du tableau envoye a l etude. Une
@@ -104,17 +104,6 @@ alter table proprietaires
   add constraint proprietaires_acte_statut_valide
   check (acte_statut in ('non_envoye', 'a_verifier', 'incomplet',
                          'recu'));
-
--- Une date de reception communiquee par le notaire interdit les deux
--- statuts qui disent le contraire. ⚠ Elle est en revanche COMPATIBLE
--- avec « incomplet » : le notaire a bien recu quelque chose ce jour-la,
--- et c est precisement ce que ce statut constate.
-alter table proprietaires
-  drop constraint if exists proprietaires_acte_statut_coherent;
-alter table proprietaires
-  add constraint proprietaires_acte_statut_coherent
-  check (acte_transmis_le is null
-         or acte_statut in ('recu', 'incomplet'));
 
 -- On ne declare pas avoir envoye le titre d un bien qu on ne possede
 -- pas encore. Meme garde que `proprietaires_acte_apres_acquisition`.
@@ -133,19 +122,41 @@ comment on column proprietaires.acte_declare_le is
 
 -- --------------------------------------------- reprise de l existant
 -- ⚠ LES TITRES DEJA RECUS PRENNENT LE STATUT QUI LEUR CORRESPOND. Sans
--- cette reprise, les onze periodes dont Me Garnier a confirme la
--- reception repartiraient a « non envoye » et le registre affirmerait
--- que personne n a rien transmis.
--- ⚠ ELLE LES POSE A « recu » ET NON A « incomplet », alors meme qu on
--- sait qu au moins un titre est incomplet. Le registre ne peut pas
--- deviner lequel : seul l etat annote de Me Garnier le dit, et c est au
--- conseil de le reporter fiche par fiche. Poser « incomplet » partout
--- par prudence ferait affirmer un manque sur dix dossiers qui n en ont
+-- cette reprise, les periodes dont Me Garnier a confirme la reception
+-- repartiraient a « non envoye » et le registre affirmerait que
+-- personne n a rien transmis.
+--
+-- ⚠⚠ ET ELLE DOIT PRECEDER LA CONTRAINTE DE COHERENCE. Premiere
+-- version de cette migration : la contrainte etait posee AVANT, et
+-- elle a echoue sur la base reelle — « check constraint
+-- proprietaires_acte_statut_coherent is violated by some row ». C est
+-- logique apres coup : la colonne nait a « non_envoye » pour TOUTES
+-- les lignes, y compris celles qui portent deja une date de reception,
+-- et c est exactement ce que la contrainte interdit. L ordre n est
+-- donc pas une question de style : ajouter la colonne, REPRENDRE
+-- l existant, puis seulement contraindre.
+--
+-- ⚠ ELLE POSE « recu » ET NON « incomplet », alors meme qu on sait
+-- qu au moins un titre est incomplet. Le registre ne peut pas deviner
+-- lequel : seul l etat annote de Me Garnier le dit, et c est au conseil
+-- de le reporter fiche par fiche. Poser « incomplet » partout par
+-- prudence ferait affirmer un manque sur dix dossiers qui n en ont
 -- aucun — une fausse alerte generalisee ne se lit plus.
 update proprietaires
    set acte_statut = 'recu'
  where acte_transmis_le is not null
    and acte_statut not in ('recu', 'incomplet');
+
+-- Une date de reception communiquee par le notaire interdit les deux
+-- statuts qui disent le contraire. ⚠ Elle est en revanche COMPATIBLE
+-- avec « incomplet » : le notaire a bien recu quelque chose ce jour-la,
+-- et c est precisement ce que ce statut constate.
+alter table proprietaires
+  drop constraint if exists proprietaires_acte_statut_coherent;
+alter table proprietaires
+  add constraint proprietaires_acte_statut_coherent
+  check (acte_transmis_le is null
+         or acte_statut in ('recu', 'incomplet'));
 
 -- ---------------------------------------------------------- RLS
 -- ⚠ AUCUNE POLICY A AJOUTER — verifie, pas suppose. La policy
