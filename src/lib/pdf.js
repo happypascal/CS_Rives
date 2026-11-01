@@ -10,7 +10,12 @@ import { tally, tallySummary, engagementApprouve, VOTE_LABELS, phaseOf } from '.
 import { PROJET_ACTION_NOMS } from './projetLogic'
 import { decisionResumeTexte } from './decisionResume'
 import { ORG } from './config'
-import { emailsOfficiels, composerNoms } from './proprietaireLogic'
+// ⚠ `emailsOfficiels` et `composerNoms` ne sont plus importés ici : l'état des
+// colotis ne porte plus d'adresses électroniques — elles ne sont plus
+// demandées, et un registre de données personnelles n'exporte que ce qu'on lui
+// demande. Les deux fonctions servent ailleurs, ne pas les supprimer.
+import { etatColotisLignes } from './etatColotis'
+import { compterTitres, TITRE_RECU, TITRE_INCOMPLET, TITRE_A_VERIFIER, TITRE_NON_ENVOYE } from './titreLogic'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -18,6 +23,9 @@ const INK = [30, 37, 48]
 const GREY = [120, 120, 120]
 const GREEN = [21, 128, 61]
 const RED = [185, 28, 28]
+// Ambre de l'état des colotis — « à vérifier » et « incomplet » : ce que
+// l'étude doit traiter, sans être une erreur.
+const AMBRE = [180, 83, 9]
 
 // Marges. 14 mm au lieu de 20 : Pascal les trouvait trop grandes, et la colonne
 // « Objet » de la table des matières a besoin de cette largeur.
@@ -553,22 +561,10 @@ const nombre = (n) => pdfText(new Intl.NumberFormat('fr-FR').format(Number(n) ||
 
 // Le second propriétaire est NOMMÉ : une indivision ou un couple, ce sont deux
 // personnes à qui le notaire devra réclamer un titre. N'en nommer qu'une
-// laisserait croire qu'un seul acte suffit.
-function nomsDuLot(lot) {
-  const p = lot.proprietaire
-  if (!p) return null
-  // ⚠ `nom_2` N'EST AJOUTÉ QUE S'IL N'EST PAS DÉJÀ DANS LE LIBELLÉ. Depuis le
-  // 31 octobre, `nom` nomme TOUS les détenteurs — « Danil Gladkov / Mme
-  // Gladkov » — tandis que `nom_2` porte encore le second propriétaire hérité
-  // de la 038. Les concaténer sans regarder donnait « Danil Gladkov / Mme
-  // Gladkov / Gladkov Mme » dans l'état envoyé au notaire.
-  // On le garde quand même pour les périodes sans titulaires, où lui seul
-  // connaît la seconde personne.
-  // ⚠ `composerNoms` vit dans `proprietaireLogic`, pas ici : `xlsx.js` emploie
-  // la même recette et il est importé par des scripts Node — le faire
-  // dépendre de ce module y chargerait jspdf pour rien.
-  return pdfText(composerNoms(p))
-}
+// ⚠ `nomsDuLot` A ÉTÉ RETIRÉ le 1er novembre : la colonne « Propriétaire(s) »
+// qu'il composait n'existe plus. L'état des colotis nomme désormais les
+// TITULAIRES un par ligne, avec leur qualité, et cette composition vit dans
+// `etatColotis.js` — partagée avec le classeur.
 
 export function downloadRegistreNotairePDF(lots, opts = {}) {
   // ⚠ PAYSAGE. Sept colonnes, dont une d'adresses électroniques et deux laissées
@@ -596,11 +592,17 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   // ⚠ L'intro DIT si la colonne porte déjà des dates : un document qui en montre
   // sans expliquer d'où elles viennent laisserait croire que l'association tient
   // un décompte parallèle au sien.
-  const dejaRecus = lots.filter((l) => l.proprietaire?.acte_transmis_le).length
+  const compte = compterTitres(lots)
+  // ⚠ L'INTRO DIT D'OÙ VIENT CHAQUE ÉTAT. « À vérifier » serait illisible sans
+  // cela : l'étude doit comprendre que c'est SA liste que nous contestons,
+  // poliment, parce que des colotis nous ont écrit avoir envoyé leur titre.
   const intro = opts.intro || (
-    dejaRecus > 0
-      ? `Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les ${dejaRecus} titres déjà signalés reçus sont reportés ci-dessous ; les lignes restées vides sont celles que nous relançons.`
-      : 'Liste des parcelles et de leurs propriétaires actuels, établie d’après le registre tenu par le Conseil Syndical, avec l’adresse électronique à laquelle chacun peut être joint. Les deux dernières colonnes sont laissées libres pour noter les titres de propriété reçus.'
+    'Liste des parcelles du lotissement et de leurs titulaires, établie d’après le registre '
+    + 'tenu par le Conseil Syndical. La dernière colonne porte l’état du titre de propriété tel '
+    + 'que nous le connaissons : « reçu » et « incomplet » reprennent ce que vous nous avez '
+    + 'communiqué ; « à vérifier » signale les colotis qui nous ont écrit avoir adressé leur '
+    + 'titre sans que votre état le montre — ce sont ceux-là que nous vous demandons de '
+    + 'rechercher avant toute relance.'
   )
   for (const l of lines(doc, intro, LARGEUR)) {
     text(doc, l, M, y)
@@ -615,43 +617,48 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   // une ligne absente se lirait « rien à réclamer ici », alors qu'elle signifie
   // « nous ne savons pas à qui la réclamer ». C'est exactement ce que le notaire
   // doit voir.
-  const body = lots.map((l) => [
-    pdfText(l.numero || ''),
-    nomsDuLot(l) || '— propriétaire inconnu —',
-    // ⚠ TOUTES les adresses officielles, séparées par un retour à la ligne : un
-    // lot à deux noms se réclame aux deux. N'en montrer qu'une laisserait croire
-    // qu'un seul acte est attendu.
-    pdfText(emailsOfficiels(l.proprietaire).join('\n')),
-    pdfText(l.adresse_lotissement || ''),
-    l.superficie != null ? `${nombre(l.superficie)} m²` : '',
-    l.proprietaire?.acte_transmis_le ? formatDate(l.proprietaire.acte_transmis_le) : '',
-    pdfText(l.proprietaire?.acte_observations || ''),
-  ])
+  // ⚠ MÊME COMPOSITION QUE LE CLASSEUR, importée et non recopiée : les deux
+  // documents partent à la même étude, et s'ils divergeaient c'est le plus
+  // bavard qui ferait la fuite.
+  const [entetes, ...lignesTableau] = etatColotisLignes(lots)
+  const body = lignesTableau.map((r) => r.map((v) => pdfText(v)))
 
   autoTable(doc, {
     startY: y,
-    head: [['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie', 'Acte reçu le', 'Observations']],
+    head: [entetes],
     body,
     theme: 'grid', // quadrillage complet : on écrit dedans à la main
     styles: { font: 'Assistant', fontSize: 8.5, cellPadding: 1.8, lineColor: [190, 190, 190] },
     headStyles: { font: 'Assistant', fontStyle: 'bold', fillColor: NAVY, fontSize: 8.5 },
     bodyStyles: { valign: 'middle', minCellHeight: 8 },
-    // ⚠ PAYSAGE et colonnes resserrées : sept colonnes dont deux à remplir à la
-    // main ne tiennent pas en portrait sans que les courriels ne se coupent.
+    // ⚠ LA COLONNE DES PERSONNES PREND LA PLACE RESTANTE (`auto`) : c'est la
+    // seule qui empile plusieurs lignes — jusqu'à cinq indivisaires sur la
+    // parcelle 0B 247+263 — et la brider la couperait au milieu d'un nom.
     columnStyles: {
-      0: { cellWidth: 22 },
-      1: { cellWidth: 46 },
-      2: { cellWidth: 'auto', fontSize: 7.5 },
-      3: { cellWidth: 38 },
-      4: { cellWidth: 17, halign: 'right' },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 28 },
+      0: { cellWidth: 24 },
+      1: { cellWidth: 20, halign: 'right' },
+      2: { cellWidth: 18, halign: 'right' },
+      3: { cellWidth: 16, halign: 'center' },
+      4: { cellWidth: 12, halign: 'center' },
+      5: { cellWidth: 26 },
+      6: { cellWidth: 'auto' },
+      7: { cellWidth: 44 },
     },
     didParseCell: (data) => {
+      if (data.section !== 'body') return
       // Une parcelle sans propriétaire connu se voit : c'est une réclamation
       // que le notaire ne pourra pas adresser.
-      if (data.section === 'body' && data.column.index === 1 && data.cell.raw === '— propriétaire inconnu —') {
+      if (data.column.index === 6 && data.cell.raw === 'propriétaire inconnu') {
         data.cell.styles.textColor = RED
+      }
+      // ⚠ LE STATUT SE LIT EN COULEUR, parce que c'est la colonne pour
+      // laquelle ce document existe. Noyer « à vérifier » et « incomplet »
+      // dans le gris des autres lignes reviendrait à ne pas les signaler.
+      if (data.column.index === 7) {
+        const t = String(data.cell.raw || '')
+        if (t.startsWith('Reçu')) data.cell.styles.textColor = GREEN
+        else if (t.startsWith('Pas envoyé')) data.cell.styles.textColor = RED
+        else if (t) data.cell.styles.textColor = AMBRE
       }
     },
     margin: { left: M, right: M, bottom: 16 },
@@ -662,7 +669,11 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   if (y + 24 > BAS) { doc.addPage(); y = 20 }
   font(doc, 'normal', 8, GREY)
   const totalLots = lots.reduce((s, l) => s + (Number(l.nombre_lots) || 1), 0)
-  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s).`, M, y)
+  // ⚠ LE DÉCOMPTE PAR ÉTAT EN PIED DE TABLEAU : c'est le résumé que l'étude
+  // lira en premier, et il évite de recompter cinquante lignes à la main.
+  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s). `
+    + `Titres : ${compte[TITRE_RECU]} reçu(s), ${compte[TITRE_INCOMPLET]} incomplet(s), `
+    + `${compte[TITRE_A_VERIFIER]} à vérifier, ${compte[TITRE_NON_ENVOYE]} pas envoyé(s).`, M, y)
   y += 5
   // ⚠ La mention de protection voyage AVEC le document : une fois envoyé, il
   // n'est plus sous le contrôle du conseil, et le destinataire doit savoir à

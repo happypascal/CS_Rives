@@ -29,12 +29,10 @@
 // d'un second fichier XML et d'un index à tenir juste. Le volume n'est pas le
 // problème ici, la justesse l'est.
 // ============================================================================
-// ⚠ EXTENSIONS EXPLICITES. Vite résout `./format` aussi bien que
-// `./format.js` ; Node, lui, exige le `.js`. Sans elles, ce module ne peut pas
-// être importé depuis `scripts/` — et c'est pourtant lui qui sait écrire un
-// classeur qu'Excel ouvre correctement dans les deux locales.
-import { formatDate } from './format.js'
-import { emailsOfficiels, composerNoms } from './proprietaireLogic.js'
+// ⚠ CE MODULE N'IMPORTE PLUS RIEN, et c'est ce qui le rend utilisable depuis
+// `scripts/` sans dépendre du reste de l'application. Il ne sait que
+// FABRIQUER un classeur ; ce qu'on y met est composé ailleurs — pour l'état
+// des colotis, dans `etatColotis.js`.
 
 // ---------------------------------------------------------------- CRC-32
 // Table calculée une fois. ⚠ Le ZIP est refusé sans CRC juste — c'est la seule
@@ -166,7 +164,11 @@ export function classeurXLSX(lignes, opts = {}) {
       // « 1 240,50 » interprétées en nombre perdraient leur zéro de tête ou leur
       // virgule selon la locale d'ouverture — on retombe sur le défaut qu'on
       // vient de corriger. Un état à annoter n'a rien à calculer.
-      return `<c r="${refCellule(c, r)}" t="inlineStr"><is><t xml:space="preserve">${xml(t)}</t></is></c>`
+      // ⚠ `s="1"` RENVOIE AU STYLE wrapText, et sans lui un retour à la ligne
+      // dans une cellule ne s'affiche PAS : Excel le stocke, l'affiche comme
+      // un espace, et la cellule paraît porter une seule ligne. Les titulaires
+      // d'une indivision y seraient collés bout à bout.
+      return `<c r="${refCellule(c, r)}" s="1" t="inlineStr"><is><t xml:space="preserve">${xml(t)}</t></is></c>`
     }).join('')
     return `<row r="${r + 1}">${cellules}</row>`
   }).join('')
@@ -177,11 +179,22 @@ export function classeurXLSX(lignes, opts = {}) {
   const feuille = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${colonnes}<sheetData>${corps}</sheetData></worksheet>`
 
+  // ⚠ UN SEUL STYLE, ET IL PORTE `wrapText`. Un classeur sans `styles.xml`
+  // n'a que le style 0, qui ne replie rien : une cellule multiligne s'y lit
+  // sur une seule ligne, tronquée par la colonne voisine. `vertical="top"`
+  // avec : sur une ligne haute de cinq indivisaires, une parcelle centrée
+  // verticalement flotte au milieu de nulle part.
+  // ⚠ Les quatre tables qui précèdent `cellXfs` sont OBLIGATOIRES, même
+  // vides-par-défaut : Excel refuse d'ouvrir un `styles.xml` qui n'a pas au
+  // moins une police, un remplissage, une bordure et un format de cellule.
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`
+
   return zip([
     {
       nom: '[Content_Types].xml',
       contenu: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`,
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
     },
     {
       nom: '_rels/.rels',
@@ -196,55 +209,22 @@ export function classeurXLSX(lignes, opts = {}) {
     {
       nom: 'xl/_rels/workbook.xml.rels',
       contenu: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
     },
+    { nom: 'xl/styles.xml', contenu: styles },
     { nom: 'xl/worksheets/sheet1.xml', contenu: feuille },
   ])
 }
 
-// ============================================================================
-// ÉTAT DES COLOTIS — les lignes du classeur
+// ⚠ `colotisNotaireLignes` ET `COLOTIS_LARGEURS` ONT DÉMÉNAGÉ dans
+// `etatColotis.js` (1er novembre 2026), avec les colonnes demandées par
+// Pascal : parcelle, superficie, nombre de lots, numéro d'origine, zone,
+// forme de détention, titulaires et dirigeants, statut du titre.
 //
-// ⚠ MÊMES COLONNES, MÊMES BORNES QUE LE PDF. Si les deux fichiers divergeaient
-// un jour, c'est le plus bavard qui ferait la fuite. Le raisonnement complet —
-// et l'arbitrage de Pascal du 2026-09-26 qui autorise les adresses électroniques
-// vers le notaire, et vers lui seul — est écrit en tête de
-// `downloadRegistreNotairePDF` dans `pdf.js`. Le lire avant de toucher à ces
-// colonnes. Restent EXCLUS : adresses de communication et téléphones.
-// ============================================================================
-export function colotisNotaireLignes(lots) {
-  const entetes = ['Parcelle', 'Propriétaire(s)', 'Courriel', 'Adresse dans le lotissement', 'Superficie (m²)', 'Acte reçu le', 'Observations']
-  const corps = (lots || []).map((l) => {
-    const p = l.proprietaire
-    // ⚠ MÊME RECETTE QUE LE PDF, et importée plutôt que recopiée : les deux
-    // documents partent à la même étude, et deux compositions du même nom
-    // divergent au premier changement. Depuis le 31 octobre, `nom` nomme déjà
-    // tous les détenteurs — y ajouter `nom_2` sans regarder répétait la
-    // seconde personne.
-    const noms = p ? composerNoms(p) : ''
-    return [
-      l.numero || '',
-      // ⚠ Une parcelle vacante reste dans le fichier, dite comme telle : une
-      // ligne absente se lirait « rien à réclamer ici », alors qu'elle signifie
-      // « nous ne savons pas à qui la réclamer ».
-      noms || 'propriétaire inconnu',
-      // Les CONTACTS OFFICIELS (044), pas la colonne `email` : dirigeant de SCI
-      // et mandataire compris. Un lot à deux noms se réclame aux deux.
-      emailsOfficiels(p).join(', '),
-      l.adresse_lotissement || '',
-      l.superficie != null ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2 }).format(l.superficie) : '',
-      // ⚠ On REPORTE ce que le notaire a déjà communiqué (059) et on laisse vide
-      // le reste : c'est ce qui fait d'un second envoi une relance plutôt qu'un
-      // nouveau pointage.
-      p?.acte_transmis_le ? formatDate(p.acte_transmis_le) : '',
-      p?.acte_observations || '',
-    ]
-  })
-  return [entetes, ...corps]
-}
-
-/** Largeurs en caractères — l'adresse électronique est la colonne longue. */
-export const COLOTIS_LARGEURS = [14, 30, 34, 26, 14, 14, 30]
+// Elles vivaient ici parce que le classeur était leur seul client ; le PDF
+// les compose maintenant aussi, et deux recettes pour un document qui part à
+// la même étude divergent au premier changement. Ce module ne sait plus que
+// FABRIQUER un classeur — ce qu'on y met est décidé ailleurs.
 
 export function downloadXLSX(filename, octets) {
   const blob = new Blob([octets.buffer], {
