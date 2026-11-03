@@ -18,9 +18,20 @@ import TitulairesLot from '../components/TitulairesLot'
 import AssistantMutation from '../components/AssistantMutation'
 import PiecesJointes from '../components/PiecesJointes'
 import {
-  TITRE_STATUTS, TITRE_LABELS, TITRE_AIDES, TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_RECU,
-  statutDuTitre, erreurDeTitre, titreRecuParLeNotaire,
+  TITRE_ETATS, TITRE_LABELS, TITRE_AIDES, TITRE_TONS, TITRE_NON_ENVOYE,
+  TITRE_A_VERIFIER, TITRE_A_VERIFIER_SANS_DATE, TITRE_ENVOI_CONSTATE,
+  statutDuTitre, etatDuTitre, erreurDeTitre, titreRecuParLeNotaire,
 } from '../lib/titreLogic'
+
+// Les tons de `titreLogic` rendus en classes Tailwind. ⚠ Ici et non dans la
+// logique : celle-ci est partagée avec le PDF et le classeur, qui ne
+// connaissent pas Tailwind.
+const COULEUR_AIDE = {
+  green: 'text-slate-500',
+  blue: 'text-navy-700',
+  amber: 'text-amber-700',
+  red: 'text-amber-700',
+}
 
 // Champs de la période de propriété.
 //
@@ -198,6 +209,11 @@ function Contenu() {
   // période antérieure à la 071, ou une fiche de démo, n'a pas de statut en
   // mémoire, et le menu afficherait « pas envoyé » sur un titre que le notaire
   // a pourtant confirmé.
+  // ⚠ DEUX NOTIONS, ET LES CONFONDRE CASSE L'ENREGISTREMENT. `etatSaisi` est
+  // ce que le menu montre — cinq entrées, « à vérifier » dédoublé selon que la
+  // date est là. `statutSaisi` est ce qui part en base : quatre valeurs, les
+  // seules que la contrainte de la 071 accepte.
+  const etatSaisi = etatDuTitre(form)
   const statutSaisi = statutDuTitre(form)
 
   const rang = parcelles.findIndex((x) => x.id === id)
@@ -611,11 +627,24 @@ function Contenu() {
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <Select
                     label="Où en est ce titre"
-                    value={statutSaisi}
-                    onChange={set('acte_statut')}
+                    value={etatSaisi}
+                    // ⚠ LE MENU ÉCRIT DEUX CHAMPS, PAS UN. Les deux entrées
+                    // « à vérifier » partagent la même valeur en base et ne
+                    // se distinguent que par la DATE : choisir « sans date »
+                    // doit donc l'effacer, sinon l'écran dirait une chose et
+                    // la colonne une autre — et la fiche rebasculerait toute
+                    // seule au prochain affichage.
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setForm((f) => ({
+                        ...f,
+                        acte_statut: v === TITRE_A_VERIFIER_SANS_DATE ? TITRE_A_VERIFIER : v,
+                        acte_declare_le: v === TITRE_A_VERIFIER_SANS_DATE ? '' : f.acte_declare_le,
+                      }))
+                    }}
                     disabled={!peutSaisir}
                   >
-                    {TITRE_STATUTS.map((s) => (
+                    {TITRE_ETATS.map((s) => (
                       <option key={s} value={s}>{TITRE_LABELS[s]}</option>
                     ))}
                   </Select>
@@ -623,9 +652,20 @@ function Contenu() {
                       notaire n'a pas confirmé : après, c'est sa date qui
                       compte. On la garde affichée en « reçu » si elle existe —
                       elle raconte le délai — mais on ne la demande plus. */}
-                  {(statutSaisi === TITRE_A_VERIFIER || form.acte_declare_le) && (
+                  {/* La date ne se demande que sur l'entrée « envoi daté » :
+                      sur « sans date » elle vient d'être effacée, et la
+                      proposer inviterait à contredire le choix du menu. */}
+                  {(etatSaisi === TITRE_A_VERIFIER || etatSaisi === TITRE_ENVOI_CONSTATE
+                    || form.acte_declare_le) && (
                     <Input
-                      label="Le coloti déclare avoir envoyé le"
+                      // ⚠ LE LIBELLÉ CHANGE AVEC L'ÉTAT, parce que la nature
+                      // de la date change : sur un « à vérifier » c'est ce que
+                      // le coloti DÉCLARE, sur un envoi constaté c'est ce que
+                      // le conseil a VU. Un seul libellé pour les deux ferait
+                      // passer une preuve pour une déclaration.
+                      label={etatSaisi === TITRE_ENVOI_CONSTATE
+                        ? 'Envoyé à l’étude le (nous étions en copie)'
+                        : 'Le coloti déclare avoir envoyé le'}
                       type="date"
                       value={form.acte_declare_le}
                       onChange={set('acte_declare_le')}
@@ -663,8 +703,8 @@ function Contenu() {
                     d'une contradiction entre ce que le coloti déclare et ce
                     que l'état du notaire montre. Un statut mal compris ne
                     sera pas employé. */}
-                <p className={`mt-2 text-xs ${statutSaisi === TITRE_RECU ? 'text-slate-500' : 'text-amber-700'}`}>
-                  {TITRE_AIDES[statutSaisi]}
+                <p className={`mt-2 text-xs ${COULEUR_AIDE[TITRE_TONS[etatSaisi]] || 'text-amber-700'}`}>
+                  {TITRE_AIDES[etatSaisi]}
                 </p>
               </div>
 

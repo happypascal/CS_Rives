@@ -20,7 +20,10 @@ import {
   ROLES_DETENTEURS, ROLE_INDIVISAIRE, ROLE_CO, ROLE_USUFRUITIER, ROLE_NU,
   ROLE_REPRESENTANT, ROLE_MANDATAIRE, ROLE_LABELS, compareTitulaires,
 } from './titulaireLogic.js'
-import { statutDuTitre, TITRE_LABELS_COURTS, TITRE_A_VERIFIER, TITRE_RECU, TITRE_INCOMPLET } from './titreLogic.js'
+import {
+  etatDuTitre, TITRE_LABELS_COURTS, TITRE_A_VERIFIER, TITRE_ENVOI_CONSTATE,
+  TITRE_RECU, TITRE_INCOMPLET,
+} from './titreLogic.js'
 import { formatDate } from './format.js'
 
 const actifs = (p) => (p?.titulaires || []).filter((t) => !t.date_fin)
@@ -99,8 +102,16 @@ export function personnesDuLot(proprietaire) {
  */
 export function statutDuTitreTexte(proprietaire) {
   if (!proprietaire) return ''
-  const s = statutDuTitre(proprietaire)
+  const s = etatDuTitre(proprietaire)
   const libelle = TITRE_LABELS_COURTS[s]
+  // ⚠ LA PHRASE DIT D'OÙ VIENT LA DATE, parce que c'est ce qui en fait le
+  // prix pour l'étude. « Le coloti déclare » se recoupe dans un registre de
+  // courrier ; « nous en avons copie » n'a pas à se recouper du tout — le
+  // conseil l'affirme. Un même « envoyé le 12/10 » pour les deux effacerait
+  // la seule distinction qui compte ici.
+  if (s === TITRE_ENVOI_CONSTATE && proprietaire.acte_declare_le) {
+    return `${libelle} — adressé à l’étude le ${formatDate(proprietaire.acte_declare_le)}, le conseil en a copie`
+  }
   if (s === TITRE_A_VERIFIER && proprietaire.acte_declare_le) {
     return `${libelle} — le coloti déclare l’avoir envoyé le ${formatDate(proprietaire.acte_declare_le)}`
   }

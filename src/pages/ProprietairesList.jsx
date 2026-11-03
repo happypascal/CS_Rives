@@ -2,15 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { repo } from '../lib/api'
 import { PageHeader } from '../components/ProtectedRoute'
-import { Card, Button, Input, Modal, Spinner, EmptyState, num } from '../components/ui'
+import { Card, Button, Input, Select, Modal, Spinner, EmptyState, num } from '../components/ui'
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { destinatairesDuLot, aDesTitulaires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
 import { controles, ROLE_LABELS } from '../lib/titulaireLogic'
 import {
-  compterTitres, statutDuTitre, TITRE_LABELS_COURTS, TITRE_TONS,
-  TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_INCOMPLET, TITRE_RECU,
+  compterTitres, etatDuTitre, TITRE_ETATS, TITRE_LABELS, TITRE_LABELS_COURTS,
+  TITRE_TONS, TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_A_VERIFIER_SANS_DATE,
+  TITRE_ENVOI_CONSTATE, TITRE_INCOMPLET, TITRE_RECU,
 } from '../lib/titreLogic'
 import { formatDate } from '../lib/format'
 import { downloadRegistreNotairePDF } from '../lib/pdf'
@@ -150,7 +151,7 @@ function Contenu() {
     // trois états se filtrent du même geste, et « à vérifier » ne se confond
     // plus avec « pas envoyé ».
     const base = filtreTitre
-      ? lots.filter((l) => l.proprietaire && statutDuTitre(l.proprietaire) === filtreTitre)
+      ? lots.filter((l) => l.proprietaire && etatDuTitre(l.proprietaire) === filtreTitre)
       : seulementACompleter
         ? lots.filter((l) => alertesParLot.has(l.id))
         : lots
@@ -205,7 +206,8 @@ function Contenu() {
   const titres = compterTitres(lots)
   const avecActe = titres[TITRE_RECU]
   const sansActe = titres[TITRE_NON_ENVOYE]
-  const aVerifier = titres[TITRE_A_VERIFIER]
+  const aVerifier = titres[TITRE_A_VERIFIER] + titres[TITRE_A_VERIFIER_SANS_DATE]
+  const constates = titres[TITRE_ENVOI_CONSTATE]
   const incomplets = titres[TITRE_INCOMPLET]
 
   const trierPar = (cle) =>
@@ -296,7 +298,8 @@ function Contenu() {
           <Total
             valeur={`${avecActe} / ${proprietaires}`}
             libelle="titre(s) reçu(s) par le notaire"
-            detail={[aVerifier > 0 ? `${aVerifier} à vérifier` : null,
+            detail={[constates > 0 ? `${constates} envoyé(s), copie au conseil` : null,
+              aVerifier > 0 ? `${aVerifier} à vérifier` : null,
               incomplets > 0 ? `${incomplets} incomplet(s)` : null].filter(Boolean).join(' · ')
               || (sansActe === 0 && proprietaires > 0 ? 'tous transmis' : null)}
             alerte={sansActe > 0 ? `${sansActe} pas envoyé(s)` : null}
@@ -333,33 +336,21 @@ function Contenu() {
                 fait : c'est ce qui a fait relancer des colotis à jour. Les
                 deux populations ne se traitent pas pareil — l'une se relance,
                 l'autre se vérifie auprès de l'étude. */}
-            {aVerifier > 0 && (
-              <Button
-                variant={filtreTitre === TITRE_A_VERIFIER ? 'primary' : 'secondary'}
-                onClick={() => { setFiltreTitre((v) => (v === TITRE_A_VERIFIER ? null : TITRE_A_VERIFIER)); setSeulementACompleter(false) }}
-                title="Le coloti déclare avoir envoyé son titre, l’état du notaire ne le montre pas"
-              >
-                À vérifier ({aVerifier})
-              </Button>
-            )}
-            {incomplets > 0 && (
-              <Button
-                variant={filtreTitre === TITRE_INCOMPLET ? 'primary' : 'secondary'}
-                onClick={() => { setFiltreTitre((v) => (v === TITRE_INCOMPLET ? null : TITRE_INCOMPLET)); setSeulementACompleter(false) }}
-                title="Le notaire a reçu une pièce, mais il en manque une autre"
-              >
-                Incomplet ({incomplets})
-              </Button>
-            )}
-            {sansActe > 0 && (
-              <Button
-                variant={filtreTitre === TITRE_NON_ENVOYE ? 'primary' : 'secondary'}
-                onClick={() => { setFiltreTitre((v) => (v === TITRE_NON_ENVOYE ? null : TITRE_NON_ENVOYE)); setSeulementACompleter(false) }}
-                title="N’afficher que les propriétaires qui n’ont pas envoyé leur titre"
-              >
-                Pas envoyé ({sansActe})
-              </Button>
-            )}
+            {/* ⚠ UN MENU, PLUS UNE RANGÉE DE BOUTONS. À trois états on les
+                alignait ; à six, la ligne déborde et l'on ne lit plus laquelle
+                est active. Le menu dit en un coup d'œil ce qu'on regarde, et
+                porte le compte de chaque état sans en cacher aucun — y compris
+                ceux à zéro, dont l'absence est une information. */}
+            <Select
+              value={filtreTitre || ''}
+              onChange={(e) => { setFiltreTitre(e.target.value || null); setSeulementACompleter(false) }}
+              className="min-w-[16rem]"
+            >
+              <option value="">Titre : tous ({proprietaires})</option>
+              {TITRE_ETATS.map((e) => (
+                <option key={e} value={e}>{TITRE_LABELS[e]} ({titres[e]})</option>
+              ))}
+            </Select>
           </div>
           {/* La création d'un lot se fait ici parce qu'un lot n'est qu'un
               numéro : tout le reste — propriétaire, adresses, coordonnées — se
@@ -515,16 +506,23 @@ function Contenu() {
                           quand le coloti affirme avoir envoyé, or c'est
                           exactement ce que l'étude peut recouper. */}
                       {l.proprietaire && (() => {
-                        const s = statutDuTitre(l.proprietaire)
+                        const s = etatDuTitre(l.proprietaire)
                         // ⚠ La couleur vient de `TITRE_TONS`, pas d'une
                         // cascade de conditions : écrite à la main, elle
                         // oubliait « incomplet », qui tombait dans le rouge
                         // des dossiers où rien n'a été fait — alors que le
                         // notaire a bien reçu quelque chose.
                         const couleur = COULEURS_TITRE[TITRE_TONS[s]]
+                        // ⚠ CHAQUE ÉTAT PORTE SA DATE, et ce n'est pas la
+                        // même colonne : `acte_transmis_le` quand le notaire a
+                        // reçu, `acte_declare_le` quand le titre est parti.
+                        // L'envoi constaté avait été oublié et s'affichait
+                        // sans date — c'est pourtant celle que le conseil peut
+                        // affirmer à l'étude.
                         const quand = s === TITRE_RECU || s === TITRE_INCOMPLET
                           ? l.proprietaire.acte_transmis_le
-                          : s === TITRE_A_VERIFIER ? l.proprietaire.acte_declare_le
+                          : s === TITRE_A_VERIFIER || s === TITRE_ENVOI_CONSTATE
+                            ? l.proprietaire.acte_declare_le
                             : null
                         return (
                           <span className={`block text-xs ${couleur}`} title={l.proprietaire.acte_observations || undefined}>

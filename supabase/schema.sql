@@ -718,11 +718,18 @@ create table if not exists proprietaires (
   -- (notaire / coloti) — arbitrage de Pascal : ce registre doit produire un
   -- tableau à renvoyer à l'étude, et une colonne qui se lit en un mot y vaut
   -- mieux que deux dont le lecteur fait la synthèse.
-  -- ⚠ QUATRE ÉTATS, et les deux du milieu étaient invisibles : un titre
-  -- INCOMPLET portait une date de réception, donc comptait comme reçu — le
-  -- registre affirmait un dossier clos alors que l'étude attend une pièce.
+  -- ⚠ CINQ ÉTATS STOCKÉS, SIX AFFICHÉS. Un titre INCOMPLET portait une date de
+  -- réception, donc comptait comme reçu — le registre affirmait un dossier clos
+  -- alors que l'étude attend une pièce (071). Et « envoi constaté » (072) n'est
+  -- pas un « à vérifier » de plus : le conseil a VU l'envoi partir, le coloti
+  -- l'ayant mis en copie de son courriel à l'étude. Sur un « à vérifier » nous
+  -- demandons une recherche ; sur celui-ci nous apportons une preuve.
+  -- ⚠ Le sixième état — « à vérifier, sans date » — est DÉRIVÉ et ne se stocke
+  -- pas : la distinction se lit sur `acte_declare_le`, et une valeur de plus
+  -- ferait deux colonnes porteuses de la même information.
   acte_statut           text not null default 'non_envoye'
-    check (acte_statut in ('non_envoye', 'a_verifier', 'incomplet', 'recu')),
+    check (acte_statut in ('non_envoye', 'a_verifier', 'envoi_constate',
+                           'incomplet', 'recu')),
   -- Précision du statut « à vérifier », jamais un statut concurrent : « le
   -- coloti déclare avoir envoyé le 12 octobre » est ce que le notaire peut
   -- recouper, « à vérifier » tout court ne lui apprend rien.

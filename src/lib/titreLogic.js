@@ -33,17 +33,73 @@
 
 export const TITRE_NON_ENVOYE = 'non_envoye'
 export const TITRE_A_VERIFIER = 'a_verifier'
+// ============================================================================
+// L'ENVOI CONSTATÉ PAR LE CONSEIL (migration 072)
+//
+// Pascal, 3 novembre : « il l'a envoyé après mon rappel en me mettant en
+// copie ».
+//
+// ⚠ CE N'EST PAS UN « À VÉRIFIER » DE PLUS. Les deux « à vérifier » reposent
+// sur la PAROLE du coloti : il nous dit avoir envoyé. Ici le conseil a VU
+// l'envoi partir — le coloti a écrit à l'étude en le mettant en copie.
+//
+// ⚠ ET LA DIFFÉRENCE CHANGE CE QU'ON PEUT ÉCRIRE À L'ÉTUDE. Sur un « à
+// vérifier », nous demandons une recherche. Sur celui-ci, nous affirmons : le
+// titre vous a été adressé tel jour, nous en avons copie. Les confondre ferait
+// perdre la seule catégorie où le conseil apporte une preuve au lieu d'en
+// réclamer une.
+// ============================================================================
+export const TITRE_ENVOI_CONSTATE = 'envoi_constate'
+
 export const TITRE_INCOMPLET = 'incomplet'
 export const TITRE_RECU = 'recu'
+
+// ============================================================================
+// LE CINQUIÈME ÉTAT : « À VÉRIFIER, SANS DATE »
+//
+// Pascal, 3 novembre 2026 : « Les colotis qui m'ont indiqué l'avoir envoyé en
+// spécifiant la date et ceux qui ne l'ont pas spécifiée. Il faut différencier
+// le statut. »
+//
+// ⚠ IL EST DÉRIVÉ, ET IL N'Y A PAS DE CINQUIÈME VALEUR EN BASE. La distinction
+// est DÉJÀ dans les données : `acte_declare_le` est renseignée ou elle ne l'est
+// pas. Ajouter une valeur stockée pour redire la même chose, ce serait deux
+// colonnes qui portent la même information — et deux colonnes qui disent la
+// même chose finissent par se contredire. C'est exactement ce que la contrainte
+// `proprietaires_acte_statut_coherent` de la 071 existe pour empêcher entre le
+// statut et la date de réception.
+//
+// ⚠ ET CE N'EST PAS UNE NUANCE DE PRÉSENTATION. Pour l'étude, les deux
+// populations ne se traitent pas pareil : une date se recoupe dans un registre
+// de courrier, « il dit l'avoir envoyé » ne se recoupe nulle part. La seconde
+// demande d'abord de rappeler le coloti pour obtenir sa date.
+//
+// ⚠ Il n'entre donc PAS dans `TITRE_STATUTS`, qui énumère ce que la colonne
+// accepte. Il vit dans `TITRE_ETATS`, ce que les écrans et le tableau montrent.
+// ============================================================================
+export const TITRE_A_VERIFIER_SANS_DATE = 'a_verifier_sans_date'
 
 // ⚠ L'ORDRE EST CELUI DE LA PROGRESSION DU DOSSIER, pas l'alphabétique : c'est
 // lui que rend le menu de la fiche, et un classement qui va du plus loin au
 // plus près de l'aboutissement se parcourt sans réfléchir.
-export const TITRE_STATUTS = [TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_INCOMPLET, TITRE_RECU]
+//
+// ⚠ `TITRE_STATUTS` = CE QUI SE STOCKE (les quatre valeurs que la contrainte
+// de la 071 accepte). `TITRE_ETATS` = CE QUI S'AFFICHE. Les confondre ferait
+// envoyer à Postgres une valeur qu'il refuse.
+export const TITRE_STATUTS = [
+  TITRE_NON_ENVOYE, TITRE_A_VERIFIER, TITRE_ENVOI_CONSTATE, TITRE_INCOMPLET, TITRE_RECU,
+]
+
+export const TITRE_ETATS = [
+  TITRE_NON_ENVOYE, TITRE_A_VERIFIER_SANS_DATE, TITRE_A_VERIFIER,
+  TITRE_ENVOI_CONSTATE, TITRE_INCOMPLET, TITRE_RECU,
+]
 
 export const TITRE_LABELS = {
   [TITRE_NON_ENVOYE]: 'Pas envoyé',
-  [TITRE_A_VERIFIER]: 'À vérifier',
+  [TITRE_A_VERIFIER_SANS_DATE]: 'À vérifier — sans date',
+  [TITRE_A_VERIFIER]: 'À vérifier — envoi daté',
+  [TITRE_ENVOI_CONSTATE]: 'Envoyé — le conseil en a copie',
   [TITRE_INCOMPLET]: 'Reçu mais incomplet',
   [TITRE_RECU]: 'Reçu par le notaire',
 }
@@ -53,14 +109,22 @@ export const TITRE_LABELS = {
 // où l'abréger est sans danger : la colonne elle-même dit de quoi il s'agit.
 export const TITRE_LABELS_COURTS = {
   [TITRE_NON_ENVOYE]: 'Pas envoyé',
+  [TITRE_A_VERIFIER_SANS_DATE]: 'À vérifier (sans date)',
   [TITRE_A_VERIFIER]: 'À vérifier',
+  [TITRE_ENVOI_CONSTATE]: 'Envoyé (copie au conseil)',
   [TITRE_INCOMPLET]: 'Incomplet',
   [TITRE_RECU]: 'Reçu',
 }
 
 export const TITRE_TONS = {
   [TITRE_NON_ENVOYE]: 'red',
+  [TITRE_A_VERIFIER_SANS_DATE]: 'amber',
   [TITRE_A_VERIFIER]: 'amber',
+  // ⚠ BLEU et non ambre : ce n'est pas une alerte. Le titre est parti, et le
+  // conseil le sait de première main — il ne reste qu'à ce que l'étude
+  // l'enregistre. Le peindre comme une contradiction à lever ferait chercher
+  // un problème là où il n'y en a pas.
+  [TITRE_ENVOI_CONSTATE]: 'blue',
   [TITRE_INCOMPLET]: 'amber',
   [TITRE_RECU]: 'green',
 }
@@ -70,7 +134,9 @@ export const TITRE_TONS = {
 // ne le croit pas » ne s'en servira pas.
 export const TITRE_AIDES = {
   [TITRE_NON_ENVOYE]: 'Rien ne nous est parvenu, et le coloti n’a pas signalé d’envoi.',
-  [TITRE_A_VERIFIER]: 'Le coloti déclare avoir adressé son titre, et l’état du notaire ne le montre pas. C’est une contradiction à lever auprès de l’étude — pas un doute sur sa parole.',
+  [TITRE_A_VERIFIER_SANS_DATE]: 'Le coloti nous a dit avoir adressé son titre, sans préciser quand. ⚠ L’étude ne peut rien recouper sans date : demandez-la-lui, puis passez la fiche en « envoi daté ».',
+  [TITRE_A_VERIFIER]: 'Le coloti déclare avoir adressé son titre à une date qu’il indique, et l’état du notaire ne le montre pas. C’est une contradiction à lever auprès de l’étude — pas un doute sur sa parole.',
+  [TITRE_ENVOI_CONSTATE]: 'Le coloti a adressé son titre à l’étude en mettant le conseil en copie : nous en avons la preuve, et nous pouvons l’affirmer à Me Garnier plutôt que de lui demander une recherche.',
   [TITRE_INCOMPLET]: 'Le notaire a reçu une pièce, mais elle ne suffit pas — il manque par exemple l’acquisition d’origine. Le dossier n’est pas clos : notez ce qui manque dans l’observation.',
   [TITRE_RECU]: 'Me Garnier a confirmé la réception d’un titre complet.',
 }
@@ -104,6 +170,21 @@ export function statutDuTitre(proprietaire) {
 }
 
 /**
+ * L'ÉTAT AFFICHÉ — cinq valeurs, dont une dérivée.
+ *
+ * ⚠ À NE PAS CONFONDRE AVEC `statutDuTitre`, qui rend ce que la COLONNE porte
+ * et ce qu'on peut lui réécrire. Celui-ci rend ce que l'écran, les filtres et
+ * le tableau du notaire doivent montrer : « à vérifier » s'y dédouble selon
+ * que le coloti a indiqué une date ou non. Employer celui-ci pour écrire
+ * enverrait à Postgres une valeur que la contrainte de la 071 refuse.
+ */
+export function etatDuTitre(proprietaire) {
+  const s = statutDuTitre(proprietaire)
+  if (s === TITRE_A_VERIFIER && !proprietaire?.acte_declare_le) return TITRE_A_VERIFIER_SANS_DATE
+  return s
+}
+
+/**
  * Les périodes qui n'ont pas abouti : ce qu'il reste à obtenir.
  * ⚠ UN TITRE INCOMPLET EN FAIT PARTIE. Le compter comme reçu est exactement
  * l'erreur que la 071 corrige.
@@ -120,15 +201,16 @@ export function titreEnAttente(proprietaire) {
  * compter afficherait un retard qui n'existe pas.
  */
 export function compterTitres(lots) {
-  const out = {
-    total: 0,
-    [TITRE_NON_ENVOYE]: 0, [TITRE_A_VERIFIER]: 0, [TITRE_INCOMPLET]: 0, [TITRE_RECU]: 0,
-  }
+  // ⚠ LE DÉCOMPTE PORTE SUR LES ÉTATS AFFICHÉS, pas sur les quatre valeurs
+  // stockées : sans quoi la tuile et les filtres annonceraient « 3 à
+  // vérifier » là où l'écran en montre deux d'un côté et un de l'autre.
+  const out = { total: 0 }
+  for (const e of TITRE_ETATS) out[e] = 0
   for (const l of lots || []) {
     const p = l?.proprietaire
     if (!p) continue
     out.total += 1
-    out[statutDuTitre(p)] += 1
+    out[etatDuTitre(p)] += 1
   }
   return out
 }

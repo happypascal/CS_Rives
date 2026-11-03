@@ -15,7 +15,7 @@ import { ORG } from './config'
 // demandées, et un registre de données personnelles n'exporte que ce qu'on lui
 // demande. Les deux fonctions servent ailleurs, ne pas les supprimer.
 import { etatColotisLignes } from './etatColotis'
-import { compterTitres, TITRE_RECU, TITRE_INCOMPLET, TITRE_A_VERIFIER, TITRE_NON_ENVOYE } from './titreLogic'
+import { compterTitres, TITRE_ETATS, TITRE_LABELS_COURTS } from './titreLogic'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -663,6 +663,10 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
         const t = String(data.cell.raw || '')
         if (t.startsWith('Reçu')) data.cell.styles.textColor = GREEN
         else if (t.startsWith('Pas envoyé')) data.cell.styles.textColor = RED
+        // ⚠ L'envoi constaté n'est PAS une alerte : le titre est parti et le
+        // conseil le sait de première main. Le peindre en ambre ferait
+        // chercher à l'étude un problème qui n'existe pas.
+        else if (t.startsWith('Envoyé')) data.cell.styles.textColor = NAVY
         else if (t) data.cell.styles.textColor = AMBRE
       }
     },
@@ -676,9 +680,18 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   const totalLots = lots.reduce((s, l) => s + (Number(l.nombre_lots) || 1), 0)
   // ⚠ LE DÉCOMPTE PAR ÉTAT EN PIED DE TABLEAU : c'est le résumé que l'étude
   // lira en premier, et il évite de recompter cinquante lignes à la main.
-  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s). `
-    + `Titres : ${compte[TITRE_RECU]} reçu(s), ${compte[TITRE_INCOMPLET]} incomplet(s), `
-    + `${compte[TITRE_A_VERIFIER]} à vérifier, ${compte[TITRE_NON_ENVOYE]} pas envoyé(s).`, M, y)
+  //
+  // ⚠ IL S'ÉNUMÈRE DEPUIS `TITRE_ETATS`, jamais à la main. Écrit en dur, il a
+  // cessé de totaliser dès qu'un état s'est ajouté : six parcelles pour quatre
+  // titres comptés, l'envoi constaté et le « à vérifier sans date » étant
+  // simplement absents de la phrase. Un décompte qui ne tombe pas juste, dans
+  // un document adressé à une étude, décrédibilise tout le reste du tableau.
+  const detail = TITRE_ETATS
+    .filter((e) => compte[e] > 0)
+    .map((e) => `${compte[e]} ${TITRE_LABELS_COURTS[e].toLowerCase()}`)
+    .join(', ')
+  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s).`
+    + (detail ? ` Titres : ${detail}.` : ''), M, y)
   y += 5
   // ⚠ La mention de protection voyage AVEC le document : une fois envoyé, il
   // n'est plus sous le contrôle du conseil, et le destinataire doit savoir à

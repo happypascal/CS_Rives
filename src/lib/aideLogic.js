@@ -668,17 +668,18 @@ export const MENUS = [
       {
         titre: 'Suivre les titres de propriété',
         pourQui: ['president', 'secretaire'],
-        resume: 'Quatre états : pas envoyé, à vérifier, incomplet, reçu.',
+        resume: 'Six états, du « rien reçu » au « titre complet entre les mains du notaire ».',
         etapes: [
           'Le compteur en haut du registre indique combien de titres le notaire a reçus, sur le nombre de propriétaires.',
-          'Trois boutons filtrent la liste : « Pas envoyé » donne ceux à relancer, « À vérifier » ceux dont l’envoi est contesté, « Incomplet » ceux dont il manque une pièce.',
+          'Le menu « Titre » filtre la liste sur un état, avec son compte en regard — y compris ceux à zéro, dont l’absence est une information.',
           'Ouvrez une fiche : le bloc « Titre de propriété » porte le statut, puis la date qui le précise.',
-          'Quand un coloti vous écrit qu’il a envoyé son titre : passez-le « À vérifier » et notez la date qu’il indique.',
+          'Quand un coloti vous écrit qu’il a envoyé son titre : « À vérifier — envoi daté » si il précise quand, « À vérifier — sans date » sinon. Dans ce second cas, rappelez-le pour obtenir la date : sans elle l’étude ne peut rien recouper.',
+          'S’il a écrit à l’étude en vous mettant en copie : « Envoyé — le conseil en a copie », avec la date du courriel. C’est le seul état où nous apportons une preuve au lieu d’en réclamer une.',
           'Quand le notaire confirme la réception : passez-le « Reçu » et notez sa date à lui.',
           'S’il a reçu le titre mais qu’il manque une pièce — l’acquisition d’origine par exemple : « Reçu mais incomplet », avec la date de réception et ce qui manque en observation.',
         ],
         alerte:
-          '⚠ « À vérifier » n’est PAS un doute sur la parole du coloti : c’est le constat d’une contradiction entre ce qu’il déclare et ce que l’état du notaire montre. C’est à l’étude de la lever. Ne pas l’employer comme une case d’attente. ⚠ « Incomplet » n’est pas « reçu » : le dossier n’est pas clos, et c’est tout l’objet de ce statut — avant, un titre incomplet portait une date de réception et comptait donc comme abouti. ⚠ Et le registre ne constate rien : les deux dates viennent, l’une du coloti, l’autre du notaire. ⚠ Le suivi est attaché au PROPRIÉTAIRE, pas à la parcelle : après une mutation, le nouvel arrivant repart à « pas envoyé » — c’est son titre que le notaire attend, pas celui du vendeur.',
+          '⚠ « Envoyé — le conseil en a copie » n’est pas un « à vérifier » de plus : sur un « à vérifier » nous demandons une recherche à Me Garnier, sur celui-ci nous lui affirmons que le titre lui a été adressé tel jour. ⚠ « À vérifier » n’est PAS un doute sur la parole du coloti : c’est le constat d’une contradiction entre ce qu’il déclare et ce que l’état du notaire montre. C’est à l’étude de la lever. Ne pas l’employer comme une case d’attente. ⚠ « Incomplet » n’est pas « reçu » : le dossier n’est pas clos, et c’est tout l’objet de ce statut — avant, un titre incomplet portait une date de réception et comptait donc comme abouti. ⚠ Et le registre ne constate rien : les deux dates viennent, l’une du coloti, l’autre du notaire. ⚠ Le suivi est attaché au PROPRIÉTAIRE, pas à la parcelle : après une mutation, le nouvel arrivant repart à « pas envoyé » — c’est son titre que le notaire attend, pas celui du vendeur.',
       },
       {
         titre: 'Envoyer la liste des colotis au notaire',
