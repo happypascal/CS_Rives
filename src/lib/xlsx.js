@@ -155,6 +155,12 @@ export function classeurXLSX(lignes, opts = {}) {
   // sont les colonnes COURTES — un numéro, une surface, une zone — qui y
   // gagnent.
   const centrees = new Set(opts.centrees || [])
+  // ⚠ QUELLE LIGNE FIGER. Le volet retenait la première, ce qui est juste tant
+  // que le tableau commence en A1 — mais faux dès qu'un résumé le précède :
+  // on figerait alors un titre au lieu des en-têtes de colonnes, et l'on
+  // perdrait le nom des colonnes en défilant, précisément ce que le volet
+  // existe pour éviter.
+  const figer = Math.max(0, Number(opts.figerLigne ?? 1))
 
   const colonnes = opts.largeurs?.length
     ? `<cols>${opts.largeurs.map((l, i) => `<col min="${i + 1}" max="${i + 1}" width="${l}" customWidth="1"/>`).join('')}</cols>`
@@ -184,7 +190,7 @@ export function classeurXLSX(lignes, opts = {}) {
   // défilant, et un en-tête qui disparaît oblige à remonter pour savoir quelle
   // colonne on annote.
   const feuille = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${colonnes}<sheetData>${corps}</sheetData></worksheet>`
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="${figer}" topLeftCell="A${figer + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${colonnes}<sheetData>${corps}</sheetData></worksheet>`
 
   // ⚠ DEUX STYLES, ET TOUS DEUX PORTENT `wrapText`. Un classeur sans `styles.xml`
   // n'a que le style 0, qui ne replie rien : une cellule multiligne s'y lit

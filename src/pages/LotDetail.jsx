@@ -89,6 +89,16 @@ function Contenu() {
   // du choix de la forme (vente, donation, démembrement, succession) jusqu'aux
   // titulaires de la période neuve. La page n'a plus qu'à l'ouvrir.
   const [mutationOuverte, setMutationOuverte] = useState(false)
+  // ⚠ LE CHOIX DU MENU DE TITRE, MÉMORISÉ À PART — et c'est indispensable.
+  // Les six entrées comprennent un état DÉRIVÉ (« à vérifier, sans date »),
+  // or un menu ne peut pas piloter une valeur dérivée : choisir « envoi daté »
+  // alors que la date n'est pas encore saisie se re-dérivait aussitôt en
+  // « sans date », le menu rebasculait tout seul, et le champ de date — qui
+  // seul permettait d'en sortir — ne s'affichait jamais. Blocage circulaire,
+  // signalé par Pascal le 3 novembre.
+  //
+  // `null` = on n'a pas encore touché au menu, l'état se lit sur la fiche.
+  const [choixTitre, setChoixTitre] = useState(null)
   const [confirm, confirmModal] = useConfirm()
   // Les parcelles voisines, pour naviguer sans repasser par la liste. Rangées
   // dans L'ORDRE DU TRI CHOISI DANS LA LISTE (mémorisé par navigateur) : trier
@@ -126,6 +136,10 @@ function Contenu() {
         const champs = { ...CHAMPS_VIDES, ...Object.fromEntries(Object.keys(CHAMPS_VIDES).map((k) => [k, l.proprietaire?.[k] ?? CHAMPS_VIDES[k]])) }
         setForm(champs)
         setInitial({ champs, lot: champsLot })
+        // ⚠ Le choix du menu repart de la fiche à chaque chargement : sans
+        // cela, passer à la parcelle suivante garderait le choix de la
+        // précédente et afficherait un état qui n'est pas le sien.
+        setChoixTitre(null)
       }
     } catch (e) {
       setError(e?.message || 'Chargement impossible.')
@@ -213,7 +227,9 @@ function Contenu() {
   // ce que le menu montre — cinq entrées, « à vérifier » dédoublé selon que la
   // date est là. `statutSaisi` est ce qui part en base : quatre valeurs, les
   // seules que la contrainte de la 071 accepte.
-  const etatSaisi = etatDuTitre(form)
+  // Ce que le menu montre : le choix en cours s'il y en a un, sinon ce que la
+  // fiche porte.
+  const etatSaisi = choixTitre ?? etatDuTitre(form)
   const statutSaisi = statutDuTitre(form)
 
   const rang = parcelles.findIndex((x) => x.id === id)
@@ -636,9 +652,16 @@ function Contenu() {
                     // seule au prochain affichage.
                     onChange={(e) => {
                       const v = e.target.value
+                      setChoixTitre(v)
                       setForm((f) => ({
                         ...f,
+                        // Les deux entrées « à vérifier » partagent la même
+                        // valeur en base : elles ne se distinguent que par la
+                        // présence de la date.
                         acte_statut: v === TITRE_A_VERIFIER_SANS_DATE ? TITRE_A_VERIFIER : v,
+                        // ⚠ « Sans date » EFFACE la date ; les autres états la
+                        // gardent. Sans cet effacement, l'écran dirait une
+                        // chose et la colonne une autre.
                         acte_declare_le: v === TITRE_A_VERIFIER_SANS_DATE ? '' : f.acte_declare_le,
                       }))
                     }}

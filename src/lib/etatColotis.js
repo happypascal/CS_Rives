@@ -21,8 +21,8 @@ import {
   ROLE_REPRESENTANT, ROLE_MANDATAIRE, ROLE_LABELS, compareTitulaires,
 } from './titulaireLogic.js'
 import {
-  etatDuTitre, TITRE_LABELS_COURTS, TITRE_A_VERIFIER, TITRE_ENVOI_CONSTATE,
-  TITRE_RECU, TITRE_INCOMPLET,
+  etatDuTitre, compterTitres, TITRE_ETATS, TITRE_LABELS, TITRE_LABELS_COURTS,
+  TITRE_TONS, TITRE_A_VERIFIER, TITRE_ENVOI_CONSTATE, TITRE_RECU, TITRE_INCOMPLET,
 } from './titreLogic.js'
 import { formatDate } from './format.js'
 
@@ -177,4 +177,62 @@ export function etatColotisLignes(lots) {
     ]
   })
   return [ETAT_COLOTIS_ENTETES, ...corps]
+}
+
+
+// ============================================================================
+// LE RÉSUMÉ DES TOTAUX — en TÊTE du document
+//
+// Demande de Pascal, 3 novembre : « mets le résumé des totaux en en-tête bien
+// visible ».
+//
+// ⚠ IL ÉTAIT EN PIED, et c'était le mauvais endroit. Un notaire qui ouvre un
+// état de cinquante lignes veut d'abord savoir ce qu'on lui demande : combien
+// de titres manquent, combien sont contestés, combien sont clos. Mis sous le
+// tableau, ce chiffre n'était lu qu'après avoir parcouru quatre pages — donc
+// jamais au bon moment.
+//
+// ⚠ ET IL S'ÉNUMÈRE DEPUIS `TITRE_ETATS`, jamais à la main : écrit en dur, le
+// décompte avait cessé de totaliser dès qu'un état s'était ajouté — six
+// parcelles pour quatre titres comptés. Un résumé qui ne tombe pas juste,
+// dans un document adressé à une étude, décrédibilise tout le reste.
+// ============================================================================
+
+/**
+ * Les totaux, état par état. Ne rend que ce qui existe — un état à zéro
+ * n'apprend rien au destinataire, et six lignes dont quatre vides se lisent
+ * moins bien que deux lignes pleines.
+ */
+export function resumeDesTitres(lots) {
+  const c = compterTitres(lots)
+  return {
+    parcelles: (lots || []).length,
+    proprietaires: c.total,
+    lots: (lots || []).reduce((s, l) => s + (Number(l.nombre_lots) || 1), 0),
+    etats: TITRE_ETATS.filter((e) => c[e] > 0).map((e) => ({
+      etat: e,
+      nombre: c[e],
+      libelle: TITRE_LABELS[e],
+      court: TITRE_LABELS_COURTS[e],
+      ton: TITRE_TONS[e],
+    })),
+  }
+}
+
+/**
+ * Les lignes du classeur, RÉSUMÉ COMPRIS.
+ *
+ * ⚠ LE TABLEAU NE COMMENCE PLUS EN A1, et il faut donc dire au classeur quelle
+ * ligne figer : sans cela, le volet figé retiendrait la première ligne du
+ * résumé au lieu des en-têtes de colonnes, et l'on perdrait le nom des
+ * colonnes en défilant — exactement ce que le volet existe pour éviter.
+ */
+export function etatColotisClasseur(lots) {
+  const r = resumeDesTitres(lots)
+  const entete = [
+    [`État des colotis — ${r.parcelles} parcelle(s), ${nombre(r.lots)} lot(s)`],
+    ...r.etats.map((e) => [e.libelle, String(e.nombre)]),
+    [],
+  ]
+  return { lignes: [...entete, ...etatColotisLignes(lots)], figerLigne: entete.length + 1 }
 }

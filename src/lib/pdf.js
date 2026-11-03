@@ -14,8 +14,7 @@ import { ORG } from './config'
 // colotis ne porte plus d'adresses électroniques — elles ne sont plus
 // demandées, et un registre de données personnelles n'exporte que ce qu'on lui
 // demande. Les deux fonctions servent ailleurs, ne pas les supprimer.
-import { etatColotisLignes } from './etatColotis'
-import { compterTitres, TITRE_ETATS, TITRE_LABELS_COURTS } from './titreLogic'
+import { etatColotisLignes, resumeDesTitres } from './etatColotis'
 import { ASSISTANT_REGULAR, ASSISTANT_BOLD } from './fonts/assistant'
 
 const NAVY = [31, 56, 100] // #1F3864
@@ -592,7 +591,7 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   // ⚠ L'intro DIT si la colonne porte déjà des dates : un document qui en montre
   // sans expliquer d'où elles viennent laisserait croire que l'association tient
   // un décompte parallèle au sien.
-  const compte = compterTitres(lots)
+  const resume = resumeDesTitres(lots)
   // ⚠ L'INTRO DIT D'OÙ VIENT CHAQUE ÉTAT. « À vérifier » serait illisible sans
   // cela : l'étude doit comprendre que c'est SA liste que nous contestons,
   // poliment, parce que des colotis nous ont écrit avoir envoyé leur titre.
@@ -612,6 +611,42 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   font(doc, 'normal', 8, GREY)
   text(doc, `Édité le ${formatDate(new Date().toISOString().slice(0, 10))}`, M, y)
   y += GAP
+
+  // ------------------------------------------- LE RÉSUMÉ, EN TÊTE
+  // ⚠ IL ÉTAIT EN PIED DE TABLEAU, et c'était le mauvais endroit (demande de
+  // Pascal, 3 novembre). Un notaire qui ouvre un état de cinquante lignes veut
+  // d'abord savoir ce qu'on lui demande : combien de titres manquent, combien
+  // sont contestés, combien sont clos. Sous le tableau, ce chiffre n'était lu
+  // qu'après quatre pages — donc jamais au moment où il sert.
+  //
+  // ⚠ ENCADRÉ ET EN COULEUR, chaque état du sien : à six états, une phrase
+  // d'une ligne redevient un paragraphe qu'on survole. Le nombre est écrit
+  // gros, le libellé dessous — c'est le nombre qu'on vient chercher.
+  const COULEURS = { green: GREEN, red: RED, amber: AMBRE, blue: NAVY }
+  const cases = resume.etats
+  if (cases.length) {
+    const hauteur = 15
+    doc.setFillColor(246, 248, 251)
+    doc.setDrawColor(205, 212, 222)
+    doc.setLineWidth(0.3)
+    doc.roundedRect(M, y, LARGEUR, hauteur, 1.5, 1.5, 'FD')
+    // Les cases se partagent la largeur à parts égales : le lecteur compare
+    // des nombres, et des colonnes inégales fausseraient cette comparaison.
+    const pas = LARGEUR / cases.length
+    cases.forEach((c, i) => {
+      const cx = M + pas * i + pas / 2
+      font(doc, 'bold', 13, COULEURS[c.ton] || INK)
+      text(doc, String(c.nombre), cx, y + 7, { align: 'center' })
+      font(doc, 'normal', 7, GREY)
+      // ⚠ Le libellé est coupé à la largeur de SA case : « Envoyé — le conseil
+      // en a copie » déborderait sur la voisine et les deux deviendraient
+      // illisibles.
+      const l = lines(doc, c.court, pas - 4)
+      text(doc, l[0], cx, y + 11, { align: 'center' })
+      if (l[1]) text(doc, l[1], cx, y + 13.6, { align: 'center' })
+    })
+    y += hauteur + GAP
+  }
 
   // ⚠ Les parcelles VACANTES restent dans la liste, avec la mention explicite :
   // une ligne absente se lirait « rien à réclamer ici », alors qu'elle signifie
@@ -674,9 +709,16 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   })
 
   y = doc.lastAutoTable.finalY + GAP
-  // `ensure` raisonne en portrait : on refait le test avec la hauteur réelle.
-  if (y + 24 > BAS) { doc.addPage(); y = 20 }
   font(doc, 'normal', 8, GREY)
+  // ⚠ LA RÉSERVE DE PIED EST MESURÉE, PLUS FORFAITAIRE. Elle valait 24 mm
+  // quoi qu'il arrive ; depuis que le résumé occupe le haut de la première
+  // page, le tableau finit plus bas et ces 24 mm déclenchaient une page
+  // supplémentaire pour deux lignes de texte — une page presque vide dans un
+  // document adressé à une étude. On compte les lignes qu'on va réellement
+  // écrire : une pour le total, et autant que la mention en demande.
+  const mention = 'Ce document contient des données à caractère personnel, communiquées au notaire de l’association au seul titre de la publication des statuts (résolution n° 15 de l’assemblée générale 2026). Il ne doit être ni rediffusé, ni utilisé à d’autres fins.'
+  const lignesMention = lines(doc, mention, LARGEUR)
+  if (y + 5 + lignesMention.length * 4 > BAS) { doc.addPage(); y = 20 }
   const totalLots = lots.reduce((s, l) => s + (Number(l.nombre_lots) || 1), 0)
   // ⚠ LE DÉCOMPTE PAR ÉTAT EN PIED DE TABLEAU : c'est le résumé que l'étude
   // lira en premier, et il évite de recompter cinquante lignes à la main.
@@ -686,17 +728,16 @@ export function downloadRegistreNotairePDF(lots, opts = {}) {
   // titres comptés, l'envoi constaté et le « à vérifier sans date » étant
   // simplement absents de la phrase. Un décompte qui ne tombe pas juste, dans
   // un document adressé à une étude, décrédibilise tout le reste du tableau.
-  const detail = TITRE_ETATS
-    .filter((e) => compte[e] > 0)
-    .map((e) => `${compte[e]} ${TITRE_LABELS_COURTS[e].toLowerCase()}`)
-    .join(', ')
-  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s).`
-    + (detail ? ` Titres : ${detail}.` : ''), M, y)
+  // ⚠ LE DÉTAIL PAR ÉTAT N'EST PLUS RÉPÉTÉ ICI : il est en tête, encadré. Le
+  // redire en pied ferait deux décomptes du même document, et deux décomptes
+  // finissent par diverger — celui-ci l'avait déjà fait, en cessant de
+  // totaliser quand un état s'est ajouté.
+  text(doc, `${lots.length} parcelle(s) — ${nombre(totalLots)} lot(s).`, M, y)
   y += 5
   // ⚠ La mention de protection voyage AVEC le document : une fois envoyé, il
   // n'est plus sous le contrôle du conseil, et le destinataire doit savoir à
   // quoi il est tenu.
-  for (const l of lines(doc, 'Ce document contient des données à caractère personnel, communiquées au notaire de l’association au seul titre de la publication des statuts (résolution n° 15 de l’assemblée générale 2026). Il ne doit être ni rediffusé, ni utilisé à d’autres fins.', LARGEUR)) {
+  for (const l of lignesMention) {
     text(doc, l, M, y)
     y += 4
   }
