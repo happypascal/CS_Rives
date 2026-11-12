@@ -137,7 +137,7 @@ export const TITRE_AIDES = {
   [TITRE_A_VERIFIER_SANS_DATE]: 'Le coloti nous a dit avoir adressé son titre, sans préciser quand. ⚠ L’étude ne peut rien recouper sans date : demandez-la-lui, puis passez la fiche en « envoi daté ».',
   [TITRE_A_VERIFIER]: 'Le coloti déclare avoir adressé son titre à une date qu’il indique, et l’état du notaire ne le montre pas. C’est une contradiction à lever auprès de l’étude — pas un doute sur sa parole.',
   [TITRE_ENVOI_CONSTATE]: 'Le coloti a adressé son titre à l’étude en mettant le conseil en copie : nous en avons la preuve, et nous pouvons l’affirmer à Me Garnier plutôt que de lui demander une recherche.',
-  [TITRE_INCOMPLET]: 'Le notaire a reçu une pièce, mais elle ne suffit pas — il manque par exemple l’acquisition d’origine. Le dossier n’est pas clos : notez ce qui manque dans l’observation.',
+  [TITRE_INCOMPLET]: 'Le notaire a reçu une pièce, mais elle ne suffit pas — il manque par exemple une page de l’acte ou l’acquisition d’origine. Le dossier n’est pas clos : notez ce qui manque dans l’observation. ⚠ C’est l’ÉTUDE qui revient vers le propriétaire sur ces dossiers, pas le conseil : le relancer de notre côté lui ferait recevoir deux demandes pour la même pièce.',
   [TITRE_RECU]: 'Me Garnier a confirmé la réception d’un titre complet.',
 }
 
