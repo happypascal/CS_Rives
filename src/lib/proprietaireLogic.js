@@ -387,6 +387,82 @@ export function ecrireTri(tri) {
   } catch { /* stockage indisponible : le tri vaut pour la session */ }
 }
 
+// ============================================================================
+// LES FILTRES DE LA LISTE — mémorisés comme le tri, et APPLIQUÉS PARTOUT
+//
+// Pascal, 3 novembre : « les boutons de navigation du registre ne tiennent pas
+// compte du filtre appliqué sur la liste et quand on retourne à la liste
+// depuis la fiche, le filtre n'est pas conservé ».
+//
+// ⚠ LE TRI ÉTAIT MÉMORISÉ, PAS LES FILTRES — et c'est une incohérence qui se
+// paie deux fois. Filtrer sur les neuf titres manquants, ouvrir le premier,
+// puis enchaîner avec « suivante » faisait passer à la parcelle suivante du
+// REGISTRE ENTIER : on retombait sur un lot qui n'avait rien à voir avec ce
+// qu'on était en train de traiter. Et revenir à la liste rouvrait les
+// cinquante lignes, obligeant à refiltrer à chaque aller-retour.
+//
+// ⚠ LE FILTRAGE EST ÉCRIT ICI, UNE FOIS, et non dans l'écran : la liste et la
+// navigation de la fiche doivent produire EXACTEMENT la même suite, sinon la
+// flèche « suivante » ne mène pas à la ligne d'en dessous. C'est le même
+// raisonnement qui a fait sortir `trierLots` de l'écran.
+// ============================================================================
+export const CLE_FILTRES = 'cs-rives.registre-proprietaires.filtres'
+export const FILTRES_VIDES = { q: '', titre: null, aCompleter: false }
+
+export function lireFiltres() {
+  try {
+    const brut = JSON.parse(localStorage.getItem(CLE_FILTRES) || 'null')
+    if (brut && typeof brut === 'object') {
+      return {
+        q: typeof brut.q === 'string' ? brut.q : '',
+        // ⚠ On ne valide pas la valeur du statut contre une liste : `titreLogic`
+        // n'est pas importé ici, et un état retiré un jour rendrait simplement
+        // une liste vide — pas un écran cassé. Le filtre se décoche d'un clic.
+        titre: typeof brut.titre === 'string' && brut.titre ? brut.titre : null,
+        aCompleter: brut.aCompleter === true,
+      }
+    }
+  } catch { /* stockage indisponible */ }
+  return FILTRES_VIDES
+}
+
+export function ecrireFiltres(f) {
+  try {
+    localStorage.setItem(CLE_FILTRES, JSON.stringify(f))
+  } catch { /* stockage indisponible : les filtres valent pour la session */ }
+}
+
+/** Y a-t-il quelque chose à restreindre ? Sert à le DIRE sur la fiche. */
+export function filtresActifs(f) {
+  return Boolean(f?.q?.trim() || f?.titre || f?.aCompleter)
+}
+
+/**
+ * La liste restreinte, telle que l'écran la montre.
+ *
+ * `etat` et `incomplets` sont passés par l'appelant plutôt qu'importés : ce
+ * module ne connaît ni `titreLogic` ni les contrôles de titulaires, et les y
+ * faire entrer créerait un cycle d'imports entre trois fichiers de logique.
+ */
+export function filtrerLots(lots, filtres, { etatDuTitre, lotsACompleter } = {}) {
+  const f = filtres || FILTRES_VIDES
+  let base = lots || []
+  if (f.titre && etatDuTitre) {
+    base = base.filter((l) => l.proprietaire && etatDuTitre(l.proprietaire) === f.titre)
+  } else if (f.aCompleter && lotsACompleter) {
+    base = base.filter((l) => lotsACompleter.has(l.id))
+  }
+  const terme = (f.q || '').trim().toLowerCase()
+  if (!terme) return [...base]
+  return base.filter((l) =>
+    [l.numero, l.numero_syndic, l.adresse_lotissement,
+      l.numero_origine && `lot ${l.numero_origine}`, l.zone && `zone ${l.zone}`,
+      l.proprietaire?.nom, l.proprietaire?.nom_2,
+      l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
+      l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
+      .filter(Boolean).join(' ').toLowerCase().includes(terme))
+}
+
 /** Range les parcelles comme la liste les range. Ne modifie pas le tableau reçu. */
 export function trierLots(lots, tri) {
   const colonne = TRIS.find((t) => t.cle === tri?.cle) || TRIS[0]

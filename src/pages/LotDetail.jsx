@@ -13,7 +13,11 @@ import { useIsMobile } from '../lib/useIsMobile'
 // ailleurs — `destinatairesDuLot` les emploie comme REPLI pour les périodes
 // sans titulaires, et la liste des parcelles les lit. Ne pas les supprimer de
 // `proprietaireLogic` au motif que la fiche ne s'en sert plus.
-import { CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots, aDesTitulaires, libelleDeLaPeriode, adresseDeLaPeriode } from '../lib/proprietaireLogic'
+import {
+  CONTACT_PROPRIETAIRE, sourcesCochees, lireTri, trierLots, aDesTitulaires,
+  libelleDeLaPeriode, adresseDeLaPeriode, lireFiltres, filtrerLots,
+} from '../lib/proprietaireLogic'
+import { controles } from '../lib/titulaireLogic'
 import TitulairesLot from '../components/TitulairesLot'
 import AssistantMutation from '../components/AssistantMutation'
 import PiecesJointes from '../components/PiecesJointes'
@@ -104,7 +108,18 @@ function Contenu() {
   // dans L'ORDRE DU TRI CHOISI DANS LA LISTE (mémorisé par navigateur) : trier
   // par superficie puis passer à « suivante » doit mener à la ligne d'en
   // dessous, pas à la parcelle suivante par numéro.
+  //
+  // ⚠ ET RESTREINTES PAR LE FILTRE DE LA LISTE (3 novembre). Elles ne
+  // l'étaient pas : filtrer sur les titres manquants, ouvrir le premier puis
+  // enchaîner avec « suivante » faisait passer à la parcelle suivante du
+  // REGISTRE ENTIER — on retombait sur un lot sans rapport avec ce qu'on était
+  // en train de traiter, et il fallait repasser par la liste à chaque fois.
   const [parcelles, setParcelles] = useState([])
+  // ⚠ `toutes` sert de FILET : si la parcelle ouverte ne fait pas partie de la
+  // liste filtrée — on y est arrivé par un lien, ou son statut vient de
+  // changer et elle en est sortie — les deux flèches seraient mortes sans que
+  // rien ne l'explique. On retombe alors sur le registre entier.
+  const [toutes, setToutes] = useState([])
   // Instantané de ce qui a été chargé : c'est lui qui dit si l'on a modifié
   // quelque chose. Comparer au formulaire vide ne marcherait pas — une fiche
   // remplie paraîtrait toujours modifiée.
@@ -183,8 +198,23 @@ function Contenu() {
     // `.catch(() => [])` : une liste indisponible doit désactiver la navigation,
     // pas vider l'écran — idiome de résilience du projet.
     repo.listLots()
-      .then((l) => setParcelles(trierLots(l, lireTri())))
-      .catch(() => setParcelles([]))
+      .then((l) => {
+        const tri = lireTri()
+        setToutes(trierLots(l, tri))
+        // ⚠ MÊMES FONCTIONS QUE LA LISTE, dans le même ordre : c'est la seule
+        // façon que « suivante » mène à la ligne d'en dessous. Les contrôles
+        // de titulaires sont recalculés ici parce que le filtre « à compléter »
+        // en dépend — la liste ne nous les transmet pas.
+        const aCompleter = new Set(
+          l.filter((x) => (x.proprietaire?.titulaires || []).length
+            && controles(x.proprietaire.titulaires).length).map((x) => x.id),
+        )
+        setParcelles(trierLots(
+          filtrerLots(l, lireFiltres(), { etatDuTitre, lotsACompleter: aCompleter }),
+          tri,
+        ))
+      })
+      .catch(() => { setParcelles([]); setToutes([]) })
   }, [])
 
   // Le spinner ne s'affiche qu'au TOUT PREMIER chargement. Ensuite on garde la
@@ -232,9 +262,13 @@ function Contenu() {
   const etatSaisi = choixTitre ?? etatDuTitre(form)
   const statutSaisi = statutDuTitre(form)
 
-  const rang = parcelles.findIndex((x) => x.id === id)
-  const precedente = rang > 0 ? parcelles[rang - 1] : null
-  const suivante = rang >= 0 && rang < parcelles.length - 1 ? parcelles[rang + 1] : null
+  // La suite dans laquelle on navigue : la liste filtrée si la parcelle
+  // ouverte en fait partie, le registre entier sinon.
+  const suite = parcelles.some((x) => x.id === id) ? parcelles : toutes
+  const filtree = suite === parcelles && parcelles.length < toutes.length
+  const rang = suite.findIndex((x) => x.id === id)
+  const precedente = rang > 0 ? suite[rang - 1] : null
+  const suivante = rang >= 0 && rang < suite.length - 1 ? suite[rang + 1] : null
 
   // Modifié ? Comparaison de l'instantané au formulaire courant. JSON suffit :
   // les valeurs sont des chaînes, des nombres et des booléens, dans le même
@@ -418,7 +452,20 @@ function Contenu() {
     <div>
       <PageHeader
         title={<span>Lot <span className="text-navy-800">{lot.numero}</span></span>}
-        subtitle={lot.proprietaire ? lot.proprietaire.nom : 'Aucun propriétaire enregistré'}
+        subtitle={
+          <>
+            {lot.proprietaire ? lot.proprietaire.nom : 'Aucun propriétaire enregistré'}
+            {/* ⚠ ON DIT DANS QUELLE SUITE ON NAVIGUE. Les flèches parcourent
+                la liste FILTRÉE : sans le dire, elles paraîtraient sauter des
+                parcelles au hasard — « 3 sur 9 » explique l'écart entre deux
+                numéros qui ne se suivent pas. */}
+            {rang >= 0 && suite.length > 1 && (
+              <span className="ml-2 text-xs text-slate-400">
+                · {rang + 1} sur {suite.length}{filtree ? ' (liste filtrée)' : ''}
+              </span>
+            )}
+          </>
+        }
         actions={
           <>
             <Button variant="secondary" onClick={() => allerVers(precedente)} disabled={!precedente} title={precedente ? `Parcelle ${precedente.numero}` : 'Première parcelle'}>

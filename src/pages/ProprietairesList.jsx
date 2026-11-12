@@ -6,7 +6,10 @@ import { Card, Button, Input, Select, Modal, Spinner, EmptyState, num } from '..
 import { RgpdGate } from '../components/RgpdGate'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
-import { destinatairesDuLot, aDesTitulaires, CONTACT_PROPRIETAIRE, CONTACT_LABELS, lireTri, ecrireTri, trierLots } from '../lib/proprietaireLogic'
+import {
+  destinatairesDuLot, aDesTitulaires, CONTACT_PROPRIETAIRE, CONTACT_LABELS,
+  lireTri, ecrireTri, trierLots, lireFiltres, ecrireFiltres, filtrerLots,
+} from '../lib/proprietaireLogic'
 import { controles, ROLE_LABELS } from '../lib/titulaireLogic'
 import {
   compterTitres, etatDuTitre, TITRE_ETATS, TITRE_LABELS, TITRE_LABELS_COURTS,
@@ -96,18 +99,24 @@ function Contenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [lots, setLots] = useState([])
-  const [q, setQ] = useState('')
   const [tri, setTri] = useState(lireTri)
   const [nouveau, setNouveau] = useState('')
   const [busy, setBusy] = useState(false)
   const [exportOuvert, setExportOuvert] = useState(false)
-  // ⚠ UN SEUL ÉTAT POUR TROIS FILTRES, et non trois booléens : deux cases
-  // cochées en même temps donneraient une liste vide sans raison visible.
-  // `null` = aucun filtre de titre.
-  const [filtreTitre, setFiltreTitre] = useState(null)
-  // ⚠ Les deux filtres s'excluent : cumulés, une liste vide ne dirait pas
-  // lequel des deux l'a vidée.
-  const [seulementACompleter, setSeulementACompleter] = useState(false)
+  // ⚠ LES FILTRES SONT MÉMORISÉS COMME LE TRI (3 novembre). Ils ne l'étaient
+  // pas, et l'incohérence se payait à chaque aller-retour : revenir à la liste
+  // depuis une fiche rouvrait les cinquante lignes, et il fallait refiltrer.
+  // ⚠ UN SEUL ÉTAT POUR LES TROIS, et non trois variables : deux filtres
+  // cochés en même temps donneraient une liste vide sans raison visible.
+  const [filtres, setFiltres] = useState(lireFiltres)
+  const { q, titre: filtreTitre, aCompleter: seulementACompleter } = filtres
+  // ⚠ Toute modification passe par ici, et écrit DANS LA FOULÉE : un filtre
+  // mémorisé à part de l'état finirait par en différer.
+  const majFiltres = (patch) => setFiltres((f) => {
+    const suivant = { ...f, ...patch }
+    ecrireFiltres(suivant)
+    return suivant
+  })
 
   const reload = async () => {
     setError('')
@@ -145,32 +154,15 @@ function Contenu() {
   }, [lots])
   const aCompleter = alertesParLot.size
 
-  const filtres = useMemo(() => {
-    const terme = q.trim().toLowerCase()
-    // ⚠ Le filtre porte sur UN statut nommé, plus sur « pas de date » : les
-    // trois états se filtrent du même geste, et « à vérifier » ne se confond
-    // plus avec « pas envoyé ».
-    const base = filtreTitre
-      ? lots.filter((l) => l.proprietaire && etatDuTitre(l.proprietaire) === filtreTitre)
-      : seulementACompleter
-        ? lots.filter((l) => alertesParLot.has(l.id))
-        : lots
-    const liste = terme
-      ? base.filter((l) =>
-          [l.numero, l.numero_syndic, l.adresse_lotissement,
-           // Le lot d'origine se cherche : c'est sous ce nom que le cahier des
-           // charges de 1955 et les actes désignent les terrains.
-           l.numero_origine && `lot ${l.numero_origine}`, l.zone && `zone ${l.zone}`,
-           l.proprietaire?.nom, l.proprietaire?.nom_2,
-           l.proprietaire?.dirigeant_nom, l.proprietaire?.dirigeant_nom_2, l.proprietaire?.mandataire_nom,
-           l.proprietaire?.email, l.proprietaire?.email_2, l.proprietaire?.mandataire_email]
-            .filter(Boolean).join(' ').toLowerCase().includes(terme),
-        )
-      : [...base]
-    // ⚠ Même fonction que celle dont se sert la navigation de la fiche : c'est
-    // ce qui garantit que « suivante » mène bien à la ligne d'en dessous.
-    return trierLots(liste, tri)
-  }, [lots, q, tri, filtreTitre, seulementACompleter, alertesParLot])
+  // ⚠ MÊMES FONCTIONS QUE LA NAVIGATION DE LA FICHE — `filtrerLots` puis
+  // `trierLots`. C'est ce qui garantit que la flèche « suivante » mène bien à
+  // la ligne d'en dessous : deux filtrages écrits séparément divergeraient au
+  // premier critère ajouté, et la navigation sauterait des lignes sans que
+  // rien ne le signale.
+  const liste = useMemo(
+    () => trierLots(filtrerLots(lots, filtres, { etatDuTitre, lotsACompleter: alertesParLot }), tri),
+    [lots, filtres, tri, alertesParLot],
+  )
 
   // ⚠ L'EXPORT PORTE SUR TOUT LE REGISTRE, jamais sur la recherche en cours.
   // Un « état des colotis » amputé des lignes qui ne correspondaient pas au
@@ -317,7 +309,7 @@ function Contenu() {
       <Card className="mb-4 p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex items-center gap-2">
-            <Input placeholder="Rechercher (parcelle, n° Foncia, nom, adresse, email)…" value={q} onChange={(e) => setQ(e.target.value)} className="min-w-0 flex-1" />
+            <Input placeholder="Rechercher (parcelle, n° Foncia, nom, adresse, email)…" value={q} onChange={(e) => majFiltres({ q: e.target.value })} className="min-w-0 flex-1" />
             {/* ⚠ Bouton plutôt que case à cocher : c'est la question qu'on vient
                 poser à cet écran en octobre, elle doit se déclencher d'un clic et
                 se voir enfoncée. Masqué s'il n'y a rien à relancer — un filtre
@@ -325,7 +317,7 @@ function Contenu() {
             {aCompleter > 0 && (
               <Button
                 variant={seulementACompleter ? 'primary' : 'secondary'}
-                onClick={() => { setSeulementACompleter((v) => !v); setFiltreTitre(null) }}
+                onClick={() => majFiltres({ aCompleter: !seulementACompleter, titre: null })}
                 title="N’afficher que les parcelles dont les titulaires sont incomplets"
               >
                 À compléter ({aCompleter})
@@ -343,7 +335,7 @@ function Contenu() {
                 ceux à zéro, dont l'absence est une information. */}
             <Select
               value={filtreTitre || ''}
-              onChange={(e) => { setFiltreTitre(e.target.value || null); setSeulementACompleter(false) }}
+              onChange={(e) => majFiltres({ titre: e.target.value || null, aCompleter: false })}
               className="min-w-[16rem]"
             >
               <option value="">Titre : tous ({proprietaires})</option>
@@ -364,7 +356,7 @@ function Contenu() {
         </div>
       </Card>
 
-      {filtres.length === 0 ? (
+      {liste.length === 0 ? (
         <EmptyState
           title="Aucun lot"
           hint="Le registre sera alimenté depuis les fichiers du syndic. Vous pouvez aussi ajouter une parcelle à la main."
@@ -413,7 +405,7 @@ function Contenu() {
                     affirmait que « le nom commence par SCI », alors que neuf des
                     quatorze sociétés du lotissement sont déclarées sans le sigle.
                     La couleur portait donc bien seule l'information pour elles. */}
-                {filtres.map((l) => (
+                {liste.map((l) => (
                   <tr
                     key={l.id}
                     className={`align-top ${
