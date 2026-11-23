@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ProtectedRoute'
 import { Card, CardHeader, Button, Badge, Spinner, Modal, Textarea, Select, eur } from '../components/ui'
 import { DecisionEtatBadge, VoteBadge, SignatureBadge } from '../components/badges'
 import { formatDate, formatDateTime, todayISO } from '../lib/format'
-import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, PHASE_LABELS, numeroDecision, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
+import { tally, tallySummary, engagementApprouve, engagementTTC, VOTE_VALUES, VOTE_LABELS, phaseOf, avantSoumission, retraitPossible, PHASE_LABELS, numeroDecision, visibiliteOf, VISIBILITE_VALUES, VISIBILITE_LABELS } from '../lib/decisionLogic'
 import { useAuth } from '../lib/AuthContext'
 import { useIsMobile } from '../lib/useIsMobile'
 import { downloadDecisionPDF } from '../lib/pdf'
@@ -41,6 +41,11 @@ export default function DecisionDetail() {
   const [confirmSoumettre, setConfirmSoumettre] = useState(false)
   const [confirmAnnuler, setConfirmAnnuler] = useState(false)
   const [motifAnnulation, setMotifAnnulation] = useState('')
+  // ⚠ UN MOTIF PAR GESTE, et non un seul partagé : les deux modales peuvent
+  // s'ouvrir sur la même fiche au fil de sa vie, et un texte qui survit d'un
+  // acte à l'autre ferait inscrire au registre le motif d'un autre retrait.
+  const [confirmRetirer, setConfirmRetirer] = useState(false)
+  const [motifRetrait, setMotifRetrait] = useState('')
   const [share, setShare] = useState(false)
   const [qText, setQText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
@@ -103,9 +108,27 @@ export default function DecisionDetail() {
   const phase = phaseOf(decision)
   const enPreparation = avantSoumission(decision) // brouillon ou planifiée : le conseil n'est pas saisi
   const annulee = phase === 'annulee'
+  // ⚠ RETIRÉE N'EST PAS ANNULÉE (migration 073), et tout le rendu en dépend :
+  // `annulee` masque la carte des votes — personne n'a pu voter — alors qu'une
+  // décision RETIRÉE doit les montrer, puisque des membres se sont prononcés.
+  // Ne pas fondre les deux variables : c'est précisément cette distinction qui
+  // interdisait de réemployer `annulee` pour le retrait après vote.
+  const retireeApresVote = phase === 'retiree'
   // Le vote n'est ouvert que si la décision a été SOUMISE et n'est pas encore
   // enregistrée. Doublé par les policies restrictives `votes_open_only_*`.
   const voteOuvert = phase === 'ouverte_au_vote' && !locked
+  // LA DÉLIBÉRATION EST-ELLE TERMINÉE ? Deux issues, un seul prédicat (073) :
+  // le président l'a enregistrée, ou il l'a retirée. Dans les deux cas plus
+  // rien n'est à saisir et plus rien n'est « en cours ».
+  //
+  // ⚠ CE PRÉDICAT EXISTE PARCE QUE SIX ENDROITS DISAIENT `!locked` ET
+  // MENTAIENT sur une décision retirée : la carte de vote invitait encore
+  // « chaque membre vote pour lui-même », l'encart de quorum promettait un
+  // enregistrement devenu impossible, et le bloc Résultat affichait
+  // « Projection : Adoptée » sur une délibération que le conseil a abandonnée.
+  // C'est ce dernier qui interdisait de s'en tenir à `voteOuvert` : il ne
+  // regardait pas le vote, il regardait l'enregistrement.
+  const deliberationClose = locked || retireeApresVote
   const resolution = ag?.resolutions?.find((r) => r.id === decision.resolution_id) || null
   const budget = agBudgets.find((b) => b.resolution_id === decision.resolution_id) || null
   const projet = decision.projet_id ? projets.find((p) => p.id === decision.projet_id) : null
@@ -271,6 +294,14 @@ export default function DecisionDetail() {
     await actePhase(() => repo.annulerDecision(id, motifAnnulation.trim()), 'L’annulation a échoué')
     setMotifAnnulation('')
   }
+  // RETRAIT d'une délibération déjà votée (migration 073) : acte du président,
+  // pas de l'auteur — le conseil est saisi et des membres ont voté.
+  const doRetirer = async () => {
+    if (!motifRetrait.trim()) return
+    setConfirmRetirer(false)
+    await actePhase(() => repo.retirerDecision(id, motifRetrait.trim()), 'Le retrait a échoué')
+    setMotifRetrait('')
+  }
   // Visibilité : décision de PUBLICATION, extérieure à la délibération — donc
   // modifiable même une fois la décision enregistrée, contrairement à son texte.
   const doVisibilite = (valeur) =>
@@ -365,9 +396,23 @@ export default function DecisionDetail() {
                 ici, avec les actions de décision — pas dans le tableau des votes.
                 Le pourquoi d'un blocage (quorum, engagement) est expliqué dans la
                 carte des votes ; ici, un tooltip. */}
-            {isAdmin && !locked && !enPreparation && !annulee && !isMobile && (
+            {isAdmin && !locked && !enPreparation && !annulee && !retireeApresVote && !isMobile && (
               <Button onClick={() => setConfirmRecord(true)} disabled={busy || !canRecord} title={!t.quorumAtteint ? 'Quorum non atteint' : ''}>
                 Enregistrer la décision
+              </Button>
+            )}
+            {/* L'AUTRE ISSUE DU MÊME MOMENT (migration 073). Une délibération
+                votée se termine de deux façons : le président l'enregistre, ou
+                il la retire parce qu'elle n'a plus de raison d'être. Le bouton
+                est donc ici, à côté de l'acte — et pas près de « Supprimer »,
+                qui n'est pas un acte du registre mais un effacement.
+                ⚠ Réservé au président, comme l'enregistrement : la policy
+                `decisions_retrait_president` ferme, l'écran ne fait que
+                l'annoncer. Variante `secondary` et non `danger` : retirer
+                laisse une trace motivée, ce n'est pas une destruction. */}
+            {isAdmin && retraitPossible(decision) && !isMobile && (
+              <Button variant="secondary" onClick={() => setConfirmRetirer(true)} disabled={busy}>
+                Retirer la décision
               </Button>
             )}
             {/* L'owner porte sa décision (prévient / relance) ; le président peut
@@ -458,6 +503,22 @@ export default function DecisionDetail() {
           <p className="mt-1 text-xs">Elle reste au registre — rien ne disparaît — mais n’a jamais été soumise au conseil.</p>
         </div>
       )}
+      {/* RETRAIT APRÈS VOTE (migration 073). Le bandeau dit trois choses que
+          celui de l'annulation ne peut pas dire : que le conseil A été saisi,
+          que les votes exprimés restent lisibles plus bas, et que la
+          délibération n'a jamais été enregistrée — donc qu'elle n'a produit
+          aucun effet et n'engage aucun budget. */}
+      {retireeApresVote && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="font-semibold">Délibération retirée par le président, sans avoir été enregistrée.</p>
+          <p className="mt-1 text-xs">Motif : {decision.motif_annulation || '—'}</p>
+          <p className="mt-1 text-xs">
+            Elle a bien été soumise au conseil et <strong>les votes exprimés restent au registre</strong>, ci-dessous.
+            Faute d’enregistrement, elle n’a produit aucun effet : ni adoption, ni rejet, ni engagement de budget.
+            Le vote est clos et le texte reste gelé.
+          </p>
+        </div>
+      )}
 
       {/* CE QU'ON VOTE — un seul bloc de lecture : titre, description, impact,
           pièces jointes. Tout ce dont un membre a besoin pour se décider, dans
@@ -542,9 +603,12 @@ export default function DecisionDetail() {
               ))}
             </ul>
           )}
-          {/* Décision enregistrée = registre figé : plus aucune saisie (commentaire,
-              question, réponse). Seul le contenu déjà présent reste, en lecture seule. */}
-          {myId && !locked && !enPreparation && !annulee && (
+          {/* Délibération terminée = registre figé : plus aucune saisie
+              (commentaire, question, réponse). Seul le contenu déjà présent
+              reste, en lecture seule. ⚠ Terminée veut dire enregistrée OU
+              retirée (073) : le retrait est définitif, il n'y a plus de suivi
+              à commenter. */}
+          {myId && !deliberationClose && !enPreparation && !annulee && (
             <div className="mt-2 flex items-start gap-2">
               <Textarea autoGrow rows={2} value={cText} onChange={(e) => setCText(e.target.value)} placeholder="Ajouter un commentaire (suivi de la décision)…" className="min-w-0 flex-1" />
               <Button size="sm" onClick={addCommentaire}>Commenter</Button>
@@ -653,16 +717,23 @@ export default function DecisionDetail() {
           <Card>
             <CardHeader
               title="Vote du Conseil Syndical"
-              subtitle={locked ? 'Vote clos — composition figée.' : 'Chaque membre vote pour lui-même. Le président enregistre la décision (bouton en haut de page).'}
+              subtitle={
+                retireeApresVote
+                  ? 'Vote clos — délibération retirée. Les votes exprimés restent au registre.'
+                  : locked
+                    ? 'Vote clos — composition figée.'
+                    : 'Chaque membre vote pour lui-même. Le président enregistre la décision (bouton en haut de page).'
+              }
             />
-            {isAdmin && !locked && !t.quorumAtteint && (
+            {isAdmin && !deliberationClose && !t.quorumAtteint && (
               <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
                 Quorum non atteint : {t.votants}/{t.activeCount} membres ont voté. L’enregistrement sera possible dès que &gt; 50 % auront voté.
               </p>
             )}
             {/* Point 3 : la majorité est là, mais l'engagement financier n'est pas
-                approuvé par le bureau → la décision serait REJETÉE. On l'explique. */}
-            {!locked && t.bloqueParEngagement && (
+                approuvé par le bureau → la décision serait REJETÉE. On l'explique.
+                ⚠ Muet sur une délibération retirée : elle ne « serait » plus rien. */}
+            {!deliberationClose && t.bloqueParEngagement && (
               <p className="border-b border-amber-100 bg-amber-50 px-5 py-2 text-xs text-amber-700">
                 Cette décision engage {eur(decision.montant_engage)} : bien que la majorité soit atteinte, elle n’est <strong>adoptée</strong> que si le trésorier ou le président vote « Pour ». En l’état, elle serait <strong>rejetée</strong>.
               </p>
@@ -727,7 +798,7 @@ export default function DecisionDetail() {
                 })}
               </div>
             </div>
-            {!iAmInComposition && !locked && (
+            {!iAmInComposition && !deliberationClose && (
               <p className="border-t border-navy-100 px-5 py-2 text-xs text-slate-400">Vous n’étiez pas membre actif du CS à la date de publication : vous ne pouvez pas voter cette décision.</p>
             )}
           </Card>
@@ -749,7 +820,7 @@ export default function DecisionDetail() {
                       <p className="text-sm text-slate-700">{r.texte}</p>
                     </div>
                   ))}
-                  {!locked && (replyTo === question.id ? (
+                  {!deliberationClose && (replyTo === question.id ? (
                     <div className="mt-2 ml-4 flex flex-wrap items-start gap-2">
                       <Textarea autoGrow rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Votre réponse…" className="min-w-0 flex-1" />
                       <Button size="sm" onClick={() => addReponse(question.id)}>Répondre</Button>
@@ -760,7 +831,7 @@ export default function DecisionDetail() {
                   ))}
                 </div>
               ))}
-              {!locked && (
+              {!deliberationClose && (
                 <div className="flex items-start gap-2 pt-2">
                   <Textarea autoGrow rows={2} value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Poser une question…" className="min-w-0 flex-1" />
                   <Button onClick={addQuestion}>Publier</Button>
@@ -862,13 +933,25 @@ export default function DecisionDetail() {
                 <p className="text-xs text-slate-500">Quorum ({t.votants}/{t.activeCount} ont voté)</p>
                 <p className={t.quorumAtteint ? 'font-medium text-emerald-700' : 'font-medium text-red-700'}>{t.quorumAtteint ? 'Atteint' : 'Non atteint'}</p>
               </div>
+              {/* ⚠ UNE PROJECTION N'A DE SENS QUE SUR UNE DÉLIBÉRATION EN
+                  COURS. Sur une décision RETIRÉE, ce bloc annonçait
+                  « Projection : Adoptée » — soit un verdict sur une question
+                  que le conseil a abandonnée, et le contraire de ce que le
+                  registre doit dire. `DecisionEtatBadge` lit la phase d'abord :
+                  il rend donc « Retirée », comme la liste du registre. */}
               <div className="text-center">
-                {locked ? <DecisionEtatBadge decision={decision} /> : (
+                {deliberationClose ? <DecisionEtatBadge decision={decision} /> : (
                   <Badge tone={t.quorumAtteint ? (t.adoptee ? 'green' : 'red') : 'gray'}>
                     {t.quorumAtteint ? `Projection : ${t.adoptee ? 'Adoptée' : 'Rejetée'}` : 'En attente de quorum'}
                   </Badge>
                 )}
                 <p className="mt-1 text-xs text-slate-400">{tallySummary(t.counts)}</p>
+                {retireeApresVote && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Ces voix sont celles qui avaient été exprimées au moment du retrait. Faute
+                    d’enregistrement, elles n’ont produit ni adoption ni rejet.
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -910,8 +993,12 @@ export default function DecisionDetail() {
           )}
 
 
-          {/* Rien à faire signer tant que la décision n'a pas été délibérée. */}
-          {!enPreparation && !annulee && (
+          {/* Rien à faire signer tant que la décision n'a pas été délibérée.
+              ⚠ NI SI ELLE A ÉTÉ RETIRÉE (073) : l'art. 15 fait signer les
+              membres présents à une DÉLIBÉRATION, et une délibération retirée
+              sans enregistrement n'en est pas une. Proposer un lot de
+              signatures ici ferait signer une décision qui n'a rien décidé. */}
+          {!enPreparation && !annulee && !retireeApresVote && (
           <Card>
             <CardHeader title="Signature électronique" />
             <div className="space-y-2 px-5 py-4 text-sm">
@@ -1005,6 +1092,48 @@ export default function DecisionDetail() {
             value={motifAnnulation}
             onChange={(e) => setMotifAnnulation(e.target.value)}
             placeholder="ex : sujet repris dans la décision 2026-012, devis retiré par le prestataire…"
+          />
+        </div>
+      </Modal>
+
+      {/* RETRAIT D'UNE DÉLIBÉRATION VOTÉE (migration 073). La modale énumère ce
+          que le geste fait et ce qu'il ne fait PAS : la confusion à éviter est
+          de le prendre pour un rejet. Un rejet est un RÉSULTAT que l'art. 15
+          calcule sur les voix ; un retrait est l'abandon de la question, sans
+          résultat d'aucune sorte. */}
+      <Modal
+        open={confirmRetirer}
+        onClose={() => setConfirmRetirer(false)}
+        title="Retirer la délibération"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmRetirer(false)}>Revenir</Button>
+            <Button variant="danger" onClick={doRetirer} disabled={busy || !motifRetrait.trim()}>Retirer la délibération</Button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-slate-600">
+          <p>
+            La délibération <strong>{numeroDecision(decision)}</strong> est retirée : le conseil l’abandonne sans
+            qu’elle soit enregistrée.
+          </p>
+          <ul className="list-disc pl-5 text-xs text-slate-500">
+            <li>Elle <strong>garde son numéro</strong> et reste au registre — un numéro effacé se lirait comme une délibération dissimulée.</li>
+            <li>Les <strong>{decision.votes.length} vote{decision.votes.length > 1 ? 's' : ''} déjà exprimé{decision.votes.length > 1 ? 's' : ''}</strong> restent visibles : le registre ne cache pas que des membres se sont prononcés.</li>
+            <li>Le <strong>vote est clos</strong> et la décision ne pourra plus être enregistrée. Le retrait est définitif.</li>
+            <li>Elle <strong>n’engage aucun budget</strong> : son montant disparaît de l’« engagé en cours ».</li>
+            <li>Ce n’est <strong>pas un rejet</strong> — un rejet se calcule sur les voix à l’enregistrement. Ici, la question est abandonnée, sans résultat.</li>
+          </ul>
+          <p className="text-xs text-slate-500">
+            Le motif est obligatoire : c’est lui qui explique au lecteur du registre pourquoi la délibération n’a pas abouti.
+          </p>
+          <Textarea
+            autoGrow
+            rows={3}
+            label="Motif du retrait"
+            value={motifRetrait}
+            onChange={(e) => setMotifRetrait(e.target.value)}
+            placeholder="ex : le prestataire a retiré son devis, la dépense est devenue sans objet, sujet repris dans la décision 2026-014…"
           />
         </div>
       </Modal>

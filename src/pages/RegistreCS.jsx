@@ -213,9 +213,14 @@ export default function RegistreCS() {
   const resumeOf = (d) => decisionResume(d, contexteOf(d))
 
   // Le filtre d'état porte sur DEUX colonnes (migration 026) : la phase du cycle
-  // de vie (brouillon / planifiée / annulée) et, pour les décisions soumises, le
-  // résultat de la délibération (en cours / adoptée / rejetée). Un seul menu
-  // parce que l'utilisateur, lui, n'a qu'une question : « où en est-elle ? ».
+  // de vie (brouillon / planifiée / annulée / retirée) et, pour les décisions
+  // soumises, le résultat de la délibération (en cours / adoptée / rejetée). Un
+  // seul menu parce que l'utilisateur, lui, n'a qu'une question : « où en
+  // est-elle ? ».
+  //
+  // ⚠ « Retirée » (073) n'a demandé AUCUNE retouche ici : la règle teste la
+  // phase dès qu'elle n'est pas `ouverte_au_vote`, donc elle couvre toute
+  // valeur nouvelle. Vérifié, pas supposé.
   const matchEtat = (d) => {
     if (statut === 'all') return true
     const p = phaseOf(d)
@@ -258,6 +263,12 @@ export default function RegistreCS() {
   // et l'y faire figurer laisserait croire à une délibération qui n'a pas eu
   // lieu. Une décision ANNULÉE, elle, y reste : elle a existé, et le registre
   // doit dire qu'elle a été retirée (et pourquoi).
+  //
+  // ⚠ Une décision RETIRÉE après le vote (073) y reste À PLUS FORTE RAISON :
+  // elle a été soumise, elle porte un numéro et des membres ont voté. L'en
+  // exclure ferait un trou dans la numérotation du registre, ce qui se lit
+  // comme une délibération dissimulée. Aucune retouche nécessaire ici — la
+  // règle écarte les non-soumises, pas les retirées. Vérifié.
   const exportables = useMemo(() => filtered.filter((d) => !avantSoumission(d)), [filtered])
 
   const exportAll = async () => {
@@ -324,10 +335,14 @@ export default function RegistreCS() {
               <option value="planifiee">Planifiée</option>
               <option value="annulee">Annulée</option>
             </optgroup>
+            {/* ⚠ « Retirée » est rangée ici et NON avec les annulées (073) :
+                la délibération a bien été soumise au conseil, des membres ont
+                voté. La placer avant le vote contredirait son propre sens. */}
             <optgroup label="Soumise au conseil">
               <option value="en_cours">En cours</option>
               <option value="adoptee">Adoptée</option>
               <option value="rejetee">Rejetée</option>
+              <option value="retiree">Retirée</option>
             </optgroup>
           </Select>
         </div>

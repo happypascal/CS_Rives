@@ -15,7 +15,7 @@ import {
   ROLES_SANS_VOTE as ROLES_TITULAIRE_SANS_VOTE,
   ROLES_REPRESENTABLES as ROLES_TITULAIRE_REPRESENTABLES,
 } from './titulaireLogic'
-import { engagementTTC, phaseOf, avantSoumission, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
+import { engagementTTC, phaseOf, avantSoumission, estRetiree, contenuAGeler, nextNumero, PHASE_LABELS } from './decisionLogic'
 import { todayISO, addBusinessDaysISO, formatDateTime } from './format'
 
 // v14 : numéro attribué à la soumission (migration 034) — les brouillons de
@@ -699,7 +699,7 @@ const byDateDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
 export const ouvreUnBudget = (r) =>
   r.statut === 'adoptee' && r.budget_alloue != null && r.budget_alloue !== ''
 
-// Une décision PÈSE-t-elle sur un budget ? (migration 026)
+// Une décision PÈSE-t-elle sur un budget ? (migrations 026 puis 073)
 //
 // Une décision ANNULÉE n'engage rien, jamais : elle a été retirée avant même
 // d'être soumise. Un BROUILLON ou une décision PLANIFIÉE non plus — le conseil
@@ -707,9 +707,16 @@ export const ouvreUnBudget = (r) =>
 // vote. Sans ce filtre, un brouillon chiffré à 20 000 € apparaîtrait en
 // « engagé en cours » sur l'enveloppe et ferait croire l'argent réservé.
 //
+// ⚠ UNE DÉCISION RETIRÉE NON PLUS (073), et c'est le seul endroit du code où
+// le retrait après vote devait être traité à la main : les budgets se calculent
+// ici, en JavaScript, et aucune contrainte de la base ne pouvait le faire. Sans
+// cette exclusion, le montant d'une délibération que le conseil a abandonnée
+// resterait compté en « engagé en cours » — c'est-à-dire que l'argent
+// apparaîtrait réservé pour toujours, sur une décision qui n'aboutira jamais.
+//
 // Prédicat unique, lu par computeAGBudgets ET computeProjectBudgets : dupliqué,
 // il divergerait (c'est exactement le piège qu'`ouvreUnBudget` évite côté AG).
-export const peseSurLeBudget = (d) => !avantSoumission(d) && phaseOf(d) !== 'annulee'
+export const peseSurLeBudget = (d) => !avantSoumission(d) && !estRetiree(d)
 
 // Budgets AG (enveloppe votée par résolution). Le "restant" tient compte à la
 // fois des engagements DIRECTS (décisions sans projet) et de l'enveloppe
@@ -867,11 +874,16 @@ async function appliquerCycle(data, d, patch) {
 
   // 1. Transitions autorisées (spec §3). Une délibération soumise ne se
   //    dé-soumet pas ; une décision annulée reste au registre avec son motif.
+  // ⚠ `ouverte_au_vote` a UNE sortie, et une seule (migration 073) : le
+  //    retrait. Sans elle, une délibération déjà votée que le conseil
+  //    abandonne n'avait aucune issue — ni annulation (interdite ici), ni
+  //    suppression (fermée au 2e vote), hors l'inscrire au registre.
   const TRANSITIONS = {
     brouillon: ['planifiee', 'ouverte_au_vote', 'annulee'],
     planifiee: ['brouillon', 'ouverte_au_vote', 'annulee'],
-    ouverte_au_vote: [],
+    ouverte_au_vote: ['retiree'],
     annulee: [],
+    retiree: [],
   }
   if (apres !== avant.phase && !TRANSITIONS[avant.phase].includes(apres)) {
     // Repli sur la valeur brute : une phase inconnue (faute de frappe, valeur
@@ -881,9 +893,14 @@ async function appliquerCycle(data, d, patch) {
     throw new Error(`Transition interdite : une décision « ${nom(avant.phase)} » ne peut pas passer en « ${nom(apres)} ».`)
   }
 
-  // 2. Annulation : motif obligatoire.
-  if (apres === 'annulee' && !String(patch.motif_annulation ?? d.motif_annulation ?? '').trim()) {
-    throw new Error('Annulation impossible sans motif : le registre doit dire pourquoi la décision a été retirée.')
+  // 2. Retrait : motif obligatoire, pour les DEUX phases de retrait (073).
+  //    Même colonne `motif_annulation` dans les deux cas — une seconde
+  //    colonne de motif serait un doublon, seul le MOMENT du retrait change
+  //    et c'est la phase qui le porte (même raisonnement qu'en 072 pour
+  //    `acte_declare_le`). C'est l'écran qui change le libellé.
+  if ((apres === 'annulee' || apres === 'retiree')
+      && !String(patch.motif_annulation ?? d.motif_annulation ?? '').trim()) {
+    throw new Error('Retrait impossible sans motif : le registre doit dire pourquoi la délibération a été retirée.')
   }
 
   // 3. Gel du texte : une fois le vote ouvert, on ne réécrit plus ce sur quoi
@@ -1335,9 +1352,10 @@ export const mockRepo = {
 
   // ---- Cycle de vie : brouillon → planifiée → ouverte au vote (migration 026) ----
   //
-  // Quatre méthodes nommées plutôt qu'un `updateDecision({ phase })` générique :
-  // au point d'appel, « soumettre au vote » et « annuler » ne sont pas des
-  // modifications de champ, ce sont des actes — et chacun a ses conditions.
+  // Cinq méthodes nommées plutôt qu'un `updateDecision({ phase })` générique :
+  // au point d'appel, « soumettre au vote », « annuler » et « retirer » ne sont
+  // pas des modifications de champ, ce sont des actes — et chacun a ses
+  // conditions.
   async planifierDecision(id, { date_soumission_prevue, delai_vote_jours }) {
     return this.updateDecision(id, {
       phase: 'planifiee',
@@ -1353,6 +1371,23 @@ export const mockRepo = {
   },
   async annulerDecision(id, motif) {
     return this.updateDecision(id, { phase: 'annulee', motif_annulation: motif })
+  },
+
+  // RETIRER une délibération DÉJÀ VOTÉE (migration 073). Ce n'est pas une
+  // annulation : le conseil a été saisi, des membres se sont prononcés, et
+  // leurs votes restent au registre. La décision garde son numéro.
+  //
+  // ⚠ LE PRÉSIDENT SEUL, et le mock le refuse comme la base le refusera
+  // (policy restrictive `decisions_retrait_president`) : `aLaMain` laisse
+  // passer toute décision déjà soumise, donc sans ce contrôle la démo
+  // autoriserait un membre à retirer la délibération d'un autre. Le mock ne
+  // PROUVE rien sur la RLS — il montre le même refus.
+  async retirerDecision(id, motif) {
+    const user = getSessionUser()
+    if (user?.role !== 'admin') {
+      throw new Error('Retrait réservé au président : la délibération est devant le conseil.')
+    }
+    return this.updateDecision(id, { phase: 'retiree', motif_annulation: motif })
   },
 
   // Ouvre les décisions planifiées dont l'échéance est passée. Idempotent : une

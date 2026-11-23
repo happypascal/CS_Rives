@@ -156,24 +156,38 @@ export const MENUS = [
           'IRRÉVERSIBLE. Une décision enregistrée ne se modifie plus, ne se vote plus, ne se supprime plus. C’est le verrou de l’article 15.',
       },
       {
-        titre: 'Annuler une décision',
+        titre: 'Annuler une décision non soumise',
         pourQui: TOUS,
-        resume: 'Retirer une décision en laissant la trace.',
+        resume: 'Retirer un brouillon en laissant la trace.',
         etapes: [
-          'Ouvrez la décision (avant l’ouverture du vote).',
-          'Cliquez sur « Annuler » et saisissez le motif — il est obligatoire.',
+          'Ouvrez la décision — ce geste n’existe qu’avant l’ouverture du vote.',
+          'Cliquez sur « Annuler la décision » et saisissez le motif — il est obligatoire.',
           'La décision reste au registre avec la mention ANNULÉE et son motif.',
         ],
         alerte:
-          'Annuler n’est pas supprimer. Annuler garde la trace ; supprimer n’en laisse aucune. Devant un registre légal, une décision retirée doit se voir.',
+          'Annuler n’est pas supprimer. Annuler garde la trace ; supprimer n’en laisse aucune. Devant un registre légal, une décision retirée doit se voir. Une fois le vote ouvert, ce n’est plus ce geste qu’il faut : voyez « Retirer une délibération votée ».',
+      },
+      {
+        titre: 'Retirer une délibération votée',
+        pourQui: ['president'],
+        resume: 'Abandonner une délibération en cours qui n’a plus de raison d’être.',
+        etapes: [
+          'Ouvrez la décision : elle doit être ouverte au vote et non encore enregistrée.',
+          'Cliquez sur « Retirer la décision », à côté de « Enregistrer la décision ».',
+          'Saisissez le motif du retrait — il est obligatoire, et c’est lui qui explique au registre pourquoi la délibération n’a pas abouti.',
+          'La décision garde son numéro et reste au registre, mention RETIRÉE. Les votes déjà exprimés restent visibles.',
+        ],
+        alerte:
+          'Retirer n’est pas rejeter : un rejet est un résultat du vote, un retrait dit que la question a été abandonnée sans résultat. Le retrait est DÉFINITIF — le vote est clos, la décision ne pourra plus être enregistrée, et son montant disparaît de l’engagé en cours. Si le conseil veut revenir dessus, il prend une nouvelle décision.',
       },
       {
         titre: 'Supprimer une décision',
         pourQui: TOUS,
-        resume: 'Effacer sans trace — seulement avant le vote.',
+        resume: 'Effacer sans trace — avant le vote, ou tout au début.',
         etapes: [
           'Votre propre brouillon : ouvrez-le et cliquez sur « Supprimer ». Aucun numéro n’ayant été attribué, il ne laisse aucun trou dans le registre.',
-          'Une décision déjà soumise : seul le président peut la supprimer, et seulement si personne n’a encore voté.',
+          'Une décision déjà soumise : seul le président peut la supprimer, et seulement tant qu’un membre au maximum a voté.',
+          'Au deuxième vote, la suppression se ferme définitivement : le geste qui reste est « Retirer la décision ».',
         ],
       },
       {
@@ -197,7 +211,7 @@ export const MENUS = [
           'Depuis une décision : le PDF de cette seule délibération, avec les lignes de signature.',
         ],
         alerte:
-          'Les brouillons et les décisions planifiées sont exclus du PDF : ce ne sont pas des délibérations. Les annulées y figurent, avec la mention ANNULÉE.',
+          'Les brouillons et les décisions planifiées sont exclus du PDF : ce ne sont pas des délibérations. Les annulées y figurent, avec la mention ANNULÉE, et les retirées avec la mention RETIRÉE — elles portent un numéro, l’omettre ferait un trou dans le registre.',
       },
     ],
   },
@@ -1083,7 +1097,7 @@ export const PARCOURS = [
       {
         titre: 'Comprendre la différence avant d’agir',
         texte:
-          'SUPPRIMER efface sans trace : la décision n’a jamais existé. ANNULER la conserve au registre avec la mention ANNULÉE et un motif obligatoire. Devant un registre légal, une délibération retirée après avoir été portée à la connaissance du conseil doit se voir.',
+          'Trois gestes, et le bon dépend de l’avancement. SUPPRIMER efface sans trace : la décision n’a jamais existé. ANNULER vaut pour un brouillon qui n’a pas été soumis : il reste au registre avec la mention ANNULÉE et un motif obligatoire. RETIRER vaut pour une délibération déjà soumise et votée : elle garde son numéro, ses votes et son motif, avec la mention RETIRÉE. Devant un registre légal, une délibération portée à la connaissance du conseil doit se voir, même abandonnée.',
       },
       {
         titre: 'Votre brouillon : supprimez',
@@ -1091,14 +1105,16 @@ export const PARCOURS = [
           'Tant qu’elle n’a pas été soumise, la décision n’a ni numéro ni existence publique. Ouvrez-la et supprimez : le registre n’en garde rien, et aucune numérotation n’est trouée.',
       },
       {
-        titre: 'Soumise mais sans aucun vote : le président peut supprimer',
+        titre: 'Soumise, avec au plus un vote : le président peut supprimer',
         texte:
-          'La décision est visible de tous mais personne ne s’est prononcé. Le président seul peut l’effacer, et seulement dans ce cas.',
+          'La décision est visible de tous mais le conseil ne s’est pratiquement pas prononcé. Le président seul peut l’effacer, tant qu’un seul membre au maximum a voté : une décision mal rédigée reste ainsi corrigeable. Au deuxième vote, elle est engagée à plusieurs et la suppression se ferme.',
       },
       {
-        titre: 'Soumise et déjà votée : annulez',
+        titre: 'Soumise et déjà votée : retirez-la',
         texte:
-          'Dès qu’un vote existe, la suppression est fermée. Utilisez « Annuler » et saisissez le motif : il est obligatoire, et c’est lui qui explique au lecteur du registre pourquoi la décision n’a pas abouti.',
+          'Dès que deux membres ont voté, la suppression est fermée et « Annuler » ne s’applique plus — il ne vaut que pour un brouillon. Le président ouvre la fiche et clique sur « Retirer la décision », puis saisit le motif : il est obligatoire, et c’est lui qui explique au lecteur du registre pourquoi la délibération n’a pas abouti.',
+        alerte:
+          'Retirer n’est pas rejeter. Un rejet est un RÉSULTAT que le conseil a produit en votant ; un retrait dit que la question a été abandonnée, sans résultat d’aucune sorte. La décision garde son numéro, les votes déjà exprimés restent visibles, et elle n’engage plus aucun budget.',
       },
       {
         titre: 'Enregistrée : rien n’est possible',

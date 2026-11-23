@@ -437,6 +437,17 @@ export const supabaseRepo = {
   async annulerDecision(id, motif) {
     return this.updateDecision(id, { phase: 'annulee', motif_annulation: motif })
   },
+  // RETIRER une délibération DÉJÀ VOTÉE (migration 073) : le conseil a été
+  // saisi, des membres ont voté, et leurs votes restent au registre.
+  //
+  // ⚠ AUCUN CONTRÔLE DE RÔLE ICI, et c'est voulu : c'est la policy restrictive
+  // `decisions_retrait_president` qui réserve le geste au président, et elle
+  // seule ferme. Le redoubler côté client donnerait l'illusion que le contrôle
+  // est applicatif. Le mock, lui, le reproduit — pour que la démo, qui n'a pas
+  // de policies, montre le même refus.
+  async retirerDecision(id, motif) {
+    return this.updateDecision(id, { phase: 'retiree', motif_annulation: motif })
+  },
 
   // Filet applicatif de l'ouverture automatique. pg_cron déclenche la même
   // fonction toutes les heures ; cet appel-ci sert à ce qu'un pg_cron non activé

@@ -38,20 +38,32 @@ export const STATUT_LABELS = {
 // `phase` (migration 026) est un axe DISTINCT de `statut`, et les confondre est
 // l'erreur à éviter :
 //   - `phase`  = où en est la décision dans son cycle — brouillon, planifiée,
-//                ouverte au vote, annulée avant ouverture.
+//                ouverte au vote, annulée avant ouverture, retirée après.
 //   - `statut` = RÉSULTAT de la délibération — en_cours, puis adoptee/rejetee
 //                à l'enregistrement (art. 15, `tally` ci-dessous).
 // Les budgets, le CSV Foncia et le PDF lisent `statut` et ne connaissent pas le
 // cycle. La spec « brouillon / planifiée » fusionnait les deux dans une seule
 // colonne ; les séparer évite qu'un brouillon devienne un statut inconnu de
 // toutes ces dérivations.
-export const PHASE_VALUES = ['brouillon', 'planifiee', 'ouverte_au_vote', 'annulee']
+// ⚠ DEUX RETRAITS, ET NON UN SEUL (migration 073). `annulee` et `retiree`
+// disent tous deux qu'une décision a été retirée sans aboutir — mais PAS au
+// même moment, et la différence est tout l'intérêt :
+//   - `annulee` : retirée AVANT l'ouverture du vote, par son AUTEUR. Le conseil
+//     n'a jamais été saisi, personne n'a pu voter, rien ne s'est passé
+//     juridiquement.
+//   - `retiree` : retirée APRÈS l'ouverture du vote et sans enregistrement, par
+//     le PRÉSIDENT. Le conseil a été saisi, des membres se sont prononcés, et
+//     LEURS VOTES RESTENT VISIBLES — c'est ce qui interdisait de réemployer
+//     `annulee`, dont l'écran masque la carte des votes.
+// Les deux sont TERMINAUX et exigent un motif. Voir la 073 pour le détail.
+export const PHASE_VALUES = ['brouillon', 'planifiee', 'ouverte_au_vote', 'annulee', 'retiree']
 
 export const PHASE_LABELS = {
   brouillon: 'Brouillon',
   planifiee: 'Planifiée',
   ouverte_au_vote: 'Ouverte au vote',
   annulee: 'Annulée',
+  retiree: 'Retirée',
 }
 
 export const PHASE_TONES = {
@@ -59,6 +71,26 @@ export const PHASE_TONES = {
   planifiee: 'blue',
   ouverte_au_vote: 'amber',
   annulee: 'red',
+  retiree: 'red',
+}
+
+// Une décision a-t-elle été retirée, de l'une ou l'autre manière ? Prédicat
+// unique : la question « a-t-elle abouti ? » se pose au PDF, au registre et à
+// la fiche, et trois tests dispersés sur deux valeurs finiraient par diverger.
+// ⚠ Nommé `estRetiree` et non `retiree` : un prédicat qui porte le nom d'une
+// valeur de phase se confond avec elle à la lecture, et il en couvre DEUX.
+export function estRetiree(decision) {
+  const p = phaseOf(decision)
+  return p === 'annulee' || p === 'retiree'
+}
+
+// Le retrait d'une délibération VOTÉE est-il possible ? Le vote doit être
+// ouvert et la décision non enregistrée — l'enregistrement est le verrou dur de
+// l'art. 15, et après lui le conseil ne se dédit qu'en prenant une NOUVELLE
+// décision. ⚠ Ce prédicat ne dit rien du DROIT de le faire : c'est l'acte du
+// président, porté par la policy `decisions_retrait_president` (073).
+export function retraitPossible(decision) {
+  return phaseOf(decision) === 'ouverte_au_vote' && !decision?.enregistree
 }
 
 // ---------------------------------------------------------------- visibilité

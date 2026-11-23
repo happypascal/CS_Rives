@@ -177,9 +177,15 @@ function decisionBlock(doc, decision, opts = {}) {
   // « ANNULÉE » est un quatrième état (migration 026) : la décision a été
   // retirée AVANT toute soumission au conseil. Elle reste au registre — rien ne
   // disparaît — mais elle n'a jamais été délibérée, donc ni adoptée ni rejetée.
+  // « RETIRÉE » est un cinquième état (migration 073) : la décision a été
+  // soumise au conseil, des membres ont voté, puis le président l'a retirée
+  // sans l'enregistrer. ⚠ Elle ne peut PAS sortir en « NON ENREGISTRÉE » comme
+  // une délibération en cours : ce libellé dit « pas encore », alors que celle-ci
+  // ne le sera jamais.
   const annulee = phaseOf(decision) === 'annulee'
-  const verdict = annulee ? 'ANNULÉE' : !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'ADOPTÉE' : 'REJETÉE'
-  const verdictColor = annulee ? RED : !decision.enregistree ? GREY : adoptee ? GREEN : RED
+  const retiree = phaseOf(decision) === 'retiree'
+  const verdict = annulee ? 'ANNULÉE' : retiree ? 'RETIRÉE' : !decision.enregistree ? 'NON ENREGISTRÉE' : adoptee ? 'ADOPTÉE' : 'REJETÉE'
+  const verdictColor = annulee || retiree ? RED : !decision.enregistree ? GREY : adoptee ? GREEN : RED
   font(doc, 'bold', 11, verdictColor)
   text(doc, verdict, PAGE_W - M, y + 6.2, { align: 'right' })
   y += 9 + 5
@@ -193,6 +199,11 @@ function decisionBlock(doc, decision, opts = {}) {
     doc,
     annulee
       ? `Annulée avant soumission au conseil${decision.motif_annulation ? ` — ${decision.motif_annulation}` : ''}`
+      : retiree
+      // ⚠ La ligne DOIT dire que la délibération a eu lieu et qu'elle n'a pas
+      // été enregistrée : sans cela, un lecteur du PDF prendrait le tableau des
+      // voix qui suit pour le résultat d'une décision acquise.
+      ? `Soumise le ${formatDate(decision.date_publication)}, retirée sans enregistrement${decision.motif_annulation ? ` — ${decision.motif_annulation}` : ''}`
       : decision.date_enregistrement
         ? `Décidée le ${formatDate(decision.date_enregistrement)}`
         : `Publiée le ${formatDate(decision.date_publication)} — pas encore enregistrée`,
@@ -428,9 +439,13 @@ function buildRegistre(decisions, opts, tocPages) {
       d.numero,
       formatDate(d.date_enregistrement || d.date_publication),
       pdfText(decisionResumeTexte(d, getContexte ? getContexte(d) : {}, { max: 180 })),
-      // Annulée = phase, pas statut : une décision retirée avant soumission n'est
-      // ni « en cours », ni adoptée, ni rejetée (migration 026).
-      phaseOf(d) === 'annulee' ? 'Annulée' : { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
+      // Annulée et Retirée = phase, pas statut : une décision retirée — avant
+      // soumission (026) ou après le vote (073) — n'est ni « en cours », ni
+      // adoptée, ni rejetée. Son `statut` est resté `en_cours`, et c'est
+      // justement ce que le sommaire ne doit pas afficher : un lecteur y verrait
+      // une délibération encore en attente du conseil.
+      { annulee: 'Annulée', retiree: 'Retirée' }[phaseOf(d)]
+        || { en_cours: 'En cours', adoptee: 'Adoptée', rejetee: 'Rejetée' }[d.statut] || d.statut,
       // Placeholder au 1er passage : même largeur de colonne, donc mêmes hauteurs
       // de ligne qu'au 2e — c'est ce qui rend la pagination stable.
       tocPages ? String(tocPages[i]) : '—',

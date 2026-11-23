@@ -393,9 +393,16 @@ create index if not exists sujet_entrees_idx on sujet_entrees (sujet_id, date_ev
 --
 -- DEUX axes distincts, à ne jamais confondre (migration 026) :
 --   - `phase`  = où en est la décision dans son CYCLE : brouillon → planifiee →
---                ouverte_au_vote (+ annulee, avant ouverture du vote).
+--                ouverte_au_vote, plus DEUX retraits qui ne se confondent pas —
+--                `annulee` AVANT l'ouverture du vote, par l'auteur (026), et
+--                `retiree` APRÈS le vote et sans enregistrement, par le
+--                président (073), les votes exprimés restant visibles.
 --   - `statut` = RÉSULTAT de la délibération : 'en_cours' puis, à
 --                l'enregistrement, 'adoptee' | 'rejetee' (art. 15, `tally`).
+-- ⚠ Une décision retirée garde `statut = 'en_cours'` : elle n'a produit aucun
+-- résultat, et c'est la PHASE qui dit qu'elle n'en produira jamais. D'où les
+-- deux endroits qui doivent lire la phase avant le statut — le PDF et le badge
+-- d'état — sans quoi le registre l'afficherait « En cours » pour toujours.
 -- Les budgets, le CSV Foncia et le PDF lisent `statut` ; ils ne connaissent pas
 -- le cycle de vie. C'est pour cela que la spec « brouillon / planifiée », qui
 -- fusionnait les deux dans une seule colonne, a été décomposée en deux ici.
@@ -408,7 +415,7 @@ create table if not exists decisions (
   date_limite_reponse  date,                              -- défaut = + delai_vote_jours jours ouvrables
   date_enregistrement  date,                              -- actée par le président
   date_notification    timestamptz,                       -- dernier partage au CS (null = jamais notifiée)
-  phase                text not null default 'ouverte_au_vote' check (phase in ('brouillon','planifiee','ouverte_au_vote','annulee')),
+  phase                text not null default 'ouverte_au_vote' check (phase in ('brouillon','planifiee','ouverte_au_vote','annulee','retiree')),
   date_soumission_prevue timestamptz,                     -- ouverture PRÉVUE du vote (planification)
   soumise_le           timestamptz,                       -- ouverture RÉELLE du vote
   version              integer not null default 1,        -- incrémenté à chaque modification du brouillon
@@ -416,7 +423,7 @@ create table if not exists decisions (
   hash_contenu         text,                              -- SHA-256 hex de contenu_gele (UTF-8) — valeur probante
   visibilite           text not null default 'cs_seul' check (visibilite in ('cs_seul','colotis')),  -- ⚠ aucun lecteur : registre colotis hors périmètre v1
   delai_vote_jours     integer not null default 7,        -- durée d'ouverture du vote, en jours OUVRÉS
-  motif_annulation     text,                              -- obligatoire si phase = 'annulee'
+  motif_annulation     text,                              -- obligatoire si phase = 'annulee' OU 'retiree' (073)
   statut               text not null default 'en_cours' check (statut in ('en_cours','adoptee','rejetee')),
   enregistree          boolean not null default false,   -- verrou : non modifiable si true
   quorum_atteint       boolean,
@@ -1444,14 +1451,24 @@ begin
     if not (
       (old.phase = 'brouillon' and new.phase in ('planifiee','ouverte_au_vote','annulee'))
       or (old.phase = 'planifiee' and new.phase in ('brouillon','ouverte_au_vote','annulee'))
+      -- ⚠ LA SEULE SORTIE D'UNE DÉLIBÉRATION VOTÉE (migration 073). Sans elle,
+      -- une décision dont le conseil ne veut plus mais que deux membres ont
+      -- votée n'avait aucune issue : ni annulation (interdite ici), ni
+      -- suppression (fermée au 2e vote), hors l'inscrire au registre. Le
+      -- retrait est TERMINAL, comme l'annulation.
+      or (old.phase = 'ouverte_au_vote' and new.phase = 'retiree')
     ) then
-      raise exception 'Transition de phase interdite : une délibération déjà soumise au vote, ou annulée, ne revient pas en arrière.';
+      raise exception 'Transition de phase interdite : une délibération enregistrée ou déjà retirée ne revient pas en arrière, et une délibération soumise ne se dé-soumet pas.';
     end if;
   end if;
 
   -- 2. Annulation : motif OBLIGATOIRE.
-  if new.phase = 'annulee' and coalesce(length(btrim(new.motif_annulation)), 0) = 0 then
-    raise exception 'Annulation impossible sans motif : le registre doit dire pourquoi la décision a été retirée.';
+  -- ⚠ LES DEUX RETRAITS exigent un motif, et partagent la même colonne : une
+  --    seconde colonne de motif serait un doublon, seul le MOMENT du retrait
+  --    change et c'est la phase qui le porte (même raisonnement qu'en 072 pour
+  --    `acte_declare_le`). C'est l'écran qui change le libellé.
+  if new.phase in ('annulee','retiree') and coalesce(length(btrim(new.motif_annulation)), 0) = 0 then
+    raise exception 'Retrait impossible sans motif : le registre doit dire pourquoi la délibération a été retirée.';
   end if;
 
   -- 3. GEL DU TEXTE. La garde porte sur `contenu_gele is not null` et NON sur la
@@ -1853,6 +1870,27 @@ drop policy if exists "decisions_brouillon_delete_auteur" on decisions;
 create policy "decisions_brouillon_delete_auteur" on decisions
   as restrictive for delete to authenticated
   using (phase not in ('brouillon','planifiee') or created_by = current_membre_id());
+
+-- LE RETRAIT D'UNE DÉLIBÉRATION VOTÉE EST L'ACTE DU PRÉSIDENT (migration 073).
+--
+-- ⚠ RESTRICTIVE, ET IL EN FAUT UNE : `write_admin` réserve déjà tout au
+-- président, mais `decisions_owner_update` est PERMISSIVE et les permissives se
+-- cumulent en OU — l'auteur pourrait donc retirer lui-même une délibération
+-- dont le conseil est saisi et sur laquelle d'autres ont voté. Annuler un
+-- brouillon lui appartient ; retirer une délibération, non. Même patron que la
+-- clause porteuse `with check (… enregistree = false)` de cette même policy,
+-- qui réserve l'acte d'enregistrement au président.
+--
+-- ⚠ EFFET DE BORD ASSUMÉ : une délibération DÉJÀ retirée devient intouchable
+-- aux non-présidents, la clause `with check` ne voyant que la ligne nouvelle.
+-- C'est voulu — son texte est gelé et son vote est clos. La notification
+-- continue de passer : `marquer_decision_notifiee` (048) est `security definer`
+-- et échappe donc à la RLS.
+drop policy if exists "decisions_retrait_president" on decisions;
+create policy "decisions_retrait_president" on decisions
+  as restrictive for update to authenticated
+  using (true)
+  with check (phase <> 'retiree' or is_admin());
 
 -- L'AUTEUR SUPPRIME SON PROPRE BROUILLON (permissive : elle ouvre le droit).
 -- Une décision jamais soumise n'est pas une délibération : rien ne s'est passé
